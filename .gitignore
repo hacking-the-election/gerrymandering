@@ -1,0 +1,5 @@
+venv
+.DS_Store
+data/tl_2012_02_vtd10
+data/tl_2012_02_vtd10.json
+data/tl_2012_02_vtd10.zip
