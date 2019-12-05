@@ -1,4 +1,5 @@
 venv
 .DS_Store
 data/examples
+data/objects
 test_link.py
