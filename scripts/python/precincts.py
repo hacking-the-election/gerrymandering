@@ -33,7 +33,12 @@ def area(coords):
     """
     Returns the area of a poylgon with vertices at 2-d list `coords`
     """
-    return 0
+    area = 0
+
+    for i, j in zip(range(len(coords)), range(-1, len(coords) - 1)):
+        area += (coords[j][0] + coords[i][0]) * (coords[j][1] - coords[i][1])
+
+    return area / 2
 
 
 class Precinct:
@@ -50,7 +55,8 @@ class Precinct:
         `r_election_data` - above but for republicans.
     """
 
-    def __init__(self, coords, name, state, vote_id, d_election_data, r_election_data):
+    def __init__(self, coords, name, state, vote_id,
+                 d_election_data, r_election_data):
         
         # coordinate data
         self.coords = coords
@@ -76,11 +82,11 @@ class Precinct:
             mkdir(f'{objects_dir}/{self.state}')
 
     @classmethod
-    def generate_from_files(election_data, geojson):
+    def generate_from_files(cls, election_data, geojson):
         """
         Returns a list of precinct objects from the harvard dataverse election data file and the election-geodata file
         """
 
 
 # TODO
-# write area and generate_from_files functions
+# generate_from_files functions
