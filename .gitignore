@@ -3,3 +3,6 @@ venv
 data/examples
 data/objects
 test_link.py
+cpp/test-data
+cpp/bin/
+settings.json
