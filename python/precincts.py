@@ -13,7 +13,7 @@ import pickle
 
 
 # where the precinct data is stored
-objects_dir = abspath(dirname(dirname(dirname(__file__)))) + '/data/objects'
+objects_dir = abspath(dirname(dirname(__file__))) + '/data/objects'
 
 
 def save(precinct):
