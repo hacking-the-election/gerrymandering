@@ -12,7 +12,12 @@ class TestPrecincts(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         unittest.TestCase.__init__(self, *args, **kwargs)
         data = {
-            'coords': [[4, 6], [4, -4], [8, -4], [8, -8], [-4, -8], [-4, 6]],
+            'coords': [[4.0, 6.0],
+                       [4.0, -4.0],
+                       [8.0, -4.0],
+                       [8.0, -8.0],
+                       [-4.0, -8.0],
+                       [-4.0, 6.0]],
             'name': 'test',
             'state': 'North Montana',
             'vote_id': '"01-000"',
@@ -30,6 +35,10 @@ class TestPrecincts(unittest.TestCase):
         """
         Test the Precinct class
         """
+        self.assertEqual(self.precinct.area, 128.0)
+        self.assertEqual(self.precinct.dem_average, 140.0)
+        self.assertEqual(self.precinct.rep_average, 140.0)
+        self.assertEqual(self.precinct.dem_rep_ratio, 1.0)
 
     def test_pickle(self):
         """
