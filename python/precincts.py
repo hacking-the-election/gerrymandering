@@ -119,7 +119,12 @@ class Precinct:
             geo_data = json.load(f)
 
         with open(election_data_file, 'r') as f:
-            election_data = f.read().strip()
+            content = f.read()
+        # in case of extra line
+        if (lines := content.split('\n')[-1]) == '':
+            election_data = '\n'.join(lines[:-1])
+        else:
+            election_data = content
         
         data_rows = [row.split('\t') for row in election_data.split('\n')]
         # 2-d list with each sublist being a column in the
@@ -143,11 +148,13 @@ class Precinct:
         dem_cols = {
             data_dict['ed_precinct'][i]: {
                 key: convert_to_int(data_dict[key][i]) for key in dem_keys
+                if data_dict[key][i] != ''
             } for i in range(len(data_dict['ed_precinct']))
         }
         rep_cols = {
             data_dict['ed_precinct'][i]: {
                 key: convert_to_int(data_dict[key][i]) for key in rep_keys
+                if data_dict[key][i] != ''
             } for i in range(len(data_dict['ed_precinct']))
         }
 
