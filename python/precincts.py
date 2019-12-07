@@ -29,7 +29,7 @@ def load(state, vote_id):
     """
     Return a precinct object that was saved to a file
     """
-    with open(f'{objects_dir}/{state}/{vote_id}', 'r') as f:
+    with open(f'{objects_dir}/{state}/{vote_id}', 'rb') as f:
         precinct = pickle.load(f)
     return precinct
 
@@ -168,3 +168,4 @@ class Precinct:
 
 # TODO
 # create test module
+# dem_rep_ratio has to be based off of averages
