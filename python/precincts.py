@@ -164,8 +164,3 @@ class Precinct:
                         data_dict['precinct'][i], state, precinct_id_geo,
                         dem_cols[precinct_id_ele], rep_cols[precinct_id_ele]
                     ))
-
-
-# TODO
-# create test module
-# dem_rep_ratio has to be based off of averages
