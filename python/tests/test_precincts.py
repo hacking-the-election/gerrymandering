@@ -19,7 +19,7 @@ class TestPrecincts(unittest.TestCase):
                        [-4.0, -8.0],
                        [-4.0, 6.0]],
             'name': 'test',
-            'state': 'North Montana',
+            'state': 'test',
             'vote_id': '"01-000"',
             'd_election_data': {
                 'g2002_GOV_dv': 140
