@@ -19,7 +19,7 @@ class TestPrecincts(unittest.TestCase):
                            [8.0, -8.0],
                            [-4.0, -8.0],
                            [-4.0, 6.0]],
-                'name': 'Test Precinct 1',
+                'name': '"Test Precinct 1"',
                 'state': 'test',
                 'vote_id': '"01-000"',
                 'd_election_data': {
@@ -35,7 +35,7 @@ class TestPrecincts(unittest.TestCase):
                            [8.0, 6.0],
                            [8.0, -4.0],
                            [4.0, -4.0]],
-                'name': 'Test Precinct 2',
+                'name': '"Test Precinct 2"',
                 'state': 'test',
                 'vote_id': '"01-001"',
                 'd_election_data': {
@@ -47,6 +47,10 @@ class TestPrecincts(unittest.TestCase):
             }
         ]
         self.precincts = [precincts.Precinct(**data[0]), precincts.Precinct(**data[1])]
+
+        test_data_dir = abspath(dirname(dirname(dirname(__file__)))) + '/data/test'
+        self.json_file = test_data_dir + '/test.json'
+        self.tab_file = test_data_dir + '/test.tab'
 
     def test_precinct(self):
         """
@@ -62,12 +66,12 @@ class TestPrecincts(unittest.TestCase):
         self.assertEqual(self.precincts[1].rep_average, 100.0)
         self.assertEqual(self.precincts[1].dem_rep_ratio, 1.4)
 
-    def test_pickle(self):
+    def test_generate_from_files(self):
         """
-        Test saving and loading of precinct objects.
+        Test generation of Precinct files from geo and election data.
         """
+        precincts.Precinct.generate_from_files(self.tab_file, self.json_file, 'test')
         for i, precinct in enumerate(self.precincts):
-            precincts.save(precinct)
             loaded_precinct = precincts.load('test', f'"01-00{i}"')
             
             precinct_attributes = ['coords', 'area', 'name', 'vote_id', 'state',
@@ -75,11 +79,6 @@ class TestPrecincts(unittest.TestCase):
                                 'dem_rep_ratio', 'dem_average', 'rep_average']
             for a in precinct_attributes:
                 eval(f'self.assertEqual(precinct.{a}, loaded_precinct.{a})')
-
-    def test_generate_from_files(self):
-        """
-        Test generation of Precinct files from geo and election data.
-        """
         
 
 
