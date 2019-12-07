@@ -96,12 +96,11 @@ class Precinct:
         d_election_sum = sum(list(d_election_data.values()))
         self.r_election_data = r_election_data
         r_election_sum = sum(list(r_election_data.values()))
-        self.dem_rep_ratio = d_election_sum / r_election_sum
-
         self.dem_average = (d_election_sum
                             / len(list(d_election_data.values())))
         self.rep_average = (d_election_sum
                             / len(list(r_election_data.values())))
+        self.dem_rep_ratio = dem_average / rep_average
 
         # create directory for states if it doesn't already exist
         if not isdir(f'{objects_dir}/{self.state}'):
