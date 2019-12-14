@@ -1,8 +1,9 @@
 venv
 .DS_Store
 data/examples
-data/objects
 test_link.py
+python/__pycache__
+data/objects/North Montana
 cpp/test-data
 cpp/bin/
 settings.json
