@@ -12,15 +12,12 @@ using namespace rapidjson;
 
 class Precinct {
 
-    Precinct(string coordinates);
+    Precinct(vector<int> coordinates, int demV, int repV);
 
     int dem;
     int rep;
-    double ratio;
-    vector<int> border;
-
-    void write_to_file();
-    void read_from_file();
+    double dratio;
+    vector<int> precinct_border;
 
     public: 
         double getRatio();
@@ -29,16 +26,20 @@ class Precinct {
 class District {
     District(vector<Precinct> pre);
 
-    vector<int> border;
-    vector<Precinct> precincts;
+    vector<int> district_border;
     int id;
 };
 
 class State {
-    State(vector<District> dists );
+    State(vector<District> dists, vector<Precinct> pres, vector<int> boundary);
 
-    vector<int> border;
-    vector<District> districts;
+    vector<int> state_border;
+    vector<District> state_districts;
+    vector<Precinct> state_precincts;
+
+    void serialize_obj();
+    void deserialize_obj();
+
     int id;
     string name;
 };
