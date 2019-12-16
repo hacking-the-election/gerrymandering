@@ -4,6 +4,5 @@ data/examples
 test_link.py
 python/__pycache__
 data/objects/North Montana
-cpp/test-data
-cpp/bin/
+cpp/quantify/bin/
 settings.json
