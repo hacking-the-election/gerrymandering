@@ -10,30 +10,51 @@
 using namespace std;
 using namespace rapidjson;
 
-class Precinct {
+// define global variables for algorithms
+//=======================================
+const int EXPANSION_WIDTH = 10;
+//=======================================
 
-    Precinct(vector<int> coordinates, int demV, int repV);
+
+// declare methods for calculating a shape
+double area(vector<vector<int> > shape);
+double* center(vector<vector<int> > shape);
+
+vector<vector<int> > expand_border(vector<vector<int> > shape);
+
+
+// class Shape {
+//     Shape(vector<vector<int> > shape);
+//     vector<vector<int> > border;
+// };
+
+
+class Precinct {// : Shape {
+    Precinct(int demV, int repV);
 
     int dem;
     int rep;
-    double dratio;
-    vector<int> precinct_border;
+    vector<vector<int> > precinct_border;
 
     public: 
-        double getRatio();
+        double get_ratio();
 };
 
 class District {
-    District(vector<Precinct> pre);
+    District(vector<vector<int> > shape);
 
-    vector<int> district_border;
+    vector<vector<int> > district_border;
+    vector<vector<int> > district_border_expanded;
     int id;
+
+    double quantify();
+    double percent_of_precinct_in_district(Precinct precint);
 };
 
 class State {
-    State(vector<District> dists, vector<Precinct> pres, vector<int> boundary);
+    State(vector<District> dists, vector<Precinct> pres, vector<vector<int> > shape);
 
-    vector<int> state_border;
+    vector<vector<int> > state_border;
     vector<District> state_districts;
     vector<Precinct> state_precincts;
 
