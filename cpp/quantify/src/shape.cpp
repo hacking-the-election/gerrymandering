@@ -32,25 +32,6 @@ double area(vector<vector<int> > shape) {
     return (area / 2);
 }
 
-Precinct::Precinct(vector<vector<int> > shape, int demV, int repV){
-    precinct_border = shape;
-
-    dem = demV;
-    rep = repV;
-}
-
-
 double Precinct::get_ratio() {
     return dem / (dem + rep);
-}
-
-District::District(vector<vector<int> > shape) {
-    district_border = shape;
-    district_border_expanded = expand_border(district_border);
-}
-
-State::State(vector<District> dists, vector<Precinct> pres, vector<vector<int> > shape) {
-    state_districts = dists;
-    state_border = shape;
-    state_precincts = pres;
 }

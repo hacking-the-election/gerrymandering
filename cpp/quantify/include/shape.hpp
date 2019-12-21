@@ -3,16 +3,16 @@
 #include <vector>
 #include <sstream>
 #include <fstream>
-#include "../../lib/rapidjson/include/rapidjson/document.h"
-#include "../../lib/rapidjson/include/rapidjson/writer.h"
-#include "../../lib/rapidjson/include/rapidjson/stringbuffer.h"
+#include "../../lib/json/single_include/nlohmann/json.hpp"
 
 using namespace std;
-using namespace rapidjson;
+using json = nlohmann::json;
 
 // define global variables for algorithms
 //=======================================
-const int EXPANSION_WIDTH = 10;
+const float EXPANSION_WIDTH = 10;
+const float FAIRNESS = 0;
+const float COMPACTNESS = 0;
 //=======================================
 
 
@@ -23,38 +23,41 @@ double* center(vector<vector<int> > shape);
 vector<vector<int> > expand_border(vector<vector<int> > shape);
 
 
-// class Shape {
-//     Shape(vector<vector<int> > shape);
-//     vector<vector<int> > border;
-// };
+class Shape {
+    public: Shape(vector<vector<int> > shape);
+    vector<vector<int> > border;
+};
 
 
-class Precinct {// : Shape {
-    Precinct(int demV, int repV);
+class Precinct : public Shape {
+    
+    Precinct(vector<vector<int> > shape, int demV, int repV) : Shape(shape) {
+        dem = demV;
+        rep = repV;
+    }
 
     int dem;
     int rep;
-    vector<vector<int> > precinct_border;
 
     public: 
         double get_ratio();
 };
 
-class District {
-    District(vector<vector<int> > shape);
+class District : Shape {
+    District(vector<vector<int> > shape) : Shape(shape) {};
 
-    vector<vector<int> > district_border;
-    vector<vector<int> > district_border_expanded;
     int id;
 
     double quantify();
     double percent_of_precinct_in_district(Precinct precint);
 };
 
-class State {
-    State(vector<District> dists, vector<Precinct> pres, vector<vector<int> > shape);
+class State : Shape {
+    State(vector<District> districts, vector<Precinct> precincts, vector<vector<int> > shape) : Shape(shape) {
+        state_districts = districts;
+        state_precincts = precincts;
+    };
 
-    vector<vector<int> > state_border;
     vector<District> state_districts;
     vector<Precinct> state_precincts;
 
