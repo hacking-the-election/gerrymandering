@@ -10,39 +10,42 @@ is the same as the Harvard "ed_precinct" col
 #include "../include/shape.hpp"
 #include <SDL2/SDL.h>
 
-vector<Precinct> parse_coordinates(string geoJSON) { 
+void parse_coordinates(string geoJSON) { 
     // =============================
     // parses a geoJSON state with 
     // precincts into a state object
     // =============================
+    json precincts = json::parse(geoJSON).at("features");
+    int precinct_num = precincts.size();
 
-    vector<Precinct> precincts;
+    for ( int i = 0; i < precincts.size(); i++ ) {
+        string id = precincts[i].at("properties").at("VTDST10");
+        json coords;
 
-    Document json;
-    json.Parse(geoJSON.c_str());
+        if ( precincts[i].at("geometry").at("coordinates").size() == 1 ) 
+            coords = precincts[i].at("geometry").at("coordinates")[0];
+        else 
+            coords = precincts[i].at("geometry").at("coordinates").dump(4);
 
-    Value& s = json["features"][0]["geometry"]["coords"];
-    s.SetInt(s.GetInt() + 1);
-
-    StringBuffer jsbuffer;
-    Writer<StringBuffer> writer(jsbuffer);
-    json.Accept(writer);
-    // return jsbuffer.GetString();
-
+        // cout << id << endl;
+    }
 }
 
 int main(int argc, char* argv[]) {
 
     if ( argc != 2 ) {
-        cout << "must have 2 arguments: geoJSON file and election geodata";
+        cout << "gerry: \e[31merror: \e[0mMust have 2 arguments: geoJSON file and election data" << endl;
+        return 1;
     }
 
-    parse_coordinates(string(argv[1]));
+    ifstream t(argv[1]);
+    stringstream buffer;
+    buffer << t.rdbuf();
+    string geoJSON = buffer.str();
+
+    cout << "parsing coords..." << endl;
+    parse_coordinates(geoJSON);
     
-    // ifstream t(argv[1]);
-    // stringstream buffer;
-    // buffer << t.rdbuf();
-    // string geoJSON = buffer.str();
 
     return 0;
 }
