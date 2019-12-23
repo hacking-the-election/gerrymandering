@@ -3,6 +3,7 @@
 #include <vector>
 #include <sstream>
 #include <fstream>
+#include <map>
 #include "../../lib/json/single_include/nlohmann/json.hpp"
 
 using namespace std;
