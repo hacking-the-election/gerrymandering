@@ -17,10 +17,19 @@ const float COMPACTNESS = 0;
 // class definitions for shapes
 class Shape {
     public: 
+        
         Shape(vector<vector<int> > shape) {
             border = shape;
-        };
+        }
+
+        // overload constructor for adding id
+        Shape(vector<vector<int> > shape, string id) {
+            border = shape;
+            shape_id = id;
+        }
+
         vector<vector<int> > border;
+        string shape_id;
 
         void draw();
 };
@@ -66,7 +75,8 @@ class State : Shape {
         string name;
 
     public:
-        static State generate_from_file(string geoJSON, string voter_data);
+        static State generate_from_file(string precinct_geoJSON, string voter_data, string district_geoJSON);
+        void write_txt();
         void serialize_obj();
         void deserialize_obj();
 };

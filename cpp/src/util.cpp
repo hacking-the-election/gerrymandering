@@ -1,8 +1,5 @@
 // functiions for simple utilities
-#include <sstream>
-#include <string>
-#include <fstream>
-
+#include "../include/util.hpp"
 using namespace std;
 
 string readf(string path) {

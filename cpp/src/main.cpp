@@ -6,18 +6,23 @@
 */
 
 #include "../include/shape.hpp"
+#include "../include/util.hpp"
 
 int main(int argc, char* argv[]) {
-
-    if ( argc != 2 ) {
-        cout << "To parse into a state file, please : geoJSON file and election data" << endl;
-        return 1;
-    }
+    /* a test for parsing data into a state object
+       takes 3 arguments:
+           precinct geoJSON
+           precinct voter data
+           district geoJSON     
+    */
 
     // read files into strings
-    string geoJSON = readf(argv[1]);
+    string precinct_geoJSON = readf(argv[1]);
     string voter_data = readf(argv[2]);
-    State state = State::generate_from_file(geoJSON, voter_data);    
+    string district_geoJSON = readf(argv[3]);
 
+    State::generate_from_file(precinct_geoJSON, voter_data, district_geoJSON);    
+
+    // State.quantify();
     return 0;
 }
