@@ -2,6 +2,7 @@
 *
 !*.*
 !*/
+!Makefile
 
 # macOS
 .DS_Store
