@@ -1,0 +1,6 @@
+[submodule "cpp/lib/json"]
+	path = cpp/lib/json
+	url = https://github.com/nlohmann/json
+[submodule "cpp/lib/rapidjson"]
+	path = cpp/lib/rapidjson
+	url = https://github.com/Tencent/rapidjson
