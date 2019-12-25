@@ -10,38 +10,37 @@ using namespace std;
 using json = nlohmann::json;
 
 // define global variables for algorithms
-//=======================================
 const float EXPANSION_WIDTH = 10;
 const float FAIRNESS = 0;
 const float COMPACTNESS = 0;
-//=======================================
+
+// function declarations
+double area(Shape shape);
+double* center(Shape shape);
+Shape expand_border(Shape shape);
+string readf(string path);
 
 
-// declare methods for calculating a shape
-double area(vector<vector<int> > shape);
-double* center(vector<vector<int> > shape);
-
-vector<vector<int> > expand_border(vector<vector<int> > shape);
-
-
+// class definitions for shapes
 class Shape {
-    public: Shape(vector<vector<int> > shape);
-    vector<vector<int> > border;
+    public: 
+        Shape(vector<vector<int> > shape);
+        vector<vector<int> > border;
 };
-
 
 class Precinct : public Shape {
     
-    Precinct(vector<vector<int> > shape, int demV, int repV) : Shape(shape) {
-        dem = demV;
-        rep = repV;
-    }
-
-    int dem;
-    int rep;
-
     public: 
+        Precinct(vector<vector<int> > shape, int demV, int repV) : Shape(shape) {
+            dem = demV;
+            rep = repV;
+        }
+
         double get_ratio();
+    
+    private:
+        int dem;
+        int rep;
 };
 
 class District : Shape {
@@ -54,17 +53,19 @@ class District : Shape {
 };
 
 class State : Shape {
-    State(vector<District> districts, vector<Precinct> precincts, vector<vector<int> > shape) : Shape(shape) {
+    
+    public: State(vector<District> districts, vector<Precinct> precincts, vector<vector<int> > shape) : Shape(shape) {
         state_districts = districts;
         state_precincts = precincts;
     };
+    
+    private:
+        vector<District> state_districts;
+        vector<Precinct> state_precincts;
+        string name;
 
-    vector<District> state_districts;
-    vector<Precinct> state_precincts;
-
-    void serialize_obj();
-    void deserialize_obj();
-
-    int id;
-    string name;
+    public:
+        static State generate_from_file(string geoJSON, string voter_data);
+        void serialize_obj();
+        void deserialize_obj();
 };
