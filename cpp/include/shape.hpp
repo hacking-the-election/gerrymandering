@@ -4,7 +4,7 @@
 #include <sstream>
 #include <fstream>
 #include <map>
-#include "../../lib/json/single_include/nlohmann/json.hpp"
+#include "../lib/json/single_include/nlohmann/json.hpp"
 
 using namespace std;
 using json = nlohmann::json;
@@ -14,19 +14,20 @@ const float EXPANSION_WIDTH = 10;
 const float FAIRNESS = 0;
 const float COMPACTNESS = 0;
 
-// function declarations
-double area(Shape shape);
-double* center(Shape shape);
-Shape expand_border(Shape shape);
-string readf(string path);
-
-
 // class definitions for shapes
 class Shape {
     public: 
-        Shape(vector<vector<int> > shape);
+        Shape(vector<vector<int> > shape) {
+            border = shape;
+        };
         vector<vector<int> > border;
+
+        void draw();
 };
+
+double area(Shape shape);
+vector<double> center(Shape shape);
+Shape expand_border(Shape shape);
 
 class Precinct : public Shape {
     

@@ -1,14 +1,15 @@
 #include "../include/shape.hpp"
 
+// functions for modifying shapes
+
 Shape expand_border(Shape shape) {
     vector<vector<int> > expanded;
     Shape expanded_shape = Shape(expanded);
     return expanded_shape;
 }
 
-double* center(Shape shape) {
-    
-    double coords[2] = { (float) shape.border[0][0], (float) shape.border[0][1] };
+vector<double> center(Shape shape) {
+    vector<double> coords = { (float) shape.border[0][0], (float) shape.border[0][1] };
     
     for ( int i = 1; i < shape.border.size(); i++ ) {
         coords[0] += shape.border[i][0];
@@ -33,7 +34,16 @@ double area(Shape shape) {
     return (area / 2);
 }
 
+// retrieve ratio from precinct
 double Precinct::get_ratio() {
     return dem / (dem + rep);
     // return rep / (dem + rep);
+}
+
+Shape::Shape(vector<vector<int> > shape) {
+    border = shape;
+}
+
+void Shape::draw() {
+    // initialize sdl window;
 }

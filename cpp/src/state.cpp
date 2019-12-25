@@ -20,7 +20,7 @@ map<string, vector<int> > parse_voter_data(string voter_data) {
 vector<Precinct*> parse_coordinates(string geoJSON, map<string, vector<int> > voter_data) { 
     // ===================================
     // parses a geoJSON state with 
-    // precincts into an array of precincts
+    // precincts into an array of shapes
     // ====================================
 
     vector<Precinct*> precinct_list;
@@ -39,15 +39,6 @@ vector<Precinct*> parse_coordinates(string geoJSON, map<string, vector<int> > vo
 
         // placeholder shape, replace with coords string parsed into vector
         vector<vector<int> > shape = {{2,5}, {2,4}, {1,4}};
-
-        // using the id variable or the name of the precinct,
-        // replace the following with the correct data
-        int demv = 13;
-        int repv = 15;
-
-        Precinct* precinct = new Precinct(shape, demv, repv);
-        precinct_list.push_back( precinct );
-        delete precinct;
 
         // cout << coords << endl;
         // cout << id << endl;
