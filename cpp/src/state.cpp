@@ -13,7 +13,6 @@ map<string, vector<int> > parse_voter_data(string voter_data) {
     // name and an array with the data
 
     map<string, vector<int> > parsed_data;
-
     return parsed_data;
 }
 
@@ -31,8 +30,9 @@ vector<Shape> parse_coordinates(string geoJSON) {
         try { 
             id = shapes[i].at("properties").at("VTDST10");
         } 
-        catch (const std::exception& e) { 
+        catch (...) {
             cout << "If this is parsing precincts, you have no precinct id." << endl;
+            cout << "If future k-vernooy runs into this error, it means that either VTSD_10 in your geoJSON or ed_precinct in your voter data is missing. To fix... maybe try a loose comparison of the names?" << endl;
         }
 
         // check for embedded arrays
@@ -52,12 +52,41 @@ vector<Shape> parse_coordinates(string geoJSON) {
     return shapes_vector;
 }
 
+vector<Precinct> merge_data( vector<Shape> precinct_shapes, map<string, vector<int> > voter_data) {
+    // returns an array of precinct objects given 
+    // geodata (shape objects) and voter data
+    // in the form of a map for a list of precincts
+
+    vector<Precinct> precincts;
+
+    for (Shape precinct_shape : precinct_shapes) {
+        // create a precinct obj, add to array
+        string p_id = precinct_shape.shape_id;
+        vector<int> p_data = {0, 0};
+        try {
+            p_data = voter_data[p_id];
+        }
+        catch (...) {
+            cout << "error: the id in the precinct, \e[41m" << p_id << ", has no matching key in voter_data" << endl;
+            cout << "the program will continue, but the voter_data for the precinct will be filled with 0,0." << endl;
+        } 
+
+        Precinct precinct = Precinct(precinct_shape.border, p_data[0], p_data[1]);
+        precincts.push_back(precinct);
+    }
+
+    return precincts;
+}
+
 State State::generate_from_file(string precinct_geoJSON, string voter_data, string district_geoJSON) {
     cout << "generating from file... " << endl;
 
-    vector<Shape> precincts = parse_coordinates(precinct_geoJSON);
-    vector<Shape> districts = parse_coordinates(district_geoJSON);
-
+    vector<Shape> precinct_shapes = parse_coordinates(precinct_geoJSON);
+    vector<Shape> district_shapes = parse_coordinates(district_geoJSON);
     map<string, vector<int> > precinct_voter_data = parse_voter_data(voter_data);
 
+    vector<Precinct> precincts = merge_data(precinct_shapes, precinct_voter_data);
+    vector<vector<int> > state_shape = {{0,0}};
+
+    State state = State(district_shapes, precincts, state_shape);
 }
