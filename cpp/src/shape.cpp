@@ -1,4 +1,5 @@
 #include "../include/shape.hpp"
+#include "../include/gui.hpp"
 
 // functions for modifying shapes
 
@@ -44,6 +45,21 @@ Shape::Shape(vector<vector<int> > shape) {
     border = shape;
 }
 
+// overload constructor for adding id
+Shape::Shape(vector<vector<int> > shape, string id) {
+    border = shape;
+    shape_id = id;
+}
+
 void Shape::draw() {
-    // initialize sdl window;
+    // initialize sdl window
+    SDL_Window* window = create_window();
+    SDL_Delay(1000);
+    
+    // convert coordinates into pixel array
+    
+    // print pixel array to window
+
+    // destroy window
+    destroy_window(window);
 }

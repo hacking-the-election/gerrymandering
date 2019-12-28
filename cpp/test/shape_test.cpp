@@ -15,7 +15,9 @@ int main(int argc, char* argv[]) {
 
     Shape shape({ {0, 0}, {0,1}, {1,0} });
 
-    assert_equal("checking area function", area(shape), 0.5);
-    assert_equal("testing center coord 1", center(shape)[0], 0.333333);
-    assert_equal("testing center coord 2", center(shape)[1], 0.333333);
+    shape.draw();
+
+    // assert_equal("checking area function", area(shape), 0.5);
+    // assert_equal("testing center coord 1", center(shape)[0], 0.333333);
+    // assert_equal("testing center coord 2", center(shape)[1], 0.333333);
 }

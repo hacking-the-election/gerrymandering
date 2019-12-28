@@ -17,16 +17,9 @@ const float COMPACTNESS = 0;
 // class definitions for shapes
 class Shape {
     public: 
-        
-        Shape(vector<vector<int> > shape) {
-            border = shape;
-        }
-
         // overload constructor for adding id
-        Shape(vector<vector<int> > shape, string id) {
-            border = shape;
-            shape_id = id;
-        }
+        Shape(vector<vector<int> > shape);
+        Shape(vector<vector<int> > shape, string id);
 
         vector<vector<int> > border;
         string shape_id;
@@ -54,7 +47,7 @@ class Precinct : public Shape {
 };
 
 class District : Shape {
-    District(vector<vector<int> > shape) : Shape(shape) {};
+    public District(vector<vector<int> > shape) : Shape(shape) {};
 
     int id;
 
