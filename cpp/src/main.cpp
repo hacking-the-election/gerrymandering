@@ -23,6 +23,6 @@ int main(int argc, char* argv[]) {
 
     State::generate_from_file(precinct_geoJSON, voter_data, district_geoJSON);    
 
-    // State.quantify();
+    // State.quantify().dump();
     return 0;
 }

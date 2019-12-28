@@ -78,15 +78,34 @@ vector<Precinct> merge_data( vector<Shape> precinct_shapes, map<string, vector<i
     return precincts;
 }
 
+vector<vector<int> > generate_state_border(vector<Precinct> precincts) {
+    // given an array of precincts, return the border of the state
+    return {{0,0}};
+}
+
 State State::generate_from_file(string precinct_geoJSON, string voter_data, string district_geoJSON) {
     cout << "generating from file... " << endl;
 
+    // parse the coordinates into shape objects
+    //! Should probably allocate memory with malloc here
     vector<Shape> precinct_shapes = parse_coordinates(precinct_geoJSON);
     vector<Shape> district_shapes = parse_coordinates(district_geoJSON);
+
+    vector<District> districts;
+
+    for ( Shape district_shape : district_shapes ) {
+        districts.push_back(District(district_shape.border));
+        // deallocate district_shapes
+    }
+
+    // create a vector of precinct objects from border and voter data
     map<string, vector<int> > precinct_voter_data = parse_voter_data(voter_data);
-
     vector<Precinct> precincts = merge_data(precinct_shapes, precinct_voter_data);
-    vector<vector<int> > state_shape = {{0,0}};
 
-    State state = State(district_shapes, precincts, state_shape);
+    // a dummy state shape
+    vector<vector<int> > state_shape = generate_state_border(precincts);
+
+    // generate state data from files
+    State state = State(districts, precincts, state_shape);
+    return state;
 }
