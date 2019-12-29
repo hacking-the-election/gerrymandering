@@ -14,6 +14,8 @@ const float EXPANSION_WIDTH = 10;
 const float FAIRNESS = 0;
 const float COMPACTNESS = 0;
 
+const string no_name = "\e[31m[no_name]\e[0m";
+
 // class definitions for shapes
 class Shape {
     public: 
@@ -40,6 +42,7 @@ class Precinct : public Shape {
         }
 
         double get_ratio();
+        vector<int> voter_data();
     
     private:
         int dem;
@@ -47,7 +50,7 @@ class Precinct : public Shape {
 };
 
 class District : Shape {
-    public District(vector<vector<int> > shape) : Shape(shape) {};
+    public: District(vector<vector<int> > shape) : Shape(shape) {};
 
     int id;
 
@@ -65,11 +68,12 @@ class State : Shape {
     private:
         vector<District> state_districts;
         vector<Precinct> state_precincts;
-        string name;
+        string name = no_name;
 
     public:
         static State generate_from_file(string precinct_geoJSON, string voter_data, string district_geoJSON);
         void write_txt();
-        void serialize_obj();
-        void deserialize_obj();
+        void serialize_obj(string write_path);
+        void read_serialized_obj(string read_path);
+        string to_json();
 };

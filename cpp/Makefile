@@ -6,7 +6,7 @@ BINDIR = bin
 all: compile
 
 compile:
-	@${CC} -std=c++14 src/main.cpp src/util.cpp src/state.cpp -o ${BINDIR}/gerry
+	@${CC} -std=c++14 src/main.cpp src/util.cpp src/state.cpp src/shape.cpp src/gui.cpp -lSDL2main -lSDL2 -o ${BINDIR}/gerry
 
 install:
 	@install -m 0755 ${BINDIR}/gerry /usr/local/bin
