@@ -2,9 +2,10 @@
 State methods for parsing from geodata and
  election data methods, and for running and 
  writing the entire quantification algorithm
-============================================*/
+===========================================*/
 
 #include "../include/shape.hpp"
+#include "../include/term_disp.hpp" // for dumping data
 
 map<string, vector<int> > parse_voter_data(string voter_data) {
     // from a string in the specified format
@@ -83,9 +84,47 @@ vector<vector<int> > generate_state_border(vector<Precinct> precincts) {
     return {{0,0}};
 }
 
-State State::generate_from_file(string precinct_geoJSON, string voter_data, string district_geoJSON) {
-    cout << "generating from file... " << endl;
+string State::to_json() {
+    string str;
 
+    str += OQ + "state" + CQC + "{" + N
+        + TAB + OQ + "name" + CQC + OQ + name + CQ + C + N
+        + TAB + OQ + "precincts" + CQC + "{" + N;
+    
+    for ( Precinct precinct : state_precincts ) {
+        str += TAB + TAB + "{" + N;
+
+        // print name of precinct
+        if (precinct.shape_id.size() == 0) {
+            str += TAB + TAB + TAB + OQ + "name" + CQC 
+                + OQ + no_name + CQ + C + N;
+        }
+        else {
+            str += TAB + TAB + TAB + OQ + "name" + CQC 
+                + OQ + precinct.shape_id + CQ + C + N;
+        }
+
+        // print coordinates of precinct
+        str += TAB + TAB + TAB + OQ + "coordinates" + CQC + "{";
+        for (vector<int> coordset: precinct.border) {
+            str += "{" + RED + to_string(coordset[0]) + RESET + ", " 
+                + RED + to_string(coordset[1]) + RESET + "}, ";
+        }
+
+        // remove last comma char
+        str = str.substr(0, str.size() - 2);
+        str += "}" + C + N;
+
+        // print voter data for the precinct
+        str += TAB + TAB + TAB + OQ + "voter_data" + CQC + "{"
+            + OQ + "dem" + CQC + RED + to_string(precinct.voter_data()[0]) + RESET + ", "
+            + OQ + "rep" + CQC + RED + to_string(precinct.voter_data()[1]) + RESET + "}" + N;
+
+    }
+    return str;
+}
+
+State State::generate_from_file(string precinct_geoJSON, string voter_data, string district_geoJSON) {
     // parse the coordinates into shape objects
     //! Should probably allocate memory with malloc here
     vector<Shape> precinct_shapes = parse_coordinates(precinct_geoJSON);

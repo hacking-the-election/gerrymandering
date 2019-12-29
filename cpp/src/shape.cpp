@@ -35,10 +35,14 @@ double area(Shape shape) {
     return (area / 2);
 }
 
-// retrieve ratio from precinct
 double Precinct::get_ratio() {
+    // retrieve ratio from precinct
     return dem / (dem + rep);
     // return rep / (dem + rep);
+}
+
+vector<int> Precinct::voter_data() {
+    return {dem, rep};
 }
 
 Shape::Shape(vector<vector<int> > shape) {
