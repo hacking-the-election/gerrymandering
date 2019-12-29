@@ -49,7 +49,7 @@ class Precinct : public Shape {
         int rep;
 };
 
-class District : Shape {
+class District : public Shape {
     public: District(vector<vector<int> > shape) : Shape(shape) {};
 
     int id;

@@ -1,0 +1,27 @@
+{
+    "state": {
+        "name": "[no_name]",
+        "precincts": [
+            {
+                "name": "[no_name]",
+                "coordinates": [[2, 5], [2, 4], [1, 4]],
+                "voter_data": {"dem": 0, "rep": 0}
+            },
+            {
+                "name": "[no_name]",
+                "coordinates": [[2, 5], [2, 4], [1, 4]],
+                "voter_data": {"dem": 0, "rep": 0}
+            }
+        ],
+        "districts": [
+            {
+                "name": "[no_name]",
+                "coordinates": [[2, 5], [2, 4], [1, 4]]
+            },
+            {
+                "name": "[no_name]",
+                "coordinates": [[2, 5], [2, 4], [1, 4]]
+            }
+        ]
+    }
+}

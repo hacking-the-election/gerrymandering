@@ -12,6 +12,14 @@ const String RESET = "\e[0m";
 const String C = ",";
 const String N = "\n";
 const String OQ = "\"" + GREEN;
-const string CQ = RESET + "\"";
-const string CQC = RESET + "\": ";
-const string TAB = "    ";
+const String CQ = RESET + "\"";
+const String CQC = RESET + "\": ";
+const String T = "    ";
+
+String TAB(int num) {
+    string str;
+    for ( int i = 0; i < num; i++ ) {
+        str += T;
+    }
+    return str;
+}
