@@ -6,13 +6,22 @@ State methods for parsing from geodata and
 
 #include "../include/shape.hpp"
 
+vector<vector<string> > parse_tsv(string tsv) {
+    
+}
+
 map<string, vector<int> > parse_voter_data(string voter_data) {
     // from a string in the specified format
     // (see DATA_SPECS.md in the root data directory),
     // creates a map with the key of the precinct
     // name and an array with the data
 
-    map<string, vector<int> > parsed_data;
+    vector<vector<string> > data_list = parse_tsv(voter_data);
+
+    map<string, vector<int> > parsed_data = {
+        {"01-001", {3,3}}
+    };
+
     return parsed_data;
 }
 
@@ -63,13 +72,15 @@ vector<Precinct> merge_data( vector<Shape> precinct_shapes, map<string, vector<i
         // create a precinct obj, add to array
         string p_id = precinct_shape.shape_id;
         vector<int> p_data = {0, 0};
-        try {
-            p_data = voter_data[p_id];
-        }
-        catch (...) {
-            cout << "error: the id in the precinct, \e[41m" << p_id << ", has no matching key in voter_data" << endl;
+
+        if ( voter_data.find(p_id) == voter_data.end() ) {
+            cout << "error: the id in the geodata, \e[41m" << p_id << "\e[0m, has no matching key in voter_data" << endl;
             cout << "the program will continue, but the voter_data for the precinct will be filled with 0,0." << endl;
         } 
+        else {
+            p_data = voter_data[p_id];
+        }
+
 
         Precinct precinct = Precinct(precinct_shape.border, p_data[0], p_data[1]);
         precincts.push_back(precinct);
