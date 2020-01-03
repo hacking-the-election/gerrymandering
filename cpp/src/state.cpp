@@ -7,7 +7,27 @@ State methods for parsing from geodata and
 #include "../include/shape.hpp"
 
 vector<vector<string> > parse_tsv(string tsv) {
-    
+    vector<vector<string> > parsed;
+    stringstream file( tsv ) ;
+    string line;
+    string delimiter = "\t";
+
+    // loop through lines
+    while (getline( file, line ) ) {
+        vector<string> row;
+        // split by tab
+        size_t pos = 0;
+
+        while ((pos = line.find(delimiter)) != string::npos) {
+            row.push_back(line.substr(0, pos));
+            line.erase(0, pos + delimiter.length());
+        }
+
+        row.push_back(line);
+        parsed.push_back(row);
+    }
+
+    return parsed;
 }
 
 map<string, vector<int> > parse_voter_data(string voter_data) {
@@ -16,8 +36,10 @@ map<string, vector<int> > parse_voter_data(string voter_data) {
     // creates a map with the key of the precinct
     // name and an array with the data
 
+    // parse data into 2d array
     vector<vector<string> > data_list = parse_tsv(voter_data);
-
+    
+    // search for ed_precinct col, write into an
     map<string, vector<int> > parsed_data = {
         {"01-001", {3,3}}
     };
@@ -97,6 +119,7 @@ vector<vector<int> > generate_state_border(vector<Precinct> precincts) {
 State State::generate_from_file(string precinct_geoJSON, string voter_data, string district_geoJSON) {
     // parse the coordinates into shape objects
     //! Should probably allocate memory with malloc here
+    //! Will be some outrageously large vectors here
     vector<Shape> precinct_shapes = parse_coordinates(precinct_geoJSON);
     vector<Shape> district_shapes = parse_coordinates(district_geoJSON);
 
