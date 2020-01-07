@@ -56,14 +56,35 @@ Shape::Shape(vector<vector<int> > shape, string id) {
 }
 
 void Shape::draw() {
-    // initialize sdl window
-    SDL_Window* window = create_window();
-    SDL_Delay(1000);
     
-    // convert coordinates into pixel array
+    SDL_Event event;
+    SDL_Window * window = create_window();
+    SDL_Renderer * renderer = SDL_CreateRenderer(window, -1, 0);
+    SDL_Texture * texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, 640, 480);
     
-    // print pixel array to window
+    Uint32 * pixels = new Uint32[640 * 480];
+    memset(pixels, 255, 640 * 480 * sizeof(Uint32));
+    
+    bool quit = false;
 
-    // destroy window
+    while (!quit) {
+        SDL_UpdateTexture(texture, NULL, pixels, 640 * sizeof(Uint32));
+        SDL_WaitEvent(&event);
+        // SDL_Delay(500);
+        switch (event.type) {
+            case SDL_QUIT:
+                quit = true;
+                break;
+        }
+
+        SDL_RenderClear(renderer);
+        SDL_RenderCopy(renderer, texture, NULL, NULL);
+        SDL_RenderPresent(renderer);
+    }
+
+    // cleanup
+    delete[] pixels;
+    SDL_DestroyTexture(texture);
+    SDL_DestroyRenderer(renderer);
     destroy_window(window);
 }

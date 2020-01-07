@@ -1,5 +1,5 @@
 #include "../include/shape.hpp"
-#include "../include/colors.hpp"
+#include "../include/term_disp.hpp"
 
 using namespace std;
 
