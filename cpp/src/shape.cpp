@@ -55,8 +55,33 @@ Shape::Shape(vector<vector<int> > shape, string id) {
     shape_id = id;
 }
 
+vector<vector<int> > normalize_coordinates(Shape* shape) {
+    // loop through
+    int top = shape->border[0][1], 
+        bottom = shape->border[0][1], 
+        left = shape->border[0][0], 
+        right = shape->border[0][0];
+
+    for (vector<int> coord : shape->border) {
+        top = (coord[1] > top)? coord[1] : top;
+        bottom = (coord[1] < bottom)? coord[1] : bottom;
+        left = (coord[0] < left)? coord[0] : left;
+        right = (coord[0] > right)? coord[0] : right;
+    }
+
+    // for (int i = 0; i < shape->border.size(); i++) {
+    //     shape->border[i][0] -= 
+    // }
+
+    cout << "top " << top << ", bottom " << bottom << ", left " << left << ", right " << right << endl;
+    vector<vector<int> > coords;
+    return coords;
+}
+
 void Shape::draw() {
     
+    normalize_coordinates(this);
+
     SDL_Event event;
     SDL_Window * window = create_window();
     SDL_Renderer * renderer = SDL_CreateRenderer(window, -1, 0);

@@ -13,7 +13,7 @@ void assert_equal(string context, float n1, float n2) {
 
 int main(int argc, char* argv[]) {
 
-    Shape shape({ {0, 0}, {0,1}, {1,0} });
+    Shape shape({ {40, 40}, {10,20}, {50,10}, {60, 30} });
 
     shape.draw();
 
