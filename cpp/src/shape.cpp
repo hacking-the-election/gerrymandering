@@ -1,5 +1,6 @@
 #include "../include/shape.hpp"
 #include "../include/gui.hpp"
+#include <math.h>
 
 // functions for modifying shapes
 
@@ -76,9 +77,9 @@ vector<float> normalize_coordinates(Shape* shape) {
 
     // normalize the bounding box, too
     top += (0 - bottom);
+    right += (0 - left);
     bottom = 0;
     left = 0;
-    right += (0 - left);
 
     // cout << "top " << top << ", bottom " << bottom << ", left " << left << ", right " << right << endl;
     vector<float> m = {top, bottom, left, right};
@@ -86,18 +87,9 @@ vector<float> normalize_coordinates(Shape* shape) {
 }
 
 vector<vector<float> > resize_coordinates(vector<float> bounding_box, vector<vector<float> > shape, int screenX, int screenY) {
-    float ratioTop = (float) bounding_box[0] / (float) (screenX - 1);
-    float ratioRight = (float) bounding_box[3] / (float) (screenY - 1);
-    float scaleFactor;
-
-    // if ( ratioTop > 1 || ratioRight > 1 ) {
-    //     // make it smaller
-    //     scaleFactor = 1 / ((ratioTop > ratioRight) ? ratioTop : ratioRight);
-    // }
-    // else {
-    //     // make it larger
-        scaleFactor = 1 / ((ratioTop > ratioRight) ? ratioTop : ratioRight); 
-    // }
+    float ratioTop = ceil((float) bounding_box[0]) / (float) (screenX);
+    float ratioRight = ceil((float) bounding_box[3]) / (float) (screenY);
+    float scaleFactor = floor(1 / ((ratioTop > ratioRight) ? ratioTop : ratioRight)); 
 
     // find out which axis need to be made smaller,
     // find out which one needs to be smallest
@@ -105,9 +97,6 @@ vector<vector<float> > resize_coordinates(vector<float> bounding_box, vector<vec
     for (int i = 0; i < bounding_box.size(); i++) {
         bounding_box[i] *= scaleFactor;
     }
-
-    cout << "bounding box: " << bounding_box[0] << ", " << bounding_box[1] << ", "
-         << bounding_box[2] << ", " << bounding_box[3] << endl;
 
     for ( int i = 0; i < shape.size(); i++ ) {
         shape[i][0] *= scaleFactor;
@@ -120,20 +109,27 @@ vector<vector<float> > resize_coordinates(vector<float> bounding_box, vector<vec
 Uint32* pix_array(vector<vector<float> > shape, int x, int y) {
     Uint32 * pixels = new Uint32[x * y];
     memset(pixels, 255, x * y * sizeof(Uint32));
+    
+    int total = (x * y) - 1;
 
     for (vector<float> coords : shape) {
-        pixels[(int)(coords[0] * x + coords[1])] = 0;
+        // cout << "drawing " << coords[0] << ", " << coords[1]  << " at " << coords[0] * x + coords[1] << endl;
+        int start = (int)(coords[1] * x - coords[0]);
+        pixels[total - start] = 0;
     }
 
     return pixels;
 }
 
 void Shape::draw() {
-    int dim[2] = {500, 500};
+    int dim[2] = {800, 500};
 
     // prepare coordinates for pixel array
     vector<float> bounding_box = normalize_coordinates(this);
     vector<vector<float> > shape = resize_coordinates(bounding_box, this->border, dim[0], dim[1]);
+    for (vector<float> coord : shape) {
+        cout << "[" << coord[0] << ", " << coord[1] << "], ";
+    }
     // write coordinates to pixel array
     Uint32 * pixels = pix_array(shape, dim[0], dim[1]);
 
