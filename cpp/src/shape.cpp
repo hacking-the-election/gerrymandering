@@ -4,13 +4,13 @@
 // functions for modifying shapes
 
 Shape expand_border(Shape shape) {
-    vector<vector<int> > expanded;
+    vector<vector<float> > expanded;
     Shape expanded_shape = Shape(expanded);
     return expanded_shape;
 }
 
 vector<double> center(Shape shape) {
-    vector<double> coords = { (float) shape.border[0][0], (float) shape.border[0][1] };
+    vector<double> coords = { shape.border[0][0], shape.border[0][1] };
     
     for ( int i = 1; i < shape.border.size(); i++ ) {
         coords[0] += shape.border[i][0];
@@ -45,55 +45,109 @@ vector<int> Precinct::voter_data() {
     return {dem, rep};
 }
 
-Shape::Shape(vector<vector<int> > shape) {
+Shape::Shape(vector<vector<float> > shape) {
     border = shape;
 }
 
 // overload constructor for adding id
-Shape::Shape(vector<vector<int> > shape, string id) {
+Shape::Shape(vector<vector<float> > shape, string id) {
     border = shape;
     shape_id = id;
 }
 
-vector<vector<int> > normalize_coordinates(Shape* shape) {
+vector<float> normalize_coordinates(Shape* shape) {
     // loop through
-    int top = shape->border[0][1], 
+    float top = shape->border[0][1], 
         bottom = shape->border[0][1], 
         left = shape->border[0][0], 
         right = shape->border[0][0];
 
-    for (vector<int> coord : shape->border) {
+    for (vector<float> coord : shape->border) {
         top = (coord[1] > top)? coord[1] : top;
         bottom = (coord[1] < bottom)? coord[1] : bottom;
         left = (coord[0] < left)? coord[0] : left;
         right = (coord[0] > right)? coord[0] : right;
     }
 
-    // for (int i = 0; i < shape->border.size(); i++) {
-    //     shape->border[i][0] -= 
+    for (float i = 0; i < shape->border.size(); i++) {
+        shape->border[i][0] += (0 - left);
+        shape->border[i][1] += (0 - bottom);
+    }
+
+    // normalize the bounding box, too
+    top += (0 - bottom);
+    bottom = 0;
+    left = 0;
+    right += (0 - left);
+
+    // cout << "top " << top << ", bottom " << bottom << ", left " << left << ", right " << right << endl;
+    vector<float> m = {top, bottom, left, right};
+    return m;
+}
+
+vector<vector<float> > resize_coordinates(vector<float> bounding_box, vector<vector<float> > shape, int screenX, int screenY) {
+    float ratioTop = (float) bounding_box[0] / (float) (screenX - 1);
+    float ratioRight = (float) bounding_box[3] / (float) (screenY - 1);
+    float scaleFactor;
+
+    // if ( ratioTop > 1 || ratioRight > 1 ) {
+    //     // make it smaller
+    //     scaleFactor = 1 / ((ratioTop > ratioRight) ? ratioTop : ratioRight);
+    // }
+    // else {
+    //     // make it larger
+        scaleFactor = 1 / ((ratioTop > ratioRight) ? ratioTop : ratioRight); 
     // }
 
-    cout << "top " << top << ", bottom " << bottom << ", left " << left << ", right " << right << endl;
-    vector<vector<int> > coords;
-    return coords;
+    // find out which axis need to be made smaller,
+    // find out which one needs to be smallest
+    
+    for (int i = 0; i < bounding_box.size(); i++) {
+        bounding_box[i] *= scaleFactor;
+    }
+
+    cout << "bounding box: " << bounding_box[0] << ", " << bounding_box[1] << ", "
+         << bounding_box[2] << ", " << bounding_box[3] << endl;
+
+    for ( int i = 0; i < shape.size(); i++ ) {
+        shape[i][0] *= scaleFactor;
+        shape[i][1] *= scaleFactor;        
+    }
+
+    return shape;
+}
+
+Uint32* pix_array(vector<vector<float> > shape, int x, int y) {
+    Uint32 * pixels = new Uint32[x * y];
+    memset(pixels, 255, x * y * sizeof(Uint32));
+
+    for (vector<float> coords : shape) {
+        pixels[(int)(coords[0] * x + coords[1])] = 0;
+    }
+
+    return pixels;
 }
 
 void Shape::draw() {
-    
-    normalize_coordinates(this);
+    int dim[2] = {500, 500};
 
+    // prepare coordinates for pixel array
+    vector<float> bounding_box = normalize_coordinates(this);
+    vector<vector<float> > shape = resize_coordinates(bounding_box, this->border, dim[0], dim[1]);
+    // write coordinates to pixel array
+    Uint32 * pixels = pix_array(shape, dim[0], dim[1]);
+
+    // initialize window
     SDL_Event event;
-    SDL_Window * window = create_window();
+    SDL_Window * window = SDL_CreateWindow("Shape",
+    SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, dim[0], dim[1], 0);
     SDL_Renderer * renderer = SDL_CreateRenderer(window, -1, 0);
-    SDL_Texture * texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, 640, 480);
-    
-    Uint32 * pixels = new Uint32[640 * 480];
-    memset(pixels, 255, 640 * 480 * sizeof(Uint32));
-    
+    SDL_Texture * texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, dim[0], dim[1]);
+
     bool quit = false;
 
     while (!quit) {
-        SDL_UpdateTexture(texture, NULL, pixels, 640 * sizeof(Uint32));
+        SDL_UpdateTexture(texture, NULL, pixels, dim[0] * sizeof(Uint32));
         SDL_WaitEvent(&event);
         // SDL_Delay(500);
         switch (event.type) {
@@ -101,7 +155,6 @@ void Shape::draw() {
                 quit = true;
                 break;
         }
-
         SDL_RenderClear(renderer);
         SDL_RenderCopy(renderer, texture, NULL, NULL);
         SDL_RenderPresent(renderer);
@@ -112,4 +165,60 @@ void Shape::draw() {
     SDL_DestroyTexture(texture);
     SDL_DestroyRenderer(renderer);
     destroy_window(window);
+
+
+    // bool leftMouseButtonDown = false;
+    // bool quit = false;
+    // SDL_Event event;
+
+    // SDL_Init(SDL_INIT_VIDEO);
+
+    // SDL_Window * window = SDL_CreateWindow("Shape",
+    //     SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, dim[0], dim[1], 0);
+
+    // SDL_Renderer * renderer = SDL_CreateRenderer(window, -1, 0);
+    // SDL_Texture * texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, dim[0], dim[1]);
+    // Uint32 * pixels = new Uint32[640 * 480];
+
+    // memset(pixels, 255, 640 * 480 * sizeof(Uint32));
+
+    // while (!quit)
+    // {
+    //     SDL_UpdateTexture(texture, NULL, pixels, 640 * sizeof(Uint32));
+    //     SDL_WaitEvent(&event);
+
+    //     switch (event.type)
+    //     {
+    //     case SDL_MOUSEBUTTONUP:
+    //         if (event.button.button == SDL_BUTTON_LEFT)
+    //             leftMouseButtonDown = false;
+    //         break;
+    //     case SDL_MOUSEBUTTONDOWN:
+    //         if (event.button.button == SDL_BUTTON_LEFT)
+    //             leftMouseButtonDown = true;
+    //     case SDL_MOUSEMOTION:
+    //         if (leftMouseButtonDown)
+    //         {
+    //             int mouseX = event.motion.x;
+    //             int mouseY = event.motion.y;
+    //             pixels[mouseY * 640 + mouseX] = 0;
+    //         }
+    //         break;
+    //     case SDL_QUIT:
+    //         quit = true;
+    //         break;
+    //     }
+
+    //     SDL_RenderClear(renderer);
+    //     SDL_RenderCopy(renderer, texture, NULL, NULL);
+    //     SDL_RenderPresent(renderer);
+    // }
+
+    // delete[] pixels;
+    // SDL_DestroyTexture(texture);
+    // SDL_DestroyRenderer(renderer);
+    // SDL_DestroyWindow(window);
+    // SDL_Quit();
+
+    // // return 0;
 }

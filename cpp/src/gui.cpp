@@ -3,7 +3,7 @@
 
 #include "../include/gui.hpp"
 
-SDL_Window* create_window() {
+SDL_Window* create_window(int x, int y) {
 
     SDL_Window* window = NULL;
     SDL_Surface* screenSurface = NULL;
@@ -13,7 +13,7 @@ SDL_Window* create_window() {
     }
     else {
         //Create window
-        window = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, SCREEN_PIXEL_WIDTH, SCREEN_PIXEL_HEIGHT, SDL_WINDOW_SHOWN );
+        window = SDL_CreateWindow( "SDL Tutorial", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, x, y, SDL_WINDOW_SHOWN );
     
         if (window == NULL) {
             cout << "Window could not be created! SDL_Error: " << SDL_GetError() << endl;
