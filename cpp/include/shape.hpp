@@ -20,10 +20,10 @@ const string no_name = "\e[31m[no_name]\e[0m";
 class Shape {
     public: 
         // overload constructor for adding id
-        Shape(vector<vector<int> > shape);
-        Shape(vector<vector<int> > shape, string id);
+        Shape(vector<vector<float> > shape);
+        Shape(vector<vector<float> > shape, string id);
 
-        vector<vector<int> > border;
+        vector<vector<float> > border;
         string shape_id;
 
         void draw();
@@ -36,7 +36,7 @@ Shape expand_border(Shape shape);
 class Precinct : public Shape {
     
     public: 
-        Precinct(vector<vector<int> > shape, int demV, int repV) : Shape(shape) {
+        Precinct(vector<vector<float> > shape, int demV, int repV) : Shape(shape) {
             dem = demV;
             rep = repV;
         }
@@ -50,7 +50,7 @@ class Precinct : public Shape {
 };
 
 class District : public Shape {
-    public: District(vector<vector<int> > shape) : Shape(shape) {};
+    public: District(vector<vector<float> > shape) : Shape(shape) {};
 
     int id;
 
@@ -60,7 +60,7 @@ class District : public Shape {
 
 class State : Shape {
     
-    public: State(vector<District> districts, vector<Precinct> precincts, vector<vector<int> > shape) : Shape(shape) {
+    public: State(vector<District> districts, vector<Precinct> precincts, vector<vector<float> > shape) : Shape(shape) {
         state_districts = districts;
         state_precincts = precincts;
     };

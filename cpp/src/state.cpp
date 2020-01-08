@@ -73,7 +73,7 @@ vector<Shape> parse_coordinates(string geoJSON) {
             coords = shapes[i].at("geometry").at("coordinates").dump(4);
 
         // replace following with parsed coords variable
-        vector<vector<int> > border = {{2,5}, {2,4}, {1,4}};
+        vector<vector<float> > border = {{2,5}, {2,4}, {1,4}};
         
         // create shape from border, add to array
         Shape shape(border, id);
@@ -111,7 +111,7 @@ vector<Precinct> merge_data( vector<Shape> precinct_shapes, map<string, vector<i
     return precincts;
 }
 
-vector<vector<int> > generate_state_border(vector<Precinct> precincts) {
+vector<vector<float> > generate_state_border(vector<Precinct> precincts) {
     // given an array of precincts, return the border of the state
     return {{0,0}};
 }
@@ -135,7 +135,7 @@ State State::generate_from_file(string precinct_geoJSON, string voter_data, stri
     vector<Precinct> precincts = merge_data(precinct_shapes, precinct_voter_data);
 
     // a dummy state shape
-    vector<vector<int> > state_shape = generate_state_border(precincts);
+    vector<vector<float> > state_shape = generate_state_border(precincts);
 
     // generate state data from files
     State state = State(districts, precincts, state_shape);
