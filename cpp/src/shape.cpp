@@ -122,7 +122,7 @@ Uint32* pix_array(vector<vector<float> > shape, int x, int y) {
 }
 
 void Shape::draw() {
-    int dim[2] = {800, 500};
+    int dim[2] = {900, 900};
 
     // prepare coordinates for pixel array
     vector<float> bounding_box = normalize_coordinates(this);
