@@ -121,15 +121,90 @@ Uint32* pix_array(vector<vector<float> > shape, int x, int y) {
     return pixels;
 }
 
+vector<vector<float> > connect_dots(vector<vector<float> > shape) {
+    vector<vector<float> > newShape;
+
+    for (int i = 0; i < shape.size() - 1; i++) {
+        int p1x = (int) shape[i][0];
+        int p1y = (int) shape[i][1];
+        int p2x = (int) shape[i + 1][0];
+        int p2y = (int) shape[i + 1][1];
+        // need to go over p2x - p1x, and up p2y - p1y
+        int over = p2x - p1x;
+        int up = p2y - p1y;
+
+        // if ( up == 0 )
+        //     up = 1;
+        // if (over == 0)
+        //     over = 1;
+        cout << "\n\n";
+        // cout << over << ", " << up << endl;
+        cout << "Got here: {" << p1x << ", " << p1y << "}, {" << p2x << ", " << p2y << "}" << endl;
+        newShape.push_back({(float)p1x, (float)p1y});
+
+        if (abs(over) >= abs(up)) {
+            // how many times we need to go over
+            int mult;
+
+            if (over == 0 || up == 0)
+                mult = 1;
+            else
+                mult = ceil(over / up);
+        
+            int p3x = p1x, p3y = p1x;
+            
+            for ( int x = 0; x < up; x++) {
+                for ( int y = 0; y < mult; y++) {
+                    p3x++;
+                    newShape.push_back({(float) p3x, (float) p3y});
+                }
+                // go up once
+                if ( up > 0) 
+                    p3y++;
+                else if (up < 0)
+                    p3y--;
+
+                // cout << "currently on " << p3x << ", " << p3y << endl;
+                // cout << "aiming for " << p2x << ", " << p2y << endl;
+            }
+        }
+        // else {
+        //     // how many times we need to go over 
+        //     int mult = 1;
+
+        //     try {
+        //         mult = ceil(up / over);
+        //     }
+        //     catch (...) {}
+        //     cout << "y" << endl;
+
+        //     int p3x = p1x, p3y = p1x;
+            
+        //     while ( p3x != p2x && p3y != p2y) {
+        //         // go up mult times, each time go up ${up} pixels, and over 1px
+        //         for ( int x = 0; x < mult; x++) {
+        //             for ( int y = 0; y < up; y++) {
+        //                 p3y++;
+        //                 newShape.push_back({(float) p3x, (float) p3y});
+        //             }
+        //             p3x++;
+        //         }
+        //     }
+        // }
+
+        newShape.push_back({(float)p2x, (float)p2y});
+    }
+
+    return newShape;
+}
+
 void Shape::draw() {
     int dim[2] = {900, 900};
 
     // prepare coordinates for pixel array
     vector<float> bounding_box = normalize_coordinates(this);
     vector<vector<float> > shape = resize_coordinates(bounding_box, this->border, dim[0], dim[1]);
-    for (vector<float> coord : shape) {
-        cout << "[" << coord[0] << ", " << coord[1] << "], ";
-    }
+    shape = connect_dots(shape);
     // write coordinates to pixel array
     Uint32 * pixels = pix_array(shape, dim[0], dim[1]);
 
@@ -162,59 +237,4 @@ void Shape::draw() {
     SDL_DestroyRenderer(renderer);
     destroy_window(window);
 
-
-    // bool leftMouseButtonDown = false;
-    // bool quit = false;
-    // SDL_Event event;
-
-    // SDL_Init(SDL_INIT_VIDEO);
-
-    // SDL_Window * window = SDL_CreateWindow("Shape",
-    //     SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, dim[0], dim[1], 0);
-
-    // SDL_Renderer * renderer = SDL_CreateRenderer(window, -1, 0);
-    // SDL_Texture * texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, dim[0], dim[1]);
-    // Uint32 * pixels = new Uint32[640 * 480];
-
-    // memset(pixels, 255, 640 * 480 * sizeof(Uint32));
-
-    // while (!quit)
-    // {
-    //     SDL_UpdateTexture(texture, NULL, pixels, 640 * sizeof(Uint32));
-    //     SDL_WaitEvent(&event);
-
-    //     switch (event.type)
-    //     {
-    //     case SDL_MOUSEBUTTONUP:
-    //         if (event.button.button == SDL_BUTTON_LEFT)
-    //             leftMouseButtonDown = false;
-    //         break;
-    //     case SDL_MOUSEBUTTONDOWN:
-    //         if (event.button.button == SDL_BUTTON_LEFT)
-    //             leftMouseButtonDown = true;
-    //     case SDL_MOUSEMOTION:
-    //         if (leftMouseButtonDown)
-    //         {
-    //             int mouseX = event.motion.x;
-    //             int mouseY = event.motion.y;
-    //             pixels[mouseY * 640 + mouseX] = 0;
-    //         }
-    //         break;
-    //     case SDL_QUIT:
-    //         quit = true;
-    //         break;
-    //     }
-
-    //     SDL_RenderClear(renderer);
-    //     SDL_RenderCopy(renderer, texture, NULL, NULL);
-    //     SDL_RenderPresent(renderer);
-    // }
-
-    // delete[] pixels;
-    // SDL_DestroyTexture(texture);
-    // SDL_DestroyRenderer(renderer);
-    // SDL_DestroyWindow(window);
-    // SDL_Quit();
-
-    // // return 0;
 }
