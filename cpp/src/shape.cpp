@@ -132,7 +132,6 @@ vector<vector<float> > connect_dots(vector<vector<float> > shape) {
         // need to go over p2x - p1x, and up p2y - p1y
         int over = p2x - p1x;
         int up = p2y - p1y;
-
         // if ( up == 0 )
         //     up = 1;
         // if (over == 0)
@@ -140,22 +139,32 @@ vector<vector<float> > connect_dots(vector<vector<float> > shape) {
         cout << "\n\n";
         // cout << over << ", " << up << endl;
         cout << "Got here: {" << p1x << ", " << p1y << "}, {" << p2x << ", " << p2y << "}" << endl;
+        cout << "over " << over << ", up " << up << endl;
         newShape.push_back({(float)p1x, (float)p1y});
 
         if (abs(over) >= abs(up)) {
+            cout << "Doing this one" << endl;
             // how many times we need to go over
             int mult;
-
+            if (up == 0)
+                up = 1;
             if (over == 0 || up == 0)
                 mult = 1;
             else
-                mult = ceil(over / up);
+                mult = ceil(abs(over / up));
         
-            int p3x = p1x, p3y = p1x;
-            
-            for ( int x = 0; x < up; x++) {
+            int p3x = p1x, p3y = p1y;
+            cout << abs(up) << endl;
+            cout << mult << endl;
+
+            for ( int x = 0; x < abs(up); x++) {
                 for ( int y = 0; y < mult; y++) {
-                    p3x++;
+                    
+                    if (over > 0)
+                        p3x++;
+                    else if (over < 0)
+                        p3x--;
+
                     newShape.push_back({(float) p3x, (float) p3y});
                 }
                 // go up once
@@ -164,33 +173,38 @@ vector<vector<float> > connect_dots(vector<vector<float> > shape) {
                 else if (up < 0)
                     p3y--;
 
-                // cout << "currently on " << p3x << ", " << p3y << endl;
-                // cout << "aiming for " << p2x << ", " << p2y << endl;
             }
         }
-        // else {
-        //     // how many times we need to go over 
-        //     int mult = 1;
+        else {
+            // how many times we need to go over
+            int mult;
+            if (over == 0)
+                over = 1;
+            if (over == 0 || up == 0)
+                mult = 1;
+            else
+                mult = ceil(abs(up / over));
+        
+            int p3x = p1x, p3y = p1y;
 
-        //     try {
-        //         mult = ceil(up / over);
-        //     }
-        //     catch (...) {}
-        //     cout << "y" << endl;
+            for ( int x = 0; x < abs(over); x++) {
+                for ( int y = 0; y < mult; y++) {
+                    
+                    if (up > 0)
+                        p3y++;
+                    else if (up < 0)
+                        p3y--;
 
-        //     int p3x = p1x, p3y = p1x;
-            
-        //     while ( p3x != p2x && p3y != p2y) {
-        //         // go up mult times, each time go up ${up} pixels, and over 1px
-        //         for ( int x = 0; x < mult; x++) {
-        //             for ( int y = 0; y < up; y++) {
-        //                 p3y++;
-        //                 newShape.push_back({(float) p3x, (float) p3y});
-        //             }
-        //             p3x++;
-        //         }
-        //     }
-        // }
+                    newShape.push_back({(float) p3x, (float) p3y});
+                }
+                // go up once
+                if ( over > 0) 
+                    p3x++;
+                else if (over < 0)
+                    p3x--;
+
+            }
+        }
 
         newShape.push_back({(float)p2x, (float)p2y});
     }
