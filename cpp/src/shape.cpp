@@ -124,11 +124,20 @@ Uint32* pix_array(vector<vector<float> > shape, int x, int y) {
 vector<vector<float> > connect_dots(vector<vector<float> > shape) {
     vector<vector<float> > newShape;
 
-    for (int i = 0; i < shape.size() - 1; i++) {
+    for (int i = 0; i < shape.size(); i++) {
         int p1x = (int) shape[i][0];
         int p1y = (int) shape[i][1];
-        int p2x = (int) shape[i + 1][0];
-        int p2y = (int) shape[i + 1][1];
+        int p2x, p2y;
+
+        if ( i != shape.size() - 1) {
+            p2x = (int) shape[i + 1][0];
+            p2y = (int) shape[i + 1][1];
+        }
+        else {
+            p2x = (int) shape[0][0];
+            p2y = (int) shape[0][1];
+        }
+
         // need to go over p2x - p1x, and up p2y - p1y
         int over = p2x - p1x;
         int up = p2y - p1y;
@@ -141,9 +150,9 @@ vector<vector<float> > connect_dots(vector<vector<float> > shape) {
         cout << "Got here: {" << p1x << ", " << p1y << "}, {" << p2x << ", " << p2y << "}" << endl;
         cout << "over " << over << ", up " << up << endl;
         newShape.push_back({(float)p1x, (float)p1y});
+        int p3x = p1x, p3y = p1y;
 
         if (abs(over) >= abs(up)) {
-            cout << "Doing this one" << endl;
             // how many times we need to go over
             int mult;
             if (up == 0)
@@ -153,10 +162,6 @@ vector<vector<float> > connect_dots(vector<vector<float> > shape) {
             else
                 mult = ceil(abs(over / up));
         
-            int p3x = p1x, p3y = p1y;
-            cout << abs(up) << endl;
-            cout << mult << endl;
-
             for ( int x = 0; x < abs(up); x++) {
                 for ( int y = 0; y < mult; y++) {
                     
@@ -178,6 +183,7 @@ vector<vector<float> > connect_dots(vector<vector<float> > shape) {
         else {
             // how many times we need to go over
             int mult;
+
             if (over == 0)
                 over = 1;
             if (over == 0 || up == 0)
@@ -185,23 +191,24 @@ vector<vector<float> > connect_dots(vector<vector<float> > shape) {
             else
                 mult = ceil(abs(up / over));
         
-            int p3x = p1x, p3y = p1y;
+            cout << "Starting point: " << p3x << ", " << p3y;
 
             for ( int x = 0; x < abs(over); x++) {
-                for ( int y = 0; y < mult; y++) {
-                    
-                    if (up > 0)
-                        p3y++;
-                    else if (up < 0)
-                        p3y--;
-
-                    newShape.push_back({(float) p3x, (float) p3y});
-                }
                 // go up once
                 if ( over > 0) 
                     p3x++;
                 else if (over < 0)
                     p3x--;
+
+                for ( int y = 0; y < mult; y++) {
+                    if (up > 0)
+                        p3y++;
+                    else if (up < 0)
+                        p3y--;
+                    cout << "at " << p3x << ", " << p3y << endl;
+                    newShape.push_back({(float) p3x, (float) p3y});
+                }
+                
 
             }
         }
