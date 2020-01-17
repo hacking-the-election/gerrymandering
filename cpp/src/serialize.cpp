@@ -31,7 +31,7 @@ string State::to_json() {
 
         // print coordinates of precinct
         str += TAB(4) + OQ + "coordinates" + CQC + "[";
-        for (vector<int> coordset: precinct.border) {
+        for (vector<float> coordset: precinct.border) {
             str += "[" + RED + to_string(coordset[0]) + RESET + ", " 
                 + RED + to_string(coordset[1]) + RESET + "], ";
         }
