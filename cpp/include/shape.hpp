@@ -9,6 +9,10 @@
 #include "../lib/rapidjson/include/rapidjson/writer.h"
 #include "../lib/rapidjson/include/rapidjson/stringbuffer.h"
 
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/serialization/vector.hpp>
+
 using namespace std;
 // using json = nlohmann::json;
 using namespace rapidjson;
@@ -24,6 +28,7 @@ const string no_name = "no_name";
 class Shape {
     public: 
         // overload constructor for adding id
+        Shape(){};
         Shape(vector<vector<float> > shape);
         Shape(vector<vector<float> > shape, string id);
 
@@ -31,6 +36,13 @@ class Shape {
         string shape_id;
 
         void draw();
+
+        friend class boost::serialization::access;
+
+        template<class Archive> void serialize(Archive & ar, const unsigned int version) {
+            ar & shape_id;
+            ar & border;
+        }
 };
 
 double area(Shape shape);
@@ -39,7 +51,9 @@ Shape expand_border(Shape shape);
 
 class Precinct : public Shape {
     
-    public: 
+    public:
+        Precinct(){};
+
         Precinct(vector<vector<float> > shape, int demV, int repV) : Shape(shape) {
             dem = demV;
             rep = repV;
@@ -52,12 +66,29 @@ class Precinct : public Shape {
         double get_ratio();
         vector<int> voter_data();
     
+        friend class boost::serialization::access;
+
+        template<class Archive> void serialize(Archive & ar, const unsigned int version) {
+            ar & shape_id;
+            ar & border;
+            ar & dem;            
+            ar & rep;            
+        }
+        
     private:
         int dem;
         int rep;
 };
 
 class District : public Shape {
+    friend class boost::serialization::access;
+
+    template<class Archive> void serialize(Archive & ar, const unsigned int version) {
+        ar & id;
+        ar & border;
+    }
+
+    public: District(){};
     public: District(vector<vector<float> > shape) : Shape(shape) {};
 
     int id;
@@ -66,8 +97,17 @@ class District : public Shape {
     double percent_of_precinct_in_district(Precinct precint);
 };
 
-class State : Shape {
-    
+class State : public Shape {
+    friend class boost::serialization::access;
+
+    template<class Archive> void serialize(Archive & ar, const unsigned int version) {
+        ar & state_districts;
+        ar & state_precincts;
+        ar & name;
+        ar & border;
+    }
+
+    public: State(){};
     public: State(vector<District> districts, vector<Precinct> precincts, vector<vector<float> > shape) : Shape(shape) {
         state_districts = districts;
         state_precincts = precincts;
@@ -81,7 +121,5 @@ class State : Shape {
     public:
         static State generate_from_file(string precinct_geoJSON, string voter_data, string district_geoJSON);
         void write_txt();
-        void serialize_obj(string write_path);
-        void read_serialized_obj(string read_path);
         string to_json();
 };
