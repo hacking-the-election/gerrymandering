@@ -121,5 +121,27 @@ class State : public Shape {
     public:
         static State generate_from_file(string precinct_geoJSON, string voter_data, string district_geoJSON);
         void write_txt();
+
+        void serialize(string write_path) {
+            std::ofstream ofs(write_path);
+            
+            {
+                boost::archive::text_oarchive oa(ofs);
+                oa << this;
+            }
+        }
+
+        static State deserialize(string read_path) {
+            State state;
+
+            {
+                std::ifstream ifs(read_path);
+                boost::archive::text_iarchive ia(ifs);
+                ia >> state;
+            }
+
+            return state;
+        }
+
         string to_json();
 };
