@@ -55,50 +55,37 @@ map<string, vector<int> > parse_voter_data(string voter_data) {
 
         if (par == "dv" || par == "rv") {
             string end = "dv";
-
             if (par == "dv")
-                    end = "rv";
+                end = "rv";
+
+            party.pop_back();
+
             // get the general column name
-            vector<string>::iterator old_data = find(watchlist.begin(), watchlist.end(), join(party, "") + end);
+            vector<string>::iterator old_data = find(watchlist.begin(), watchlist.end(), join(party, "_") + "_" + end);
             // if it's already in the watchlist, it's useable data
             if ( old_data != watchlist.end()) {
-                cout << "True" << endl;
-                party.pop_back();
-
                 // find old data already in watchlist, pair it with new data
 
-                if (par == "dv") {
+                if (par == "dv") 
                     // since the one we've found is right,
                     // ådd the one we're at right now
-                    cout << "d data at " << index << endl;
                     d_index.push_back(index);
-                }
-                else {
-                    cout << "r data at " << index << endl;
+                else 
                     r_index.push_back(index);
-                }
-
 
                 int index2 = distance(
                                 data_list[0].begin(), 
-                                find(data_list[0].begin(), data_list[0].end(), join(party, "_") + end)
+                                find(data_list[0].begin(), data_list[0].end(), join(party, "_") + "_" + end)
                             );
 
-                if (par == "dv") {
-                    cout << "r data at " << index2 << endl;
-
+                if (par == "dv") 
                     r_index.push_back(index2);
-                }
-                else {
-                    cout << "d data at " << index2 << endl;
-
+                else 
                     d_index.push_back(index2);
-                }
             }
             else {
                 // otherwise, add it to the watchlist
-                cout << "Adding " << join(party,"_") << endl;
-                watchlist.push_back(join(party, "_"));
+                watchlist.push_back(join(party, "_") + "_" + par);
             }
         }
         index++;
@@ -112,16 +99,16 @@ map<string, vector<int> > parse_voter_data(string voter_data) {
         // for each precinct
         // get the precinct id
         string id = data_list[x][ed_precinct];
-        cout << "id: " << id << endl;
+
+        if (id.substr(0, 1) == "\"")
+            id = id.substr(1, id.size() - 2);
 
         int demT, repT;
 
         // get the right voter columns, add to party total
         for (int i = 0; i < d_index.size(); i++) {
-            cout << "adding dem vote: " << data_list[x][d_index[i]] << endl;
-            cout << "adding rep vote: " << data_list[x][r_index[i]] << endl;
-            // demT += stoi(data_list[x][d_index[i]]);
-            // repT += stoi(data_list[x][r_index[i]]);
+            demT += stoi(data_list[x][d_index[i]]);
+            repT += stoi(data_list[x][r_index[i]]);
         }
 
         parsed_data[id] = {demT, repT};
