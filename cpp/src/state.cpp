@@ -8,6 +8,8 @@ State methods for parsing from geodata and
 #include "../include/util.hpp"
 #include <algorithm>
 
+#define VERBOSE 1
+
 vector<vector<string> > parse_tsv(string tsv) {
     vector<vector<string> > parsed;
     stringstream file( tsv ) ;
@@ -47,7 +49,7 @@ map<string, vector<int> > parse_voter_data(string voter_data) {
     int index = 0;
     // search for usable data cols
     for (string item : data_list[0]) {
-        if (item == "ed_precinct")
+        if (item == "vtdst10")
             ed_precinct = index;
         // split header by underscore
         vector<string> party = split(item, "_");
@@ -103,7 +105,7 @@ map<string, vector<int> > parse_voter_data(string voter_data) {
         if (id.substr(0, 1) == "\"")
             id = id.substr(1, id.size() - 2);
 
-        int demT, repT;
+        int demT = 0, repT = 0;
 
         // get the right voter columns, add to party total
         for (int i = 0; i < d_index.size(); i++) {
@@ -138,20 +140,16 @@ vector<Shape> parse_coordinates(string geoJSON) {
     // parses a geoJSON state into an array of shapes
     Document shapes;
     shapes.Parse(geoJSON.c_str());
-    // StringBuffer buffer;
-    // buffer.Clear();
-    // Writer<rapidjson::StringBuffer> writer(buffer);
-    // shapes["features"].Accept(writer);
-    // cout << buffer.GetString() << endl;
-    
-    vector<Shape> shapes_vector;  // vector of shapes to be returned
-    // json shapes = json::parse(geoJSON).at("features"); // parse geoJSON string
+
+    // vector fo shapes to be returned
+    vector<Shape> shapes_vector;
 
     for ( int i = 0; i < shapes["features"].Size(); i++ ) {
         string coords;
         string id = "";
         // see if the geoJSON contains the shape id
-        try { 
+
+        try {
             id = shapes["features"][i]["properties"]["VTDST10"].GetString();
         } 
         catch (...) {
@@ -216,7 +214,10 @@ State State::generate_from_file(string precinct_geoJSON, string voter_data, stri
     // parse the coordinates into shape objects
     //! Should probably allocate memory with malloc here
     //! Will be some outrageously large vectors here
+    if (VERBOSE) cout << "generating coordinate array from precinct file..." << endl;
     vector<Shape> precinct_shapes = parse_coordinates(precinct_geoJSON);
+
+    if (VERBOSE) cout << "generating coordinate array from district file..." << endl;
     vector<Shape> district_shapes = parse_coordinates(district_geoJSON);
 
     vector<District> districts;
@@ -227,13 +228,17 @@ State State::generate_from_file(string precinct_geoJSON, string voter_data, stri
     }
 
     // create a vector of precinct objects from border and voter data
+    if (VERBOSE) cout << "parsing voter data from tsv..." << endl;
     map<string, vector<int> > precinct_voter_data = parse_voter_data(voter_data);
+
+    if (VERBOSE) cout << "merging parsed geodata with parsed voter data into precinct array..." << endl;
     vector<Precinct> precincts = merge_data(precinct_shapes, precinct_voter_data);
 
     // a dummy state shape
     vector<vector<float> > state_shape = generate_state_border(precincts);
 
     // generate state data from files
+    if (VERBOSE) cout << "generating state with shape arrays..." << endl;
     State state = State(districts, precincts, state_shape);
     return state;
 }
