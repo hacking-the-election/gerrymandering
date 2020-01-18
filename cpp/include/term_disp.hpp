@@ -11,9 +11,9 @@ const String RESET = "\e[0m";
 
 const String C = ",";
 const String N = "\n";
-const String OQ = "\"" + GREEN;
-const String CQ = RESET + "\"";
-const String CQC = RESET + "\": ";
+const String OQ = "\"";
+const String CQ = "\"";
+const String CQC = "\": ";
 const String T = "    ";
 
 String TAB(int num) {

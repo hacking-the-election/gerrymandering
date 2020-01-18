@@ -32,8 +32,8 @@ string State::to_json() {
         // print coordinates of precinct
         str += TAB(4) + OQ + "coordinates" + CQC + "[";
         for (vector<float> coordset: precinct.border) {
-            str += "[" + RED + to_string(coordset[0]) + RESET + ", " 
-                + RED + to_string(coordset[1]) + RESET + "], ";
+            str += "[" + to_string(coordset[0]) + ", " 
+                + to_string(coordset[1]) + "], ";
         }
 
         // remove last comma char
@@ -42,8 +42,8 @@ string State::to_json() {
 
         // print voter data for the precinct
         str += TAB(4) + OQ + "voter_data" + CQC + "{"
-            + OQ + "dem" + CQC + RED + to_string(precinct.voter_data()[0]) + RESET + ", "
-            + OQ + "rep" + CQC + RED + to_string(precinct.voter_data()[1]) + RESET + "}" + N;
+            + OQ + "dem" + CQC + to_string(precinct.voter_data()[0]) + ", "
+            + OQ + "rep" + CQC + to_string(precinct.voter_data()[1]) + "}" + N;
         
         str += TAB(3) + "}," + N;
     }
@@ -70,8 +70,8 @@ string State::to_json() {
         // print coordinates of precinct
         str += TAB(4) + OQ + "coordinates" + CQC + "[";
         for (vector<float> coordset : district.border) {
-            str += "[" + RED + to_string(coordset[0]) + RESET + ", " 
-                + RED + to_string(coordset[1]) + RESET + "], ";
+            str += "[" + to_string(coordset[0]) + ", " 
+                + to_string(coordset[1]) + "], ";
         }
 
         // remove last comma char

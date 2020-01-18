@@ -41,7 +41,7 @@ map<string, vector<int> > parse_voter_data(string voter_data) {
     // parse data into 2d array
     vector<vector<string> > data_list = parse_tsv(voter_data);
     vector<string> watchlist;
-    int ed_precinct = NULL;
+    int ed_precinct = -1;
     vector<int> d_index;
     vector<int> r_index;
     int index = 0;
@@ -175,7 +175,7 @@ vector<Precinct> merge_data( vector<Shape> precinct_shapes, map<string, vector<i
         }
 
 
-        Precinct precinct = Precinct(precinct_shape.border, p_data[0], p_data[1]);
+        Precinct precinct = Precinct(precinct_shape.border, p_data[0], p_data[1], p_id);
         precincts.push_back(precinct);
     }
 

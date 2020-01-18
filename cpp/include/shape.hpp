@@ -14,7 +14,7 @@ const float EXPANSION_WIDTH = 10;
 const float FAIRNESS = 0;
 const float COMPACTNESS = 0;
 
-const string no_name = "\e[31m[no_name]\e[0m";
+const string no_name = "no_name";
 
 // class definitions for shapes
 class Shape {
@@ -41,6 +41,10 @@ class Precinct : public Shape {
             rep = repV;
         }
 
+        Precinct(vector<vector<float> > shape, int demV, int repV, string id) : Shape(shape, id) {
+            dem = demV;
+            rep = repV;
+        }
         double get_ratio();
         vector<int> voter_data();
     

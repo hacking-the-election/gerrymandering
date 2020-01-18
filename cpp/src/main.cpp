@@ -22,7 +22,7 @@ int main(int argc, char* argv[]) {
     string district_geoJSON = readf(argv[3]);
 
     State state = State::generate_from_file(precinct_geoJSON, voter_data, district_geoJSON);    
-    // cout << state.to_json();
+    cout << state.to_json();
     // State.quantify().dump();
     return 0;
 }
