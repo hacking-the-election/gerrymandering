@@ -4,10 +4,14 @@
 #include <sstream>
 #include <fstream>
 #include <map>
-#include "../lib/json/single_include/nlohmann/json.hpp"
+// #include "../lib/json/single_include/nlohmann/json.hpp"
+#include "../lib/rapidjson/include/rapidjson/document.h"
+#include "../lib/rapidjson/include/rapidjson/writer.h"
+#include "../lib/rapidjson/include/rapidjson/stringbuffer.h"
 
 using namespace std;
-using json = nlohmann::json;
+// using json = nlohmann::json;
+using namespace rapidjson;
 
 // define global variables for algorithms
 const float EXPANSION_WIDTH = 10;

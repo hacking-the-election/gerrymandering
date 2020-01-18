@@ -118,33 +118,58 @@ map<string, vector<int> > parse_voter_data(string voter_data) {
     return parsed_data;
 }
 
+vector<vector<float> > string_to_vector(string str) {
+    str.erase(remove(str.begin(), str.end(), '['), str.end());
+    str.erase(remove(str.begin(), str.end(), ']'), str.end());
+    
+    vector<string> list = split(str, ",");
+
+    vector<vector<float> > v;
+    
+    int i = 1;
+    for (int i = 0; i < list.size(); i += 2) {
+        v.push_back( { stof(list[i]), stof(list[i + 1]) } );
+    }
+
+    return v;
+}
+
 vector<Shape> parse_coordinates(string geoJSON) { 
     // parses a geoJSON state into an array of shapes
-
+    Document shapes;
+    shapes.Parse(geoJSON.c_str());
+    // StringBuffer buffer;
+    // buffer.Clear();
+    // Writer<rapidjson::StringBuffer> writer(buffer);
+    // shapes["features"].Accept(writer);
+    // cout << buffer.GetString() << endl;
+    
     vector<Shape> shapes_vector;  // vector of shapes to be returned
-    json shapes = json::parse(geoJSON).at("features"); // parse geoJSON string
+    // json shapes = json::parse(geoJSON).at("features"); // parse geoJSON string
 
-    for ( int i = 0; i < shapes.size(); i++ ) {
-        json coords;
+    for ( int i = 0; i < shapes["features"].Size(); i++ ) {
+        string coords;
         string id = "";
-
         // see if the geoJSON contains the shape id
         try { 
-            id = shapes[i].at("properties").at("VTDST10");
+            id = shapes["features"][i]["properties"]["VTDST10"].GetString();
         } 
         catch (...) {
             cout << "If this is parsing precincts, you have no precinct id." << endl;
             cout << "If future k-vernooy runs into this error, it means that either VTSD_10 in your geoJSON or ed_precinct in your voter data is missing. To fix... maybe try a loose comparison of the names?" << endl;
         }
 
-        // check for embedded arrays
-        if ( shapes[i].at("geometry").at("coordinates").size() == 1 ) 
-            coords = shapes[i].at("geometry").at("coordinates")[0];
-        else 
-            coords = shapes[i].at("geometry").at("coordinates").dump(4);
+        // create empty string buffer
+        StringBuffer buffer;
+        buffer.Clear();
+        Writer<rapidjson::StringBuffer> writer(buffer);
 
-        // replace following with parsed coords variable
-        vector<vector<float> > border = {{2,5}, {2,4}, {1,4}};
+        // write the coordinate array to a string
+        shapes["features"][i]["geometry"]["coordinates"].Accept(writer);
+        coords = buffer.GetString();
+
+        // vector parsed from coordinate string
+        vector<vector<float> > border = string_to_vector(coords);
         
         // create shape from border, add to array
         Shape shape(border, id);
