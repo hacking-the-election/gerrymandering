@@ -9,8 +9,8 @@
 #include "../lib/rapidjson/include/rapidjson/writer.h"
 #include "../lib/rapidjson/include/rapidjson/stringbuffer.h"
 
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
 #include <boost/serialization/vector.hpp>
 
 using namespace std;
@@ -122,26 +122,28 @@ class State : public Shape {
         static State generate_from_file(string precinct_geoJSON, string voter_data, string district_geoJSON);
         void write_txt();
 
-        void serialize(string write_path) {
-            std::ofstream ofs(write_path);
-            
+        string to_json();
+
+        void write_binary(string path) {
+            std::ofstream ofs(path);
+
             {
-                boost::archive::text_oarchive oa(ofs);
-                oa << this;
+                boost::archive::binary_oarchive oa(ofs);
+                oa << *this;
             }
+
+            ofs.close();
         }
 
-        static State deserialize(string read_path) {
-            State state;
+        static State read_binary(string path) {
+            State state = State();
 
             {
-                std::ifstream ifs(read_path);
-                boost::archive::text_iarchive ia(ifs);
+                std::ifstream ifs(path);
+                boost::archive::binary_iarchive ia(ifs);
                 ia >> state;
             }
 
             return state;
         }
-
-        string to_json();
 };
