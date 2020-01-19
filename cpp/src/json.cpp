@@ -22,7 +22,7 @@ string State::to_json() {
         // print name of precinct
         if (precinct.shape_id.size() == 0) {
             str += TAB(4) + OQ + "name" + CQC 
-                + OQ + no_name + CQ + C + N;
+                + OQ + "no_name" + CQ + C + N;
         }
         else {
             str += TAB(4) + OQ + "name" + CQC 
@@ -60,7 +60,7 @@ string State::to_json() {
         // print name of precinct
         if (district.shape_id.size() == 0) {
             str += TAB(4) + OQ + "name" + CQC 
-                + OQ + no_name + CQ + C + N;
+                + OQ + "no_name" + CQ + C + N;
         }
         else {
             str += TAB(4) + OQ + "name" + CQC 
