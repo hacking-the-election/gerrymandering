@@ -48,7 +48,7 @@ class TestPrecincts(unittest.TestCase):
         ]
         self.precincts = [precincts.Precinct(**data[0]), precincts.Precinct(**data[1])]
 
-        test_data_dir = abspath(dirname(dirname(dirname(__file__)))) + '/data/test'
+        test_data_dir = abspath(dirname(dirname(dirname(__file__)))) + '/data/python/test'
         self.json_file = test_data_dir + '/test.json'
         self.tab_file = test_data_dir + '/test.tab'
 

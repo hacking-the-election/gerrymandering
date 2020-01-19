@@ -1,0 +1,4 @@
+{"type": "FeatureCollection", "features": [
+    {"type": "Feature", "geometry": {"type": "Polygon", "coordinates": [[4.0, 6.0], [4.0, -4.0], [8.0, -4.0], [8.0, -8.0], [-4.0, -8.0], [-4.0, 6.0]]}, "properties": {"GEOID10":"01-000"}},
+    {"type": "Feature", "geometry": {"type": "Polygon", "coordinates": [[4.0, 6.0], [8.0, 6.0], [8.0, -4.0], [4.0, -4.0]]}, "properties": {"GEOID10":"01-001"}}
+]}

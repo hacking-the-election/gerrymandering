@@ -17,7 +17,7 @@ The following details the structure of this repository:
 - #### data
    - election: raw voter data by precinct
    - borders: raw border coordinate data
-   
-   
+   - cpp: cpp dataorganization
+   - python: state files with pickled list of precinct objects inside    
 ## OS Compatability
 - Any software written in C++ will be Linux and macOS compatible.

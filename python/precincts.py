@@ -2,7 +2,7 @@
 Precinct-level maps from election-geodata compiled by Nathaniel Kelso and Michal Migurski.
 Election data from harvard dataverse.
 
-in election-geodata geojson files, "GEOID10" property is the same as many different things
+in election-geodata geojson files, "GEOID10" property (or equivalent) is the same as many different things
 in harvard dataverse
 """
 
@@ -14,25 +14,32 @@ import pickle
 
 # where the precinct data is stored
 # temporary, to be changed with legitimate data
-objects_dir = abspath(dirname(dirname(__file__))) + '/data'
+objects_dir = abspath(dirname(dirname(__file__))) + '/data/python'
 
 
-def save(precinct):
+def save(state, precinct_list):
     """
-    Save the data for a precinct object to a file
+    Save the list of precincts for a state to a file
     """
-    file = f'{objects_dir}/{precinct.state}/{precinct.vote_id}'
+    file = f'{objects_dir}/{state}'
     with open(file, 'wb+') as f:
-        pickle.dump(precinct, f)
+        pickle.dump(precinct_list, f)
 
 
-def load(state, vote_id):
+def load(state):
     """
-    Return a precinct object that was saved to a file
+    Return the list of precincts that was saved to a state file
     """
-    with open(f'{objects_dir}/{state}/{vote_id}', 'rb') as f:
-        precinct = pickle.load(f)
-    return precinct
+    with open(f'{objects_dir}/{state}', 'rb') as f:
+        state = pickle.load(f)
+    return state
+
+def precinct_save(precinct, precinct_list):
+    '''
+    Adds precinct to list of precincts (in state.)
+    '''
+    precinct_list.append(precinct)
+    return precinct_list
 
 
 def area(coords):
@@ -145,33 +152,33 @@ class Precinct:
         # Looks for the id of precincts in specific state. Breakdown is
         # 003013, with 03 being the county and 013 the precinct number
         precinct_id_ele = {}
-        if data_dict[3] = "vtd":
+        if "vtd" in data_dict:
             precinct_column = "vtd"
             for i, precinct_id in enumerate(data_dict[precinct_column]):
                 precinct_id_ele[i] = precinct_id
-        if notpad_vtdid in data_dict[]:
-            precinct_column = "nopad_vtdid"
+        if "vtdid" in data_dict:
+            precinct_column = "vtdid"
             for i, precinct_id in enumerate(data_dict[precinct_column]):
                 precinct_id_ele[i] = precinct_id[2:]
-        if precinct in data_dict:
-        if precinct_code in data_dict:
+        if "precinct_code" in data_dict:
             precinct_column = "precinct_code"
-            if county_code in data_dict:
+            if "county_code" in data_dict:
                 for i, precinct_id in enumerate(data_dict[precinct_column]):
                     precicnt_id_ele[i] = dat_dict[county_code][i] + precinct_id[-3:]
 
-        # Makes sure all precinct_id_ele have six digits
-        while len(precinct_id_ele) <= 5:
-            precinct_id_ele = '0' + precinct_id_ele
-
+        # Makes sure all precincts in precinct_id_ele have six digits
+        for precinct in precinct_id_ele:
+            precinct = str(precinct)
+            while len(precinct) <= 5:
+                precinct = '0' + precinct
+            precinct = convert_to_int(precinct)
         # Looks for precinct name (or if there is one)
-        if "precinct_name" in data_dict[]:
+        if "precinct_name" in data_dict:
             precinct_name = "precinct_name"
-        elif "precinct" in data_dict[]:
+        elif "precinct" in data_dict:
             precinct_name = "precinct"
         else:
             precinct_name = "None"
-        
         # keys: precinct id's.
         # keys of values: keys in `data_dict` that correspond
         #                 to vote counts.
@@ -187,23 +194,36 @@ class Precinct:
             data_dict[precinct_column][i]: {
                 key: convert_to_int(data_dict[key][i]) for key in rep_keys
                 if data_dict[key][i] != ''
-            } for i in range(len(data_dict['precinct_column']))
+            } for i in range(len(data_dict[precinct_column]))
         }
 
+        # initalize precinct list
+        precinct_list = []
+        
         # match election and geo data and save Precinct objects
         # containing said data.
+        precinct_geo_list = []
         for precinct in geo_data['features']:
-            precinct_id_geo = f'"{precinct["properties"]["GEOID10"]}[2:]"'
-            for i, precinct in precinct_id_ele.items():               
-                if precinct == precinct_id_geo:
-                    if precinct_name != "None":
-                        save(Precinct(
-                            precinct['geometry']['coordinates'],
-                            precinct_name[i], state, precinct_id_geo,
-                            dem_cols[precinct_id_ele[i]], rep_cols[precinct_id_ele[i]]
-                    else:
-                        save(Precinct(
-                            precinct['geometry']['coordinates'],
-                            precinct_name, state, precinct_id_geo,
-                            dem_cols[precinct_id_ele[i]], rep_cols[precinct_id_ele[i]]
-                    ))
+            precinct_geo_list.append(precinct["properties"]["GEOID10"][-6:])
+        for i, precinct in precinct_id_ele.items():               
+            if precinct in precinct_geo_list:
+                if precinct_name != "None":
+                    precinct_save(Precinct(
+                        precinct['geometry']['coordinates'],
+                        precinct_name[i], state, precinct_id_geo,
+                        dem_cols[precinct_id_ele[i]], rep_cols[precinct_id_ele[i]]
+                    ), precinct_list)
+                else:
+                    precinct_save(Precinct(
+                        precinct['geometry']['coordinates'],
+                        precinct_name, state, precinct_id_geo,
+                        dem_cols[precinct_id_ele[i]], rep_cols[precinct_id_ele[i]]
+                    ), precinct_list)
+            else:
+                print("Failed to save precinct.")
+
+        # Saves precinct list to state file
+        try:
+            save(precinct_list[0].state, precinct_list)
+        except IndexError:
+            print("No precincts saved to precinct list.")
