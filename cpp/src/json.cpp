@@ -1,16 +1,23 @@
-/*===========================================
-Shape, district, precinct and state methods
-for dumping and reading data to and from json,
-.hte format and binary
-===========================================*/
+/*=======================================
+ json.cpp:                      k-vernooy
+ last modified:               Sun, Jan 19
+ 
+ Writing state, precinct, and other
+ objects to a json file for use by other
+ researches. See specification for guide.
+========================================*/
 
 #include "../include/shape.hpp"
-#include "../include/term_disp.hpp" // for dumping data
+#include "../include/term_disp.hpp"
 
 string State::to_json() {
-    // prettyprints state object as json
-    
-    string str = "{" + N;
+    /*
+        dumps a state object as json
+        just uses string manipulation, no json parsing
+    */
+   
+    // begin json string
+    string str = "{" + N; 
 
     str += T + OQ + "state" + CQC + "{" + N
         + TAB(2) + OQ + "name" + CQC + OQ + name + CQ + C + N
