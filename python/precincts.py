@@ -2,9 +2,9 @@
 Precinct-level maps from election-geodata compiled by Nathaniel Kelso and Michal Migurski.
 Election data from harvard dataverse.
 
-in election-geodata geojson files, "VTDST10" property is the same as harvard "ed_precinct
+in election-geodata geojson files, "GEOID10" property is the same as many different things
+in harvard dataverse
 """
-
 
 import json
 from os import mkdir
@@ -13,7 +13,8 @@ import pickle
 
 
 # where the precinct data is stored
-objects_dir = abspath(dirname(dirname(__file__))) + '/data/objects'
+# temporary, to be changed with legitimate data
+objects_dir = abspath(dirname(dirname(__file__))) + '/data'
 
 
 def save(precinct):
@@ -139,6 +140,37 @@ class Precinct:
         # for each party
         dem_keys = [key for key in data_dict.keys() if key[-2:] == 'dv']
         rep_keys = [key for key in data_dict.keys() if key[-2:] == 'rv']
+
+
+        # Looks for the id of precincts in specific state. Breakdown is
+        # 003013, with 03 being the county and 013 the precinct number
+        precinct_id_ele = {}
+        if data_dict[3] = "vtd":
+            precinct_column = "vtd"
+            for i, precinct_id in enumerate(data_dict[precinct_column]):
+                precinct_id_ele[i] = precinct_id
+        if notpad_vtdid in data_dict[]:
+            precinct_column = "nopad_vtdid"
+            for i, precinct_id in enumerate(data_dict[precinct_column]):
+                precinct_id_ele[i] = precinct_id[2:]
+        if precinct in data_dict:
+        if precinct_code in data_dict:
+            precinct_column = "precinct_code"
+            if county_code in data_dict:
+                for i, precinct_id in enumerate(data_dict[precinct_column]):
+                    precicnt_id_ele[i] = dat_dict[county_code][i] + precinct_id[-3:]
+
+        # Makes sure all precinct_id_ele have six digits
+        while len(precinct_id_ele) <= 5:
+            precinct_id_ele = '0' + precinct_id_ele
+
+        # Looks for precinct name (or if there is one)
+        if "precinct_name" in data_dict[]:
+            precinct_name = "precinct_name"
+        elif "precinct" in data_dict[]:
+            precinct_name = "precinct"
+        else:
+            precinct_name = "None"
         
         # keys: precinct id's.
         # keys of values: keys in `data_dict` that correspond
@@ -146,27 +178,32 @@ class Precinct:
         # values of values: number of votes for given party
         #                   in that election.
         dem_cols = {
-            data_dict['ed_precinct'][i]: {
+            data_dict[precinct_column][i]: {
                 key: convert_to_int(data_dict[key][i]) for key in dem_keys
                 if data_dict[key][i] != ''
-            } for i in range(len(data_dict['ed_precinct']))
+            } for i in range(len(data_dict[precinct_column]))
         }
         rep_cols = {
-            data_dict['ed_precinct'][i]: {
+            data_dict[precinct_column][i]: {
                 key: convert_to_int(data_dict[key][i]) for key in rep_keys
                 if data_dict[key][i] != ''
-            } for i in range(len(data_dict['ed_precinct']))
+            } for i in range(len(data_dict['precinct_column']))
         }
-
 
         # match election and geo data and save Precinct objects
         # containing said data.
         for precinct in geo_data['features']:
-            precinct_id_geo = f'"{precinct["properties"]["VTDST10"]}"'
-            for i, precinct_id_ele in enumerate(data_dict['ed_precinct']):
-                if precinct_id_ele == precinct_id_geo:
-                    save(Precinct(
-                        precinct['geometry']['coordinates'],
-                        data_dict['precinct'][i], state, precinct_id_geo,
-                        dem_cols[precinct_id_ele], rep_cols[precinct_id_ele]
+            precinct_id_geo = f'"{precinct["properties"]["GEOID10"]}[2:]"'
+            for i, precinct in precinct_id_ele.items():               
+                if precinct == precinct_id_geo:
+                    if precinct_name != "None":
+                        save(Precinct(
+                            precinct['geometry']['coordinates'],
+                            precinct_name[i], state, precinct_id_geo,
+                            dem_cols[precinct_id_ele[i]], rep_cols[precinct_id_ele[i]]
+                    else:
+                        save(Precinct(
+                            precinct['geometry']['coordinates'],
+                            precinct_name, state, precinct_id_geo,
+                            dem_cols[precinct_id_ele[i]], rep_cols[precinct_id_ele[i]]
                     ))
