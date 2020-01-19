@@ -14,7 +14,7 @@ import pickle
 
 # where the precinct data is stored
 # temporary, to be changed with legitimate data
-objects_dir = abspath(dirname(dirname(__file__))) + '/data/python'
+objects_dir = abspath(dirname(dirname(__file__))) + '/data'
 
 
 def save(state, precinct_list):
@@ -40,7 +40,6 @@ def precinct_save(precinct, precinct_list):
     '''
     precinct_list.append(precinct)
     return precinct_list
-
 
 def area(coords):
     """
@@ -109,11 +108,6 @@ class Precinct:
         self.rep_average = (r_election_sum
                             / len(list(self.r_election_data.values())))
         self.dem_rep_ratio = self.dem_average / self.rep_average
-
-        # create directory for states if it doesn't already exist
-        if not isdir(f'{objects_dir}/{self.state}'):
-            mkdir(f'{objects_dir}/{self.state}')
-
     @classmethod
     def generate_from_files(cls, election_data_file, geo_data_file, state):
         """
@@ -165,7 +159,10 @@ class Precinct:
             if "county_code" in data_dict:
                 for i, precinct_id in enumerate(data_dict[precinct_column]):
                     precicnt_id_ele[i] = dat_dict[county_code][i] + precinct_id[-3:]
-
+        if "vtdst10" in data_dict:
+            precinct_column = "vtdst10"
+            for i, precinct_id in enumerate(data_dict[precinct_column]):
+                precinct_id_ele[i] = precinct_id
         # Makes sure all precincts in precinct_id_ele have six digits
         for precinct in precinct_id_ele:
             precinct = str(precinct)

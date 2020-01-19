@@ -48,7 +48,7 @@ class TestPrecincts(unittest.TestCase):
         ]
         self.precincts = [precincts.Precinct(**data[0]), precincts.Precinct(**data[1])]
 
-        test_data_dir = abspath(dirname(dirname(dirname(__file__)))) + '/data/python/test'
+        test_data_dir = abspath(dirname(dirname(dirname(__file__)))) + '/data/test'
         self.json_file = test_data_dir + '/test.json'
         self.tab_file = test_data_dir + '/test.tab'
 
@@ -72,7 +72,7 @@ class TestPrecincts(unittest.TestCase):
         """
         precincts.Precinct.generate_from_files(self.tab_file, self.json_file, 'test')
         for i, precinct in enumerate(self.precincts):
-            loaded_precinct = precincts.load('test', f'"01-00{i}"')
+            loaded_precinct = precincts.load('test')[i]
             
             precinct_attributes = ['coords', 'area', 'name', 'vote_id', 'state',
                                 'd_election_data', 'r_election_data',
