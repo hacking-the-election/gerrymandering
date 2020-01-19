@@ -17,3 +17,4 @@ data/objects/North Montana
 # vscode
 settings.json
 .vscode
+*.dSYM/

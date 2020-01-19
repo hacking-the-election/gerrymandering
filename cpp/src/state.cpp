@@ -8,7 +8,7 @@ State methods for parsing from geodata and
 #include "../include/util.hpp"
 #include <algorithm>
 
-#define VERBOSE 1
+#define VERBOSE 0
 
 vector<vector<string> > parse_tsv(string tsv) {
     vector<vector<string> > parsed;
@@ -77,7 +77,11 @@ map<string, vector<int> > parse_voter_data(string voter_data) {
 
                 int index2 = distance(
                                 data_list[0].begin(), 
-                                find(data_list[0].begin(), data_list[0].end(), join(party, "_") + "_" + end)
+ 
+                                find(data_list[0].begin(), 
+                                    data_list[0].end(),
+                                    join(party, "_") + "_" + end
+                                )
                             );
 
                 if (par == "dv") 
