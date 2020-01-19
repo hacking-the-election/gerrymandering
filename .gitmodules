@@ -4,3 +4,6 @@
 [submodule "cpp/lib/rapidjson"]
 	path = cpp/lib/rapidjson
 	url = https://github.com/Tencent/rapidjson
+[submodule "data/raw/districts"]
+	path = data/raw/districts
+	url = https://github.com/unitedstates/districts
