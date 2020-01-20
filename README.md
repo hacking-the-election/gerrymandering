@@ -17,8 +17,7 @@ The following details the structure of this repository:
 - #### data
    - raw: input data we haven't modified
        - district: US district geojson from @unitedstates
-       - precinct: US precinct geojson, mostly from @nvkelso
-	   - election: US precinct election results, from the harvard dataverse
+       state folders with matched up geojson and election results from nvkelso and havard dataverse respectively
    - bin
        - cpp: C++ binary state object files
        - python: Python pickled state object files
