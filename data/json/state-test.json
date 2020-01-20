@@ -1,27 +1,3 @@
-{
-    "state": {
-        "name": "[no_name]",
-        "precincts": [
-            {
-                "name": "[no_name]",
-                "coordinates": [[2, 5], [2, 4], [1, 4]],
-                "voter_data": {"dem": 0, "rep": 0}
-            },
-            {
-                "name": "[no_name]",
-                "coordinates": [[2, 5], [2, 4], [1, 4]],
-                "voter_data": {"dem": 0, "rep": 0}
-            }
-        ],
-        "districts": [
-            {
-                "name": "[no_name]",
-                "coordinates": [[2, 5], [2, 4], [1, 4]]
-            },
-            {
-                "name": "[no_name]",
-                "coordinates": [[2, 5], [2, 4], [1, 4]]
-            }
-        ]
-    }
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:842f7a92af6f7074a9d2fab1998e2a5aaea4c34df6834c8d50b31b59c195fd7b
+size 711
