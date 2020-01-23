@@ -1,9 +1,9 @@
 /*=======================================
  state.cpp:                     k-vernooy
- last modified:               Sun, Jan 19
+ last modified:               Sun, Jan 20
 
- Definitions of state methods for parsing 
- from geodata and election data (see data 
+ Definitions of state methods for parsing
+ from geodata and election data (see data
  specs in root directory for information)
 ========================================*/
 
@@ -11,17 +11,18 @@
 #include "../include/util.hpp"   // array modification functions
 #include <algorithm>             // for std::find and std::distance
 
-#define VERBOSE 0  // print progress messages
+#define VERBOSE 1  // print progress messages
 
+static const string state_id = "51";
 
 vector<vector<string> > parse_sv(string tsv, string delimiter) {
-    /* 
+    /*
         takes a tsv file as string, returns
         two dimensional array of cells and rows
     */
 
     vector<vector<string> > parsed; // to be added to + returned
-    
+
     stringstream file(tsv); // to iterate over lines
     string line;            // to hold current line
 
@@ -45,19 +46,22 @@ vector<vector<string> > parse_sv(string tsv, string delimiter) {
 }
 
 map<string, vector<int> > parse_voter_data(string voter_data) {
-    /* 
+    /*
         from a string in the specified format,
         creates a map with the key of the precinct
         name and vector as `"name": {dem_vote, rep vote}`
     */
 
-    vector<vector<string> > data_list // two dimensional 
+    vector<vector<string> > data_list // two dimensional
         = parse_sv(voter_data, "\t"); // array of voter data
 
     vector<string> watchlist;
 
-    int name_index = -1;                  // the column index that holds id's
-    string name_col_header = "vtdst10";   // the column header name
+    int precinct_id_col = -1; // the column index that holds precinct id's
+    int county_id_col = -1; // the column index that holds precinct id's
+
+    string precinct_id_col_header = "county";   // the column header name
+    string county_id_col_header = "precinct_id";   // the column header name
 
     // indices of usable data
     vector<int> d_index;
@@ -68,15 +72,16 @@ map<string, vector<int> > parse_voter_data(string voter_data) {
     // search for usable data cols
     for (string item : data_list[0]) {
 
-        if (item == name_col_header)
-            // check for id column
-            name_index = index; 
+        if (item == precinct_id_col_header)
+            precinct_id_col = index;
+        else if (item == county_id_col_header)
+            county_id_col = index;
 
         // split header by underscore
         vector<string> party = split(item, "_");
-        
+
         // attempt to identify the party of the column
-        string par = party[party.size() - 1]; 
+        string par = party[party.size() - 1];
 
         if (par == "dv" || par == "rv") {
             // set string `end` to opposite of `par`
@@ -92,28 +97,28 @@ map<string, vector<int> > parse_voter_data(string voter_data) {
             // if it's already in the watchlist, it's useable data
             if ( old_data != watchlist.end()) {
 
-                if (par == "dv") 
+                if (par == "dv")
                     // since the one we've found is right,
                     // add the one we're at right now
                     d_index.push_back(index);
-                else 
+                else
                     r_index.push_back(index);
 
                 // find old data already in watchlist, pair it with new data
 
                 int index2 = distance(
-                                data_list[0].begin(), 
- 
-                                find(data_list[0].begin(), 
+                                data_list[0].begin(),
+
+                                find(data_list[0].begin(),
                                     data_list[0].end(),
                                     join(party, "_") + "_" + end
                                 )
                             );
 
-                if (par == "dv") 
+                if (par == "dv")
                     // add old watchlisted data
                     r_index.push_back(index2);
-                else 
+                else
                     d_index.push_back(index2);
             }
             else {
@@ -128,10 +133,11 @@ map<string, vector<int> > parse_voter_data(string voter_data) {
 
     map<string, vector<int> > parsed_data;
 
-    // iterate over each precinct 
+    // iterate over each precinct
     for (int x = 1; x < data_list.size(); x++) {
-        
-        string id = data_list[x][name_index]; // get the precinct id
+
+        string precinct_id = data_list[x][precinct_id_col]; // get the precinct id
+        string county_id = data_list[x][county_id_col]; // get the precinct id
 
         if (id.substr(0, 1) == "\"")
             // strip surrounding quotes from id
@@ -162,7 +168,7 @@ vector<vector<float> > string_to_vector(string str) {
     vector<string> list = split(str, ","); // split string by commas
     vector<vector<float> > v;
 
-    // loop through comma split vector   
+    // loop through comma split vector
     int i = 1;
     for (int i = 0; i < list.size(); i += 2) {
         // add as pair of floating point coordinates
@@ -172,7 +178,7 @@ vector<vector<float> > string_to_vector(string str) {
     return v;
 }
 
-vector<Shape> parse_coordinates(string geoJSON) { 
+vector<Shape> parse_coordinates(string geoJSON) {
 
     // parses a geoJSON state into an array of shapes
 
@@ -187,12 +193,12 @@ vector<Shape> parse_coordinates(string geoJSON) {
         string id = "";
 
         // see if the geoJSON contains the shape id
-        try {
+        if (shapes["features"][i]["properties"].HasMember("GEOID10")) {
             id = shapes["features"][i]["properties"]["GEOID10"].GetString();
-        } 
-        catch (...) {
+        }
+        else {
             cout << "If this is parsing precincts, you have no precinct id." << endl;
-            cout << "If future k-vernooy runs into this error, it means that either VTSD_10 in your geoJSON or ed_precinct in your voter data is missing. To fix... maybe try a loose comparison of the names?" << endl;
+            cout << "If future k-vernooy runs into this error, it means that GEOID10 in your geoJSON in your voter data is missing. To fix... maybe try a loose comparison of the names?" << endl;
         }
 
         // create empty string buffer
@@ -206,7 +212,7 @@ vector<Shape> parse_coordinates(string geoJSON) {
 
         // vector parsed from coordinate string
         vector<vector<float> > border = string_to_vector(coords);
-        
+
         // create shape from border, add to array
         Shape shape(border, id);
         shapes_vector.push_back(shape);
@@ -216,9 +222,9 @@ vector<Shape> parse_coordinates(string geoJSON) {
 }
 
 vector<Precinct> merge_data( vector<Shape> precinct_shapes, map<string, vector<int> > voter_data) {
-    
-    /*  
-        returns an array of precinct objects given 
+
+    /*
+        returns an array of precinct objects given
         geodata (shape objects) and voter data
         in the form of a map for a list of precincts
     */
@@ -234,7 +240,7 @@ vector<Precinct> merge_data( vector<Shape> precinct_shapes, map<string, vector<i
             // there is no matching id in the voter data
             cout << "error: the id in the geodata, \e[41m" << p_id << "\e[0m, has no matching key in voter_data" << endl;
             cout << "the program will continue, but the voter_data for the precinct will be filled with 0,0." << endl;
-        } 
+        }
         else {
             // get the voter data of the precinct
             p_data = voter_data[p_id];
@@ -250,13 +256,13 @@ vector<Precinct> merge_data( vector<Shape> precinct_shapes, map<string, vector<i
 
 vector<vector<float> > generate_state_border(vector<Precinct> precincts) {
     // given an array of precincts, return the border of the state
-    return {{0,0}}; // 
+    return {{0,0}}; //
 }
 
 State State::generate_from_file(string precinct_geoJSON, string voter_data, string district_geoJSON) {
-    
+
     /*
-        Parse precinct and district geojson, along with 
+        Parse precinct and district geojson, along with
         precinct voter data, into a State object.
     */
 
@@ -290,6 +296,6 @@ State State::generate_from_file(string precinct_geoJSON, string voter_data, stri
     // generate state data from files
     if (VERBOSE) cout << "generating state with shape arrays..." << endl;
     State state = State(districts, precincts, state_shape);
-    
+
     return state; // return the state object
 }
