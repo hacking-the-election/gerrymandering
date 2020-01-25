@@ -35,9 +35,9 @@ def load(state):
     return state
 
 def precinct_save(precinct, precinct_list):
-    '''
+    """
     Adds precinct to list of precincts (in state.)
-    '''
+    """
     precinct_list.append(precinct)
     return precinct_list
 
@@ -93,21 +93,27 @@ class Precinct:
         self.coords = coords
         self.area = area(coords)
         
-        # meta info for human purposes
+        # meta info
         self.name = name
         self.vote_id = vote_id
         self.state = state
 
         # election data
         self.d_election_data = d_election_data
-        d_election_sum = sum(list(d_election_data.values()))
         self.r_election_data = r_election_data
-        r_election_sum = sum(list(r_election_data.values()))
-        self.dem_average = (d_election_sum
-                            / len(list(self.d_election_data.values())))
-        self.rep_average = (r_election_sum
-                            / len(list(self.r_election_data.values())))
-        self.dem_rep_ratio = self.dem_average / self.rep_average
+
+        self.d_election_sum = 0
+        self.r_election_sum = 0
+
+        # only include data for elections for which there is data for both parties
+        for key in self.r_election_data.keys():
+            if key in self.d_election_data.keys():
+                d_election_sum += self.d_election_data[key]
+                r_election_sum += self.r_election_data[key]
+
+        self.dem_rep_ratio = self.d_election_sum / self.r_election_sum
+
+
     @classmethod
     def generate_from_files(cls, election_data_file, geo_data_file, state):
         """
