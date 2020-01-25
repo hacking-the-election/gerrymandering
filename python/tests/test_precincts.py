@@ -1,3 +1,10 @@
+"""
+These tests were written for an earlier version of precinct serialization code
+
+They are expected to fail when run
+"""
+
+
 from os.path import abspath, dirname
 import sys
 import unittest
