@@ -1,9 +1,24 @@
 """
-Precinct-level maps from election-geodata compiled by Nathaniel Kelso and Michal Migurski.
-Election data from harvard dataverse.
+Usage:
+python3 precincts.py [election_data_file] [geo_data_file] [state] [id_finder_file] [json_id] [objects_dir]
 
-in election-geodata geojson files, "GEOID10" property (or equivalent) is the same as many different things
-in harvard dataverse
+`election_data_file` - path to file containing election data for state
+
+`geo_data` - path to json file containing geo data for state
+
+`state` - name of state
+
+`id_finder_file` - path to file containing function
+                   (called "find_precincts") that takes dict of
+                   election data column names and corresponding data
+                   lists and returns 2d list of precinct id and
+                   precinct column number for each precinct
+
+`json_id` - name of json attribute that corresponds to precinct id
+
+
+When run with above inputs, saves serialized file containing
+precint-level election and geodata for a state in `objects_dir`
 """
 
 
@@ -14,12 +29,7 @@ import pickle
 import warnings
 
 
-# where the precinct data is stored
-# temporary, to be changed with legitimate data
-objects_dir = abspath(dirname(dirname(__file__))) + '/data'
-
-
-def save(state, precinct_list):
+def save(state, precinct_list, objects_dir):
     """
     Save the list of precincts for a state to a file
     """
@@ -111,7 +121,8 @@ class Precinct:
 
 
     @classmethod
-    def generate_from_files(cls, election_data_file, geo_data_file, state, id_finder, json_id):
+    def generate_from_files(cls, election_data_file, geo_data_file, state,
+                            id_finder, json_id, objects_dir):
         """
         Creates precinct objects for state from necessary information
 
@@ -131,6 +142,9 @@ class Precinct:
 
             `json_id` - the name of the json attribute the precinct ids 
                         should be matched with
+
+            `objects_dir` - path to dir where serialized list of precincts
+                            is to be stored
         """
 
         with open(geo_data_file, 'r') as f:
@@ -208,6 +222,22 @@ class Precinct:
 
         # Saves precinct list to state file
         try:
-            save(precinct_list[0].state, precinct_list)
+            save(precinct_list[0].state, precinct_list, objects_dir)
         except IndexError:
             raise Exception("No precincts saved to precinct list.")
+
+
+if __name__ == "__main__":
+
+    args = sys.argv[1:]
+
+    if len(args) < 6:
+        raise TypeError("Incorrect number of arguments: (see __doc__ for usage)")
+
+    exec(f"import {args[3]}")
+
+    def id_finder(*args, **kwargs):
+        eval(f"{args[3]}.find_precincts(*args, **kwargs)")
+    
+    Precinct.generate_from_files(args[0], args[1], args[2],
+                                 id_finder, args[4], args[5])
