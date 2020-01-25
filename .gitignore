@@ -4,7 +4,8 @@
 # python
 venv
 test_link.py
-python/__pycache__
+**/*/__pycache__
+python/test-data
 
 # vscode
 settings.json
