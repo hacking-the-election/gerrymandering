@@ -6,6 +6,7 @@ in election-geodata geojson files, "GEOID10" property (or equivalent) is the sam
 in harvard dataverse
 """
 
+
 import json
 from os import mkdir
 from os.path import abspath, dirname, isdir
@@ -34,12 +35,14 @@ def load(state):
         state = pickle.load(f)
     return state
 
+
 def precinct_save(precinct, precinct_list):
     """
     Adds precinct to list of precincts (in state.)
     """
     precinct_list.append(precinct)
     return precinct_list
+
 
 def area(coords):
     """
@@ -74,7 +77,7 @@ class Precinct:
     """
     Represents a voting precinct
 
-    args:
+    params:
         `coords` - 2-d list of x and y coordinates of vertices
         `name` - name of precinct
         `state` - state that precinct is from
@@ -82,7 +85,7 @@ class Precinct:
                     between harvard and election-geodata files
         `d_election_data` - dict of name of vote to
                             number of votes.
-                            i.e. {"g2002_GOV_dv": 100}
+                            e.g. {"g2002_GOV_dv": 100}
         `r_election_data` - above but for republicans.
     """
 
@@ -117,11 +120,14 @@ class Precinct:
     @classmethod
     def generate_from_files(cls, election_data_file, geo_data_file, state):
         """
-        Saves precinct objects from a harvard dataverse election data
-        file and an election-geodata file to files in
-        data/object directory
+        Creates precinct object from necessary information
 
-        Also requires state as an argument
+        params:
+            `election_data_file` - path to file containing
+                                  election data for precinct (.tab)
+            `geo_data_file` - path to file containing geodata for precinct
+                              (.json or .geojson)
+            `state` - name of state containing precinct
         """
         with open(geo_data_file, 'r') as f:
             geo_data = json.load(f)
