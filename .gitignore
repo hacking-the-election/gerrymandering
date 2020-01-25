@@ -1,20 +1,17 @@
-# compiled binaries
-*
-!*.*
-!*/
-!Makefile
-
 # macOS
 .DS_Store
 
 # python
 venv
-data/examples
-test_link.py
-python/__pycache__
-data/objects/North Montana
+**/*/__pycache__
+python/test-data
 
 # vscode
 settings.json
 .vscode
 *.dSYM/
+
+# c++ binaries
+cpp/bin/
+cpp/src/combine_districts
+cpp/test/test
