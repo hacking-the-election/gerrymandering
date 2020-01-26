@@ -1,3 +1,2 @@
- - algorithms!!!
-
-configuring precincts.py for different .tab files from harvard database
+ - serialize all data from raw directory in data repo
+ - update unit tests and add test data
