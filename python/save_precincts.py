@@ -27,7 +27,7 @@ def save(state, precinct_list, objects_dir):
     """
     Save the list of precincts for a state to a file
     """
-    file = f'{objects_dir}/{state}'
+    file = f'{objects_dir}/{state}.pickle'
     with open(file, 'wb+') as f:
         pickle.dump(precinct_list, f)
 

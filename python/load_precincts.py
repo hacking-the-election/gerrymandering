@@ -7,7 +7,7 @@ def load(objects_dir, state):
     """
     Return the list of precincts that was saved to a state file
     """
-    with open(f'{objects_dir}/{state}', 'rb') as f:
+    with open(f'{objects_dir}/{state}.pickle', 'rb') as f:
         state = pickle.load(f)
     return state
 
