@@ -5,8 +5,7 @@
 venv
 **/*/__pycache__
 python/test-data
-dem_cols.txt
-rep_cols.txt
+python/warnings.log
 
 # vscode
 settings.json

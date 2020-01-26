@@ -25,6 +25,10 @@ import pickle
 import warnings
 
 
+def customwarn(message, category, filename, lineno, file=None, line=None):
+    sys.stdout.write(warnings.formatwarning(message, category, filename, lineno))
+
+
 def save(state, precinct_list, objects_dir):
     """
     Save the list of precincts for a state to a file
@@ -81,7 +85,23 @@ class Precinct:
         self.r_election_sum = 0
 
         # only include data for elections for which there is data for both parties
-        if state == "alaska":
+        if state == "alabama":
+            # 2d list like a dict
+            ordered_d_election_data = [[key, value] for key, value in
+                                       self.d_election_data.items()]
+            ordered_r_election_data = [[key, value] for key, value in
+                                       self.r_election_data.items()]
+            dem_elections = [key.replace("_d_", "") for key in
+                             [item[0] for item in ordered_d_election_data]]
+            rep_elections = [key.replace("_r_", "") for key in
+                             [item[0] for item in ordered_r_election_data]]
+            for i, election in enumerate(dem_elections):
+                if election in rep_elections:
+                    self.d_election_sum += ordered_d_election_data[i][1]
+                    self.r_election_sum += \
+                        ordered_r_election_data[rep_elections.index(election)][1]
+
+        elif state == "alaska":
             self.d_election_sum = self.d_election_data["usp_d_08"]
             self.r_election_sum = self.r_election_data["usp_r_08"]
 
@@ -139,13 +159,12 @@ class Precinct:
         # keys: data categories; values: lists of corresponding values
         # for each precinct
         data_dict = {column[0]: column[1:] for column in data_columns}
-        # remove absentee, early voting, and question rows
-        x = 0
-        if state == "alaska":
-            pass
         
         # keys in `data_dict` that correspond to party vote counts
-        if state == "alaska":
+        if state == "alabama":
+            dem_keys = [key for key in data_dict.keys() if "_d_" in key]
+            rep_keys = [key for key in data_dict.keys() if "_r_" in key]
+        elif state == "alaska":
             dem_keys = ["usp_d_08"]
             rep_keys = ["usp_r_08"]
         
@@ -185,7 +204,7 @@ class Precinct:
         # list of precinct ids that are in geodata and election data
         precinct_geo_list = []
         for precinct in geo_data['features']:
-            precinct_geo_list.append(precinct['properties'][json_id][-6:])
+            precinct_geo_list.append(precinct['properties'][json_id])
 
         # append precinct objects to precinct_list
         for precinct_id, precinct_row in precinct_ids:
@@ -196,7 +215,7 @@ class Precinct:
                 # json object from geojson that corresponds with preinct with precinct_id
                 precinct_geo_data = []
                 for precinct in geo_data['features']:
-                    if precinct['properties'][json_id][-6:] == precinct_id:
+                    if precinct['properties'][json_id] == precinct_id:
                         precinct_geo_data = precinct
 
                 # if there is a column for names
@@ -238,7 +257,12 @@ class Precinct:
         Finds precinct id attributes that can be matched with geojson
         """
 
-        if state == "alaska":
+        if state == "alabama":
+            precincts = data_dict["geoid10"]
+            ids = [[precinct[1:-1], i] for i, precinct in enumerate(precincts)]
+            return ids
+
+        elif state == "alaska":
             precincts = data_dict["vtdst10"]
             ids = [[precinct[1:7], i] for i, precinct in enumerate(precincts)]
             return ids
@@ -247,6 +271,8 @@ class Precinct:
 if __name__ == "__main__":
 
     import sys
+
+    warnings.showwarning = customwarn
 
     args = sys.argv[1:]
 
