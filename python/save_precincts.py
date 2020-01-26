@@ -44,8 +44,12 @@ def convert_to_int(string):
     """
     try:
         return int(string)
-    except Exception:
-        return 0
+    except ValueError:
+        if "." in string:
+            try:
+                return int(string[:string.index(".")])
+            except ValueError:
+                return 0
 
 
 class Precinct:
@@ -104,6 +108,15 @@ class Precinct:
         elif state == "alaska":
             self.d_election_sum = self.d_election_data["usp_d_08"]
             self.r_election_sum = self.r_election_data["usp_r_08"]
+
+        elif state == "arizona":
+            dem_elections = [key[:-3] for key in self.d_election_data.keys()]
+            rep_elections = [key[:-3] for key in self.r_election_data.keys()]
+
+            for election in dem_elections:
+                if election in rep_elections:
+                    self.d_election_sum += self.d_election_data[election + "dem"]
+                    self.r_election_sum += self.r_election_data[election + "rep"]
 
         try:
             self.dem_rep_ratio = self.d_election_sum / self.r_election_sum
@@ -164,9 +177,15 @@ class Precinct:
         if state == "alabama":
             dem_keys = [key for key in data_dict.keys() if "_d_" in key]
             rep_keys = [key for key in data_dict.keys() if "_r_" in key]
+
         elif state == "alaska":
             dem_keys = ["usp_d_08"]
             rep_keys = ["usp_r_08"]
+
+        elif state == "arizona":
+            dem_keys = [key for key in data_dict.keys() if key[-3:] == "dem"]
+            rep_keys = [key for key in data_dict.keys() if key[-3:] == "rep"]
+
         
         # [[precinct_id1, col1], [precinct_id2, col2]]
         precinct_ids = Precinct.find_precincts(data_dict, state)
@@ -257,7 +276,7 @@ class Precinct:
         Finds precinct id attributes that can be matched with geojson
         """
 
-        if state == "alabama":
+        if state in ["alabama", "arizona"]:
             precincts = data_dict["geoid10"]
             ids = [[precinct[1:-1], i] for i, precinct in enumerate(precincts)]
             return ids
