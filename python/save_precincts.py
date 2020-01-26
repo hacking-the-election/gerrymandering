@@ -19,7 +19,7 @@ precint-level election and geodata for a state in `objects_dir`
 
 
 import json
-from os import mkdir
+from os import mkdir, _exit
 from os.path import abspath, dirname, isdir
 import pickle
 import warnings
@@ -50,6 +50,8 @@ def convert_to_int(string):
                 return int(string[:string.index(".")])
             except ValueError:
                 return 0
+        else:
+            return 0
 
 
 class Precinct:
@@ -117,6 +119,15 @@ class Precinct:
                 if election in rep_elections:
                     self.d_election_sum += self.d_election_data[election + "dem"]
                     self.r_election_sum += self.r_election_data[election + "rep"]
+        
+        elif state == "colorado":
+            dem_elections = [key[:-1] for key in self.d_election_data.keys()]
+            rep_elections = [key[:-1] for key in self.r_election_data.keys()]
+
+            for election in dem_elections:
+                if election in rep_elections:
+                    self.d_election_sum += self.d_election_data[election + "d"]
+                    self.r_election_sum += self.r_election_data[election + "r"]
 
         try:
             self.dem_rep_ratio = self.d_election_sum / self.r_election_sum
@@ -185,6 +196,10 @@ class Precinct:
         elif state == "arizona":
             dem_keys = [key for key in data_dict.keys() if key[-3:] == "dem"]
             rep_keys = [key for key in data_dict.keys() if key[-3:] == "rep"]
+        
+        elif state == "colorado":
+            dem_keys = [key for key in data_dict.keys() if key[-1] == "d"]
+            rep_keys = [key for key in data_dict.keys() if key[-1] == "r"]
 
         
         # [[precinct_id1, col1], [precinct_id2, col2]]
@@ -223,7 +238,10 @@ class Precinct:
         # list of precinct ids that are in geodata and election data
         precinct_geo_list = []
         for precinct in geo_data['features']:
-            precinct_geo_list.append(precinct['properties'][json_id])
+            if state == "colorado":
+                precinct_geo_list.append(precinct['properties'][json_id][1:])
+            else:
+                precinct_geo_list.append(precinct['properties'][json_id])
 
         # append precinct objects to precinct_list
         for precinct_id, precinct_row in precinct_ids:
@@ -234,7 +252,10 @@ class Precinct:
                 # json object from geojson that corresponds with preinct with precinct_id
                 precinct_geo_data = []
                 for precinct in geo_data['features']:
-                    if precinct['properties'][json_id] == precinct_id:
+                    if (precinct['properties'][json_id][1:]
+                            if state == "colorado"
+                            else precinct['properties'][json_id]) \
+                            == precinct_id:
                         precinct_geo_data = precinct
 
                 # if there is a column for names
@@ -284,6 +305,11 @@ class Precinct:
         elif state == "alaska":
             precincts = data_dict["vtdst10"]
             ids = [[precinct[1:7], i] for i, precinct in enumerate(precincts)]
+            return ids
+
+        elif state == "colorado":
+            precincts = data_dict["geoid10"]
+            ids = [[precinct, i] for i, precinct in enumerate(precincts)]
             return ids
 
 
