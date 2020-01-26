@@ -1,3 +1,8 @@
+"""
+usage: python3 load_precincts.py [objects_dir] [state]
+"""
+
+
 import pickle
 
 from save_precincts import Precinct
