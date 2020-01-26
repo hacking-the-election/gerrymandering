@@ -32,15 +32,6 @@ def save(state, precinct_list, objects_dir):
         pickle.dump(precinct_list, f)
 
 
-def load(state):
-    """
-    Return the list of precincts that was saved to a state file
-    """
-    with open(f'{objects_dir}/{state}', 'rb') as f:
-        state = pickle.load(f)
-    return state
-
-
 def convert_to_int(string):
     """
     Wrapped error handling for int().
@@ -105,8 +96,8 @@ class Precinct:
 
     def __str__(self):
         return (f"name: {self.name}\n"
-                f"d_election_data: {self.d_election_data}\n"
-                f"r_election_data: {self.r_election_data}\n"
+                f"d_election_sum: {self.d_election_sum}\n"
+                f"r_election_sum: {self.r_election_sum}\n"
                 f"population: {self.population}\n"
                 f"id: {self.vote_id}\n")
 
