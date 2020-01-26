@@ -1,6 +1,6 @@
 """
 Usage:
-python3 precincts.py [election_data_file] [geo_data_file] [state] [json_id] [objects_dir]
+python3 save_precincts.py [election_data_file] [geo_data_file] [state] [json_id] [json_pop] [objects_dir]
 
 `election_data_file` - path to file containing election data for state
 
@@ -9,6 +9,8 @@ python3 precincts.py [election_data_file] [geo_data_file] [state] [json_id] [obj
 `state` - name of state
 
 `json_id` - name of json attribute that corresponds to precinct id
+
+`json_pop` - name of json attribute that corresponds to precinct total population
 
 
 When run with above inputs, saves serialized file containing
@@ -79,12 +81,9 @@ class Precinct:
         self.r_election_sum = 0
 
         # only include data for elections for which there is data for both parties
-        r_elections = [key[:-3] for key in r_election_data.keys()]
-        d_elections = [key[:-3] for key in d_election_data.keys()]
-        for election in r_elections:
-            if election in d_elections:
-                self.d_election_sum += self.d_election_data[election + "_dv"]
-                self.r_election_sum += self.r_election_data[election + "_rv"]
+        if state == "alaska":
+            self.d_election_sum = self.d_election_data["usp_d_08"]
+            self.r_election_sum = self.r_election_data["usp_r_08"]
 
         try:
             self.dem_rep_ratio = self.d_election_sum / self.r_election_sum
@@ -103,7 +102,7 @@ class Precinct:
 
 
     @classmethod
-    def generate_from_files(cls, election_data_file, geo_data_file, state, json_id, objects_dir):
+    def generate_from_files(cls, election_data_file, geo_data_file, state, json_id, json_pop, objects_dir):
         """
         Creates precinct objects for state from necessary information
 
@@ -118,6 +117,9 @@ class Precinct:
 
             `json_id` - the name of the json attribute the precinct ids 
                         should be matched with
+
+            `json_pop` - the name of the json attribute the total precinct
+                         populations are stored in
 
             `objects_dir` - path to dir where serialized list of precincts
                             is to be stored
@@ -140,25 +142,23 @@ class Precinct:
         # remove absentee, early voting, and question rows
         x = 0
         if state == "alaska":
-            for i, line in enumerate(data_dict["precinct"][:]):
-                if line[1:9] == "District":
-                    for key, val in data_dict.items():
-                        data_dict[key] = val[:i-x] + val[(i-x)+1:]  # list without that line
-                    x += 1
-        print('\n'.join(data_dict["precinct"]))
+            pass
         
         # keys in `data_dict` that correspond to party vote counts
-        dem_keys = [key for key in data_dict.keys() if key[-2:] == 'dv']
-        rep_keys = [key for key in data_dict.keys() if key[-2:] == 'rv']
+        if state == "alaska":
+            dem_keys = ["usp_d_08"]
+            rep_keys = ["usp_r_08"]
         
         # [[precinct_id1, col1], [precinct_id2, col2]]
         precinct_ids = Precinct.find_precincts(data_dict, state)
 
         # Looks for precinct name (or if there is one)
-        if "precinct_name" in data_dict:
+        if "precinct_name" in (keys := data_dict.keys()):
             precinct_name_col = "precinct_name"
-        elif "precinct" in data_dict:
+        elif "precinct" in keys:
             precinct_name_col = "precinct"
+        elif "name10" in keys:
+            precinct_name_col = "name10"
         else:
             precinct_name_col = False
         
@@ -206,19 +206,19 @@ class Precinct:
                         data_dict[precinct_name_col][precinct_row],
                         state,
                         precinct_id,
-                        precinct_geo_data['properties']['POPULATION'],
+                        precinct_geo_data['properties'][json_pop],
                         dem_cols[precinct_id],
                         rep_cols[precinct_id]
                     ))
                 else:
                     if precinct_row == 0:
-                        warnings.warn(f"No precincts names found in state of {alaska}")
+                        warnings.warn(f"No precincts names found in state of {state}")
                     precinct_list.append(Precinct(
                         precinct_geo_data['geometry']['coordinates'],
                         "None",
                         state,
                         precinct_id,
-                        precinct_geo_data['properties']['POPULATION'],
+                        precinct_geo_data['properties'][json_pop],
                         dem_cols[precinct_id],
                         rep_cols[precinct_id]
                     ))
@@ -239,7 +239,7 @@ class Precinct:
         """
 
         if state == "alaska":
-            precincts = data_dict["precinct"]
+            precincts = data_dict["vtdst10"]
             ids = [[precinct[1:7], i] for i, precinct in enumerate(precincts)]
             return ids
 
@@ -250,8 +250,8 @@ if __name__ == "__main__":
 
     args = sys.argv[1:]
 
-    if len(args) < 5:
+    if len(args) < 6:
         raise TypeError("Incorrect number of arguments: (see __doc__ for usage)")
     
     Precinct.generate_from_files(args[0], args[1], args[2],
-                                 args[3], args[4])
+                                 args[3], args[4], args[5])
