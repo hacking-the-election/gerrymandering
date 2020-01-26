@@ -72,7 +72,10 @@ class Shape {
             // push shape id and border to archive stream
             ar & shape_id;
             ar & border;
+            ar & pop;
         }
+
+        int pop = 0; // total population
 };
 
 
@@ -108,6 +111,7 @@ class Precinct : public Shape {
             ar & border;
             ar & dem;            
             ar & rep;
+            ar & pop;
         }
         
     private:
@@ -134,6 +138,7 @@ class District : public Shape {
             // push id and border into the archive stream
             ar & id;
             ar & border;
+            ar & pop;
         }
 
     private:
@@ -195,6 +200,7 @@ class State : public Shape {
             ar & state_precincts;
             ar & name;
             ar & border;
+            ar & pop;
         }
 
         // name of state

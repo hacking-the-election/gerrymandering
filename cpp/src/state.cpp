@@ -45,6 +45,14 @@ vector<vector<string> > parse_sv(string tsv, string delimiter) {
     return parsed;
 }
 
+bool check_column(vector<vector<string> > data_list, int index) {
+    for (int i = 0; i < data_list.size(); i++)
+        if (data_list[i][index].size() == 0)
+            return false;
+
+    return true;
+}
+
 map<string, vector<int> > parse_voter_data(string voter_data) {
     /*
         from a string in the specified format,
@@ -58,10 +66,9 @@ map<string, vector<int> > parse_voter_data(string voter_data) {
     vector<string> watchlist;
 
     int precinct_id_col = -1; // the column index that holds precinct id's
-    int county_id_col = -1; // the column index that holds precinct id's
+    // int county_id_col = -1; // the column index that holds precinct id's
 
-    string precinct_id_col_header = "county";   // the column header name
-    string county_id_col_header = "precinct_id";   // the column header name
+    string precinct_id_col_header = "geoid10";   // the column header name
 
     // indices of usable data
     vector<int> d_index;
@@ -74,8 +81,6 @@ map<string, vector<int> > parse_voter_data(string voter_data) {
 
         if (item == precinct_id_col_header)
             precinct_id_col = index;
-        else if (item == county_id_col_header)
-            county_id_col = index;
 
         // split header by underscore
         vector<string> party = split(item, "_");
@@ -97,12 +102,14 @@ map<string, vector<int> > parse_voter_data(string voter_data) {
             // if it's already in the watchlist, it's useable data
             if ( old_data != watchlist.end()) {
 
-                if (par == "dv")
-                    // since the one we've found is right,
-                    // add the one we're at right now
-                    d_index.push_back(index);
-                else
-                    r_index.push_back(index);
+                if (check_column(data_list, index)) {
+                    if (par == "dv")
+                        // since the one we've found is right,
+                        // add the one we're at right now
+                        d_index.push_back(index);
+                    else
+                        r_index.push_back(index);
+                }
 
                 // find old data already in watchlist, pair it with new data
 
@@ -115,11 +122,14 @@ map<string, vector<int> > parse_voter_data(string voter_data) {
                                 )
                             );
 
-                if (par == "dv")
-                    // add old watchlisted data
-                    r_index.push_back(index2);
-                else
-                    d_index.push_back(index2);
+                if (check_column(data_list, index2)) {
+                    if (par == "dv")
+                        // add old watchlisted data
+                        r_index.push_back(index2);
+                    else
+                        d_index.push_back(index2);
+                }
+
             }
             else {
                 // otherwise, add it to the watchlist
@@ -136,23 +146,21 @@ map<string, vector<int> > parse_voter_data(string voter_data) {
     // iterate over each precinct
     for (int x = 1; x < data_list.size(); x++) {
 
-        string precinct_id = data_list[x][precinct_id_col]; // get the precinct id
-        string county_id = data_list[x][county_id_col]; // get the precinct id
-
-        if (id.substr(0, 1) == "\"")
-            // strip surrounding quotes from id
-            id = id.substr(1, id.size() - 2);
+        string id = split(data_list[x][precinct_id_col], "\"")[1]; // get the precinct id
+        // string id = data_list[x][precinct_id_col];
 
         int demT = 0, repT = 0;
 
         // get the right voter columns, add to party total
         for (int i = 0; i < d_index.size(); i++) {
-            demT += stoi(data_list[x][d_index[i]]);
-            repT += stoi(data_list[x][r_index[i]]);
+            string d = data_list[x][d_index[i]];
+            string r = data_list[x][r_index[i]];
+            demT += stoi(d);
+            repT += stoi(r);
         }
-
-        // set the voter data of the precinct in the map
+        
         parsed_data[id] = {demT, repT};
+        // set the voter data of the precinct in the map
     }
 
     return parsed_data; // return the filled map
@@ -191,6 +199,7 @@ vector<Shape> parse_coordinates(string geoJSON) {
     for ( int i = 0; i < shapes["features"].Size(); i++ ) {
         string coords;
         string id = "";
+        int pop = 0;
 
         // see if the geoJSON contains the shape id
         if (shapes["features"][i]["properties"].HasMember("GEOID10")) {
@@ -201,6 +210,13 @@ vector<Shape> parse_coordinates(string geoJSON) {
             cout << "If future k-vernooy runs into this error, it means that GEOID10 in your geoJSON in your voter data is missing. To fix... maybe try a loose comparison of the names?" << endl;
         }
 
+        // get the population from geodata
+        if (shapes["features"][i]["properties"].HasMember("POP100")) {
+            pop = shapes["features"][i]["properties"]["POP100"].GetInt();
+        }
+        else
+            cout << "\e[31merror: \e[0mNo population data in geodata" << endl;
+    
         // create empty string buffer
         StringBuffer buffer;
         buffer.Clear();
@@ -215,6 +231,7 @@ vector<Shape> parse_coordinates(string geoJSON) {
 
         // create shape from border, add to array
         Shape shape(border, id);
+        shape.pop = pop;
         shapes_vector.push_back(shape);
     }
 
@@ -248,6 +265,7 @@ vector<Precinct> merge_data( vector<Shape> precinct_shapes, map<string, vector<i
 
         // create a precinct object and add it to the array
         Precinct precinct = Precinct(precinct_shape.border, p_data[0], p_data[1], p_id);
+        precinct.pop = precinct_shape.pop;
         precincts.push_back(precinct);
     }
 
