@@ -129,6 +129,10 @@ class Precinct:
                     self.d_election_sum += self.d_election_data[election + "d"]
                     self.r_election_sum += self.r_election_data[election + "r"]
 
+        elif state == "connecticut":
+            self.d_election_sum += self.d_election_data["democrat"]
+            self.r_election_sum += self.r_election_data["republican"]
+
         try:
             self.dem_rep_ratio = self.d_election_sum / self.r_election_sum
         except ZeroDivisionError:
@@ -200,6 +204,10 @@ class Precinct:
         elif state == "colorado":
             dem_keys = [key for key in data_dict.keys() if key[-1] == "d"]
             rep_keys = [key for key in data_dict.keys() if key[-1] == "r"]
+
+        elif state == "connecticut":
+            dem_keys = ["democrat"]
+            rep_keys = ["republican"]
 
         
         # [[precinct_id1, col1], [precinct_id2, col2]]
@@ -297,7 +305,7 @@ class Precinct:
         Finds precinct id attributes that can be matched with geojson
         """
 
-        if state in ["alabama", "arizona"]:
+        if state in ["alabama", "arizona", "connecticut"]:
             precincts = data_dict["geoid10"]
             ids = [[precinct[1:-1], i] for i, precinct in enumerate(precincts)]
             return ids
