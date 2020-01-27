@@ -91,7 +91,7 @@ class Precinct:
         self.r_election_sum = 0
 
         # only include data for elections for which there is data for both parties
-        if state == "alabama":
+        if state in ["alabama", "delaware"]:
             # 2d list like a dict
             ordered_d_election_data = [[key, value] for key, value in
                                        self.d_election_data.items()]
@@ -190,7 +190,7 @@ class Precinct:
         data_dict = {column[0]: column[1:] for column in data_columns}
         
         # keys in `data_dict` that correspond to party vote counts
-        if state == "alabama":
+        if state in ["alabama", "delaware"]:
             dem_keys = [key for key in data_dict.keys() if "_d_" in key]
             rep_keys = [key for key in data_dict.keys() if "_r_" in key]
 
@@ -307,7 +307,7 @@ class Precinct:
         Finds precinct id attributes that can be matched with geojson
         """
 
-        if state in ["alabama", "arizona", "connecticut"]:
+        if state in ["alabama", "arizona", "connecticut", "delaware"]:
             precincts = data_dict["geoid10"]
             ids = [[precinct[1:-1], i] for i, precinct in enumerate(precincts)]
             return ids
