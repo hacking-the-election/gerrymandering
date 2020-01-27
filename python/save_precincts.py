@@ -111,6 +111,7 @@ class Precinct:
             self.d_election_sum = self.d_election_data["usp_d_08"]
             self.r_election_sum = self.r_election_data["usp_r_08"]
 
+        
         elif state == "arizona":
             dem_elections = [key[:-3] for key in self.d_election_data.keys()]
             rep_elections = [key[:-3] for key in self.r_election_data.keys()]
@@ -222,6 +223,7 @@ class Precinct:
             precinct_name_col = "name10"
         else:
             precinct_name_col = False
+
         
         # keys: precinct ids.
         # keys of values: keys in `data_dict` that correspond
