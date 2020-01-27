@@ -85,12 +85,11 @@ class Precinct:
             self.d_election_sum = self.d_election_data["usp_d_08"]
             self.r_election_sum = self.r_election_data["usp_r_08"]
 
-        try:
-            self.dem_rep_ratio = self.d_election_sum / self.r_election_sum
-        except ZeroDivisionError:
-            # it won't get a ratio as an attribute so we can
-            # decide what to do with the dem and rep sums later.
-            pass
+        # Finds total number of votes (note. not necessarily the total number of voters)
+        self.total_votes = self.d_election_sum + self.r_election_sum
+        self.dem_precentage = self.d_election_sum/self.total_votes
+        self.rep_precentage = self.r_election_sum/self.total_votes
+        
 
 
     def __str__(self):
@@ -161,6 +160,7 @@ class Precinct:
             precinct_name_col = "name10"
         else:
             precinct_name_col = False
+
         
         # keys: precinct ids.
         # keys of values: keys in `data_dict` that correspond
