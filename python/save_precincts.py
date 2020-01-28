@@ -134,6 +134,15 @@ class Precinct:
             self.d_election_sum += self.d_election_data["democrat"]
             self.r_election_sum += self.r_election_data["republican"]
 
+        elif state == "wyoming":
+            dem_elections = {key[-3:]: key[:-3] for key in self.d_election_data.keys()}
+            rep_elections = {key[-3:]: key[:-3] for key in self.r_election_data.keys()}
+
+            for election_base, election_ending in dem_elections.items():
+                if election_base in rep_elections:
+                    self.d_election_sum += self.d_election_data[election_base + election_ending]
+                    self.r_election_sum += self.r_election_data[election_base + election_ending]
+
         try:
             self.dem_rep_ratio = self.d_election_sum / self.r_election_sum
         except ZeroDivisionError:
@@ -210,7 +219,15 @@ class Precinct:
             dem_keys = ["democrat"]
             rep_keys = ["republican"]
 
-        
+        elif state == "wyoming":
+            dem_keys = [key for key in data_dict.keys() if key[-3:] in
+                ["d00", "d02", "d04", "d06", "d08", "d10"]]
+            for key in ['geoid10', 'namelsad10', 'lsad10', 'aland10']:
+                dem_keys.remove(key)
+            rep_keys = [key for key in data_dict.keys() if key[-3:] in
+                ["r00", "r02", "r04", "r06", "r08", "r10"]]
+            rep_keys.remove('awater10')
+
         # [[precinct_id1, col1], [precinct_id2, col2]]
         precinct_ids = Precinct.find_precincts(data_dict, state)
 
@@ -219,6 +236,8 @@ class Precinct:
             precinct_name_col = "precinct_name"
         elif "precinct" in keys:
             precinct_name_col = "precinct"
+        elif "namelsad10" in keys:
+            precinct_name_col = "namelsad10"
         elif "name10" in keys:
             precinct_name_col = "name10"
         else:
@@ -245,6 +264,12 @@ class Precinct:
 
         precinct_list = []
         
+        pop_data = {}
+        if state == "wyoming":  # vap states
+            for precinct_id, precinct_row in precinct_ids:
+                pop_data[precinct_id] = convert_to_int(data_dict["vap"][precinct_row])
+
+
         # list of precinct ids that are in geodata and election data
         precinct_geo_list = []
         for precinct in geo_data['features']:
@@ -253,20 +278,27 @@ class Precinct:
             else:
                 precinct_geo_list.append(precinct['properties'][json_id])
 
+
         # append precinct objects to precinct_list
         for precinct_id, precinct_row in precinct_ids:
-
             # if precinct id corresponds to any json obejcts
             if precinct_id in precinct_geo_list:
 
                 # json object from geojson that corresponds with preinct with precinct_id
                 precinct_geo_data = []
                 for precinct in geo_data['features']:
-                    if (precinct['properties'][json_id][1:]
-                            if state == "colorado"
-                            else precinct['properties'][json_id]) \
-                            == precinct_id:
-                        precinct_geo_data = precinct
+                    if state == "colorado":
+                        if precinct['properties'][json_id][1:] == precinct_id:
+                            precinct_geo_data = precinct           
+                    else:
+                        if precinct['properties'][json_id] == precinct_id:
+                            precinct_geo_data = precinct
+
+                pop = 0
+                if state == "wyoming":  # vap states
+                    pop = pop_data[precinct_id]
+                else:
+                    pop = precinct_geo_data['properties'][json_pop]
 
                 # if there is a column for names
                 if precinct_name_col:
@@ -275,7 +307,7 @@ class Precinct:
                         data_dict[precinct_name_col][precinct_row],
                         state,
                         precinct_id,
-                        precinct_geo_data['properties'][json_pop],
+                        pop,
                         dem_cols[precinct_id],
                         rep_cols[precinct_id]
                     ))
@@ -287,7 +319,7 @@ class Precinct:
                         "None",
                         state,
                         precinct_id,
-                        precinct_geo_data['properties'][json_pop],
+                        pop,
                         dem_cols[precinct_id],
                         rep_cols[precinct_id]
                     ))
@@ -307,7 +339,8 @@ class Precinct:
         Finds precinct id attributes that can be matched with geojson
         """
 
-        if state in ["alabama", "arizona", "connecticut", "delaware"]:
+        if state in ["alabama", "arizona", "connecticut",
+                     "delaware", "wyoming"]:
             precincts = data_dict["geoid10"]
             ids = [[precinct[1:-1], i] for i, precinct in enumerate(precincts)]
             return ids

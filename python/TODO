@@ -1,2 +1,3 @@
  - serialize all data from raw directory in data repo
+    - wyoming is incomplete: no election data in precinct objects
  - update unit tests and add test data
