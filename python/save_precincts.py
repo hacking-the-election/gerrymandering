@@ -129,7 +129,17 @@ class Precinct:
                 if election in rep_elections:
                     self.d_election_sum += self.d_election_data[election + "d"]
                     self.r_election_sum += self.r_election_data[election + "r"]
+                    
+        elif state == "wyoming":
+            dem_elections = {key[-3:]: key[:-3] for key in data_dict.keys() if key[-3:] == \
+                "d00" or "d02" or "d04" or "d06" or "d08" or "d10"}
+            rep_elections = {key[-3]: key[:-3] for key in data_dict.keys() if key[-3:] == \
+                "r00" or "r02" or "r04" or "r06" or "r08" or "r10"}
 
+            for election_base, election_ending in dem_elections:
+                if election_base in rep_elections:
+                    self.d_election_sum += self.d_election_data[election_base + election_ending]
+                    self.r_election_sum += self.r_election_data[election_base + election_ending]
         # Finds total number of votes (note. not necessarily the total number of voters)
         self.total_votes = self.d_election_sum + self.r_election_sum
         self.dem_precentage = self.d_election_sum/self.total_votes
@@ -199,8 +209,12 @@ class Precinct:
         elif state == "colorado":
             dem_keys = [key for key in data_dict.keys() if key[-1] == "d"]
             rep_keys = [key for key in data_dict.keys() if key[-1] == "r"]
-
-        
+            
+        elif state == "wyoming":
+            dem_keys = [key for key in data_dict.keys() if key[-3:] == \
+                "d00" or "d02" or "d04" or "d06" or "d08" or "d10"]
+            rep_keys = [key for key in data_dict.keys() if key[-3] == \
+                "r00" or "r02" or "r04" or "r06" or "r08" or "r10"]
         # [[precinct_id1, col1], [precinct_id2, col2]]
         precinct_ids = Precinct.find_precincts(data_dict, state)
 
@@ -209,6 +223,8 @@ class Precinct:
             precinct_name_col = "precinct_name"
         elif "precinct" in keys:
             precinct_name_col = "precinct"
+        elif "namelsad10" in keys:
+            precinct_name_col = "namelsad10"
         elif "name10" in keys:
             precinct_name_col = "name10"
         else:
@@ -242,21 +258,23 @@ class Precinct:
                 precinct_geo_list.append(precinct['properties'][json_id][1:])
             else:
                 precinct_geo_list.append(precinct['properties'][json_id])
-
+                                         
+        print(precinct_geo_list)
         # append precinct objects to precinct_list
         for precinct_id, precinct_row in precinct_ids:
-
+            print(precinct_id)
             # if precinct id corresponds to any json obejcts
             if precinct_id in precinct_geo_list:
 
                 # json object from geojson that corresponds with preinct with precinct_id
                 precinct_geo_data = []
                 for precinct in geo_data['features']:
-                    if (precinct['properties'][json_id][1:]
-                            if state == "colorado"
-                            else precinct['properties'][json_id]) \
-                            == precinct_id:
-                        precinct_geo_data = precinct
+                    if state == "colorado":
+                        if precinct['properties'][json_id][1:] == precinct_id:
+                            precinct_geo_data = precinct           
+                    else:
+                        if precinct['properties'][json_id] == precinct_id:
+                            precinct_geo_data = precinct
 
                 # if there is a column for names
                 if precinct_name_col:
@@ -307,7 +325,7 @@ class Precinct:
             ids = [[precinct[1:7], i] for i, precinct in enumerate(precincts)]
             return ids
 
-        elif state == "colorado":
+        elif state == "colorado" or state == "wyoming":
             precincts = data_dict["geoid10"]
             ids = [[precinct, i] for i, precinct in enumerate(precincts)]
             return ids
