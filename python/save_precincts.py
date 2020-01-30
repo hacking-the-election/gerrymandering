@@ -24,6 +24,11 @@ from os.path import abspath, dirname, isdir
 import pickle
 import warnings
 
+# import logging
+
+
+# logging.basicConfig(level=logging.INFO, filename="precincts.log")
+
 
 def customwarn(message, category, filename, lineno, file=None, line=None):
     sys.stdout.write(warnings.formatwarning(message, category, filename, lineno))
@@ -86,6 +91,8 @@ class Precinct:
         # election data
         self.d_election_data = d_election_data
         self.r_election_data = r_election_data
+        # logging.info(self.d_election_data)
+        # logging.info(self.r_election_data)
 
         self.d_election_sum = 0
         self.r_election_sum = 0
@@ -138,10 +145,12 @@ class Precinct:
             dem_elections = {key[-3:]: key[:-3] for key in self.d_election_data.keys()}
             rep_elections = {key[-3:]: key[:-3] for key in self.r_election_data.keys()}
 
-            for election_base, election_ending in dem_elections.items():
-                if election_base in rep_elections:
-                    self.d_election_sum += self.d_election_data[election_base + election_ending]
-                    self.r_election_sum += self.r_election_data[election_base + election_ending]
+            for election_ending, election_base in dem_elections.items():
+                if election_base in rep_elections.values():
+                    self.d_election_sum = self.d_election_data[
+                        election_base + election_ending]
+                    self.r_election_sum = self.r_election_data[
+                        election_base + election_ending.replace("d", "r")]
 
         try:
             self.dem_rep_ratio = self.d_election_sum / self.r_election_sum
