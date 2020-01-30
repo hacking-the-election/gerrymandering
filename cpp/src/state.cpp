@@ -13,8 +13,6 @@
 
 #define VERBOSE 1  // print progress messages
 
-static const string state_id = "51";
-
 vector<vector<string> > parse_sv(string tsv, string delimiter) {
     /*
         takes a tsv file as string, returns
@@ -200,7 +198,6 @@ vector<Shape> parse_coordinates(string geoJSON) {
         string coords;
         string id = "";
         int pop = 0;
-
         // see if the geoJSON contains the shape id
         if (shapes["features"][i]["properties"].HasMember("GEOID10")) {
             id = shapes["features"][i]["properties"]["GEOID10"].GetString();
@@ -216,7 +213,7 @@ vector<Shape> parse_coordinates(string geoJSON) {
         }
         else
             cout << "\e[31merror: \e[0mNo population data in geodata" << endl;
-    
+        
         // create empty string buffer
         StringBuffer buffer;
         buffer.Clear();
