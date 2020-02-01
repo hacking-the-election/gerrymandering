@@ -27,7 +27,6 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-
     // read files into strings
     string precinct_geoJSON = readf(argv[1]);
     string voter_data = readf(argv[2]);

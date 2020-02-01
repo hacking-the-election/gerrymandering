@@ -28,7 +28,7 @@ int main(int argc, char* argv[]) {
 
     // generate state from files
     State state = State::read_binary(read_path);
-    // state.generate_communities();
+    vector<Precinct_Group> political_communities = state.generate_communities();
 
     // write as binary
     return 0;

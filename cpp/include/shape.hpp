@@ -67,13 +67,7 @@ class Shape {
 
         // for boost serialization
         friend class boost::serialization::access;
-
-        template<class Archive> void serialize(Archive & ar, const unsigned int version) {
-            // push shape id and border to archive stream
-            ar & shape_id;
-            ar & border;
-            ar & pop;
-        }
+        template<class Archive> void serialize(Archive & ar, const unsigned int version);
 
         int pop = 0; // total population
 };
@@ -104,15 +98,7 @@ class Precinct : public Shape {
     
         // for boost serialization
         friend class boost::serialization::access;
-
-        template<class Archive> void serialize(Archive & ar, const unsigned int version) {
-            // push shape, border and vote data
-            ar & shape_id;
-            ar & border;
-            ar & dem;            
-            ar & rep;
-            ar & pop;
-        }
+        template<class Archive> void serialize(Archive & ar, const unsigned int version);
         
     private:
         int dem; // democratic vote total
@@ -121,8 +107,10 @@ class Precinct : public Shape {
 
 class Precinct_Group : public Shape {
 
-    // Derived class for defining a district
-    // with expanded methods for algorithms
+    /* 
+        Derived class for defining a district
+        with expanded methods for algorithms
+    */
 
     public:
 
@@ -133,29 +121,24 @@ class Precinct_Group : public Shape {
 
         // for boost serialization
         friend class boost::serialization::access;
-
-        template<class Archive> void serialize(Archive & ar, const unsigned int version) {
-            // push id and border into the archive stream
-            ar & id;
-            ar & border;
-            ar & pop;
-        }
+        template<class Archive> void serialize(Archive & ar, const unsigned int version);
 
     private:
         int id; // the district id number
 };
 
+
+/*
+    Derived shape class for defining a state.
+    Includes arrays of precincts, and districts.
+
+    Contains methods for generating from binary files
+    or from raw data with proper district + precinct data
+
+    Contains serialization methods for binary and json.
+*/
+
 class State : public Precinct_Group {
-
-    /*
-        Derived shape class for defining a state.
-        Includes arrays of precincts, and districts.
-
-        Contains methods for generating from binary files
-        or from raw data with proper district + precinct data
-
-        Contains serialization methods for binary and json.
-    */
 
     public:
 
@@ -170,46 +153,23 @@ class State : public Precinct_Group {
         // generate a file from proper raw input
         static State generate_from_file(string precinct_geoJSON, string voter_data, string district_geoJSON);
 
-        // serialize to json format
+        // serialize and read to and from binary, json
+        void write_binary(string path);
+        static State read_binary(string path);
         string to_json();
-
-        // serialize to binary
-        void write_binary(string path) {
-            ofstream ofs(path); // open output stream
-            boost::archive::binary_oarchive oa(ofs); // open archive stream
-            oa << *this; // put this pointer into stream
-            ofs.close(); // close stream
-        }
-
-        static State read_binary(string path) {
-            State state = State(); // blank state object
-
-            ifstream ifs(path); // open input stream
-            boost::archive::binary_iarchive ia(ifs); // open archive stream
-            ia >> state; // read into state object
-
-            return state; // return state object
-        }
 
         // for boost serialization
         friend class boost::serialization::access;
+        template<class Archive> void serialize(Archive & ar, const unsigned int version);
 
-        template<class Archive> void serialize(Archive & ar, const unsigned int version) {
-            // write districts, precincts, name, and border
-            ar & state_districts;
-            ar & state_precincts;
-            ar & name;
-            ar & border;
-            ar & pop;
-        }
-
+        // for the community generation algorithm
         vector<Precinct_Group> generate_communities();
         
         // name of state
         string name = "no_name";
 
-        private:
-            // arrays of shapes in state
-            vector<Precinct_Group> state_districts;
-            vector<Precinct> state_precincts;
+    private:
+        // arrays of shapes in state
+        vector<Precinct_Group> state_districts;
+        vector<Precinct> state_precincts;
 };
