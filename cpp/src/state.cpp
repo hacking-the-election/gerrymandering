@@ -291,11 +291,11 @@ State State::generate_from_file(string precinct_geoJSON, string voter_data, stri
     if (VERBOSE) cout << "generating coordinate array from district file..." << endl;
     vector<Shape> district_shapes = parse_coordinates(district_geoJSON);
 
-    vector<District> districts;
+    vector<Precinct_Group> districts;
 
     for ( Shape district_shape : district_shapes ) {
         // create district objects from shape objects
-        districts.push_back(District(district_shape.border));
+        districts.push_back(Precinct_Group(district_shape.border));
     }
 
     // create a vector of precinct objects from border and voter data

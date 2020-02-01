@@ -119,16 +119,16 @@ class Precinct : public Shape {
         int rep; // republican vote total
 };
 
-class District : public Shape {
+class Precinct_Group : public Shape {
 
     // Derived class for defining a district
     // with expanded methods for algorithms
 
     public:
 
-        District(){}; // default constructor
+        Precinct_Group(){}; // default constructor
 
-        District(vector<vector<float> > shape)
+        Precinct_Group(vector<vector<float> > shape)
             : Shape(shape) {}; // call the superclass constructor
 
         // for boost serialization
@@ -145,7 +145,7 @@ class District : public Shape {
         int id; // the district id number
 };
 
-class State : public Shape {
+class State : public Precinct_Group {
 
     /*
         Derived shape class for defining a state.
@@ -161,7 +161,7 @@ class State : public Shape {
 
         State(){}; // default constructor
 
-        State(vector<District> districts, vector<Precinct> precincts, vector<vector<float> > shape) : Shape(shape) {
+        State(vector<Precinct_Group> districts, vector<Precinct> precincts, vector<vector<float> > shape) : Precinct_Group(shape) {
             // simple assignment constructor
             state_districts = districts;
             state_precincts = precincts;
@@ -203,11 +203,13 @@ class State : public Shape {
             ar & pop;
         }
 
+        vector<Precinct_Group> generate_communities();
+        
         // name of state
         string name = "no_name";
 
         private:
             // arrays of shapes in state
-            vector<District> state_districts;
+            vector<Precinct_Group> state_districts;
             vector<Precinct> state_precincts;
 };
