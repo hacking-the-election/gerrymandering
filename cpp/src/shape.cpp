@@ -161,6 +161,9 @@ vector<vector<float> > connect_dots(vector<vector<float> > shape) {
 
         for (int i = 0; i <= steps; i++) {
             newShape.push_back({(float)x, (float)y});
+            newShape.push_back({(float)x + 1, (float)y + 1});
+            newShape.push_back({(float)x + 1, (float)y});
+            newShape.push_back({(float)x, (float)y + 1});
             x += xinc;
             y += yinc;
         }
