@@ -1,3 +1,7 @@
- - serialize all data from raw directory in data repo
-    - wyoming is incomplete: no election data in precinct objects
- - update unit tests and add test data
+# Serialization:
+   Now:
+    - serialize all data from raw directory in data repo
+    - create script to convert pickled precinct objects to json and test with gui.cpp
+   Later (Possible after project):
+    - change save_precincts.py so that there needs to be no input but the state and election and geodata filepaths
+    - update unit tests and add test data
