@@ -172,6 +172,10 @@ class Precinct:
                         election[:-3] + "dvote" + election[-3:]]
                     self.r_election_sum += self.r_election_data[
                         election[:-3] + "rvote" + election[-3:]]
+
+        elif state == "virginia":
+            self.d_election_sum = self.d_election_data["G16DPRS"]
+            self.r_election_sum = self.r_election_data["G16RPRS"]
         
         try:
             self.dem_rep_ratio = self.d_election_sum / self.r_election_sum
@@ -216,7 +220,7 @@ class Precinct:
         with open(geo_data_file, 'r') as f:
             geo_data = json.load(f)
 
-        if state != "wisconsin":
+        if state not in ["wisconsin", "virginia"]:
             with open(election_data_file, 'r') as f:
                 election_data = f.read().strip()
             
@@ -293,7 +297,36 @@ class Precinct:
                 raise Exception("No precincts saved to precinct list.")
 
             return
-                
+
+        # you're a mean one, Mr. Virginia
+        if state == "virginia":
+
+            precinct_list = []
+
+            for precinct in geo_data["features"]:
+
+                d_election_data = {
+                    "G16DPRS": convert_to_int(precinct["properties"]["G16DPRS"])
+                }
+                r_election_data = {
+                    "G16RPRS": convert_to_int(precinct["properties"]["G16RPRS"])
+                }
+
+                precinct_list.append(Precinct(
+                    precinct["geometry"]["coordinates"],
+                    precinct["properties"]["precinct"],
+                    "virginia", "none",
+                    convert_to_int(precinct["properties"]["TOTPOP"]),
+                    d_election_data, r_election_data
+                ))
+
+            # save precinct list to state file
+            try:
+                save(precinct_list[0].state, precinct_list, objects_dir)
+            except IndexError:
+                raise Exception("No precincts saved to precinct list.")
+
+            return
 
         # [[precinct_id1, col1], [precinct_id2, col2]]
         precinct_ids = Precinct.find_precincts(data_dict, state)
@@ -363,9 +396,11 @@ class Precinct:
 
                 pop = 0
                 if state == "wyoming":  # vap states
-                    pop = pop_data[precinct_id]
+                    pop = convert_to_int(pop_data[precinct_id])
                 else:
-                    pop = precinct_geo_data['properties'][json_pop]
+                    pop = convert_to_int(
+                            precinct_geo_data['properties'][json_pop]
+                        )
 
                 # if there is a column for names
                 if precinct_name_col:
