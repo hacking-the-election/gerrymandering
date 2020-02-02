@@ -162,6 +162,17 @@ class Precinct:
                     self.r_election_sum += self.r_election_data[
                                                 rep_elections[election]]
 
+        elif state == "washington":
+            dem_elections = [key[:-8] + key[-3:] for key in self.d_election_data]
+            rep_elections = [key[:-8] + key[-3:] for key in self.r_election_data]
+
+            for election in dem_elections:
+                if election in rep_elections:
+                    self.d_election_sum += self.d_election_data[
+                        election[:-3] + "dvote" + election[-3:]]
+                    self.r_election_sum += self.r_election_data[
+                        election[:-3] + "rvote" + election[-3:]]
+        
         try:
             self.dem_rep_ratio = self.d_election_sum / self.r_election_sum
         except ZeroDivisionError:
@@ -247,6 +258,10 @@ class Precinct:
             rep_keys = [key for key in data_dict.keys() if key[-3:] in
                 ["r00", "r02", "r04", "r06", "r08", "r10"]]
             rep_keys.remove('awater10')
+
+        elif state == "washington":
+            dem_keys = [key for key in data_dict.keys() if key[-8:-3] == "dvote"]
+            rep_keys = [key for key in data_dict.keys() if key[-8:-3] == "rvote"]
 
         # you're a mean one, Mr. Wisconsin
         if state == "wisconsin":
@@ -392,7 +407,7 @@ class Precinct:
         """
 
         if state in ["alabama", "arizona", "connecticut",
-                     "delaware", "wyoming"]:
+                     "delaware", "wyoming", "washington"]:
             precincts = data_dict["geoid10"]
             ids = [[precinct[1:-1], i] for i, precinct in enumerate(precincts)]
             return ids
