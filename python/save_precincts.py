@@ -152,6 +152,16 @@ class Precinct:
                     self.r_election_sum = self.r_election_data[
                         election_base + election_ending.replace("d", "r")]
 
+        elif state == "wisconsin":
+            dem_elections = {key.replace("DEM", ""): key for key in self.d_election_data.keys()}
+            rep_elections = {key.replace("REP", ""): key for key in self.r_election_data.keys()}
+
+            for election, dem_key in dem_elections.items():
+                if election in rep_elections.keys():
+                    self.d_election_sum += self.d_election_data[dem_key]
+                    self.r_election_sum += self.r_election_data[
+                                                rep_elections[election]]
+
         try:
             self.dem_rep_ratio = self.d_election_sum / self.r_election_sum
         except ZeroDivisionError:
@@ -195,17 +205,18 @@ class Precinct:
         with open(geo_data_file, 'r') as f:
             geo_data = json.load(f)
 
-        with open(election_data_file, 'r') as f:
-            election_data = f.read().strip()
-        
-        data_rows = [row.split('\t') for row in election_data.split('\n')]
-        # 2-d list with each sublist being a column in the
-        # election data file
-        data_columns = [[data_rows[x][y] for x in range(len(data_rows))]
-                        for y in range(len(data_rows[0]))]
-        # keys: data categories; values: lists of corresponding values
-        # for each precinct
-        data_dict = {column[0]: column[1:] for column in data_columns}
+        if state != "wisconsin":
+            with open(election_data_file, 'r') as f:
+                election_data = f.read().strip()
+            
+            data_rows = [row.split('\t') for row in election_data.split('\n')]
+            # 2-d list with each sublist being a column in the
+            # election data file
+            data_columns = [[data_rows[x][y] for x in range(len(data_rows))]
+                            for y in range(len(data_rows[0]))]
+            # keys: data categories; values: lists of corresponding values
+            # for each precinct
+            data_dict = {column[0]: column[1:] for column in data_columns}
         
         # keys in `data_dict` that correspond to party vote counts
         if state in ["alabama", "delaware"]:
@@ -236,6 +247,38 @@ class Precinct:
             rep_keys = [key for key in data_dict.keys() if key[-3:] in
                 ["r00", "r02", "r04", "r06", "r08", "r10"]]
             rep_keys.remove('awater10')
+
+        # you're a mean one, Mr. Wisconsin
+        if state == "wisconsin":
+
+            precinct_list = []
+
+            for precinct in geo_data["features"]:
+
+                d_election_data = {}
+                r_election_data = {}
+
+                for key, val in precinct["properties"].items():
+                    if "DEM" in key:
+                        d_election_data[key] = convert_to_int(val)
+                    elif "REP" in key:
+                        r_election_data[key] = convert_to_int(val)
+
+                precinct_list.append(Precinct(
+                    precinct["geometry"]["coordinates"],
+                    precinct["properties"]["NAME"],
+                    "wisconsin", precinct["properties"]["STFID"],
+                    precinct["properties"]["PERSONS"],
+                    d_election_data, r_election_data))
+
+            # save precinct list to state file
+            try:
+                save(precinct_list[0].state, precinct_list, objects_dir)
+            except IndexError:
+                raise Exception("No precincts saved to precinct list.")
+
+            return
+                
 
         # [[precinct_id1, col1], [precinct_id2, col2]]
         precinct_ids = Precinct.find_precincts(data_dict, state)
