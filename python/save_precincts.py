@@ -19,7 +19,7 @@ precint-level election and geodata for a state in `objects_dir`
 
 
 import json
-from os import mkdir, _exit
+from os import mkdir
 from os.path import abspath, dirname, isdir
 import pickle
 import warnings
@@ -286,7 +286,8 @@ class Precinct:
                 precinct_list.append(Precinct(
                     precinct["geometry"]["coordinates"],
                     precinct["properties"]["NAME"],
-                    "wisconsin", precinct["properties"]["STFID"],
+                    "wisconsin",
+                    precinct["properties"]["STFID"],
                     precinct["properties"]["PERSONS"],
                     d_election_data, r_election_data))
 
@@ -315,9 +316,11 @@ class Precinct:
                 precinct_list.append(Precinct(
                     precinct["geometry"]["coordinates"],
                     precinct["properties"]["precinct"],
-                    "virginia", "none",
+                    "virginia",
+                    "none",
                     convert_to_int(precinct["properties"]["TOTPOP"]),
-                    d_election_data, r_election_data
+                    d_election_data,
+                    r_election_data
                 ))
 
             # save precinct list to state file
@@ -378,11 +381,15 @@ class Precinct:
             else:
                 precinct_geo_list.append(precinct['properties'][json_id])
 
-
         # append precinct objects to precinct_list
-        for precinct_id, precinct_row in precinct_ids:
+        for precinct_id in precinct_geo_list:
             # if precinct id corresponds to any json obejcts
-            if precinct_id in precinct_geo_list:
+            if precinct_id in (
+                    precinct_ids_only := [precinct[0] for precinct
+                                          in precinct_ids]):
+
+                precinct_row = precinct_ids[
+                    precinct_ids_only.index(precinct_id)][1]
 
                 # json object from geojson that corresponds with preinct with precinct_id
                 precinct_geo_data = []
@@ -426,7 +433,16 @@ class Precinct:
                         rep_cols[precinct_id]
                     ))
             else:
-                warnings.warn(f"Precinct with id {precinct_id} was not found in geodata.")
+                warnings.warn(f"Precinct with id {precinct_id} was not found in election_data.")
+                precinct_list.append(Precinct(
+                    precinct_geo_data['geometry']['coordinates'],
+                    data_dict[precinct_name_col][precinct_row],
+                    state,
+                    precinct_id,
+                    pop,
+                    {},
+                    {}
+                ))
 
         # save precinct list to state file
         try:
