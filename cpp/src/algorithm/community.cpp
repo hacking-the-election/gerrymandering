@@ -7,6 +7,11 @@
  and redistricting.
 ========================================*/
 
-#include "../include/shape.hpp"  // class definitions
-#include "../include/util.hpp"   // array modification functions
+#include "../../include/shape.hpp"  // class definitions
+#include "../../include/util.hpp"   // array modification functions
 
+vector<Precinct_Group> State::generate_communities() {
+    cout << "go make some communities!" << endl;
+    vector<Precinct_Group> communities;
+    return communities;
+}   

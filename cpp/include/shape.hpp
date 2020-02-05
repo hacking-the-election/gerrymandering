@@ -100,7 +100,6 @@ class Precinct : public Shape {
         friend class boost::serialization::access;
         template<class Archive> void serialize(Archive & ar, const unsigned int version);
         
-    private:
         int dem; // democratic vote total
         int rep; // republican vote total
 };
@@ -168,7 +167,6 @@ class State : public Precinct_Group {
         // name of state
         string name = "no_name";
 
-    private:
         // arrays of shapes in state
         vector<Precinct_Group> state_districts;
         vector<Precinct> state_precincts;
