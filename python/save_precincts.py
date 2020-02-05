@@ -1,11 +1,15 @@
 """
 Usage:
-python3 save_precincts.py [election_data_file] [geo_data_file] [state] [objects_dir] [metadata_file]
+python3 save_precincts.py [election_data_file] [geo_data_file] [district_file] [state] [objects_dir] [metadata_file]
 
 `election_data_file` - absolute path to file containing election data for state.
                        If there is no such file, this argument should be "none"
 
-`geo_data_file` - absolute path to json file containing geo data for state
+`geo_data_file` - absolute path to json file containing geo data for precinct
+                  bounaries state
+
+`district_file` - absolute path to json file containing geo data for district
+                  boundaries in state
 
 `state` - name of state
 
@@ -31,13 +35,13 @@ def customwarn(message, category, filename, lineno, file=None, line=None):
     sys.stdout.write(warnings.formatwarning(message, category, filename, lineno))
 
 
-def save(state, precinct_list, objects_dir):
+def save(state, precinct_list, district_dict, objects_dir):
     """
     Save the list of precincts for a state to a file
     """
     file = f'{objects_dir}/{state}.pickle'
     with open(file, 'wb+') as f:
-        pickle.dump(precinct_list, f)
+        pickle.dump([precinct_list, district_dict], f)
 
 
 def convert_to_int(string):
@@ -122,8 +126,9 @@ class Precinct:
 
 
     @classmethod
-    def generate_from_files(cls, election_data_file, geo_data_file, state,
-                            objects_dir, state_metadata_file):
+    def generate_from_files(cls, election_data_file, geo_data_file,
+                            district_file, state, objects_dir,
+                            state_metadata_file):
         """
         Creates precinct objects for state from necessary information
 
@@ -143,7 +148,7 @@ class Precinct:
               will be saved with voter counts of -1
         """
 
-        with open(args[4], 'r') as f:
+        with open(state_metadata_file, 'r') as f:
             STATE_METADATA = json.load(f)
 
         with open(geo_data_file, 'r') as f:
@@ -275,9 +280,14 @@ class Precinct:
                     {"placeholder":-1}
                 ))
 
+        # get district boundary coords
+        with open(district_file, 'r') as f:
+            district_dict = json.load(f)
+
         # save precinct list to state file
         try:
-            save(precinct_list[0].state, precinct_list, objects_dir)
+            save(precinct_list[0].state, precinct_list,
+                 district_dict, objects_dir)
         except IndexError:
             raise Exception("No precincts saved to precinct list.")
 
@@ -290,7 +300,8 @@ if __name__ == "__main__":
 
     args = sys.argv[1:]
 
-    if len(args) < 5:
+    if len(args) < 6:
         raise TypeError("Incorrect number of arguments: (see __doc__ for usage)")
     
-    Precinct.generate_from_files(args[0], args[1], args[2], args[3], args[4])
+    Precinct.generate_from_files(args[0], args[1], args[2],
+                                 args[3], args[4], args[5])
