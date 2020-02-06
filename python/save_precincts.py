@@ -38,7 +38,7 @@ logging.basicConfig(level=logging.WARNING, filename="precincts.log")
 
 
 def customwarn(message, category, filename, lineno, file=None, line=None):
-    logging.warn(warnings.formatwarning(message, category, filename, lineno))
+    logging.warning(warnings.formatwarning(message, category, filename, lineno))
 
 
 def save(state, precinct_list, district_dict, objects_dir):
@@ -154,8 +154,6 @@ class Precinct:
               data will be saved with voter counts of -1
         """
 
-        logging.warning("angry")
-
         with open(state_metadata_file, 'r') as f:
             STATE_METADATA = json.load(f)
 
@@ -211,7 +209,7 @@ class Precinct:
             dem_keys = STATE_METADATA[state]["dem_keys"]
             rep_keys = STATE_METADATA[state]["rep_keys"]
 
-            pop = {p["properties"][json_id][1:] if state == colorado
+            pop = {p["properties"][json_id][1:] if state == "colorado"
                    else p["properties"][json_id]: p["properties"][json_pop]
                    for p in geo_data["features"]}
             
