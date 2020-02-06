@@ -2,37 +2,43 @@
 Usage:
 python3 save_precincts.py [election_data_file] [geo_data_file] [district_file] [state] [objects_dir] [metadata_file]
 
-`election_data_file` - absolute path to file containing election data for state.
-                       If there is no such file, this argument should be "none"
+`election_data_file` - absolute path to file containing election data
+                       for state. If there is no such file, this
+                       argument should be "none"
 
-`geo_data_file` - absolute path to json file containing geo data for precinct
-                  bounaries state
+`geo_data_file` - absolute path to json file containing geo data for
+                  precinct bounaries state
 
-`district_file` - absolute path to json file containing geo data for district
-                  boundaries in state
+`district_file` - absolute path to json file containing geo data for
+                  district boundaries in state
 
 `state` - name of state
 
-`objects-dir` - absolute path to dir where pickled precinct objects will be stored
+`objects-dir` - absolute path to dir where pickled precinct objects
+                will be stored
 
-`metadata_file` - absolute path to file containing state metadata for column names
+`metadata_file` - absolute path to file containing state metadata for
+                  column names
 
 * ================================================= *
 * USE HYPHENS WHEN STATE HAS MULTIPLE WORDS IN NAME *
-* ------------------------------------------------- *
 * ================================================= *
 """
 
 
 import json
+import logging
 from os import mkdir
 from os.path import abspath, dirname, isdir
 import pickle
 import warnings
 
 
+logging.basicConfig(level=logging.WARNING, filename="precincts.log")
+
+
 def customwarn(message, category, filename, lineno, file=None, line=None):
-    sys.stdout.write(warnings.formatwarning(message, category, filename, lineno))
+    logging.warn(warnings.formatwarning(message, category, filename, lineno))
 
 
 def save(state, precinct_list, district_dict, objects_dir):
@@ -136,17 +142,19 @@ class Precinct:
             `election_data_file` - path to file containing
                                   election data for precinct (.tab)
 
-            `geo_data_file` - path to file containing geodata for precinct
-                              (.json or .geojson)
+            `geo_data_file` - path to file containing geodata
+                              for precinct. (.json or .geojson)
 
             `state` - name of state containing precinct
 
-            `objects_dir` - path to dir where serialized list of precincts
-                            is to be stored
+            `objects_dir` - path to dir where serialized
+                            list of precincts is to be stored
 
-        Note: precincts from geodata that can't be matched to election data
-              will be saved with voter counts of -1
+        Note: precincts from geodata that can't be matched to election
+              data will be saved with voter counts of -1
         """
+
+        logging.warning("angry")
 
         with open(state_metadata_file, 'r') as f:
             STATE_METADATA = json.load(f)
@@ -187,17 +195,24 @@ class Precinct:
 
             # [[precinct_id1, col1], [precinct_id2, col2]]
             ele_id = STATE_METADATA[state]["ele_id"]
-            precinct_ele_ids = [[tostring(p), n] for n, p in enumerate(ele_data[ele_id])]
+            precinct_ele_ids = [[tostring(p), n]
+                                for n, p in enumerate(ele_data[ele_id])]
 
             # list of precinct ids that are in geodata and election data
             precinct_geo_ids = []
             for precinct in geo_data['features']:
-                precinct_geo_ids.append(tostring(precinct['properties'][json_id]))
+                if state == "colorado":
+                    precinct_geo_ids.append(
+                        tostring(precinct['properties'][json_id])[1:])
+                else:
+                    precinct_geo_ids.append(
+                        tostring(precinct['properties'][json_id]))
 
             dem_keys = STATE_METADATA[state]["dem_keys"]
             rep_keys = STATE_METADATA[state]["rep_keys"]
 
-            pop = {p["properties"][json_id]: p["properties"][json_pop]
+            pop = {p["properties"][json_id][1:] if state == colorado
+                   else p["properties"][json_id]: p["properties"][json_pop]
                    for p in geo_data["features"]}
             
             if precinct_name_col:
@@ -232,10 +247,13 @@ class Precinct:
         for precinct_id in precinct_geo_ids:
             geo_precinct_ids = []
             for precinct in geo_data["features"]:
-                if tostring(precinct["properties"][json_id]) == precinct_id:
+                if state == "colorado":
+                    geo_data_id = precinct["properties"][json_id][1:]
+                else:
+                    geo_data_id = precinct["properties"][json_id]
+                if tostring(geo_data_id) == precinct_id:
                     precinct_coords[precinct_id] = \
                         precinct['geometry']['coordinates']
-            
 
         precinct_list = []
 
@@ -249,7 +267,8 @@ class Precinct:
                 precinct_row = precinct_ele_ids[
                     precinct_ids_only.index(precinct_id)][1]
 
-                # json object from geojson that corresponds with preinct with precinct_id
+                # json object from geojson
+                # that corresponds with precinct_id
                 precinct_geo_data = []
                 for precinct in geo_data['features']:
                     if state == "colorado":
@@ -269,7 +288,10 @@ class Precinct:
                     rep_cols[precinct_id]
                 ))
             else:
-                warnings.warn(f"Precinct with id {precinct_id} was not found in election data.")
+                warnings.warn(
+                    f"Precinct with id {precinct_id} was not found in\
+ election data."
+                )
                 precinct_list.append(Precinct(
                     precinct_coords[precinct_id],
                     names[precinct_id],
@@ -301,7 +323,8 @@ if __name__ == "__main__":
     args = sys.argv[1:]
 
     if len(args) < 6:
-        raise TypeError("Incorrect number of arguments: (see __doc__ for usage)")
+        raise TypeError(
+            "Incorrect number of arguments: (see __doc__ for usage)")
     
     Precinct.generate_from_files(args[0], args[1], args[2],
                                  args[3], args[4], args[5])
