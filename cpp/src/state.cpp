@@ -10,8 +10,23 @@
 #include "../include/shape.hpp"  // class definitions
 #include "../include/util.hpp"   // array modification functions
 #include <algorithm>             // for std::find and std::distance
+#include <regex>
 
 #define VERBOSE 1  // print progress messages
+
+bool is_number(string token) {
+    // checks if a string is any number type
+    return regex_match(token, regex( ( "((\\+|-)?[[:digit:]]+)(\\.(([[:digit:]]+)?))?" ) ));
+}
+
+
+// constant id strings
+const string election_id_header = "geoid10";
+const vector<string> d_head = {"ndv"};
+const vector<string> r_head = {"nrv"};
+const string geodata_id = "GEOID10";
+const string population_id = "POP100";
+
 
 vector<vector<string> > parse_sv(string tsv, string delimiter) {
     /*
@@ -61,83 +76,21 @@ map<string, vector<int> > parse_voter_data(string voter_data) {
     vector<vector<string> > data_list // two dimensional
         = parse_sv(voter_data, "\t"); // array of voter data
 
-    vector<string> watchlist;
-
     int precinct_id_col = -1; // the column index that holds precinct id's
-    // int county_id_col = -1; // the column index that holds precinct id's
-
-    string precinct_id_col_header = "geoid10";   // the column header name
 
     // indices of usable data
     vector<int> d_index;
     vector<int> r_index;
 
-    int index = 0;
-
-    // search for usable data cols
-    for (string item : data_list[0]) {
-
-        if (item == precinct_id_col_header)
-            precinct_id_col = index;
-
-        // split header by underscore
-        vector<string> party = split(item, "_");
-
-        // attempt to identify the party of the column
-        string par = party[party.size() - 1];
-
-        if (par == "dv" || par == "rv") {
-            // set string `end` to opposite of `par`
-            string end = "dv";
-            if (par == "dv")
-                end = "rv";
-
-            party.pop_back(); // remove the party from the name
-
-            // get the general column name
-            vector<string>::iterator old_data = find(watchlist.begin(), watchlist.end(), join(party, "_") + "_" + end);
-
-            // if it's already in the watchlist, it's useable data
-            if ( old_data != watchlist.end()) {
-
-                if (check_column(data_list, index)) {
-                    if (par == "dv")
-                        // since the one we've found is right,
-                        // add the one we're at right now
-                        d_index.push_back(index);
-                    else
-                        r_index.push_back(index);
-                }
-
-                // find old data already in watchlist, pair it with new data
-
-                int index2 = distance(
-                                data_list[0].begin(),
-
-                                find(data_list[0].begin(),
-                                    data_list[0].end(),
-                                    join(party, "_") + "_" + end
-                                )
-                            );
-
-                if (check_column(data_list, index2)) {
-                    if (par == "dv")
-                        // add old watchlisted data
-                        r_index.push_back(index2);
-                    else
-                        d_index.push_back(index2);
-                }
-
-            }
-            else {
-                // otherwise, add it to the watchlist
-                watchlist.push_back(join(party, "_") + "_" + par);
-            }
-        }
-
-        index++; // increment index for tracking purposes
+    for ( int i = 0; i < data_list[0].size(); i++) {
+        if (data_list[0][i] == election_id_header)
+            precinct_id_col = i;
+        
+        if (find(d_head.begin(), d_head.end(),  data_list[0][i]) != d_head.end())
+            d_index.push_back(i);
+        else if (find(r_head.begin(), r_head.end(),  data_list[0][i]) != r_head.end())
+            r_index.push_back(i);
     }
-
 
     map<string, vector<int> > parsed_data;
 
@@ -153,8 +106,11 @@ map<string, vector<int> > parse_voter_data(string voter_data) {
         for (int i = 0; i < d_index.size(); i++) {
             string d = data_list[x][d_index[i]];
             string r = data_list[x][r_index[i]];
-            demT += stoi(d);
-            repT += stoi(r);
+            
+            if (is_number(d))
+                demT += stoi(d);
+            if (is_number(r))
+                repT += stoi(r);
         }
         
         parsed_data[id] = {demT, repT};
@@ -199,8 +155,9 @@ vector<Shape> parse_coordinates(string geoJSON) {
         string id = "";
         int pop = 0;
         // see if the geoJSON contains the shape id
-        if (shapes["features"][i]["properties"].HasMember("GEOID10")) {
-            id = shapes["features"][i]["properties"]["GEOID10"].GetString();
+        if (shapes["features"][i]["properties"].HasMember(geodata_id.c_str())) {
+            id = shapes["features"][i]["properties"][geodata_id.c_str()].GetString();
+            // id = id.substr(1, id.size());
         }
         else {
             cout << "If this is parsing precincts, you have no precinct id." << endl;
@@ -208,11 +165,11 @@ vector<Shape> parse_coordinates(string geoJSON) {
         }
 
         // get the population from geodata
-        if (shapes["features"][i]["properties"].HasMember("POP100")) {
-            pop = shapes["features"][i]["properties"]["POP100"].GetInt();
+        if (shapes["features"][i]["properties"].HasMember(population_id.c_str())) {
+            pop = shapes["features"][i]["properties"][population_id.c_str()].GetInt();
         }
         else
-            cout << "\e[31merror: \e[0mNo population data in geodata" << endl;
+            cout << "\e[31merror: \e[0mNo population data" << endl;
         
         // create empty string buffer
         StringBuffer buffer;
@@ -248,7 +205,7 @@ vector<Precinct> merge_data( vector<Shape> precinct_shapes, map<string, vector<i
     for (Shape precinct_shape : precinct_shapes) {
         // iterate over shapes array, get the id of the current shape
         string p_id = precinct_shape.shape_id;
-        vector<int> p_data = {0, 0}; // the voter data to be filled
+        vector<int> p_data = {-1, -1}; // the voter data to be filled
 
         if ( voter_data.find(p_id) == voter_data.end() ) {
             // there is no matching id in the voter data
