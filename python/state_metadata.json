@@ -12,10 +12,10 @@
     "mississippi": {"dem_keys":["ndv"],"rep_keys":["nrv"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"POP100"},
     "missouri": {"dem_keys":["ndv"],"rep_keys":["nrv"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"POP100"},
     "nevada": {"dem_keys":["ndv"],"rep_keys":["nrv"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"POP100"},
-    "new-hampshire": {"dem_keys":["ndv"],"rep_keys":["nrv"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"POP100"},
-    "new-mexico": {"dem_keys":["ndv"],"rep_keys":["nrv"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"POP100"}, 
+    "new hampshire": {"dem_keys":["ndv"],"rep_keys":["nrv"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"POP100"},
+    "new mexico": {"dem_keys":["ndv"],"rep_keys":["nrv"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"POP100"}, 
     "pennsylvania": {"dem_keys":["ndv"],"rep_keys":["nrv"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"POP100"},
-    "south-dakota": {"dem_keys":["ndv"],"rep_keys":["nrv"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"TOTPOP"},
+    "south dakota": {"dem_keys":["ndv"],"rep_keys":["nrv"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"TOTPOP"},
     "tennessee": {"dem_keys":["ndv"],"rep_keys":["nrv"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"POP100"},
     "vermont": {"dem_keys":["ndv"],"rep_keys":["nrv"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"POP100"}
 }

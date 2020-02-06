@@ -19,10 +19,6 @@ python3 save_precincts.py [election_data_file] [geo_data_file] [district_file] [
 
 `metadata_file` - absolute path to file containing state metadata for
                   column names
-
-* ================================================= *
-* USE HYPHENS WHEN STATE HAS MULTIPLE WORDS IN NAME *
-* ================================================= *
 """
 
 
@@ -265,7 +261,7 @@ class Precinct:
                 ))
             else:
                 warnings.warn(
-                    f"Precinct with id {precinct_id} was not found in\
+                    f"Precinct from {state} with id {precinct_id} was not found in\
  election data."
                 )
                 precinct_list.append(Precinct(
