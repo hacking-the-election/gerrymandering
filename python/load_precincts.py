@@ -21,6 +21,18 @@ if __name__ == "__main__":
     
     import sys
 
-    lst = load(sys.argv[1], sys.argv[2])
-    print('\n'.join([str(p) for p in lst]))
-    print(len(lst))
+    lst = load(sys.argv[1], state := sys.argv[2].capitalize())
+    
+    total_pop = 0
+    total_dem = 0
+    total_rep = 0
+    for precinct in lst[0]:
+        total_pop += precinct.population
+        total_dem += precinct.d_election_sum
+        total_rep += precinct.r_election_sum
+    print(f"""{state}:
+Number of Precincts: {len(lst[0])}
+Number of Districts: {len(lst[1]["features"])}
+Population: {total_pop}
+Democratic Votes: {total_dem}
+Republican Votes: {total_rep}""")

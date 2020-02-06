@@ -5,9 +5,7 @@
 venv
 **/*/__pycache__
 python/test-data
-python/warnings.log
-dem_cols.txt
-rep_cols.txt
+precincts.log
 
 # vscode
 settings.json
@@ -21,3 +19,4 @@ cpp/test/test
 
 # lol-cubes
 notes
+quick.txt

@@ -1,0 +1,21 @@
+{
+    "alabama": {"dem_keys":["ndv"],"rep_keys":["nrv"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"POP100"},
+    "alaska": {"dem_keys":["ndv"],"rep_keys":["nrv"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"TOTPOP"},
+    "arizona": {"dem_keys":["ndv"],"rep_keys":["nrv"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"TOTPOP"},
+    "colorado": {"dem_keys":["ndv"],"rep_keys":["nrv"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"POP100"},
+    "delaware": {"dem_keys":["ndv"],"rep_keys":["nrv"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"POP100"},
+    "hawaii": {"dem_keys":["ndv"],"rep_keys":["nrv"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"POP100"},
+    "indiana": {"dem_keys":["ndv"],"rep_keys":["nrv"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"POP10"},
+    "iowa": {"dem_keys":["ndv"],"rep_keys":["nrv"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"POP100"},
+    "kansas": {"dem_keys":["ndv"],"rep_keys":["nrv"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"POP100"},
+    "louisiana": {"dem_keys":["ndv"],"rep_keys":["nrv"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"POP100"},
+    "mississippi": {"dem_keys":["ndv"],"rep_keys":["nrv"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"POP100"},
+    "missouri": {"dem_keys":["ndv"],"rep_keys":["nrv"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"POP100"},
+    "nevada": {"dem_keys":["ndv"],"rep_keys":["nrv"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"POP100"},
+    "new hampshire": {"dem_keys":["ndv"],"rep_keys":["nrv"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"POP100"},
+    "new mexico": {"dem_keys":["ndv"],"rep_keys":["nrv"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"POP100"}, 
+    "pennsylvania": {"dem_keys":["ndv"],"rep_keys":["nrv"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"POP100"},
+    "south dakota": {"dem_keys":["ndv"],"rep_keys":["nrv"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"TOTPOP"},
+    "tennessee": {"dem_keys":["ndv"],"rep_keys":["nrv"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"POP100"},
+    "vermont": {"dem_keys":["ndv"],"rep_keys":["nrv"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"POP100"}
+}

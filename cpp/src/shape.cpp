@@ -121,7 +121,7 @@ Uint32* pix_array(vector<vector<float> > shape, int x, int y) {
 
     for (vector<float> coords : shape) {
         // locate the coordinate, set it to black
-        int start = (int)(coords[1] * x - coords[0]);
+        int start = (int)((int)coords[1] * x - (int)coords[0]);
         pixels[total - start] = 0;
     }
 
@@ -132,92 +132,41 @@ Uint32* pix_array(vector<vector<float> > shape, int x, int y) {
 vector<vector<float> > connect_dots(vector<vector<float> > shape) {
     vector<vector<float> > newShape;
 
-    for (int i = 0; i < shape.size(); i++) {
-        int p1x = (int) shape[i][0];
-        int p1y = (int) shape[i][1];
-        int p2x, p2y;
+    int dx, dy, p, x, y, x0, x1, y0, y1;
+
+    for (int i = 0; i < shape.size() - 1; i++) {
+
+        x0 = (int) shape[i][0];
+        y0 = (int) shape[i][1];
 
         if ( i != shape.size() - 1) {
-            p2x = (int) shape[i + 1][0];
-            p2y = (int) shape[i + 1][1];
+            x1 = (int) shape[i + 1][0];
+            y1 = (int) shape[i + 1][1];
         }
         else {
-            p2x = (int) shape[0][0];
-            p2y = (int) shape[0][1];
+            x1 = (int) shape[0][0];
+            y1 = (int) shape[0][1];
         }
 
-        int over = p2x - p1x;
-        int up = p2y - p1y;
+        dx = x1 - x0;
+        dy = y1 - y0;
 
-        cout << "\n\n";
+        int steps = abs(dx) > abs(dy) ? abs(dx) : abs(dy);
 
-        cout << "Got here: {" << p1x << ", " << p1y << "}, {" << p2x << ", " << p2y << "}" << endl;
-        cout << "over " << over << ", up " << up << endl;
-        newShape.push_back({(float)p1x, (float)p1y});
-        int p3x = p1x, p3y = p1y;
+        float xinc = dx / (float) steps;
+        float yinc = dy / (float) steps;
 
-        if (abs(over) >= abs(up)) {
-            // how many times we need to go over
-            int mult;
-            if (up == 0)
-                up = 1;
-            if (over == 0 || up == 0)
-                mult = 1;
-            else
-                mult = ceil(abs(over / up));
-        
-            for ( int x = 0; x < abs(up); x++) {
-                for ( int y = 0; y < mult; y++) {
-                    
-                    if (over > 0)
-                        p3x++;
-                    else if (over < 0)
-                        p3x--;
+        float x = x0;
+        float y = y0;
 
-                    newShape.push_back({(float) p3x, (float) p3y});
-                }
-                // go up once
-                if ( up > 0) 
-                    p3y++;
-                else if (up < 0)
-                    p3y--;
-
-            }
+        for (int i = 0; i <= steps; i++) {
+            newShape.push_back({(float)x, (float)y});
+            newShape.push_back({(float)x + 1, (float)y + 1});
+            newShape.push_back({(float)x + 1, (float)y});
+            newShape.push_back({(float)x, (float)y + 1});
+            x += xinc;
+            y += yinc;
         }
-        else {
-            // how many times we need to go over
-            int mult;
-
-            if (over == 0)
-                over = 1;
-            if (over == 0 || up == 0)
-                mult = 1;
-            else
-                mult = ceil(abs(up / over));
-        
-            cout << "Starting point: " << p3x << ", " << p3y;
-
-            for ( int x = 0; x < abs(over); x++) {
-                // go up once
-                if ( over > 0) 
-                    p3x++;
-                else if (over < 0)
-                    p3x--;
-
-                for ( int y = 0; y < mult; y++) {
-                    if (up > 0)
-                        p3y++;
-                    else if (up < 0)
-                        p3y--;
-                    cout << "at " << p3x << ", " << p3y << endl;
-                    newShape.push_back({(float) p3x, (float) p3y});
-                }
-                
-
-            }
-        }
-
-        newShape.push_back({(float)p2x, (float)p2y});
     }
 
     return newShape;
@@ -240,7 +189,7 @@ void Shape::draw() {
     SDL_Window * window = SDL_CreateWindow("Shape", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, dim[0], dim[1], 0);
     SDL_Renderer * renderer = SDL_CreateRenderer(window, -1, 0);
     SDL_Texture * texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, dim[0], dim[1]);
-
+    SDL_SetWindowResizable(window, SDL_TRUE);
     bool quit = false;
 
     while (!quit) {

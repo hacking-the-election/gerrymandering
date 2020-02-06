@@ -61,7 +61,7 @@ string State::to_json() {
 
     str += TAB(2) + OQ + "districts" + CQC + "[" + N;
 
-    for ( District district : state_districts ) {
+    for ( Precinct_Group district : state_districts ) {
         str += TAB(3) + "{" + N;
 
         // print name of precinct
@@ -94,4 +94,71 @@ string State::to_json() {
     str += T + "}" + N; // close state
     str += "}" + N; // close json
     return str;
+}
+
+
+/*
+    Write and read state file to and from binary
+
+    Any instance of & operator is overloaded for 
+    reading and writing, to avoid duplicate methods
+    (see boost documentation for more information)
+*/
+
+void State::write_binary(string path) {
+    ofstream ofs(path); // open output stream
+    boost::archive::binary_oarchive oa(ofs); // open archive stream
+    oa << *this; // put this pointer into stream
+    ofs.close(); // close stream
+}
+
+State State::read_binary(string path) {
+    State state = State(); // blank state object
+
+    ifstream ifs(path); // open input stream
+    boost::archive::binary_iarchive ia(ifs); // open archive stream
+    ia >> state; // read into state object
+
+    return state; // return state object
+}
+
+template<class Archive> void State::serialize(Archive & ar, const unsigned int version) {
+    // write districts, precincts, name, and border
+    ar & state_districts;
+    ar & state_precincts;
+    ar & name;
+    ar & border;
+    ar & pop;
+}
+
+/*
+    The following are mirror serialization methods 
+    to make sure that each sub-nested shape is actually
+    written to the binary file
+
+    ! this could probably be better structured
+    TODO: Make sure that this actually is necessary
+*/
+
+template<class Archive> void Precinct_Group::serialize(Archive & ar, const unsigned int version) {
+    // push id and border into the archive stream
+    ar & id;
+    ar & border;
+    ar & pop;
+}
+
+ template<class Archive> void Precinct::serialize(Archive & ar, const unsigned int version) {
+    // push shape, border and vote data
+    ar & shape_id;
+    ar & border;
+    ar & dem;            
+    ar & rep;
+    ar & pop;
+}
+
+template<class Archive> void Shape::serialize(Archive & ar, const unsigned int version) {
+    // push shape id and border to archive stream
+    ar & shape_id;
+    ar & border;
+    ar & pop;
 }

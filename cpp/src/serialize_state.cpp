@@ -27,7 +27,6 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-
     // read files into strings
     string precinct_geoJSON = readf(argv[1]);
     string voter_data = readf(argv[2]);
@@ -41,6 +40,20 @@ int main(int argc, char* argv[]) {
     state.write_binary(write_path); // write as binary
     
     cout << "State " << state.name << " successfully written to " << write_path << endl;
+    cout << "Num of precincts: " << state.state_precincts.size() << endl;
+    cout << "Num of districts: " << state.state_districts.size() << endl;
+
+    int dem, rep, pop;
+
+    for (Precinct pre : state.state_precincts) {
+        dem += pre.dem;
+        rep += pre.rep;
+        pop += pre.pop;
+    }    
+
+    cout << "Total pop: " << pop << endl;
+    cout << "Total dem: " << dem << endl;
+    cout << "Total rep: " << rep << endl;
 
     return 0;
 }
