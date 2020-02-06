@@ -85,7 +85,6 @@ class Precinct:
 
     params:
         `coords` - 2-d list of x and y coordinates of vertices
-        `name` - name of precinct
         `state` - state that precinct is from
         `vote_id` - name from id system consistent 
                     between harvard and election-geodata files
@@ -96,14 +95,13 @@ class Precinct:
         `r_election_data` - above but for republicans.
     """
 
-    def __init__(self, coords, name, state, vote_id, population,
+    def __init__(self, coords, state, vote_id, population,
                  d_election_data, r_election_data):
         
         # coordinate data
         self.coords = coords
         
         # meta info
-        self.name = name
         self.vote_id = vote_id
         self.state = state
         self.population = population
@@ -124,8 +122,7 @@ class Precinct:
 
 
     def __str__(self):
-        return (f"name: {self.name}\n"
-                f"d_election_sum: {self.d_election_sum}\n"
+        return (f"d_election_sum: {self.d_election_sum}\n"
                 f"r_election_sum: {self.r_election_sum}\n"
                 f"population: {self.population}\n"
                 f"id: {self.vote_id}\n")
@@ -172,18 +169,6 @@ class Precinct:
             # keys: data categories; values: lists of corresponding values
             # for each precinct
             ele_data = {column[0]: column[1:] for column in data_columns}
-        
-        # Looks for precinct name (or if there is one)
-        if "precinct_name" in (keys := ele_data.keys()):
-            precinct_name_col = "precinct_name"
-        elif "precinct" in keys:
-            precinct_name_col = "precinct"
-        elif "namelsad10" in keys:
-            precinct_name_col = "namelsad10"
-        elif "name10" in keys:
-            precinct_name_col = "name10"
-        else:
-            precinct_name_col = False
 
         if state in STATE_METADATA.keys():
             
@@ -212,12 +197,6 @@ class Precinct:
             pop = {p["properties"][json_id][1:] if state == "colorado"
                    else p["properties"][json_id]: p["properties"][json_pop]
                    for p in geo_data["features"]}
-            
-            if precinct_name_col:
-                names = {p: ele_data[precinct_name_col][i]
-                         for p, i in precinct_ele_ids}
-            else:
-                warnings.warn(f"no precinct names found for {state}")
 
 
         # keys: precinct ids.
@@ -278,7 +257,6 @@ class Precinct:
 
                 precinct_list.append(Precinct(
                     precinct_coords[precinct_id],
-                    names[precinct_id],
                     state,
                     precinct_id,
                     pop[precinct_id],
@@ -292,7 +270,6 @@ class Precinct:
                 )
                 precinct_list.append(Precinct(
                     precinct_coords[precinct_id],
-                    names[precinct_id],
                     state,
                     precinct_id,
                     pop[precinct_id],

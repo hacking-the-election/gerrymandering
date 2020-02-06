@@ -2,6 +2,6 @@
    Now:
     - serialize all data from raw directory in data repo
     - create script to convert pickled precinct objects to json and test with gui.cpp
+    - delete __str__ function from Precinct class
    Later (Possible after project):
-    - change save_precincts.py so that there needs to be no input but the state and election and geodata filepaths
     - update unit tests and add test data
