@@ -2,6 +2,5 @@
    Now:
     - serialize all data from raw directory in data repo
     - create script to convert pickled precinct objects to json and test with gui.cpp
-    - delete __str__ function from Precinct class
    Later (Possible after project):
     - update unit tests and add test data

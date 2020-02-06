@@ -117,13 +117,6 @@ class Precinct:
             pass
 
 
-    def __str__(self):
-        return (f"d_election_sum: {self.d_election_sum}\n"
-                f"r_election_sum: {self.r_election_sum}\n"
-                f"population: {self.population}\n"
-                f"id: {self.vote_id}\n")
-
-
     @classmethod
     def generate_from_files(cls, election_data_file, geo_data_file,
                             district_file, state, objects_dir,
