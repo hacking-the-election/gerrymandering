@@ -35,6 +35,8 @@ logging.basicConfig(level=logging.WARNING, filename="precincts.log")
 def customwarn(message, category, filename, lineno, file=None, line=None):
     logging.warning(warnings.formatwarning(message, category, filename, lineno))
 
+warnings.showwarning = customwarn
+
 
 def save(state, precinct_list, district_dict, objects_dir):
     """
@@ -281,8 +283,6 @@ class Precinct:
 
 
 if __name__ == "__main__":
-
-    warnings.showwarning = customwarn
 
     args = sys.argv[1:]
 

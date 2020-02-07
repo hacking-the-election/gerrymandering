@@ -1,6 +1,4 @@
 # General:
-   Now:
-    - make communities algorithm work from command-line
    Later:
     - Predict errors and create custom exceptions to throw in those cases
 
