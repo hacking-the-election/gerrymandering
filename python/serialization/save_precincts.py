@@ -24,9 +24,8 @@ python3 save_precincts.py [election_data_file] [geo_data_file] [district_file] [
 
 import json
 import logging
-from os import mkdir
-from os.path import abspath, dirname, isdir
 import pickle
+import sys
 import warnings
 
 
@@ -282,8 +281,6 @@ class Precinct:
 
 
 if __name__ == "__main__":
-
-    import sys
 
     warnings.showwarning = customwarn
 
