@@ -162,8 +162,8 @@ class State : public Precinct_Group {
         template<class Archive> void serialize(Archive & ar, const unsigned int version);
 
         // for the community generation algorithm
-        vector<Precinct_Group> generate_communities();
-        
+        vector<Precinct_Group> generate_communities(int num_communities, float compactness_tolerance);
+        vector<Precinct_Group> generate_initial_communities();
         // name of state
         string name = "no_name";
 
