@@ -27,7 +27,7 @@
     "new jersey": {"dem_keys":["ndv_t"],"rep_keys":["nrv_t"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"POP100"},
     "north carolina": {"dem_keys":["ndv"],"rep_keys":["nrv"],"ele_id":"vtd_key","geo_id":"GEOID10","pop_key":"PL10AA_TOT"},
     "north dakota": {"dem_keys":["ndv"],"rep_keys":["nrv"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"TOTPOP"},
-    "oklahoma": {"dem_keys":["NDV08"],"rep_keys":["NRV08"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"VAP"},
+    "oklahoma": {"dem_keys":["ndv"],"rep_keys":["ndr"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"VAP"},
     "washington": {"dem_keys":["ndv_08"],"rep_keys":["nrv_08"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"POP100"},
     "wyoming": {"dem_keys":["ndv_08"],"rep_keys":["nrv_08"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"VAP"},
     "new hampshire": {"dem_keys":["pres_dem08"],"rep_keys":["pres_dem08"],"ele_id":"geoid10","geo_id":"GEOID10","pop_key":"VAP"}
