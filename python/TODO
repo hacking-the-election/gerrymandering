@@ -1,6 +1,18 @@
+# General:
+   Now:
+    - make serialization, loading, and communities algorithm work from command-line
+   Later:
+    - Predict errors and create custom exceptions to throw in those cases
+
 # Serialization:
    Now:
+    - change load_precincts.py to take a single file path as an input
+    - remove useless imports and move import sys to top of file in save_precincts.py
     - serialize all data from raw directory in data repo
     - create script to convert pickled precinct objects to json and test with gui.cpp
    Later (Possible after project):
     - update unit tests and add test data
+
+# Communities:
+   Now:
+    - create utils file filled with geometry algorithms for useful stuff
