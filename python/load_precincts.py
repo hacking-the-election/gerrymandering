@@ -35,7 +35,7 @@ if __name__ == "__main__":
             n_missing += 1
     print(f"{state}:"
           f"Number of Precincts: {len(lst[0])}"
-          f"Number of Districts: {len(lst[1]["features"])}"
+          f"Number of Districts: {len(lst[1]['features'])}"
           f"Population: {total_pop}"
           f"Democratic Votes: {total_dem}"
           f"Republican Votes: {total_rep}"
