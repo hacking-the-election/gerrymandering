@@ -33,10 +33,10 @@ if __name__ == "__main__":
         total_rep += precinct.r_election_sum
         if precinct.d_election_sum == -1 and precinct.r_election_sum == -1:
             n_missing += 1
-    print(f"{state}:"
-          f"Number of Precincts: {len(lst[0])}"
-          f"Number of Districts: {len(lst[1]['features'])}"
-          f"Population: {total_pop}"
-          f"Democratic Votes: {total_dem}"
-          f"Republican Votes: {total_rep}"
+    print(f"{state}:\n"
+          f"Number of Precincts: {len(lst[0])}\n"
+          f"Number of Districts: {len(lst[1]['features'])}\n"
+          f"Population: {total_pop}\n"
+          f"Democratic Votes: {total_dem}\n"
+          f"Republican Votes: {total_rep}\n"
           f"Number of precincts without election data: {n_missing}")
