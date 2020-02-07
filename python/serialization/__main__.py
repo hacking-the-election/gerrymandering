@@ -2,7 +2,7 @@ import sys
 from os.path import abspath, dirname
 
 from save_precincts import Precinct
-from load_precincts import load
+from load_precincts import load, print_stats
 
 
 if __name__ == "__main__":
@@ -17,11 +17,11 @@ if __name__ == "__main__":
     args = sys.argv[2:]
 
     if sys.argv[1] == "save":
-        if len(args) < 6:
+        if len(args) != 6:
             print(helpscreen)
         Precinct.generate_from_files(*args)
 
     elif sys.argv[1] == "load":
-        if len(args) < 1:
+        if len(args) != 1:
             print(helpscreen)
-        load(*args)
+        print_stats(load(args[0]), args[0].split('/')[-1].split(".")[0])
