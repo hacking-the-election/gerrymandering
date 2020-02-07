@@ -1,3 +1,7 @@
+# General:
+   Now:
+    - Make the whole thing one big package with a few small packages inside
+
 # Serialization:
    Now:
     - serialize all data from raw directory in data repo

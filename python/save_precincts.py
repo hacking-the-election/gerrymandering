@@ -151,6 +151,8 @@ class Precinct:
                 election_data = f.read().strip()
             
             data_rows = [row.split('\t') for row in election_data.split('\n')]
+            if state == "missouri":
+                data_rows = data_rows[:4814]
             # 2-d list with each sublist being a column in the
             # election data file
             data_columns = [[data_rows[x][y] for x in range(len(data_rows))]
@@ -184,7 +186,8 @@ class Precinct:
             rep_keys = STATE_METADATA[state]["rep_keys"]
 
             pop = {p["properties"][json_id][1:] if state == "colorado"
-                   else p["properties"][json_id]: p["properties"][json_pop]
+                   else p["properties"][json_id]:
+                   convert_to_int(p["properties"][json_pop])
                    for p in geo_data["features"]}
 
 
