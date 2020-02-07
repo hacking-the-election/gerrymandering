@@ -154,6 +154,18 @@ class Precinct:
             data_rows = [row.split('\t') for row in election_data.split('\n')]
             if state == "missouri":
                 data_rows = data_rows[:4814]
+
+            # ensure all rows have same length
+            for i, row in enumerate(data_rows[:]):
+                if len(row) != (l := len(data_rows[0])):
+                    if len(row) > l:
+                        lst = row[:l]
+                    else:
+                        lst = row[:]
+                        while len(lst) < l:
+                            lst.append("")
+                    data_rows[i] = lst
+
             # 2-d list with each sublist being a column in the
             # election data file
             data_columns = [[data_rows[x][y] for x in range(len(data_rows))]
