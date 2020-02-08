@@ -34,6 +34,7 @@ def add_to_json(file, json, json_prop, file_prop, file_attr, json_prop_2, json_p
     tracked_precs = 0
     for x in geo_data["features"]:
         done = 'no'
+        match_num = 0
         # Finds value in geodata of all the json_props
         y = x['properties'][json_prop]
         e = x['properties'][json_prop_2]
@@ -44,27 +45,87 @@ def add_to_json(file, json, json_prop, file_prop, file_attr, json_prop_2, json_p
                 c = data_columns[file_attr][a]
                 x['properties'][file_attr] = c
                 done = 'yes'
+                match_index = a
                 done_precs += 1
+                match_num += 1
+                del c
                 break
             if e.lower() == b.lower():
                 c = data_columns[file_attr][a]
                 x['properties'][file_attr] = c
                 done = 'yes'
+                match_index = a
                 done_precs += 1
+                match_num += 1
+                del c
                 break
             if f.lower() == b.lower():
                 c = data_columns[file_attr][a]
                 x['properties'][file_attr] = c
                 done = 'yes'
+                match_index = a
                 done_precs += 1
+                match_num += 1
+                del c
+                break
+            newy = ''
+            ylist = [letter for letter in y if letter != '0']
+            for let in ylist:
+                newy += let
+            if newy.lower() == b.lower():
+                c = data_columns[file_attr][a]
+                x['properties'][file_attr] = c
+                done = 'yes'
+                done_precs += 1
+                match_num += 1
+                match_index = a
+                del c
                 break
 
+            noperiod_y = ''
+            ylist = [letter for letter in y if letter != '.']
+            for let in ylist:
+                noperiod_y += let
 
-                
+            if noperiod_y == b.lower():
+                c = data_columns[file_attr][a]
+                x['properties'][file_attr] = c
+                done = 'yes'
+                done_precs += 1
+                match_num += 1
+                match_index = a
+                print("new method worked!")
+                del c
+                break
+            
+            letter_match = 0
+            for d, letter in enumerate(y.lower()):
+                try: letter1 = b.lower()[d]
+                except:
+                    break
+                if letter == b.lower()[d]:
+                    letter_match += 1
+            if letter_match >= (len(y.lower())-1) and letter_match < len(y.lower()):
+                c = data_columns[file_attr][a]
+                x['properties'][file_attr] = c
+                done = 'yes'
+                done_precs += 1
+                match_num += 1
+                match_index = a
+                del c
+                break
+        match = data_columns[file_prop][a]
+        del data_columns[file_prop][a]
+        if match_num >= 2:
+            raise Exception('2 or more precincts matched.')
         tracked_precs += 1
-        print(done_precs, tracked_precs, x['properties'][json_prop])
-        if tracked_precs == 200:
-            print(str((done_precs/tracked_precs)*100) + "% Precincts Found")
+        print(done_precs, tracked_precs, x['properties'][json_prop], match)
+##        print('Saving to Geodata...')
+##        with open(json, 'w') as fileobj:
+##            fileobj.write(str(geo_data))
+        if tracked_precs == 100:
             break
+        
+    print(str((done_precs/tracked_precs)*100) + "% Precincts Found")
 add_to_json('../../data/raw/minnesota/registered_voter_count_by_precinct.tab', '../../data/raw/minnesota/geodata.json'
             ,'NAME10_1', 'Precinct Name' , 'Number of Registered Voters', 'MCDNAME', 'PREC08')
