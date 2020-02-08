@@ -170,4 +170,6 @@ class State : public Precinct_Group {
         // arrays of shapes in state
         vector<Precinct_Group> state_districts;
         vector<Precinct> state_precincts;
+
+        void draw();
 };

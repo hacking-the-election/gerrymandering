@@ -8,5 +8,5 @@ int main(int argc, char* argv[]) {
     cout << "Reading state..." << endl;
     State state = State::read_binary(path);
     cout << "Read state from " << path << endl;
-    cout << state.to_json() << endl;
+    state.draw();
 }

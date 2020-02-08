@@ -161,14 +161,14 @@ vector<vector<float> > connect_dots(vector<vector<float> > shape) {
 
         for (int i = 0; i <= steps; i++) {
             newShape.push_back({(float)x, (float)y});
-            newShape.push_back({(float)x + 1, (float)y + 1});
-            newShape.push_back({(float)x + 1, (float)y});
-            newShape.push_back({(float)x, (float)y + 1});
+            // newShape.push_back({(float)x + 1, (float)y + 1});
+            // newShape.push_back({(float)x + 1, (float)y});
+            // newShape.push_back({(float)x, (float)y + 1});
             x += xinc;
             y += yinc;
         }
     }
-
+    
     return newShape;
 }
 
@@ -214,4 +214,17 @@ void Shape::draw() {
     SDL_DestroyTexture(texture);
     SDL_DestroyRenderer(renderer);
     destroy_window(window);
+}
+
+void State::draw() {
+    vector<vector<float> > b;
+
+    for (Precinct p : state_precincts) {
+        for (vector<float> c : p.border) {
+            b.push_back(c);
+        }
+    }
+
+    Shape test(b);
+    test.draw();
 }

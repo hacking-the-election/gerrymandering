@@ -39,7 +39,7 @@ vector<Precinct_Group> State::generate_communities(int num_communities, float co
         arbitrary_limit = 100,
         i = 0;
 
-    while (changed_precincts > arbitrary_limit ) {
+    while (changed_precincts > arbitrary_limit) {
         cout << "On iteration " << i << endl;
 
         vector<Precinct_Group> new_communities = 
