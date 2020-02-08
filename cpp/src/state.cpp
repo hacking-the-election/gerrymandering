@@ -25,7 +25,7 @@ const string election_id_header = "geoid10";
 const vector<string> d_head = {"ndv"};
 const vector<string> r_head = {"nrv"};
 const string geodata_id = "GEOID10";
-const string population_id = "POP100";
+const string population_id = "TOTPOP";
 
 
 vector<vector<string> > parse_sv(string tsv, string delimiter) {
@@ -167,6 +167,9 @@ vector<Shape> parse_coordinates(string geoJSON) {
         // get the population from geodata
         if (shapes["features"][i]["properties"].HasMember(population_id.c_str())) {
             pop = shapes["features"][i]["properties"][population_id.c_str()].GetInt();
+            // if (tmp != "" && tmp != "NA") {
+            //     pop = stoi(tmp);
+            // }
         }
         else
             cout << "\e[31merror: \e[0mNo population data" << endl;

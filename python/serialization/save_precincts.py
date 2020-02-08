@@ -24,9 +24,8 @@ python3 save_precincts.py [election_data_file] [geo_data_file] [district_file] [
 
 import json
 import logging
-from os import mkdir
-from os.path import abspath, dirname, isdir
 import pickle
+import sys
 import warnings
 
 
@@ -35,6 +34,8 @@ logging.basicConfig(level=logging.WARNING, filename="precincts.log")
 
 def customwarn(message, category, filename, lineno, file=None, line=None):
     logging.warning(warnings.formatwarning(message, category, filename, lineno))
+
+warnings.showwarning = customwarn
 
 
 def save(state, precinct_list, district_dict, objects_dir):
@@ -151,6 +152,20 @@ class Precinct:
                 election_data = f.read().strip()
             
             data_rows = [row.split('\t') for row in election_data.split('\n')]
+            if state == "missouri":
+                data_rows = data_rows[:4814]
+
+            # ensure all rows have same length
+            for i, row in enumerate(data_rows[:]):
+                if len(row) != (l := len(data_rows[0])):
+                    if len(row) > l:
+                        lst = row[:l]
+                    else:
+                        lst = row[:]
+                        while len(lst) < l:
+                            lst.append("")
+                    data_rows[i] = lst
+
             # 2-d list with each sublist being a column in the
             # election data file
             data_columns = [[data_rows[x][y] for x in range(len(data_rows))]
@@ -184,7 +199,8 @@ class Precinct:
             rep_keys = STATE_METADATA[state]["rep_keys"]
 
             pop = {p["properties"][json_id][1:] if state == "colorado"
-                   else p["properties"][json_id]: p["properties"][json_pop]
+                   else p["properties"][json_id]:
+                   convert_to_int(p["properties"][json_pop])
                    for p in geo_data["features"]}
 
 
@@ -279,10 +295,6 @@ class Precinct:
 
 
 if __name__ == "__main__":
-
-    import sys
-
-    warnings.showwarning = customwarn
 
     args = sys.argv[1:]
 

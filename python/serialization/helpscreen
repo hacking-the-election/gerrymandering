@@ -1,0 +1,14 @@
+usage: python3 serialization (save|load) [args]
+
+args for `save` subcommand (positional):
+
+    election_data_file - path to file containing statewide precinct-level election data
+    geo_data_file - path to file containing statewide precinct-level geo data
+    district_file - path to file containing statewide district-level geo data
+    state - name of state
+    objects_dir - path to directory where pickled state file will be stored
+    metadata_file - path to file containing state metadata for column names
+
+args for `load` subcommand
+
+    state_file - path to file containing pickled state data
