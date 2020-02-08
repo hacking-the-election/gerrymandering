@@ -1,19 +1,19 @@
 /*=======================================
  generate_communities.cpp:      k-vernooy
- last modified:                Sat, Feb 1
+ last modified:                Sat, Feb 8
  
  Run community generation algorithm and 
  print coordinates as geojson for a given
  state object
 ========================================*/
 
-#include "../include/shape.hpp"
-#include "../include/util.hpp"
+#include "../../../include/shape.hpp"
+#include "../../../include/util.hpp"
 
 int main(int argc, char* argv[]) {
+
     /* 
-        run community algorithm from 
-        binary state object
+        run community algorithm given binary state object
     */
 
     if (argc != 2) {
@@ -22,7 +22,6 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-
     // path to write binary file to
     string read_path = string(argv[1]);
 
@@ -30,6 +29,9 @@ int main(int argc, char* argv[]) {
     State state = State::read_binary(read_path);
     vector<Precinct_Group> political_communities = state.generate_communities();
 
+    cout << "Finished generating communities for " << read_path 
+         << ", writing to " << read_path << "_communities.dat" << endl;
+    
     // write as binary
     return 0;
 }

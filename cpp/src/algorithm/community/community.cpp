@@ -7,8 +7,8 @@
  and redistricting.
 ========================================*/
 
-#include "../../include/shape.hpp"  // class definitions
-#include "../../include/util.hpp"   // array modification functions
+#include "../../../include/shape.hpp"  // class definitions
+#include "../../../include/util.hpp"   // array modification functions
 
 vector<Precinct_Group> State::generate_initial_communities() {
     vector<Precinct_Group> communities;
