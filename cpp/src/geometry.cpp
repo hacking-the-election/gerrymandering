@@ -11,6 +11,9 @@
 #include "../include/shape.hpp"   // class definitions
 #include "../include/gui.hpp"     // for the draw function
 #include <math.h>                 // for rounding functions
+#include <cmath>
+
+#define PI M_PI
 
 coordinate Shape::center() {
     // returns the average {x,y} of a shape
@@ -29,13 +32,13 @@ coordinate Shape::center() {
     return coords; // return averages
 }
 
-double Shape::area() {
+float Shape::area() {
     
     /*
         returns the area of a shape, using latitude * long area
     */
 
-    double area = 0;
+    float area = 0;
     int points = border.size() - 1; // last index of border
 
     for ( int i = 0; i < border.size(); i++ ) {
@@ -44,6 +47,30 @@ double Shape::area() {
     }
 
     return (area / 2);
+}
+
+float Shape::perimeter() {
+    /*
+        returns the perimeter of a shape object
+        using latitude and longitude coordinates
+    */
+
+    float t = 0;
+
+    for (int i = 0; i < border.size(); i++) {
+        // get pair of coordinates on
+        // which to apply distance formula
+        coordinate c0 = border[i];
+        coordinate c1;
+
+        if (i == border.size() - 1) c1 = border[0];
+        else c1 = border[i + 1];
+
+        float d = sqrt(pow((c1[0] - c0[0]), 2) + pow((c1[1] - c0[1]), 2));
+        t += d;
+    }
+
+    return t;
 }
 
 bounding_box normalize_coordinates(Shape* shape) {
@@ -102,10 +129,24 @@ coordinate_set resize_coordinates(bounding_box box, coordinate_set shape, int sc
     return shape;
 }
 
-index_set get_boundary_precincts(Precinct_Group shape) {
+p_index_set get_boundary_precincts(Precinct_Group shape) {
     return {1,3};
 }
 
-index_set get_bordering_precincts(Precinct_Group shape, int index) {
+p_index_set get_bordering_precincts(Precinct_Group shape, int p_index) {
+    return {1};
+}
 
+unit_interval compactness(Shape shape) {
+
+    /*
+        An implementation of the Schwartzberg compactness score.
+        Returns the ratio of the perimeter of a shape to the
+        circumference of a circle with the same area as that shape.
+    */
+
+    float circle_radius = sqrt(shape.area() / PI);
+    float circumference = 2 * circle_radius * PI;
+
+    return 1/(shape.perimeter() / circumference);
 }
