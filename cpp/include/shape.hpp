@@ -38,6 +38,7 @@ using namespace rapidjson;
 typedef vector<float> coordinate;
 typedef vector<coordinate> coordinate_set;
 typedef vector<float> bounding_box;
+typedef vector<int> index_set;
 
 class Shape {
 
@@ -169,7 +170,7 @@ class State : public Precinct_Group {
 
         // for the community generation algorithm
         vector<Precinct_Group> generate_communities(int num_communities, float compactness_tolerance, float partisanship_tolerance, float population_tolerance);
-        vector<Precinct_Group> generate_initial_communities();
+        vector<Precinct_Group> generate_initial_communities(int num_communities);
         // name of state
         string name = "no_name";
 

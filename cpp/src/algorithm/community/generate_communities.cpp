@@ -11,6 +11,11 @@
 #include "../../../include/util.hpp"
 
 int main(int argc, char* argv[]) {
+    
+    /*
+        A driver program for the community algorithm
+        See community.cpp for the implementation of the algorithm
+    */
 
     if (argc != 2) {
         cerr << "generate_communities: usage: <state.dat>" << endl;
