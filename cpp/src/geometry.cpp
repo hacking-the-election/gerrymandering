@@ -101,3 +101,11 @@ coordinate_set resize_coordinates(bounding_box box, coordinate_set shape, int sc
     // return scaled coordinates
     return shape;
 }
+
+index_set get_boundary_precincts(Precinct_Group shape) {
+    return {1,3};
+}
+
+index_set get_bordering_precincts(Precinct_Group shape, int index) {
+
+}

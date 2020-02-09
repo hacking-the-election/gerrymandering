@@ -73,6 +73,19 @@ string join(vector<string> str, string del) {
     return ret;
 }
 
+
+
+string join(vector<int> str, string del) {
+    string ret;
+
+    for (int i = 0; i < str.size() - 1; i++)
+        ret += to_string(str[i]) + del; // add string with delimiter
+
+    ret += to_string(str[str.size() - 1]); // add last string
+    return ret;
+}
+
+
 bool is_number(string token) {
 
     // checks if a string is any number type
