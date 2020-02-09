@@ -14,5 +14,6 @@ bounding_box normalize_coordinates(Shape* shape);
 coordinate_set resize_coordinates(bounding_box box, coordinate_set shape, int screenX, int screenY);
 
 coordinate_set generate_exterior_border(Precinct_Group test);
-index_set get_boundary_precincts(Precinct_Group shape);
-index_set get_bordering_precincts(Precinct_Group shape, int index);
+p_index_set get_boundary_precincts(Precinct_Group shape);
+p_index_set get_bordering_precincts(Precinct_Group shape, int p_index);
+unit_interval compactness(Shape shape);

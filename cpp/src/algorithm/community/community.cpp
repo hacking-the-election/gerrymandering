@@ -33,12 +33,13 @@ vector<Precinct_Group> State::generate_initial_communities(int num_communities) 
     for (int i = 0; i < rem; i++)
         sizes.push_back(base + 1);
 
-    // create array of indexes of precincts available to be added
-    index_set available_pre(num_precincts);
-    iota(available_pre.begin(), available_pre.end(), 0);
+    // create array of indices of precincts available to be added
+    p_index_set available_pre(num_precincts);
+    std::iota(available_pre.begin(), available_pre.end(), 0);
 
     // while (something) {
-    Precinct random_border_p = state_precincts[get_boundary_precincts(*this)[0]];
+    p_index p = get_boundary_precincts(*this)[0];
+    Precinct random_border_p = state_precincts[p];
     // }
 
     return communities;
