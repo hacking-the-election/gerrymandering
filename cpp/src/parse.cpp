@@ -1,5 +1,5 @@
 /*=======================================
- state.cpp:                     k-vernooy
+ parse.cpp:                     k-vernooy
  last modified:               Sun, Jan 20
 
  Definitions of state methods for parsing
@@ -10,63 +10,61 @@
 #include "../include/shape.hpp"  // class definitions
 #include "../include/util.hpp"   // array modification functions
 #include <algorithm>             // for std::find and std::distance
-#include <regex>
 
 #define VERBOSE 1  // print progress messages
 
-bool is_number(string token) {
-    // checks if a string is any number type
-    return regex_match(token, regex( ( "((\\+|-)?[[:digit:]]+)(\\.(([[:digit:]]+)?))?" ) ));
-}
-
 
 // constant id strings
-const string election_id_header = "geoid10";
+const string election_id_header = "vtd_key";
 const vector<string> d_head = {"ndv"};
 const vector<string> r_head = {"nrv"};
-const string geodata_id = "GEOID10";
-const string population_id = "TOTPOP";
+const string geodata_id = "VTD_KEY";
+const string population_id = "PL10AA_TOT";
 
 
 vector<vector<string> > parse_sv(string tsv, string delimiter) {
+    
     /*
         takes a tsv file as string, returns
         two dimensional array of cells and rows
     */
 
-    vector<vector<string> > parsed; // to be added to + returned
+    stringstream file(tsv);
+    string line;
+    vector<vector<string> > data;
 
-    stringstream file(tsv); // to iterate over lines
-    string line;            // to hold current line
-
-    while (getline( file, line ) ) { // loop through lines
-
+    while (getline(file, line)) {
         vector<string> row;
-
-        // split by tab
         size_t pos = 0;
 
         while ((pos = line.find(delimiter)) != string::npos) {
-            row.push_back(line.substr(0, pos));       // add current value to row
-            line.erase(0, pos + delimiter.length());  // remove current value from string
+            row.push_back(line.substr(0, pos));
+            line.erase(0, pos + delimiter.length());
         }
 
-        row.push_back(line); // add the last value to the row
-        parsed.push_back(row); // add the row to the array
+        row.push_back(line);
+        data.push_back(row);
     }
 
-    return parsed;
+    return data;
 }
 
 bool check_column(vector<vector<string> > data_list, int index) {
+   
+    /*
+        returns whether or not a given column in a two
+        dimensional vector is empty at any given point
+    */
+
     for (int i = 0; i < data_list.size(); i++)
         if (data_list[i][index].size() == 0)
-            return false;
+            return false; // the column is empty at this cell
 
     return true;
 }
 
 map<string, vector<int> > parse_voter_data(string voter_data) {
+
     /*
         from a string in the specified format,
         creates a map with the key of the precinct
@@ -77,42 +75,49 @@ map<string, vector<int> > parse_voter_data(string voter_data) {
         = parse_sv(voter_data, "\t"); // array of voter data
 
     int precinct_id_col = -1; // the column index that holds precinct id's
-
+    cout << "a" << endl;
     // indices of usable data
     vector<int> d_index;
     vector<int> r_index;
 
     for ( int i = 0; i < data_list[0].size(); i++) {
-        if (data_list[0][i] == election_id_header)
+        string val = data_list[0][i];
+
+        if (val == election_id_header)
             precinct_id_col = i;
-        
-        if (find(d_head.begin(), d_head.end(),  data_list[0][i]) != d_head.end())
-            d_index.push_back(i);
-        else if (find(r_head.begin(), r_head.end(),  data_list[0][i]) != r_head.end())
-            r_index.push_back(i);
+
+        for (string head : d_head) {
+            if (head == val) {
+                d_index.push_back(i);
+            }
+        }
+
+        for (string head : r_head) {
+            if (head == val) {
+                r_index.push_back(i);
+            }
+        }
     }
 
     map<string, vector<int> > parsed_data;
 
     // iterate over each precinct
     for (int x = 1; x < data_list.size(); x++) {
-
-        string id = split(data_list[x][precinct_id_col], "\"")[1]; // get the precinct id
-        // string id = data_list[x][precinct_id_col];
-
+        // string id = split(data_list[x][precinct_id_col], "\"")[1]; // remove quotes
+        string id = data_list[x][precinct_id_col];
         int demT = 0, repT = 0;
 
         // get the right voter columns, add to party total
         for (int i = 0; i < d_index.size(); i++) {
             string d = data_list[x][d_index[i]];
             string r = data_list[x][r_index[i]];
-            
+
             if (is_number(d))
                 demT += stoi(d);
             if (is_number(r))
                 repT += stoi(r);
         }
-        
+
         parsed_data[id] = {demT, repT};
         // set the voter data of the precinct in the map
     }
@@ -195,6 +200,7 @@ vector<Shape> parse_coordinates(string geoJSON) {
     return shapes_vector;
 }
 
+
 vector<Precinct> merge_data( vector<Shape> precinct_shapes, map<string, vector<int> > voter_data) {
 
     /*
@@ -228,6 +234,76 @@ vector<Precinct> merge_data( vector<Shape> precinct_shapes, map<string, vector<i
 
     return precincts; // return precincts array
 }
+
+vector<Precinct> parse_voter_and_geodata(string precinct_geoJSON) {
+
+    // parses a geoJSON state into an array of precincts with election data
+
+    Document shapes;
+    shapes.Parse(precinct_geoJSON.c_str()); // parse json
+
+    // vector of shapes to be returned
+    vector<Precinct> p_vector;
+
+    for ( int i = 0; i < shapes["features"].Size(); i++ ) {
+        
+        string coords;
+        int pop = 0, demT = 0, repT = 0;
+
+        if (shapes["features"][i]["properties"].HasMember(population_id.c_str()))
+            pop = shapes["features"][i]["properties"][population_id.c_str()].GetFloat();
+        else
+            cout << "\e[31merror: \e[0mNo population data" << endl;
+        
+
+        for (string head : d_head) {
+            if (shapes["features"][i]["properties"].HasMember(head.c_str())) {
+                if (shapes["features"][i]["properties"][head.c_str()].IsInt())
+                    demT += shapes["features"][i]["properties"][head.c_str()].GetInt();
+                else if (shapes["features"][i]["properties"][head.c_str()].IsFloat())
+                    demT += shapes["features"][i]["properties"][head.c_str()].GetFloat();
+                else if (shapes["features"][i]["properties"][head.c_str()].IsString())
+                    demT += stoi(shapes["features"][i]["properties"][head.c_str()].GetString());
+            }
+            else 
+                cout << "FAIL" << endl;
+        }
+
+
+        for (string head : r_head) {
+            if (shapes["features"][i]["properties"].HasMember(head.c_str())) {
+                if (shapes["features"][i]["properties"][head.c_str()].IsInt())
+                    repT += shapes["features"][i]["properties"][head.c_str()].GetInt();
+                else if (shapes["features"][i]["properties"][head.c_str()].IsFloat())
+                    repT += shapes["features"][i]["properties"][head.c_str()].GetFloat();
+                else if (shapes["features"][i]["properties"][head.c_str()].IsString())
+                    repT += stoi(shapes["features"][i]["properties"][head.c_str()].GetString());
+            }
+            else 
+                cout << "FAIL" << endl;
+        }
+
+
+        // create empty string buffer
+        StringBuffer buffer;
+        buffer.Clear();
+        Writer<rapidjson::StringBuffer> writer(buffer);
+
+        // write the coordinate array to a string
+        shapes["features"][i]["geometry"]["coordinates"].Accept(writer);
+        coords = buffer.GetString();
+
+        // vector parsed from coordinate string
+        vector<vector<float> > border = string_to_vector(coords);
+
+        // create shape from border, add to array
+        Precinct p(border, demT, repT);
+        p.pop = pop;
+        p_vector.push_back(p);
+    }
+
+    return p_vector;
+};
 
 vector<vector<float> > generate_state_border(vector<Precinct> precincts) {
     // given an array of precincts, return the border of the state
