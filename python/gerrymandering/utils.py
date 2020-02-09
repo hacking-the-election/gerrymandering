@@ -4,6 +4,9 @@ for communities algorithm
 """
 
 
+import itertools
+
+
 # ===================================================
 # general geometry functions
 
@@ -156,14 +159,42 @@ def get_if_addable(precinct, community, boundary):
 
     Args:
     `precinct`: coords of segments of `precinct`
-    `community`: coords of segments of `community` that will or will
-                 not take `precinct` (excluding `precinct`)
+    `community`: community object of community that `precinct` may be
+                 added to
     `boundary`: coords of segments of area in state not yet taken up by
-                communities    
+                communities
     """
 
     # check if precinct is bordering boundary
     if not get_if_bordering(precinct, boundary):
         return False
 
-    
+    bordering_segments = {}  # for all precincts in `community`
+    precinct_bordering_segments = {}  # just for `precinct`
+    for community_segment in community.segments:
+        for boundary_segment in boundary:
+            if get_segments_collinear(community_segment, boundary_segment):
+                bordering_segments.add(community_segment)
+    for precinct_segment in precinct:
+        for boundary_segment in boundary:
+            if get_segments_collinear(precinct_segment, boundary_segment):
+                bordering_segments.add(precinct_segment)
+                precinct_bordering_segments.add(precinct_segment)
+
+    if len(precinct_bordering_segments) > 1:
+        # check every segment from `precinct` that is collinear with a
+        # segment on the boundary to see whether or not it is touching
+        # any other segment from `community` or `precinct` that is also
+        # collinear with a segment from the boundary
+        segs_touching_others = {seg: False for seg in
+                                precinct_bordering_segments}
+        for precinct_seg in precinct_bordering_segments:
+            for community_seg in bordering_segments:
+                if set(precinct_seg) & set(community_seg) != set():
+                    segs_touching_others[precinct_seg] = True
+                    break
+        for val in segs_touching_others:
+            if not val:
+                return False
+
+    return True

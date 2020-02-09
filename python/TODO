@@ -11,4 +11,5 @@
 
 # Communities:
    Now:
-    - create utils file filled with geometry algorithms for useful stuff
+    - add compactness algorithm to utils.py
+    - write tests for utils.py
