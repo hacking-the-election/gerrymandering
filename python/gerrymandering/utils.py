@@ -3,7 +3,7 @@ Useful computational geometry functions
 """
 
 
-def equation(segment):
+def get_equation(segment):
     """
     Returns the function representing the equation of a line segment
     containing 2 or more points
@@ -23,7 +23,7 @@ def get_segments(shape):
     return segments
 
 
-def border(shapes):
+def get_border(shapes):
     """
     shapes: a list of lists of coords representing the vertices of a
             polygon. These shapes must be clustered together to make
@@ -56,7 +56,7 @@ def border(shapes):
     return outer_vertices
 
 
-def inside(point, shape):
+def get_point_in_polygon(point, shape):
     """
     shape: ordered list of vertices
 
