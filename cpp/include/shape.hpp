@@ -33,6 +33,9 @@ using namespace rapidjson;
         - Derived state class - has array of precincts + districts
 */
 
+typedef vector<float> coordinate;
+typedef vector<coordinate> coordinate_set;
+
 class Shape {
 
     /* 
@@ -44,18 +47,18 @@ class Shape {
 
         Shape(){}; // default constructor
 
-        Shape(vector<vector<float> > shape) {
+        Shape(coordinate_set shape) {
             // constructor with assignment
             border = shape;
         }
 
-        Shape(vector<vector<float> > shape, string id) {
+        Shape(coordinate_set shape, string id) {
             // overload constructor for adding id
             border = shape;
             shape_id = id;
         }
 
-        vector<vector<float> > border; // array of coordinates
+        coordinate_set border; // array of coordinates
         string shape_id;
 
         // gui methods
@@ -63,7 +66,7 @@ class Shape {
 
         // calculation methods
         double area();
-        vector<double> center();
+        coordinate center();
 
         // for boost serialization
         friend class boost::serialization::access;
@@ -81,20 +84,20 @@ class Precinct : public Shape {
 
         Precinct(){}; // default constructor
 
-        Precinct(vector<vector<float> > shape, int demV, int repV) : Shape(shape) {
+        Precinct(coordinate_set shape, int demV, int repV) : Shape(shape) {
             // assigning vote data
             dem = demV;
             rep = repV;
         }
 
-        Precinct(vector<vector<float> > shape, int demV, int repV, string id) : Shape(shape, id) {
+        Precinct(coordinate_set shape, int demV, int repV, string id) : Shape(shape, id) {
             // overloaded constructor for adding shape id
             dem = demV;
             rep = repV;
         }
 
         double get_ratio();        // returns dem/total ratio
-        vector<int> voter_data();  // get data in {dem, rep} format
+        coordinate voter_data();  // get data in {dem, rep} format
     
         // for boost serialization
         friend class boost::serialization::access;
@@ -115,7 +118,7 @@ class Precinct_Group : public Shape {
 
         Precinct_Group(){}; // default constructor
 
-        Precinct_Group(vector<vector<float> > shape)
+        Precinct_Group(coordinate_set shape)
             : Shape(shape) {}; // call the superclass constructor
 
         // for boost serialization
@@ -143,7 +146,7 @@ class State : public Precinct_Group {
 
         State(){}; // default constructor
 
-        State(vector<Precinct_Group> districts, vector<Precinct> precincts, vector<vector<float> > shape) : Precinct_Group(shape) {
+        State(vector<Precinct_Group> districts, vector<Precinct> precincts, coordinate_set shape) : Precinct_Group(shape) {
             // simple assignment constructor
             state_districts = districts;
             state_precincts = precincts;
@@ -162,7 +165,7 @@ class State : public Precinct_Group {
         template<class Archive> void serialize(Archive & ar, const unsigned int version);
 
         // for the community generation algorithm
-        vector<Precinct_Group> generate_communities(int num_communities, float compactness_tolerance);
+        vector<Precinct_Group> generate_communities(int num_communities, float compactness_tolerance, float partisanship_tolerance, float population_tolerance);
         vector<Precinct_Group> generate_initial_communities();
         // name of state
         string name = "no_name";
