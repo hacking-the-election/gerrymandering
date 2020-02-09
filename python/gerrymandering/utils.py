@@ -1,6 +1,11 @@
 """
-Useful computational geometry functions
+Useful computational geometry functions and classes
+for communities algorithm
 """
+
+
+# ===================================================
+# general geometry functions
 
 
 def get_equation(segment):
@@ -23,14 +28,46 @@ def get_segments(shape):
     return segments
 
 
+def get_segments_collinear(segment_1, segment_2):
+    """
+    Returns whether or not two segments are collinear
+    """
+
+    f = equation(segment_1)
+    g = equation(segment_2)
+    # if two lines have more than one shared point,
+    # they are the same line
+    return (f(0) == g(0)) and (f(1) == g(1))
+
+
+def get_if_bordering(shape_1, shape_2):
+    """
+    Returns whether or not two shapes are bordering
+
+    Both args are sets of segs
+    (set of list of list of floats)
+    """
+
+    bordering = False
+
+    # check the equation for every segment in `shape_1` to see if it's
+    # equal to any segment in `shape_2`
+    for segment_1 in shape_1:
+        for segment_2 in shape_2:
+            if get_segments_collinear(segment_1, segment_2):
+                bordering = True
+
+    return bordering
+
+
 def get_border(shapes):
     """
-    shapes: a list of lists of coords representing the vertices of a
-            polygon. These shapes must be clustered together to make
-            one larger polygon.
-    
-    returns the vertices of the larger polygon that the smaller ones
+    Returns the vertices of the larger polygon that the smaller ones
     make up
+    
+    `shapes`: a list of lists of coords representing the vertices of a
+              polygon. These shapes must be clustered together to make
+              one larger polygon.
     """
 
     segments = set([get_segments(shape) for shape in shapes])
@@ -38,14 +75,12 @@ def get_border(shapes):
     inner_segments = {}
 
     for segment_1 in segments:
-        for segment_2 in segments:
-            f = equation(segment_1)
-            g = equation(segment_2)
-            if (f(0) == g(0)) and (f(1) == g(1)):
-                # if two lines have more than one shared point,
-                # they are the same line
-                inner_segments.add(segment_1)
-                break
+        if segment not in inner_segments:
+            for segment_2 in segments - {segment_1}:
+                if get_segments_collinear(segment_1, segment_2):
+                    inner_segments.add(segment_1)
+                    inner_segments.add(segment_2)
+                    break
 
     outer_segments = segments - inner_segments
 
@@ -58,9 +93,11 @@ def get_border(shapes):
 
 def get_point_in_polygon(point, shape):
     """
-    shape: ordered list of vertices
+    Returns True if point is inside polygon, False if outside
 
-    returns True if point is inside polygon, False if outside
+    Args:
+    `shape`: ordered list of vertices
+    `point`: point to find whether or not it is in `shape`
     """
 
     crossings = 0
@@ -90,3 +127,43 @@ def get_point_in_polygon(point, shape):
                 crossings += 1
     
     return crossings % 2 == 1
+
+
+# ===================================================
+# community algorithm-specifc functions and classes:
+
+
+class Community:
+    """
+    A collection of precincts
+    """
+    
+    def __init__(self, precincts):
+        self.precincts = precincts
+
+    @property
+    def border(self):
+        """
+        The outside edge of the community (in segments)
+        """
+        return get_segments(get_border(self.precincts))
+
+
+def get_if_addable(precinct, community, boundary):
+    """
+    Returns whether or not it will create an island if `precinct` is
+    added to `community` with `boundary` already taken up.
+
+    Args:
+    `precinct`: coords of segments of `precinct`
+    `community`: coords of segments of `community` that will or will
+                 not take `precinct` (excluding `precinct`)
+    `boundary`: coords of segments of area in state not yet taken up by
+                communities    
+    """
+
+    # check if precinct is bordering boundary
+    if not get_if_bordering(precinct, boundary):
+        return False
+
+    
