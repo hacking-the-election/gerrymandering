@@ -15,6 +15,13 @@
 
 #define PI M_PI
 
+vector<float> calculate_line(coordinate c0, coordinate c1) {
+    float m = (c1[1] - c0[1]) / (c1[0] - c0[0]);
+    float b = -m * c0[0] + c0[1];
+
+    return {m, b};
+}
+
 coordinate Shape::center() {
     // returns the average {x,y} of a shape
     coordinate coords = { border[0][0], border[0][1] };  // initialize with first values
@@ -130,7 +137,51 @@ coordinate_set resize_coordinates(bounding_box box, coordinate_set shape, int sc
 }
 
 p_index_set get_boundary_precincts(Precinct_Group shape) {
-    return {1,3};
+   
+    /*
+        returns an array of indices that correspond
+        to precincts on the outer edge of a Precinct Group
+    */
+
+    p_index_set boundary_precincts;
+
+    for (Precinct p0 : shape.precincts) {
+        for (int i = 0; i < p0.border.size(); i++) {
+            coordinate c0 = p0.border[i];
+            coordinate c1;
+
+            if (i == p0.border.size())
+                c1 = p0.border[0];
+            else
+                c1 = p0.border[i + 1];
+
+            vector<float> line = calculate_line(c0, c1);
+            bool found_line = true;
+            int index = 0;
+
+            while ((!found_line) && (index < shape.precincts.size())) {
+                Precinct p1 = shape.precincts.[index];
+                for (int i = 0; i < p1.border.size(); i++) {
+                    coordinate d0 = p1.border[i];
+                    coordinate d1;
+
+                    if (i == p1.border.size())
+                        d1 = p1.border[0];
+                    else
+                        d1 = p1.border[i + 1];
+
+                    vector<float> line_d = calculate_line(d0, d1);
+
+                    // if (line == line_d && line_in_range(line, line_d) ) 
+                        // and one point from d0 falls within
+                }
+                index++;
+            }
+        
+        }
+    }
+
+    return boundary_precincts;
 }
 
 p_index_set get_bordering_precincts(Precinct_Group shape, int p_index) {
@@ -149,4 +200,27 @@ unit_interval compactness(Shape shape) {
     float circumference = 2 * circle_radius * PI;
 
     return 1/(shape.perimeter() / circumference);
+}
+
+coordinate_set generate_exterior_border(Precinct_Group precinct_group) {
+    p_index_set boundary_precincts = get_boundary_precincts(precinct_group);
+    
+    for (p_index i : boundary_precincts) {
+
+        Precinct precinct = precinct_group.precincts[i];
+        coordinate_set border = precinct.border;
+
+        for (int i = 0; i < border.size(); i++) {
+            
+            coordinate c0 = border[i];
+            coordinate c1;
+
+            if (i == border.size())
+                c1 = border[0];
+            else 
+                c1 = border[i + 1];
+            
+            // calculate_line(c0, c1);
+        }
+    }
 }
