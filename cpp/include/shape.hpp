@@ -6,6 +6,7 @@
  for shapes, precincts, states, and 
  districts. 
 ========================================*/
+#pragma once
 
 #include <iostream>
 #include <string>

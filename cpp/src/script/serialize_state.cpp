@@ -10,8 +10,8 @@
  - election data from harvard dataverse
 ========================================*/
 
-#include "../include/shape.hpp"
-#include "../include/util.hpp"
+#include "../../include/shape.hpp"
+#include "../../include/util.hpp"
 
 int main(int argc, char* argv[]) {
     /* parsing data into a binary state object

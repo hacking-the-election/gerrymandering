@@ -2,20 +2,17 @@
 
 CC = g++
 BINDIR = bin
-FILES = src/util.cpp src/state.cpp src/shape.cpp src/serialize_methods.cpp src/gui.cpp
+STATE_FILES = src/parse.cpp src/shape.cpp src/geometry.cpp src/gui.cpp src/serialize.cpp src/util.cpp
 BOOST = -lboost_serialization
 SDL = -lSDL2 -lSDL2main
 V = 11
 
-all: serialize #community
+all: community
 
-serialize:
+state_serializer:
 	@echo "compiling state serializer..."
-	@${CC} -std=c++${V} src/serialize_state.cpp ${FILES} ${BOOST} ${SDL} -o ${BINDIR}/serialize_state
+	@${CC} -std=c++${V} src/script/serialize_state.cpp ${STATE_FILES} ${BOOST} ${SDL} -o ${BINDIR}/serialize_state
 
 community:
 	@echo "compiling community algorithm executor"
-	@${CC} -std=c++${V} ${FILES} src/generate_communities.cpp src/algorithm/community.cpp ${BOOST} ${SDL} -o ${BINDIR}/generate_communities
-
-install:
-	@install -m 0755 ${BINDIR}/gerry /usr/local/bin
+	@${CC} -std=c++${V} ${STATE_FILES} src/algorithm/community/generate_communities.cpp src/algorithm/community/community.cpp ${BOOST} ${SDL} -o ${BINDIR}/generate_communities
