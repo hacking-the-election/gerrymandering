@@ -81,9 +81,14 @@ def get_border(shapes):
         if segment not in inner_segments:
             for segment_2 in segments - {segment_1}:
                 if get_segments_collinear(segment_1, segment_2):
-                    inner_segments.add(segment_1)
-                    inner_segments.add(segment_2)
-                    break
+                    # segments are collinear
+                    xs_1 = [p[0] for p in segment_1]
+                    xs_2 = [p[0] for p in segment_2]
+                    if max(xs_1) > min(xs_2) and max(xs_2) > min(xs_1):
+                        # segments have overlapping bounding boxes
+                        inner_segments.add(segment_1)
+                        inner_segments.add(segment_2)
+                        break
 
     outer_segments = segments - inner_segments
 
