@@ -17,11 +17,13 @@ if __name__ == "__main__":
     args = sys.argv[2:]
 
     if sys.argv[1] == "save":
-        if len(args) != 6:
+        if len(args) < 6:
             print(helpscreen)
+            quit()
         Precinct.generate_from_files(*args)
 
     elif sys.argv[1] == "load":
-        if len(args) != 1:
+        if len(args) < 1:
             print(helpscreen)
+            quit()
         print_stats(load(args[0]), args[0].split('/')[-1].split(".")[0])
