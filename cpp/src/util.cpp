@@ -7,9 +7,9 @@
 ========================================*/
 
 #include "../include/util.hpp"
+#include <regex> // for is_number()
 
 using namespace std;
-
 
 string readf(string path) {
    
@@ -70,6 +70,12 @@ string join(vector<string> str, string del) {
         ret += str[i] + del; // add string with delimiter
 
     ret += str[str.size() - 1]; // add last string
-    
     return ret;
+}
+
+bool is_number(string token) {
+
+    // checks if a string is any number type
+
+    return regex_match(token, regex( ( "((\\+|-)?[[:digit:]]+)(\\.(([[:digit:]]+)?))?" ) ));
 }

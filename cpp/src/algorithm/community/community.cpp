@@ -1,6 +1,6 @@
 /*=======================================
  community.cpp:                 k-vernooy
- last modified:                Sat, Feb 1
+ last modified:                Sat, Feb 9
 
  Definition of the community-generation
  algorithm for quantifying gerrymandering
@@ -31,7 +31,7 @@ int measure_difference(vector<Precinct_Group> communities, vector<Precinct_Group
     return 3;
 }
 
-vector<Precinct_Group> State::generate_communities(int num_communities, float compactness_tolerance){
+vector<Precinct_Group> State::generate_communities(int num_communities, float compactness_tolerance, float partisanship_tolerance, float population_tolerance) {
     cout << "go make some communities!" << endl;
     vector<Precinct_Group> communities = generate_initial_communities();
     

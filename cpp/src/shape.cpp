@@ -1,6 +1,6 @@
 /*=======================================
  shape.cpp:                     k-vernooy
- last modified:                Sat, Feb 8
+ last modified:                Sun, Feb 9
  
  Definition of generic methods for shapes, 
  precincts, districts and states that do
@@ -9,11 +9,17 @@
 ========================================*/
 
 #include "../include/shape.hpp"   // class definitions
-#include "../include/gui.hpp"     // for the draw function
+
+#define REP true
 
 double Precinct::get_ratio() {
     // retrieve ratio from precinct
-    return dem / (dem + rep);
+    #ifdef REP
+        return rep / (dem + rep);
+    #endif
+    #ifndef REP
+        return dem / (dem + rep);
+    #endif
 }
 
 vector<int> Precinct::voter_data() {

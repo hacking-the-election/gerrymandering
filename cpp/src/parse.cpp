@@ -1,5 +1,5 @@
 /*=======================================
- state.cpp:                     k-vernooy
+ parse.cpp:                     k-vernooy
  last modified:               Sun, Jan 20
 
  Definitions of state methods for parsing
@@ -10,17 +10,11 @@
 #include "../include/shape.hpp"  // class definitions
 #include "../include/util.hpp"   // array modification functions
 #include <algorithm>             // for std::find and std::distance
-#include <regex>
 
 #define VERBOSE 1  // print progress messages
 
-bool is_number(string token) {
-    // checks if a string is any number type
-    return regex_match(token, regex( ( "((\\+|-)?[[:digit:]]+)(\\.(([[:digit:]]+)?))?" ) ));
-}
 
 // constant id strings
-//ndv	nrv	vtd_key	GEOID10	PL10AA_TOT
 const string election_id_header = "vtd_key";
 const vector<string> d_head = {"ndv"};
 const vector<string> r_head = {"nrv"};
@@ -29,6 +23,7 @@ const string population_id = "PL10AA_TOT";
 
 
 vector<vector<string> > parse_sv(string tsv, string delimiter) {
+    
     /*
         takes a tsv file as string, returns
         two dimensional array of cells and rows
@@ -55,14 +50,21 @@ vector<vector<string> > parse_sv(string tsv, string delimiter) {
 }
 
 bool check_column(vector<vector<string> > data_list, int index) {
+   
+    /*
+        returns whether or not a given column in a two
+        dimensional vector is empty at any given point
+    */
+
     for (int i = 0; i < data_list.size(); i++)
         if (data_list[i][index].size() == 0)
-            return false;
+            return false; // the column is empty at this cell
 
     return true;
 }
 
 map<string, vector<int> > parse_voter_data(string voter_data) {
+
     /*
         from a string in the specified format,
         creates a map with the key of the precinct

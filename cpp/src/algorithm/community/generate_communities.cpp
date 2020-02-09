@@ -12,22 +12,17 @@
 
 int main(int argc, char* argv[]) {
 
-    /* 
-        run community algorithm given binary state object
-    */
-
     if (argc != 2) {
-        // must provide correct arguments
         cerr << "generate_communities: usage: <state.dat>" << endl;
         return 1;
     }
 
-    // path to write binary file to
+    // read binary file from path
     string read_path = string(argv[1]);
-
-    // generate state from files
     State state = State::read_binary(read_path);
-    vector<Precinct_Group> political_communities = state.generate_communities();
+    
+    int districts_in_state = state.state_districts.size();
+    vector<Precinct_Group> political_communities = state.generate_communities(districts_in_state, 0.5, 0.2, 0.15);
 
     cout << "Finished generating communities for " << read_path 
          << ", writing to " << read_path << "_communities.dat" << endl;
