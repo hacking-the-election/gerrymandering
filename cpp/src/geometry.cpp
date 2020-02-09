@@ -1,5 +1,5 @@
 /*=======================================
- shape.cpp:                     k-vernooy
+ geometry.cpp:                  k-vernooy
  last modified:               Sun, Jan 19
  
  Definition of methods for shapes, 
@@ -12,11 +12,9 @@
 #include "../include/gui.hpp"     // for the draw function
 #include <math.h>                 // for rounding functions
 
-vector<double> Shape::center() {
+coordinate Shape::center() {
     // returns the average {x,y} of a shape
-
-    vector<double> coords // initialize with first values
-        = { border[0][0], border[0][1] }; 
+    coordinate coords = { border[0][0], border[0][1] };  // initialize with first values
     
     // loop and add x and y to respective sums
     for ( int i = 1; i < border.size(); i++ ) {
@@ -32,7 +30,10 @@ vector<double> Shape::center() {
 }
 
 double Shape::area() {
-    // returns the area of a shape
+    
+    /*
+        returns the area of a shape, using latitude * long area
+    */
 
     double area = 0;
     int points = border.size() - 1; // last index of border
@@ -45,12 +46,11 @@ double Shape::area() {
     return (area / 2);
 }
 
+bounding_box normalize_coordinates(Shape* shape) {
 
-vector<float> normalize_coordinates(Shape* shape) {
     /*
-        returns a normalized bounding box,
-        and modifies shape object's 
-        coordinates to move it to quadrant 1
+        returns a normalized bounding box, and modifies 
+        shape object's coordinates to move it to Quadrant I
     */
 
     // set dummy extremes
@@ -82,12 +82,12 @@ vector<float> normalize_coordinates(Shape* shape) {
     return {top, bottom, left, right}; // return bounding box
 }
 
-vector<vector<float> > resize_coordinates(vector<float> bounding_box, vector<vector<float> > shape, int screenX, int screenY) {
+coordinate_set resize_coordinates(bounding_box box, coordinate_set shape, int screenX, int screenY) {
     // scales an array of coordinates to fit 
     // on a screen of dimensions {screenX, screenY}
     
-    float ratioTop = ceil((float) bounding_box[0]) / (float) (screenX);   // the rounded ratio of top:top
-    float ratioRight = ceil((float) bounding_box[3]) / (float) (screenY); // the rounded ratio of side:side
+    float ratioTop = ceil((float) box[0]) / (float) (screenX);   // the rounded ratio of top:top
+    float ratioRight = ceil((float) box[3]) / (float) (screenY); // the rounded ratio of side:side
     
     // find out which is larger and assign it's reciporical to the scale factor
     float scaleFactor = floor(1 / ((ratioTop > ratioRight) ? ratioTop : ratioRight)); 

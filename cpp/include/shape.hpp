@@ -33,8 +33,10 @@ using namespace rapidjson;
         - Derived state class - has array of precincts + districts
 */
 
+// simplify the coordinate modification system
 typedef vector<float> coordinate;
 typedef vector<coordinate> coordinate_set;
+typedef vector<float> bounding_box;
 
 class Shape {
 
@@ -97,7 +99,7 @@ class Precinct : public Shape {
         }
 
         double get_ratio();        // returns dem/total ratio
-        coordinate voter_data();  // get data in {dem, rep} format
+        vector<int> voter_data();  // get data in {dem, rep} format
     
         // for boost serialization
         friend class boost::serialization::access;

@@ -17,9 +17,10 @@ const String CQC = "\": ";
 const String T = "    ";
 
 String TAB(int num) {
+    
     string str;
-    for ( int i = 0; i < num; i++ ) {
+    for ( int i = 0; i < num; i++ )
         str += T;
-    }
+    
     return str;
 }
