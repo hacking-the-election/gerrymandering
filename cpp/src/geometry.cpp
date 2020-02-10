@@ -113,28 +113,31 @@ p_index_set get_boundary_precincts(Precinct_Group shape) {
 
     // iterate over each precinct
     for (int index = 0; index < shape.precincts.size(); index++) {
+        cout << "starting precinct " << index << endl;
         segments border = shape.precincts[index].get_segments();
         bool is_border_precinct = true;
         
         int line_index = 0;
         // iterate over each line in the precinct
         while ((is_border_precinct) && (line_index < border.size())) {
+            cout << "starting segment " << line_index << endl;
             vector<float> equation = calculate_line(border[line_index]);
             int index_2 = 0;
             bool line_has_no_borders = false;
 
             // iterate over all other precincts
             while ((!line_has_no_borders) && (index_2 < shape.precincts.size())) {
+                cout << "starting subp " << index_2 << endl;
                 // skip when we're comparing the same precinct
                 if (index_2 != index) {
                     // the other precinct to compare to
-                    segments border_compare = shape.precincts[index_2].get_segments;
+                    segments border_compare = shape.precincts[index_2].get_segments();
 
                     for (segment line_compare : border_compare) {
                         // iterate over all lines in the compare precinct
                         vector<float> equation_compare = calculate_line(line_compare);
                         
-                        if ((equation_compare == equation) && (segments_overlap(line, line_compare))) {
+                        if ((equation_compare == equation) && (segments_overlap(border[line_index], line_compare))) {
                             is_border_precinct = false;
                         }
                     }
