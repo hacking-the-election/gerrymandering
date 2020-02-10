@@ -35,10 +35,20 @@ using namespace rapidjson;
 */
 
 // simplify the coordinate modification system
+
 typedef vector<float> coordinate;
 typedef vector<coordinate> coordinate_set;
 typedef vector<float> bounding_box;
-typedef vector<int> index_set;
+typedef float unit_interval;
+
+/*
+    typedef indexes for precinct algorithm 
+    implementations - rather than using objects, 
+    just use indexes of objects in the array
+*/
+
+typedef int p_index;
+typedef vector<p_index> p_index_set;
 
 class Shape {
 
@@ -69,7 +79,8 @@ class Shape {
         void draw(); // prints to an SDL window
 
         // calculation methods
-        double area();
+        float area();
+        float perimeter();
         coordinate center();
 
         // for boost serialization
@@ -119,9 +130,11 @@ class Precinct_Group : public Shape {
     */
 
     public:
+        
+        vector<Precinct> precincts;
+        void add_precinct(Precinct pre) {precincts.push_back(pre);};
 
         Precinct_Group(){}; // default constructor
-
         Precinct_Group(coordinate_set shape)
             : Shape(shape) {}; // call the superclass constructor
 

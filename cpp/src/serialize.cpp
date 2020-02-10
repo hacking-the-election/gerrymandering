@@ -145,6 +145,7 @@ template<class Archive> void Precinct_Group::serialize(Archive & ar, const unsig
     ar & id;
     ar & border;
     ar & pop;
+    // ar & precincts;
 }
 
  template<class Archive> void Precinct::serialize(Archive & ar, const unsigned int version) {
@@ -157,7 +158,7 @@ template<class Archive> void Precinct_Group::serialize(Archive & ar, const unsig
 }
 
 template<class Archive> void Shape::serialize(Archive & ar, const unsigned int version) {
-    // push shape id and border to archive stream
+    // push shape id and border to archive streamm
     ar & shape_id;
     ar & border;
     ar & pop;

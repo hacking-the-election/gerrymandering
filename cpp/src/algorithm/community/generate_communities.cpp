@@ -9,6 +9,7 @@
 
 #include "../../../include/shape.hpp"
 #include "../../../include/util.hpp"
+#include "../../../include/geometry.hpp"
 
 int main(int argc, char* argv[]) {
     
@@ -25,9 +26,13 @@ int main(int argc, char* argv[]) {
     // read binary file from path
     string read_path = string(argv[1]);
     State state = State::read_binary(read_path);
-    
+    // state.state_precincts[0].draw();
+    cout << state.state_precincts[0].area() << endl;
+    cout << state.state_precincts[0].perimeter() << endl;
+    cout << compactness(state.state_precincts[0]) << endl;
+
     int districts_in_state = state.state_districts.size();
-    vector<Precinct_Group> political_communities = state.generate_communities(districts_in_state, 0.5, 0.2, 0.15);
+    // vector<Precinct_Group> political_communities = state.generate_communities(districts_in_state, 0.5, 0.2, 0.15);
 
     cout << "Finished generating communities for " << read_path 
          << ", writing to " << read_path << "_communities.dat" << endl;
