@@ -11,5 +11,5 @@
 
 # Communities:
    Now:
-    - add compactness algorithm to utils.py
     - write tests for utils.py
+    - write communities algorithm

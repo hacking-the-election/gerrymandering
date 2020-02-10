@@ -5,6 +5,7 @@ for communities algorithm
 
 
 import itertools
+import math
 
 
 # ===================================================
@@ -81,9 +82,14 @@ def get_border(shapes):
         if segment not in inner_segments:
             for segment_2 in segments - {segment_1}:
                 if get_segments_collinear(segment_1, segment_2):
-                    inner_segments.add(segment_1)
-                    inner_segments.add(segment_2)
-                    break
+                    # segments are collinear
+                    xs_1 = [p[0] for p in segment_1]
+                    xs_2 = [p[0] for p in segment_2]
+                    if max(xs_1) > min(xs_2) and max(xs_2) > min(xs_1):
+                        # segments have overlapping bounding boxes
+                        inner_segments.add(segment_1)
+                        inner_segments.add(segment_2)
+                        break
 
     outer_segments = segments - inner_segments
 
@@ -99,14 +105,13 @@ def get_point_in_polygon(point, shape):
     Returns True if point is inside polygon, False if outside
 
     Args:
-    `shape`: ordered list of vertices
+    `shape`: set of segments
     `point`: point to find whether or not it is in `shape`
     """
 
     crossings = 0
-    segments = get_segments(shape)
 
-    for segment in segments:
+    for segment in shape:
         if (
                 # both endpoints are to the left
                 (segment[0][0] < point[0] and segment[1][0] < point[0]) or
@@ -132,6 +137,48 @@ def get_point_in_polygon(point, shape):
     return crossings % 2 == 1
 
 
+def get_distance(p1, p2):
+    """
+    Distance formula
+    """
+    return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
+
+
+def get_permeter(shape):
+    """
+    Returns the permeter of set of segments `shape`
+    """
+    return sum([get_distance(*seg) for seg in shape])
+
+
+def get_area(shape):
+    """
+    Returns the area of list of vertices `shape`
+    """
+    area = 0
+    v2 = shape[-1]
+
+    for v1 in shape:
+        area += (v1[0] + v2[0]) * (v1[1] - v2[1])
+        v2 = v1
+
+    return abs(area / 2)
+
+
+def get_schwartsberg_compactness(shape):
+    """
+    Returns the schwartsberg compactness value of set of segments
+    `shape`
+    """
+    
+    compactness = get_perimeter(shape)
+                  / (2 * math.pi * math.sqrt(get_area(shape) / math.pi))
+    if compactness < 1:
+        return 1 / compactness
+    else:
+        return compactness
+
+
 # ===================================================
 # community algorithm-specifc functions and classes:
 
@@ -149,7 +196,27 @@ class Community:
         """
         The outside edge of the community (in segments)
         """
-        return get_segments(get_border(self.precincts))
+        precinct_coords = [p.coords for p in self.precincts]
+        # unpack coords from unnecessary higher dimesions
+        for i, precinct in enumerate(p.coords):
+            coords = precinct
+            while type(coords[0][0]) != type(1.0):
+                coords = coords[0]
+            precinct_coords[i] = coords
+        return get_segments(get_border([]))
+
+    @property
+    def partisanship(self):
+        """
+        The percent of this community that is republican
+        """
+        rep_sum = 0
+        total_sum = 0
+        for precinct in self.precincts
+            if (r_sum := precinct.r_election_sum) != -1:
+                rep_sum += r_sum
+                total_sum += r_sum + precinct.d_election_data
+        return rep_sum / total_sum
 
 
 def get_if_addable(precinct, community, boundary):
