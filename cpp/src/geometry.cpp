@@ -95,6 +95,13 @@ vector<float> calculate_line(segment s) {
     return {m, b};
 }
 
+bool segments_overlap(segment s0, segment s1) {
+    if (s0[0] > s0[2])
+        return (((s1[0] < s0[0]) && (s1[0] > s0[2])) || ((s1[2] < s0[0]) && (s1[2] > s0[2])) );
+    else
+        return (((s1[0] < s0[2]) && (s1[0] > s0[0])) || ((s1[2] < s0[2]) && (s1[2] > s0[0])) );
+}
+
 p_index_set get_boundary_precincts(Precinct_Group shape) {
    
     /*
@@ -104,39 +111,43 @@ p_index_set get_boundary_precincts(Precinct_Group shape) {
 
     p_index_set boundary_precincts;
 
-    for (Precinct p0 : shape.precincts) {
-        for (int i = 0; i < p0.border.size(); i++) {
-            coordinate c0 = p0.border[i];
-            coordinate c1;
-
-            if (i == p0.border.size())
-                c1 = p0.border[0];
-            else
-                c1 = p0.border[i + 1];
-
-            vector<float> line = calculate_line(c0, c1);
-            bool found_line = true;
-            int index = 0;
-
-            while ((!found_line) && (index < shape.precincts.size())) {
-                Precinct p1 = shape.precincts.[index];
-                for (int i = 0; i < p1.border.size(); i++) {
-                    coordinate d0 = p1.border[i];
-                    coordinate d1;
-
-                    if (i == p1.border.size())
-                        d1 = p1.border[0];
-                    else
-                        d1 = p1.border[i + 1];
-
-                    vector<float> line_d = calculate_line(d0, d1);
-
-                    // if (line == line_d && line_in_range(line, line_d) ) 
-                        // and one point from d0 falls within
-                }
-                index++;
-            }
+    // iterate over each precinct
+    for (int index = 0; index < shape.precincts.size(); index++) {
+        segments border = shape.precincts[index].get_segments();
+        bool is_border_precinct = true;
         
+        int line_index = 0;
+        // iterate over each line in the precinct
+        while ((is_border_precinct) && (line_index < border.size())) {
+            vector<float> equation = calculate_line(border[line_index]);
+            int index_2 = 0;
+            bool line_has_no_borders = false;
+
+            // iterate over all other precincts
+            while ((!line_has_no_borders) && (index_2 < shape.precincts.size())) {
+                // skip when we're comparing the same precinct
+                if (index_2 != index) {
+                    // the other precinct to compare to
+                    segments border_compare = shape.precincts[index_2].get_segments;
+
+                    for (segment line_compare : border_compare) {
+                        // iterate over all lines in the compare precinct
+                        vector<float> equation_compare = calculate_line(line_compare);
+                        
+                        if ((equation_compare == equation) && (segments_overlap(line, line_compare))) {
+                            is_border_precinct = false;
+                        }
+                    }
+                }
+
+                index_2++;
+            }
+
+            line_index++;
+        }
+
+        if (is_border_precinct) {
+            boundary_precincts.push_back(index);
         }
     }
 
