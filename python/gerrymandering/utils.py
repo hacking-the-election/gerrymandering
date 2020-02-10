@@ -105,14 +105,13 @@ def get_point_in_polygon(point, shape):
     Returns True if point is inside polygon, False if outside
 
     Args:
-    `shape`: ordered list of vertices
+    `shape`: set of segments
     `point`: point to find whether or not it is in `shape`
     """
 
     crossings = 0
-    segments = get_segments(shape)
 
-    for segment in segments:
+    for segment in shape:
         if (
                 # both endpoints are to the left
                 (segment[0][0] < point[0] and segment[1][0] < point[0]) or
@@ -147,7 +146,7 @@ def get_distance(p1, p2):
 
 def get_permeter(shape):
     """
-    Returns the permeter of list of segments `shape`
+    Returns the permeter of set of segments `shape`
     """
     return sum([get_distance(*seg) for seg in shape])
 
@@ -168,7 +167,7 @@ def get_area(shape):
 
 def get_schwartsberg_compactness(shape):
     """
-    Returns the schwartsberg compactness value of list of segments
+    Returns the schwartsberg compactness value of set of segments
     `shape`
     """
     
@@ -197,7 +196,21 @@ class Community:
         """
         The outside edge of the community (in segments)
         """
-        return get_segments(get_border(self.precincts))
+        return get_segments(get_border([get_segments(p) 
+                            for p in self.precincts]))
+
+    @property
+    def partisanship(self):
+        """
+        The percent of this community that is republican
+        """
+        rep_sum = 0
+        total_sum = 0
+        for precinct in self.precincts
+            if (r_sum := precinct.r_election_sum) != -1:
+                rep_sum += r_sum
+                total_sum += r_sum + precinct.d_election_data
+        return rep_sum / total_sum
 
 
 def get_if_addable(precinct, community, boundary):
