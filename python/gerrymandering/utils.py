@@ -7,6 +7,8 @@ for communities algorithm
 import itertools
 import math
 
+import pyclipper
+
 
 # ===================================================
 # general geometry functions
@@ -28,7 +30,7 @@ def get_segments(shape):
     Returns set of segments from list of vertices
     """
     segments = set([shape[i:i + 2] if i + 2 <= len(shape) else
-                   [shape[-1], shape[0]] for i in range(0, len(shape), 2)])
+                   [shape[-1], shape[0]] for i in range(len(shape))])
     return segments
 
 
@@ -74,30 +76,12 @@ def get_border(shapes):
               one larger polygon.
     """
 
-    segments = set([get_segments(shape) for shape in shapes])
+    pc = pyclipper.Pyclipper()
+    pc.AddPaths(shapes, pyclipper.PT_SUBJECT, True)
+    return pc.Execute(pyclipper.CT_UNION,
+                      pyclipper.PFT_NONZERO,
+                      pyclipper.PFT_NONZERO)[0]
 
-    inner_segments = {}
-
-    for segment_1 in segments:
-        if segment not in inner_segments:
-            for segment_2 in segments - {segment_1}:
-                if get_segments_collinear(segment_1, segment_2):
-                    # segments are collinear
-                    xs_1 = [p[0] for p in segment_1]
-                    xs_2 = [p[0] for p in segment_2]
-                    if max(xs_1) > min(xs_2) and max(xs_2) > min(xs_1):
-                        # segments have overlapping bounding boxes
-                        inner_segments.add(segment_1)
-                        inner_segments.add(segment_2)
-                        break
-
-    outer_segments = segments - inner_segments
-
-    # points are in order as groups of two (enough to draw the shape)
-    outer_vertices = [vertex for vertex in segment
-                      for segment in outer_segments]
-
-    return outer_vertices
 
 
 def get_point_in_polygon(point, shape):
