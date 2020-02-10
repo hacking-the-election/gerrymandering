@@ -1,0 +1,5 @@
+# Serializing
+- Don't fix district inheritance issue until after serializing (make district a Shape, not Precinct_Group).
+
+# Geometric Function
+- Fix outer shell alorithm, base boundary_precincts alorithm off of it.

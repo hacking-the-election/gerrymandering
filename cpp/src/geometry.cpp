@@ -32,6 +32,16 @@ coordinate Shape::center() {
     return coords; // return averages
 }
 
+float get_distance(segment s) {
+    // Distance formula on a segment array
+    return sqrt(pow((s[2] - s[0]), 2) + pow((s[3] - s[1]), 2));
+}
+
+float get_distance(coordinate c0, coordinate c1) {
+    // Distance formula on two separate points
+    return sqrt(pow((c1[0] - c0[0]), 2) + pow((c1[1] - c0[1]), 2));
+}
+
 float Shape::area() {
     
     /*
@@ -56,16 +66,14 @@ float Shape::perimeter() {
     */
 
     float t = 0;
-
-    for (segment s : get_segments()) {
-        float d = sqrt(pow((s[2] - s[0]), 2) + pow((s[3] - s[1]), 2));
-        t += d;
-    }
+    for (segment s : get_segments())
+        t += get_distance(s);    
 
     return t;
 }
 
 segment coords_to_seg(coordinate c1, coordinate c2) {
+    // combines coordinates into a segment array
     return {c1[0], c1[1], c2[0], c2[1]};
 }
 
@@ -102,6 +110,20 @@ bool segments_overlap(segment s0, segment s1) {
         return (((s1[0] < s0[2]) && (s1[0] > s0[0])) || ((s1[2] < s0[2]) && (s1[2] > s0[0])) );
 }
 
+bool are_bordering(Shape s0, Shape s1) {
+    // returns whether or not two shapes touch each other
+    
+    for (segment seg0 : s0.get_segments()) {
+        for (segment seg1 : s1.get_segments()) {
+            if (calculate_line(seg0) == calculate_line(seg1) && segments_overlap(seg0, seg1)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 p_index_set get_boundary_precincts(Precinct_Group shape) {
    
     /*
@@ -113,21 +135,21 @@ p_index_set get_boundary_precincts(Precinct_Group shape) {
 
     // iterate over each precinct
     for (int index = 0; index < shape.precincts.size(); index++) {
-        cout << "starting precinct " << index << endl;
+        // cout << "starting precinct " << index << endl;
         segments border = shape.precincts[index].get_segments();
         bool is_border_precinct = true;
         
         int line_index = 0;
         // iterate over each line in the precinct
         while ((is_border_precinct) && (line_index < border.size())) {
-            cout << "starting segment " << line_index << endl;
+            // cout << "starting segment " << line_index << endl;
             vector<float> equation = calculate_line(border[line_index]);
             int index_2 = 0;
             bool line_has_no_borders = false;
 
             // iterate over all other precincts
             while ((!line_has_no_borders) && (index_2 < shape.precincts.size())) {
-                cout << "starting subp " << index_2 << endl;
+                // cout << "starting subp " << index_2 << endl;
                 // skip when we're comparing the same precinct
                 if (index_2 != index) {
                     // the other precinct to compare to
