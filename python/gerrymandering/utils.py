@@ -5,6 +5,7 @@ for communities algorithm
 
 
 import itertools
+import math
 
 
 # ===================================================
@@ -135,6 +136,35 @@ def get_point_in_polygon(point, shape):
                 crossings += 1
     
     return crossings % 2 == 1
+
+
+def get_distance(p1, p2):
+    """
+    Distance formula
+    """
+    return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
+
+
+def get_permeter(shape):
+    """
+    Returns the permeter of list of segments `shape`
+    """
+    return sum([get_distance(*seg) for seg in shape])
+
+
+def get_area(shape):
+    """
+    Returns the area of list of vertices `shape`
+    """
+    area = 0
+    v2 = shape[-1]
+
+    for v1 in shape:
+        area += (v1[0] + v2[0]) * (v1[1] - v2[1])
+        v2 = v1
+
+    return abs(area / 2)
+
 
 
 # ===================================================
