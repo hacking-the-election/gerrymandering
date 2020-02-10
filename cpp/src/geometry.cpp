@@ -132,6 +132,17 @@ p_index_set get_inner_boundary_precincts(Precinct_Group shape) {
     */
 
     p_index_set boundary_precincts;
+    Shape exterior_border = generate_exterior_border(shape);
+    
+    int i = 0;
+    
+    for (Precinct p : shape.precincts) {
+        if (are_bordering(p, exterior_border)) {
+            boundary_precincts.push_back(i);
+        }
+        i++;
+    }
+
     return boundary_precincts;
 }
 
@@ -154,13 +165,17 @@ unit_interval compactness(Shape shape) {
 }
 
 
-segments generate_exterior_border(Precinct_Group precinct_group) {
+Shape generate_exterior_border(Precinct_Group precinct_group) {
 
     /*
         Get the exterior border of a shape with interior components.
         Equivalent to 'dissolve' in mapshaper - remove bordering edges
     */
 
-    segments ext_border; 
+    Shape ext_border; 
     return ext_border;
+}
+
+p_index get_addable_precinct(p_index_set available_precincts, p_index current_precinct) {
+
 }

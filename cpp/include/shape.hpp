@@ -192,6 +192,10 @@ class State : public Precinct_Group {
         // for the community generation algorithm
         vector<Precinct_Group> generate_communities(int num_communities, float compactness_tolerance, float partisanship_tolerance, float population_tolerance);
         vector<Precinct_Group> generate_initial_communities(int num_communities);
+
+        // return precinct that can be added to the current precinct that won't create islands in the state
+        p_index get_addable_precinct(p_index_set available_precincts, p_index current_precinct);
+
         // name of state
         string name = "no_name";
 
