@@ -166,6 +166,19 @@ def get_area(shape):
     return abs(area / 2)
 
 
+def get_schwartsberg_compactness(shape):
+    """
+    Returns the schwartsberg compactness value of list of segments
+    `shape`
+    """
+    
+    compactness = get_perimeter(shape)
+                  / (2 * math.pi * math.sqrt(get_area(shape) / math.pi))
+    if compactness < 1:
+        return 1 / compactness
+    else:
+        return compactness
+
 
 # ===================================================
 # community algorithm-specifc functions and classes:
