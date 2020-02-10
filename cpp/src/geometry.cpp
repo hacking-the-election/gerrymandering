@@ -112,7 +112,7 @@ bool segments_overlap(segment s0, segment s1) {
 
 bool are_bordering(Shape s0, Shape s1) {
     // returns whether or not two shapes touch each other
-    
+
     for (segment seg0 : s0.get_segments()) {
         for (segment seg1 : s1.get_segments()) {
             if (calculate_line(seg0) == calculate_line(seg1) && segments_overlap(seg0, seg1)) {
@@ -124,58 +124,14 @@ bool are_bordering(Shape s0, Shape s1) {
     return false;
 }
 
-p_index_set get_boundary_precincts(Precinct_Group shape) {
+p_index_set get_inner_boundary_precincts(Precinct_Group shape) {
    
     /*
         returns an array of indices that correspond
-        to precincts on the outer edge of a Precinct Group
+        to precincts on the inner edge of a Precinct Group
     */
 
     p_index_set boundary_precincts;
-
-    // iterate over each precinct
-    for (int index = 0; index < shape.precincts.size(); index++) {
-        // cout << "starting precinct " << index << endl;
-        segments border = shape.precincts[index].get_segments();
-        bool is_border_precinct = true;
-        
-        int line_index = 0;
-        // iterate over each line in the precinct
-        while ((is_border_precinct) && (line_index < border.size())) {
-            // cout << "starting segment " << line_index << endl;
-            vector<float> equation = calculate_line(border[line_index]);
-            int index_2 = 0;
-            bool line_has_no_borders = false;
-
-            // iterate over all other precincts
-            while ((!line_has_no_borders) && (index_2 < shape.precincts.size())) {
-                // cout << "starting subp " << index_2 << endl;
-                // skip when we're comparing the same precinct
-                if (index_2 != index) {
-                    // the other precinct to compare to
-                    segments border_compare = shape.precincts[index_2].get_segments();
-
-                    for (segment line_compare : border_compare) {
-                        // iterate over all lines in the compare precinct
-                        vector<float> equation_compare = calculate_line(line_compare);
-                        
-                        if ((equation_compare == equation) && (segments_overlap(border[line_index], line_compare))) {
-                            is_border_precinct = false;
-                        }
-                    }
-                }
-
-                index_2++;
-            }
-
-            line_index++;
-        }
-
-        if (is_border_precinct) {
-            boundary_precincts.push_back(index);
-        }
-    }
-
     return boundary_precincts;
 }
 
@@ -197,25 +153,14 @@ unit_interval compactness(Shape shape) {
     return 1/(shape.perimeter() / circumference);
 }
 
-coordinate_set generate_exterior_border(Precinct_Group precinct_group) {
-    p_index_set boundary_precincts = get_boundary_precincts(precinct_group);
-    
-    for (p_index i : boundary_precincts) {
 
-        Precinct precinct = precinct_group.precincts[i];
-        coordinate_set border = precinct.border;
+segments generate_exterior_border(Precinct_Group precinct_group) {
 
-        for (int i = 0; i < border.size(); i++) {
-            
-            coordinate c0 = border[i];
-            coordinate c1;
+    /*
+        Get the exterior border of a shape with interior components.
+        Equivalent to 'dissolve' in mapshaper - remove bordering edges
+    */
 
-            if (i == border.size())
-                c1 = border[0];
-            else 
-                c1 = border[i + 1];
-            
-            // calculate_line(c0, c1);
-        }
-    }
+    segments ext_border; 
+    return ext_border;
 }
