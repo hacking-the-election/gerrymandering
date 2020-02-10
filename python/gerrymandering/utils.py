@@ -196,8 +196,14 @@ class Community:
         """
         The outside edge of the community (in segments)
         """
-        return get_segments(get_border([get_segments(p) 
-                            for p in self.precincts]))
+        precinct_coords = [p.coords for p in self.precincts]
+        # unpack coords from unnecessary higher dimesions
+        for i, precinct in enumerate(p.coords):
+            coords = precinct
+            while type(coords[0][0]) != type(1.0):
+                coords = coords[0]
+            precinct_coords[i] = coords
+        return get_segments(get_border([]))
 
     @property
     def partisanship(self):

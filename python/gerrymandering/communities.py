@@ -26,4 +26,16 @@ def make_communities(state_file, number_of_communities,
     for i in range(n_districts % n_precincts):
         community_size[i] += 1
     
-    # choose random precinct on edge of state to begin with
+    # create random communities of similar size (in precincts)
+    communities = []
+
+    border = Community(precincts)
+    for s in community_sizes:
+        community = Community([])
+        for p in range(s):
+            eligible_precincts = border.precincts[:]
+            precinct = random.choice(eligible_precincts)
+            while not get_if_addable(precinct, community, border):
+                eligible_precincts.remove(precinct)
+                precinct = random.choice(border.precincts)
+            community.precincts.append(precinct)
