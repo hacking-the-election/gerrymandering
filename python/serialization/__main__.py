@@ -2,7 +2,7 @@ import sys
 from os.path import abspath, dirname
 
 from save_precincts import Precinct
-from load_precincts import load, print_stats
+from load_precincts import load, print_stats, convert_to_json
 
 
 if __name__ == "__main__":
@@ -27,3 +27,9 @@ if __name__ == "__main__":
             print(helpscreen)
             quit()
         print_stats(load(args[0]), args[0].split('/')[-1].split(".")[0])
+
+    elif sys.argv[1] == "json":
+        if len(args) < 2:
+            print(helpscreen)
+            quit()
+        convert_to_json(*args)
