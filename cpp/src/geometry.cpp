@@ -8,10 +8,10 @@
  algorithmic specific methods.
 ========================================*/
 
+#include "../include/geometry.hpp"
 #include "../include/shape.hpp"   // class definitions
 #include "../include/gui.hpp"     // for the draw function
-#include <math.h>                 // for rounding functions
-#include <cmath>
+
 
 #define PI M_PI
 
@@ -164,6 +164,9 @@ unit_interval compactness(Shape shape) {
     return 1/(shape.perimeter() / circumference);
 }
 
+bool is_colinear(segment s0, segment s1) {
+    return (calculate_line(s0) == calculate_line(s1));
+}
 
 Shape generate_exterior_border(Precinct_Group precinct_group) {
 
@@ -176,6 +179,21 @@ Shape generate_exterior_border(Precinct_Group precinct_group) {
     return ext_border;
 }
 
-p_index get_addable_precinct(p_index_set available_precincts, p_index current_precinct) {
+p_index State::get_addable_precinct(p_index_set available_precincts, p_index current_precinct) {
+    p_index ret;
+    return ret;
+}
 
+boost_polygon shape_to_poly(Shape shape) {
+    boost_polygon poly;
+
+    // create vector of boost points
+    std::vector<boost_point> points;
+    for (coordinate c : shape.border) 
+        points.push_back(boost_point(c[0],c[1])),
+
+    assign_points(poly, shape.border);
+    correct(poly);
+
+    return poly;
 }
