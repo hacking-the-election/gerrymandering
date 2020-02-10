@@ -2,9 +2,9 @@
  geometry.cpp:                  k-vernooy
  last modified:               Sun, Jan 19
  
- Definition of methods for shapes, 
- precincts, districts and states. Basic
- calculation, area, and drawing - no
+ Definition of useful functions for
+ computational geometry. Basic 
+ calculation, area, bordering - no
  algorithmic specific methods.
 ========================================*/
 
@@ -14,13 +14,6 @@
 #include <cmath>
 
 #define PI M_PI
-
-vector<float> calculate_line(coordinate c0, coordinate c1) {
-    float m = (c1[1] - c0[1]) / (c1[0] - c0[0]);
-    float b = -m * c0[0] + c0[1];
-
-    return {m, b};
-}
 
 coordinate Shape::center() {
     // returns the average {x,y} of a shape
@@ -64,76 +57,42 @@ float Shape::perimeter() {
 
     float t = 0;
 
-    for (int i = 0; i < border.size(); i++) {
-        // get pair of coordinates on
-        // which to apply distance formula
-        coordinate c0 = border[i];
-        coordinate c1;
-
-        if (i == border.size() - 1) c1 = border[0];
-        else c1 = border[i + 1];
-
-        float d = sqrt(pow((c1[0] - c0[0]), 2) + pow((c1[1] - c0[1]), 2));
+    for (segment s : get_segments()) {
+        float d = sqrt(pow((s[2] - s[0]), 2) + pow((s[3] - s[1]), 2));
         t += d;
     }
 
     return t;
 }
 
-bounding_box normalize_coordinates(Shape* shape) {
-
-    /*
-        returns a normalized bounding box, and modifies 
-        shape object's coordinates to move it to Quadrant I
-    */
-
-    // set dummy extremes
-    float top = shape->border[0][1], 
-        bottom = shape->border[0][1], 
-        left = shape->border[0][0], 
-        right = shape->border[0][0];
-
-    // loop through and find actual corner using ternary assignment
-    for (vector<float> coord : shape->border) {
-        top = (coord[1] > top)? coord[1] : top;
-        bottom = (coord[1] < bottom)? coord[1] : bottom;
-        left = (coord[0] < left)? coord[0] : left;
-        right = (coord[0] > right)? coord[0] : right;
-    }
-
-    // add to each coordinate to move it to quadrant 1
-    for (float i = 0; i < shape->border.size(); i++) {
-        shape->border[i][0] += (0 - left);
-        shape->border[i][1] += (0 - bottom);
-    }
-
-    // normalize the bounding box too
-    top += (0 - bottom);
-    right += (0 - left);
-    bottom = 0;
-    left = 0;
-
-    return {top, bottom, left, right}; // return bounding box
+segment coords_to_seg(coordinate c1, coordinate c2) {
+    return {c1[0], c1[1], c2[0], c2[1]};
 }
 
-coordinate_set resize_coordinates(bounding_box box, coordinate_set shape, int screenX, int screenY) {
-    // scales an array of coordinates to fit 
-    // on a screen of dimensions {screenX, screenY}
+segments Shape::get_segments() {
+    segments segs;
     
-    float ratioTop = ceil((float) box[0]) / (float) (screenX);   // the rounded ratio of top:top
-    float ratioRight = ceil((float) box[3]) / (float) (screenY); // the rounded ratio of side:side
-    
-    // find out which is larger and assign it's reciporical to the scale factor
-    float scaleFactor = floor(1 / ((ratioTop > ratioRight) ? ratioTop : ratioRight)); 
+    for (int i = 0; i < border.size(); i++) {
 
-    // dilate each coordinate in the shape
-    for ( int i = 0; i < shape.size(); i++ ) {
-        shape[i][0] *= scaleFactor;
-        shape[i][1] *= scaleFactor;        
+        coordinate c1 = border[i];
+        coordinate c2;
+
+        if (i == border.size() - 1)
+            c2 = border[0];
+        else
+            c2 = border[i + 1];
+
+        segs.push_back(coords_to_seg(c1, c2));
     }
 
-    // return scaled coordinates
-    return shape;
+    return segs;
+}
+
+vector<float> calculate_line(segment s) {
+    float m = (s[3] - s[1]) / (s[2] - s[0]);
+    float b = -m * s[0] + s[1];
+
+    return {m, b};
 }
 
 p_index_set get_boundary_precincts(Precinct_Group shape) {

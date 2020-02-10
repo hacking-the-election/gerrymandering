@@ -35,11 +35,18 @@ using namespace rapidjson;
 */
 
 // simplify the coordinate modification system
-
 typedef vector<float> coordinate;
 typedef vector<coordinate> coordinate_set;
+
+// an array of 4 max/mins:
 typedef vector<float> bounding_box;
+
+// for values between 0-1:
 typedef float unit_interval;
+
+// a set of two coordinates:
+typedef vector<float> segment;
+typedef vector<segment> segments;
 
 /*
     typedef indexes for precinct algorithm 
@@ -82,6 +89,7 @@ class Shape {
         float area();
         float perimeter();
         coordinate center();
+        segments get_segments();
 
         // for boost serialization
         friend class boost::serialization::access;
