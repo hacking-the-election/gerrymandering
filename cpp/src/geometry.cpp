@@ -176,6 +176,17 @@ Shape generate_exterior_border(Precinct_Group precinct_group) {
     */
 
     Shape ext_border; 
+
+    boost_multi_polygon border;
+
+    for (Precinct p : precinct_group.precincts) {
+        boost_polygon p_poly = shape_to_poly(p);
+        boost_multi_polygon tmp_poly;
+        union_(border, p_poly, tmp_poly);
+        border = tmp_poly;
+    }
+
+    ext_border = boost_poly_to_shape(border);
     return ext_border;
 }
 
@@ -185,10 +196,17 @@ p_index State::get_addable_precinct(p_index_set available_precincts, p_index cur
 }
 
 boost_polygon shape_to_poly(Shape shape) {
+       
+    /*
+        Converts a shape object into a boost polygon object
+        by looping over each point and manually adding it to a 
+        boost polygon using assign_points and vectors
+    */
+
     boost_polygon poly;
 
     // create vector of boost points
-    std::vector<boost_point> points;
+    vector<boost_point> points;
     for (coordinate c : shape.border) 
         points.push_back(boost_point(c[0],c[1])),
 
@@ -196,4 +214,55 @@ boost_polygon shape_to_poly(Shape shape) {
     correct(poly);
 
     return poly;
+}
+
+Shape boost_poly_to_shape(boost_polygon poly) {
+       
+    /*
+        Convert from a boost polygon into a Shape object.
+        Loop over each point in the polygon, add it to the
+        shape's border.
+    */
+
+    coordinate_set b;
+    vector<boost_point> const& points = poly.outer();
+    
+    for (std::vector<boost_point>::size_type i = 0; i < points.size(); ++i) {
+        b.push_back({(float) get<0>(points[i]), (float) get<1>(points[i])});
+    }
+
+    Shape shape(b);
+    return shape;
+}
+
+Shape boost_poly_to_shape(boost_multi_polygon poly) {
+   
+    /*
+        overload the poly_to_shape function to work with multipolygons
+        loop over each polygon, use same process to add to shape's border
+
+        !!! WARNING: Should update shape data structure to work with
+            multipolygon set. Not quite sure how to do this yet...
+    */
+
+    coordinate_set b;
+
+    for (boost_polygon p : poly) {
+        vector<boost_point> const& points = p.outer();
+
+        for (std::vector<boost_point>::size_type i = 0; i < points.size(); ++i) {
+            b.push_back({(float) get<0>(points[i]), (float) get<1>(points[i])});
+        }
+    }
+
+    Shape shape(b);
+    return shape;
+}
+
+void print_shape(Shape shape) {
+    cout << dsv(shape_to_poly(shape)) << endl;
+}
+
+void print_shape(boost_polygon poly) {
+    cout << dsv(poly) << endl;
 }
