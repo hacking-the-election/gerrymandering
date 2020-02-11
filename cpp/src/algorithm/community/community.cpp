@@ -1,6 +1,6 @@
 /*=======================================
  community.cpp:                 k-vernooy
- last modified:                Sat, Feb 9
+ last modified:               Mon, Feb 10
 
  Definition of the community-generation
  algorithm for quantifying gerrymandering

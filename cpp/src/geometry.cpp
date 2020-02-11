@@ -161,7 +161,7 @@ unit_interval compactness(Shape shape) {
     float circle_radius = sqrt(shape.area() / PI);
     float circumference = 2 * circle_radius * PI;
 
-    return 1/(shape.perimeter() / circumference);
+    return 1 / (shape.perimeter() / circumference);
 }
 
 bool is_colinear(segment s0, segment s1) {
@@ -227,7 +227,7 @@ Shape boost_poly_to_shape(boost_polygon poly) {
     coordinate_set b;
     vector<boost_point> const& points = poly.outer();
     
-    for (std::vector<boost_point>::size_type i = 0; i < points.size(); ++i) {
+    for (int i = 0; i < points.size(); ++i) {
         b.push_back({(float) get<0>(points[i]), (float) get<1>(points[i])});
     }
 
@@ -250,7 +250,7 @@ Shape boost_poly_to_shape(boost_multi_polygon poly) {
     for (boost_polygon p : poly) {
         vector<boost_point> const& points = p.outer();
 
-        for (std::vector<boost_point>::size_type i = 0; i < points.size(); ++i) {
+        for (int i = 0; i < points.size(); ++i) {
             b.push_back({(float) get<0>(points[i]), (float) get<1>(points[i])});
         }
     }

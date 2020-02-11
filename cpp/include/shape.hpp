@@ -1,6 +1,6 @@
 /*=======================================
  shape.hpp:                     k-vernooy
- last modified:               Sun, Jan 19
+ last modified:               Mon, Feb 10
  
  Class definitions and method declarations
  for shapes, precincts, states, and 
@@ -56,6 +56,7 @@ typedef vector<segment> segments;
 
 typedef int p_index;
 typedef vector<p_index> p_index_set;
+typedef vector<int> seg_index; //  {p_index, segment_index};
 
 class Shape {
 
