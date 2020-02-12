@@ -8,6 +8,26 @@ import random
 from utils import *
 
 
+def refine_for_partisanship(state, communities, max_standard_deviation):
+    """
+    Moves precincts around in state to create communities that have
+    standard deviation of republican percentage in precincts below a
+    given maximum standard deviation.
+
+    Args:
+    `state`: list of lists of coords, each representing a precinct
+    `communities`: Community objects that take up the entire state
+    `max_standard_deviation`: Maximum standard deviation for any
+                              community in the output
+
+    Returns:
+    List of Community objects
+    """
+
+    # max(communities, key=Community.standard_deviation)
+    
+
+
 def make_communities(state_file, number_of_communities,
                      compactness_tolerance, partisanship_tolerance,
                      population_tolerance):
@@ -17,6 +37,8 @@ def make_communities(state_file, number_of_communities,
     
     with open(state_file, 'rb') as f:
         precincts, districts = pickle.load(f)
+
+    # STEP 1:
 
     community_sizes = []  # number of precincts in each community
 
@@ -35,7 +57,10 @@ def make_communities(state_file, number_of_communities,
         for p in range(s):
             eligible_precincts = border.precincts[:]
             precinct = random.choice(eligible_precincts)
-            while not get_if_addable(precinct, community, border):
+            while not get_if_addable(
+                    get_segments((precinct.coords)), community, border):
                 eligible_precincts.remove(precinct)
                 precinct = random.choice(border.precincts)
             community.precincts.append(precinct)
+
+    
