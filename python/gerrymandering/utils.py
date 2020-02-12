@@ -171,8 +171,7 @@ def get_schwartsberg_compactness(shape):
     `shape`
     """
     
-    compactness = get_perimeter(shape)
-                  / (2 * math.pi * math.sqrt(get_area(shape) / math.pi))
+    compactness = get_perimeter(shape) / (2 * math.pi * math.sqrt(get_area(shape) / math.pi))
     if compactness < 1:
         return 1 / compactness
     else:
@@ -212,7 +211,7 @@ class Community:
         """
         rep_sum = 0
         total_sum = 0
-        for precinct in self.precincts
+        for precinct in self.precincts:
             if (r_sum := precinct.r_election_sum) != -1:
                 rep_sum += r_sum
                 total_sum += r_sum + precinct.d_election_data
