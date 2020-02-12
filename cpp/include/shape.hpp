@@ -1,6 +1,6 @@
 /*=======================================
  shape.hpp:                     k-vernooy
- last modified:               Sun, Jan 19
+ last modified:               Mon, Feb 10
  
  Class definitions and method declarations
  for shapes, precincts, states, and 
@@ -35,11 +35,18 @@ using namespace rapidjson;
 */
 
 // simplify the coordinate modification system
-
 typedef vector<float> coordinate;
 typedef vector<coordinate> coordinate_set;
+
+// an array of 4 max/mins:
 typedef vector<float> bounding_box;
+
+// for values between 0-1:
 typedef float unit_interval;
+
+// a set of two coordinates:
+typedef vector<float> segment;
+typedef vector<segment> segments;
 
 /*
     typedef indexes for precinct algorithm 
@@ -49,6 +56,7 @@ typedef float unit_interval;
 
 typedef int p_index;
 typedef vector<p_index> p_index_set;
+typedef vector<int> seg_index; //  {p_index, segment_index};
 
 class Shape {
 
@@ -82,6 +90,7 @@ class Shape {
         float area();
         float perimeter();
         coordinate center();
+        segments get_segments();
 
         // for boost serialization
         friend class boost::serialization::access;
@@ -184,6 +193,10 @@ class State : public Precinct_Group {
         // for the community generation algorithm
         vector<Precinct_Group> generate_communities(int num_communities, float compactness_tolerance, float partisanship_tolerance, float population_tolerance);
         vector<Precinct_Group> generate_initial_communities(int num_communities);
+
+        // return precinct that can be added to the current precinct that won't create islands in the state
+        p_index get_addable_precinct(p_index_set available_precincts, p_index current_precinct);
+
         // name of state
         string name = "no_name";
 

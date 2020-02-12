@@ -1,3 +1,11 @@
+/*=======================================
+ shape_test.cpp:                k-vernooy
+ last modified:                Sun, Feb 9
+ 
+ A driver program for testing methods in
+ the shape classes (state, precinct, etc)
+========================================*/
+
 #include "../include/shape.hpp"
 #include "../include/term_disp.hpp"
 

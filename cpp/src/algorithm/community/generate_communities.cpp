@@ -27,9 +27,9 @@ int main(int argc, char* argv[]) {
     string read_path = string(argv[1]);
     State state = State::read_binary(read_path);
     // state.state_precincts[0].draw();
-    cout << state.state_precincts[0].area() << endl;
-    cout << state.state_precincts[0].perimeter() << endl;
-    cout << compactness(state.state_precincts[0]) << endl;
+    cout << state.state_precincts.size() << endl;
+    state.precincts = state.state_precincts;
+    print_shape(generate_exterior_border(state));
 
     int districts_in_state = state.state_districts.size();
     // vector<Precinct_Group> political_communities = state.generate_communities(districts_in_state, 0.5, 0.2, 0.15);

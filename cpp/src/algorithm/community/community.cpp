@@ -1,6 +1,6 @@
 /*=======================================
  community.cpp:                 k-vernooy
- last modified:                Sat, Feb 9
+ last modified:               Mon, Feb 10
 
  Definition of the community-generation
  algorithm for quantifying gerrymandering
@@ -36,12 +36,29 @@ vector<Precinct_Group> State::generate_initial_communities(int num_communities) 
     // create array of indices of precincts available to be added
     p_index_set available_pre(num_precincts);
     std::iota(available_pre.begin(), available_pre.end(), 0);
+    
+    int index = 0;
+    for (int i = 0; i < num_communities - 1; i++) {
+        Precinct_Group community;
+        p_index p = get_inner_boundary_precincts(*this)[0];
 
-    // while (something) {
-    p_index p = get_boundary_precincts(*this)[0];
-    Precinct random_border_p = state_precincts[p];
-    // }
+        for (int x = 0; x < sizes[index] - 1; x++) {
+            p = get_addable_precinct(available_pre, p);
+            community.add_precinct(this->state_precincts[p]);
+            available_pre.erase(remove(available_pre.begin(), available_pre.end(), p), available_pre.end());
+        }
 
+        communities.push_back(community);
+        
+        index++;
+    }
+
+    Precinct_Group community;
+    for (p_index precinct : available_pre) {
+        community.add_precinct(this->state_precincts[precinct]);
+    }
+    
+    communities.push_back(community);
     return communities;
 }
 

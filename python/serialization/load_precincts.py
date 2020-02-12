@@ -3,6 +3,7 @@ usage: python3 load_precincts.py [state_file]
 """
 
 
+import json
 import pickle
 
 from save_precincts import Precinct
@@ -39,6 +40,39 @@ def print_stats(lst, state):
           f"Democratic Votes: {total_dem}\n"
           f"Republican Votes: {total_rep}\n"
           f"Number of precincts without election data: {n_missing}")
+
+
+def convert_to_json(state_file, output_file):
+    """
+    Converts pickled list of Precinct objects to geojson
+    """
+    precincts = load(state_file)[0]
+
+    features = []
+    for precinct in precincts:
+        precinct_json = {
+            "type": "Feature",
+            "geometry": {
+                "type": "Polygon",
+                "coordinates": precinct.coords
+                },
+            "properties":{
+                "ID": precinct.vote_id,
+                "POPULATION": precinct.population,
+                "DEMOCRAT": precinct.d_election_sum,
+                "REPUBLICAN": precinct.r_election_sum
+                }
+            }
+        for key, val in precinct.d_election_data.items():
+            precinct_json["properties"][key] = val
+        for key, val in precinct.r_election_data.items():
+            precinct_json["properties"][key] = val
+        features.append(precinct_json)
+
+    geo_json = {"type": "FeatureCollection", "features":features}
+
+    with open(output_file, 'w+') as f:
+        json.dump(geo_json, f)
 
 
 if __name__ == "__main__":
