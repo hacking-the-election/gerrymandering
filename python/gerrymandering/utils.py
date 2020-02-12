@@ -166,20 +166,19 @@ class Community:
     
     def __init__(self, precincts):
         self.precincts = precincts
+        # unpack coords from unnecessary higher dimesions
+        for precinct in self.precincts:
+            coords = precinct.coords[:]
+            while type(coords[0][0]) != type(1.0):
+                coords = coords[0]
+            precinct.coords = coords
 
     @property
     def border(self):
         """
         The outside edge of the community (in segments)
         """
-        precinct_coords = [p.coords for p in self.precincts]
-        # unpack coords from unnecessary higher dimesions
-        for i, precinct in enumerate(p.coords):
-            coords = precinct[:]
-            while type(coords[0][0]) != type(1.0):
-                coords = coords[0]
-            precinct_coords[i] = coords
-        return get_segments(get_border([]))
+        return get_segments(get_border([p.coords for p in self.precincts]))
 
     @property
     def partisanship(self):
@@ -193,6 +192,19 @@ class Community:
                 rep_sum += r_sum
                 total_sum += r_sum + precinct.d_election_data
         return rep_sum / total_sum
+
+    def get_standard_deviation(self):
+        """
+        Standard deviation of republican percentage in precincts
+        """
+
+        rep_percentages = [
+            p.r_election_sum / (p.r_election_sum + p.d_election_sum) * 100
+            for p in self.precincts]
+
+        mean = sum(rep_percentages) / len(rep_percentages)
+        
+        return math.sqrt(sum([(p - mean) ** 2 for p in rep_percentages]))
 
 
 def get_if_addable(precinct, community, boundary):
