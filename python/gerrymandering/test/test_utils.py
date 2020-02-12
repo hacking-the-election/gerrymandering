@@ -2,42 +2,16 @@
 Unit tests for utils.py
 """
 
-import json
-from sys import path
+import sys
 from os.path import abspath, dirname
 import unittest
 
-from pyclipper import scale_to_clipper
+sys.path.append(abspath(dirname(dirname(dirname(__file__)))))
 
-path.append(abspath(dirname(dirname(dirname(__file__)))) + "/serialization")
-path.append(abspath(dirname(dirname(__file__))))
-
-from load_precincts import load
-from save_precincts import Precinct
-from utils import *
-
-
-def convert_to_json(coords, output_file):
-    """
-    Writes `coords` to `output_file` as geojson
-
-    Args:
-    `coords`: list of features (each a list of coords)
-    """
-
-    features = []
-    for feature in coords:
-        features.append({
-            "type": "Feature",
-            "geometry": {
-                "type": "Polygon",
-                "coordinates": feature
-            }
-        })
-        features.append(feature)
-
-    with open(output_file, 'w+') as f:
-        json.dump({"type":"FeatureCollection", "features":features}, f)
+from utils import convert_to_json
+from serialization.load_precincts import load
+from serialization.save_precincts import Precinct
+from gerrymandering.utils import *
 
 
 class TestUtils(unittest.TestCase):
