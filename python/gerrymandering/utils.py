@@ -253,3 +253,24 @@ def get_if_addable(precinct, community, boundary):
                 return False
 
     return True
+
+
+def get_exchangeable_precincts(community, communities):
+    """
+    Finds exchangeable precincts between a community and its neighbors.
+
+    Args:
+    `community`: Community object for community you are finding
+                 precincts from
+    `communities`: A list of all the communites in a state
+
+    Returns:
+    Dict with keys as precinct ids and values as lists of neighboring
+    communities.
+    """
+
+    # outside_precincts = {}
+
+    # border = community.border  # so its only calculated once
+    # for precinct in community.precincts:
+    #     if get_if_bordering(precinct)
