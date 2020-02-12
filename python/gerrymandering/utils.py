@@ -1,14 +1,20 @@
 """
 Useful computational geometry functions and classes
 for communities algorithm
+
+Note for docstrings:
+"set of segments" means set of lists of lists of floats
+ex.
+{[[1.0, 2.0], [1.0, 3.0]], [[1.0, 3.0], [1.0, 4.0]]}
+"list of points" means an ordered list of points that go around the
+border of a polygon, with each point being a list of floats
 """
 
 
 import itertools
 import math
 
-import pyclipper
-
+from Polygon import Polygon
 
 # ===================================================
 # general geometry functions
@@ -67,21 +73,7 @@ def get_if_bordering(shape_1, shape_2):
 
 
 def get_border(shapes):
-    """
-    Returns the vertices of the larger polygon that the smaller ones
-    make up
-    
-    `shapes`: a list of lists of coords representing the vertices of a
-              polygon. These shapes must be clustered together to make
-              one larger polygon.
-    """
-
-    pc = pyclipper.Pyclipper()
-    pc.AddPaths(shapes, pyclipper.PT_SUBJECT, True)
-    return pc.Execute(pyclipper.CT_UNION,
-                      pyclipper.PFT_NONZERO,
-                      pyclipper.PFT_NONZERO)[0]
-
+    pass
 
 
 def get_point_in_polygon(point, shape):
@@ -128,9 +120,9 @@ def get_distance(p1, p2):
     return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
 
 
-def get_permeter(shape):
+def get_perimeter(shape):
     """
-    Returns the permeter of set of segments `shape`
+    Returns the perimeter of set of segments `shape`
     """
     return sum([get_distance(*seg) for seg in shape])
 
@@ -155,8 +147,8 @@ def get_schwartsberg_compactness(shape):
     `shape`
     """
     
-    compactness = get_perimeter(shape)
-                  / (2 * math.pi * math.sqrt(get_area(shape) / math.pi))
+    compactness = (get_perimeter(shape)
+                   / (2 * math.pi * math.sqrt(get_area(shape) / math.pi)))
     if compactness < 1:
         return 1 / compactness
     else:
@@ -183,7 +175,7 @@ class Community:
         precinct_coords = [p.coords for p in self.precincts]
         # unpack coords from unnecessary higher dimesions
         for i, precinct in enumerate(p.coords):
-            coords = precinct
+            coords = precinct[:]
             while type(coords[0][0]) != type(1.0):
                 coords = coords[0]
             precinct_coords[i] = coords
@@ -196,7 +188,7 @@ class Community:
         """
         rep_sum = 0
         total_sum = 0
-        for precinct in self.precincts
+        for precinct in self.precincts:
             if (r_sum := precinct.r_election_sum) != -1:
                 rep_sum += r_sum
                 total_sum += r_sum + precinct.d_election_data
