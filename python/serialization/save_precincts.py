@@ -28,6 +28,8 @@ import pickle
 import sys
 import warnings
 
+import numpy as np
+
 
 logging.basicConfig(level=logging.WARNING, filename="precincts.log")
 
@@ -241,6 +243,13 @@ class Precinct:
 
         # append precinct objects to precinct_list
         for precinct_id in precinct_geo_ids:
+            
+            precinct_geo_data_list = precinct_coords[precinct_id]
+            while type(precinct_geo_data_list[0][0]) != type(0.0):
+                precinct_geo_data_list = precinct_geo_data_list[0]
+
+            precinct_geo_data = np.array(precinct_geo_data_list)
+
             # if precinct id corresponds to any json obejcts
             if precinct_id in (
                     precinct_ids_only := [precinct[0] for precinct
@@ -249,19 +258,8 @@ class Precinct:
                 precinct_row = precinct_ele_ids[
                     precinct_ids_only.index(precinct_id)][1]
 
-                # json object from geojson
-                # that corresponds with precinct_id
-                precinct_geo_data = []
-                for precinct in geo_data['features']:
-                    if state == "colorado":
-                        if precinct['properties'][json_id][1:] == precinct_id:
-                            precinct_geo_data = precinct           
-                    else:
-                        if precinct['properties'][json_id] == precinct_id:
-                            precinct_geo_data = precinct
-
                 precinct_list.append(Precinct(
-                    precinct_coords[precinct_id],
+                    precinct_geo_data,
                     state,
                     precinct_id,
                     pop[precinct_id],
@@ -274,7 +272,7 @@ class Precinct:
  election data."
                 )
                 precinct_list.append(Precinct(
-                    precinct_coords[precinct_id],
+                    precinct_geo_data,
                     state,
                     precinct_id,
                     pop[precinct_id],

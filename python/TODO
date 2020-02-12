@@ -1,4 +1,6 @@
 # General:
+   Now:
+    - NUMPY
    Later:
     - Predict errors and create custom exceptions to throw in those cases
 
