@@ -1,6 +1,6 @@
 """
 Usage:
-python3 save_precincts.py [election_data_file] [geo_data_file] [district_file] [state] [objects_dir] [metadata_file]
+python3 save_precincts.py [election_data_file] [geo_data_file] [district_file] [state] [objects_dir] [metadata_file] [population_file]
 
 `election_data_file` - absolute path to file containing election data
                        for state. If there is no such file, this
@@ -19,6 +19,9 @@ python3 save_precincts.py [election_data_file] [geo_data_file] [district_file] [
 
 `metadata_file` - absolute path to file containing state metadata for
                   column names
+`population_file` - absolute path to .tab, .json, or .txt file
+                    containing voter registration or population file.
+                    If there is none, this argument should be "none"
 """
 
 
@@ -134,7 +137,7 @@ class Precinct:
     @classmethod
     def generate_from_files(cls, election_data_file, geo_data_file,
                             district_file, state, objects_dir,
-                            state_metadata_file):
+                            state_metadata_file, population_file):
         """
         Creates precinct objects for state from necessary information
 
@@ -150,6 +153,10 @@ class Precinct:
             `objects_dir` - path to dir where serialized
                             list of precincts is to be stored
 
+            `state_metadata_file` - path to file containing ids to match
+
+            `population_file` - path to file containing population, if applicable
+
         Note: precincts from geodata that can't be matched to election
               data will be saved with voter counts of -1
         """
@@ -162,7 +169,22 @@ class Precinct:
         with open(geo_data_file, 'r') as f:
             geo_data = json.load(f)
 
-        is_election_data = True
+        # (this is a poorly named variable and feel free to change it)
+        is_population_data = False  # whether or not there is an
+        # individual population file
+        if population_file != 'none':
+
+            with open(population_file, 'r') as f:
+                population_data = f.read().strip()
+
+            population_data_rows = [row.split('\t') for row in election_data.split('\n')]
+
+            population_data_columns = [[data_rows[x][y] for x in range(len(data_rows))]
+                for y in range(len(data_rows[0]))]
+
+        # (this is a poorly named variable and feel free to change it)
+        is_election_data = True  # whether or not there is an
+        # individual election data file
         if election_data_file != "none":
             with open(election_data_file, 'r') as f:
                 election_data = f.read().strip()
@@ -209,11 +231,20 @@ class Precinct:
         dem_keys = STATE_METADATA[state]["dem_keys"]
         rep_keys = STATE_METADATA[state]["rep_keys"]
 
-        pop = {p["properties"][json_id][1:] if state == "colorado"
-                else p["properties"][json_id]:
-                convert_to_int(p["properties"][json_pop])
-                for p in geo_data["features"]}
+        if is_population_data:
+            pop = {p["properties"][json_id][1:] if state == "colorado"
+                    else p["properties"][json_id]:
+                    convert_to_int(p["properties"][json_pop])
+                    for p in geo_data["features"]}
+        else:
+            pop = {}
+            # here is where the individual processes for each state
+            # will go for linking ids to population
+            if state == 'maryland':
+                pass
 
+        # get election and geo data (separate processes for whether or
+        # not there is an individual election data file)
         if is_election_data:
             # geodata and election data are in separate files
 
@@ -289,7 +320,6 @@ class Precinct:
 
             dem_cols = {}
             rep_cols = {}
-            pop = {}
             precinct_coords = {}
             for precinct in geo_data['features']:
                 dem_cols[precinct['properties'][json_id]] = \
@@ -298,8 +328,6 @@ class Precinct:
                 rep_cols[precinct['properties'][json_id]] = \
                     {key: convert_to_int(precinct['properties'][key])
                      for key in rep_keys}
-                pop[precinct['properties'][json_id]] = \
-                    convert_to_int(precinct['properties'][json_pop])
                 precinct_coords[precinct['properties'][json_id]] = \
                     precinct['geometry']['coordinates']
 
