@@ -40,6 +40,17 @@ def customwarn(message, category, filename, lineno, file=None, line=None):
 warnings.showwarning = customwarn
 
 
+def to_numpy_array(lst):
+    """
+    Removes unnecessary dimensions from lists and returns
+    equivalent numpy.array
+    """
+
+    while len(lst) == 1 and type(lst[0]) == type([]):
+        lst = lst[0]
+    return np.array(lst)
+
+
 def save(state, precinct_list, district_dict, objects_dir):
     """
     Save the list of precincts for a state to a file
@@ -252,7 +263,7 @@ class Precinct:
                             precinct_ids_only.index(precinct_id)][1]
 
                         precinct_list.append(Precinct(
-                            precinct_coords[precinct_id],
+                            to_numpy_array(precinct_coords[precinct_id]),
                             state,
                             precinct_id,
                             pop[precinct_id],
@@ -265,7 +276,7 @@ class Precinct:
                             + "not found in election data."
                         )
                         precinct_list.append(Precinct(
-                            precinct_coords[precinct_id],
+                            to_numpy_array(precinct_coords[precinct_id]),
                             state,
                             precinct_id,
                             pop[precinct_id],
@@ -282,9 +293,11 @@ class Precinct:
             precinct_coords = {}
             for precinct in geo_data['features']:
                 dem_cols[precinct['properties'][json_id]] = \
-                    {key: convert_to_int(precinct['properties'][key]) for key in dem_keys}
+                    {key: convert_to_int(precinct['properties'][key])
+                     for key in dem_keys}
                 rep_cols[precinct['properties'][json_id]] = \
-                    {key: convert_to_int(precinct['properties'][key]) for key in rep_keys}
+                    {key: convert_to_int(precinct['properties'][key])
+                     for key in rep_keys}
                 pop[precinct['properties'][json_id]] = \
                     convert_to_int(precinct['properties'][json_pop])
                 precinct_coords[precinct['properties'][json_id]] = \
@@ -292,7 +305,7 @@ class Precinct:
 
             for precinct_id in precinct_coords.keys():
                 precinct_list.append(Precinct(
-                    precinct_coords[precinct_id],
+                    to_numpy_array(precinct_coords[precinct_id]),
                     state,
                     precinct_id,
                     pop[precinct_id],
