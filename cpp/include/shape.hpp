@@ -219,8 +219,13 @@ class State : public Precinct_Group {
         template<class Archive> void serialize(Archive & ar, const unsigned int version);
 
         // for the community generation algorithm
-        Communities generate_communities(int num_communities, float compactness_tolerance, float partisanship_tolerance, float population_tolerance);
-        Communities generate_initial_communities(int num_communities);
+        void generate_communities(int num_communities, float compactness_tolerance, float partisanship_tolerance, float population_tolerance);
+        // initial random configuration of communities
+        void generate_initial_communities(int num_communities);
+        // for the iterative methods
+        void refine_compactness(float compactness_tolerance);
+        void refine_partisan(float partisanship_tolerance);
+        void refine_population(float population_tolerance);
 
         // return precinct that can be added to the current precinct that won't create islands in the state
         p_index get_addable_precinct(p_index_set available_precincts, p_index current_precinct);
@@ -231,6 +236,7 @@ class State : public Precinct_Group {
         // arrays of shapes in state
         vector<Precinct_Group> state_districts;
         vector<Precinct> state_precincts;
+        Communities state_communities;
 
         void draw();
 };

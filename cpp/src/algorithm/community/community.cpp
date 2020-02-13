@@ -32,14 +32,13 @@ void save_community_state(Communities communities, string write_path) {
 }
 
 
-Communities State::generate_initial_communities(int num_communities) {
+void State::generate_initial_communities(int num_communities) {
     
     /*
         Creates an initial random community configuration for a given state
         Returns config as a Precinct Group object.
     */
 
-    Communities communities;
     int num_precincts = state_precincts.size();
     // determine amount of precincts to be added to each community
     vector<int> sizes;
@@ -66,8 +65,7 @@ Communities State::generate_initial_communities(int num_communities) {
             available_pre.erase(remove(available_pre.begin(), available_pre.end(), p), available_pre.end());
         }
 
-        communities.push_back(community);
-        
+        this->state_communities.push_back(community);
         index++;
     }
 
@@ -77,20 +75,16 @@ Communities State::generate_initial_communities(int num_communities) {
         community.add_precinct(this->state_precincts[precinct]);
     }
     
-    communities.push_back(community); // add last community
-    return communities;
+    this->state_communities.push_back(community); // add last community
 }
 
-Communities refine_compactness(Communities communities) {
-    return communities;
+void State::refine_compactness(float compactness_tolerance) {
 }
 
-Communities refine_partisan(Communities communities) {
-    return communities;
+void State::refine_partisan(float partisanship_tolerance) {
 }
 
-Communities refine_population(Communities communities) {
-    return communities;
+void State::refine_population(float population_tolerance) {
 }
 
 int measure_difference(Communities communities, Communities new_communities) {
@@ -114,41 +108,66 @@ int measure_difference(Communities communities, Communities new_communities) {
             int index = 0;
 
             while (!found && index < plist.size()) {
+                // loop through precincts in new community,
+                // compare to precinct you're checking
                 Precinct p = plist[index];
                 if (old_p == p) found = true;
                 index++;
             }
 
-            if (found) changed_precincts++;
+            // this precinct was not found, so add a changed precinct 
+            if (!found) changed_precincts++;
         }
     }
 
     return changed_precincts;
 }
 
-Communities State::generate_communities(int num_communities, float compactness_tolerance, float partisanship_tolerance, float population_tolerance) {
-    Communities communities = generate_initial_communities(num_communities);
+void State::generate_communities(int num_communities, float compactness_tolerance, float partisanship_tolerance, float population_tolerance) {
+
+    /*
+        The driver method for the communities algorithm. This method does
+        a lot, but the general process for running the political-community 
+        generation algorithm is calling void state methods that modify state variables. 
+        
+        At the start, `generate_initial_communities` generates
+        a random configuration. Then, it uses the iterative method to
+        refine for a variable until the number of precincts that change is
+        within a tolerance, set above (see CHANGED_PRECINCT_TOLERANCE).
+
+        This State method returns nothing - to access results, check
+        the state.state_communities property.
+    */
+
+    generate_initial_communities(num_communities);
     
-    int changed_precincts = 0,
-        i = 0;
+    int changed_precincts = 0, i = 0;
+    int precinct_change_tolerance = // the acceptable number of precincts that can change each iteration
+        (CHANGED_PRECINT_TOLERANCE / 100) * this->precincts.size();
 
-    int precinct_change_tolerance = (CHANGED_PRECINT_TOLERANCE / 100) * this->precincts.size();
+    Communities old_communities; // to store communities at the beginning of the iteration
 
-    // while (changed_precincts > precinct_change_tolerance) {
+    
+    /*
+        Do 30 iterations, and see how many precincts change each iteration
+        !! This is only until we have a good idea for a stop condition. We
+           first will plot results on a graph and regress to see the optimal
+           point of minimal change.
+
+        At some point this will be changed to:
+           while (changed_precincts > precinct_change_tolerance)
+    */
+   
     while (i < 30) {
         cout << "On iteration " << i << endl;
+        old_communities = this->state_communities;
 
-        Communities new_communities = 
-            refine_compactness(
-                    refine_partisan(
-                        refine_population(communities)
-                        )
-                    );
+        refine_compactness(compactness_tolerance);
+        refine_partisan(partisanship_tolerance);
+        refine_population(population_tolerance);
         
-        changed_precincts = measure_difference(communities, new_communities);
+        changed_precincts = measure_difference(old_communities, this->state_communities);
         cout << changed_precincts << " precincts changed" << endl;
         i++;
     }
-
-    return communities;
 }   
