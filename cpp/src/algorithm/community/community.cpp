@@ -14,6 +14,8 @@
 #include <numeric>
 #include <algorithm>
 
+const int CHANGED_PRECINT_TOLERANCE = 10; // percent of precincts that can change from iteration
+
 vector<Precinct_Group> State::generate_initial_communities(int num_communities) {
     
     /*
@@ -53,12 +55,13 @@ vector<Precinct_Group> State::generate_initial_communities(int num_communities) 
         index++;
     }
 
+    // add the last community that has no precincts yet
     Precinct_Group community;
     for (p_index precinct : available_pre) {
         community.add_precinct(this->state_precincts[precinct]);
     }
     
-    communities.push_back(community);
+    communities.push_back(community); // add last community
     return communities;
 }
 
@@ -75,29 +78,53 @@ vector<Precinct_Group> refine_population(vector<Precinct_Group> communities) {
 }
 
 int measure_difference(vector<Precinct_Group> communities, vector<Precinct_Group> new_communities) {
-    return 3;
+    
+    /*
+        Measures and returns how many precincts have changed communities
+        in a given list of old and new communities. Used for checking when
+        to stop the algorithm.
+    */
+    
+    int changed_precincts;
+
+    // loop through each community
+    for (int i = 0; i < communities.size(); i++) {
+        // for each precinct in the community
+        for (int x = 0; x < communities[i].precincts.size(); x++) {
+            // check for precinct in corrosponding new_community array
+            if (!(find(new_communities[i].precincts.begin(), new_communities[i].precincts.end(), communities[i].precincts[x]) != new_communities[i].precincts.end())) {
+                // precinct moved communities
+                changed_precincts++;
+            }
+        }
+    }
+
+    return changed_precincts;
 }
 
 vector<Precinct_Group> State::generate_communities(int num_communities, float compactness_tolerance, float partisanship_tolerance, float population_tolerance) {
     vector<Precinct_Group> communities = generate_initial_communities(num_communities);
     
     int changed_precincts = 0,
-        arbitrary_limit = 100,
         i = 0;
 
-    // while (changed_precincts > arbitrary_limit) {
-    //     cout << "On iteration " << i << endl;
+    int precinct_change_tolerance = (CHANGED_PRECINT_TOLERANCE / 100) * this->precincts.size();
 
-    //     vector<Precinct_Group> new_communities = 
-    //         refine_compactness(
-                    // refine_partisan(
-                    //     refine_population(communities)
-                    //     )
-                    // );
+    // while (changed_precincts > precinct_change_tolerance) {
+    while (i < 30) {
+        cout << "On iteration " << i << endl;
+        vector<Precinct_Group> new_communities = 
+            refine_compactness(
+                    refine_partisan(
+                        refine_population(communities)
+                        )
+                    );
         
-    //     changed_precincts = measure_difference(communities, new_communities);
-    //     i++;
-    // }
+        changed_precincts = measure_difference(communities, new_communities);
+        cout << changed_precincts << " precincts changed" << endl;
+        
+        i++;
+    }
 
     return communities;
 }   
