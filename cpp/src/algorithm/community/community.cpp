@@ -13,17 +13,33 @@
 #include <math.h>                            // for rounding functions
 #include <numeric>
 #include <algorithm>
+#include <boost/filesystem.hpp>
 
 const int CHANGED_PRECINT_TOLERANCE = 10; // percent of precincts that can change from iteration
 
-vector<Precinct_Group> State::generate_initial_communities(int num_communities) {
+void save_community_state(Communities communities, string write_path) {
+    /*
+        Saves a community to a file at a specific point in the
+        pipeline. Useful for visualization and checks
+    */
+   int c_index = 0;
+   boost::filesystem::create_directory(write_path);
+
+   for (Community c : communities) {
+       c.write_binary(write_path + "/community_" + to_string(c_index));
+       c_index++;
+   }
+}
+
+
+Communities State::generate_initial_communities(int num_communities) {
     
     /*
         Creates an initial random community configuration for a given state
         Returns config as a Precinct Group object.
     */
 
-    vector<Precinct_Group> communities;
+    Communities communities;
     int num_precincts = state_precincts.size();
     // determine amount of precincts to be added to each community
     vector<int> sizes;
@@ -41,7 +57,7 @@ vector<Precinct_Group> State::generate_initial_communities(int num_communities) 
     
     int index = 0;
     for (int i = 0; i < num_communities - 1; i++) {
-        Precinct_Group community;
+        Community community;
         p_index p = get_inner_boundary_precincts(*this)[0];
 
         for (int x = 0; x < sizes[index] - 1; x++) {
@@ -56,7 +72,7 @@ vector<Precinct_Group> State::generate_initial_communities(int num_communities) 
     }
 
     // add the last community that has no precincts yet
-    Precinct_Group community;
+    Community community;
     for (p_index precinct : available_pre) {
         community.add_precinct(this->state_precincts[precinct]);
     }
@@ -65,19 +81,19 @@ vector<Precinct_Group> State::generate_initial_communities(int num_communities) 
     return communities;
 }
 
-vector<Precinct_Group> refine_compactness(vector<Precinct_Group> communities) {
+Communities refine_compactness(Communities communities) {
     return communities;
 }
 
-vector<Precinct_Group> refine_partisan(vector<Precinct_Group> communities) {
+Communities refine_partisan(Communities communities) {
     return communities;
 }
 
-vector<Precinct_Group> refine_population(vector<Precinct_Group> communities) {
+Communities refine_population(Communities communities) {
     return communities;
 }
 
-int measure_difference(vector<Precinct_Group> communities, vector<Precinct_Group> new_communities) {
+int measure_difference(Communities communities, Communities new_communities) {
     
     /*
         Measures and returns how many precincts have changed communities
@@ -110,8 +126,8 @@ int measure_difference(vector<Precinct_Group> communities, vector<Precinct_Group
     return changed_precincts;
 }
 
-vector<Precinct_Group> State::generate_communities(int num_communities, float compactness_tolerance, float partisanship_tolerance, float population_tolerance) {
-    vector<Precinct_Group> communities = generate_initial_communities(num_communities);
+Communities State::generate_communities(int num_communities, float compactness_tolerance, float partisanship_tolerance, float population_tolerance) {
+    Communities communities = generate_initial_communities(num_communities);
     
     int changed_precincts = 0,
         i = 0;
@@ -121,7 +137,8 @@ vector<Precinct_Group> State::generate_communities(int num_communities, float co
     // while (changed_precincts > precinct_change_tolerance) {
     while (i < 30) {
         cout << "On iteration " << i << endl;
-        vector<Precinct_Group> new_communities = 
+
+        Communities new_communities = 
             refine_compactness(
                     refine_partisan(
                         refine_population(communities)
@@ -130,7 +147,6 @@ vector<Precinct_Group> State::generate_communities(int num_communities, float co
         
         changed_precincts = measure_difference(communities, new_communities);
         cout << changed_precincts << " precincts changed" << endl;
-        
         i++;
     }
 

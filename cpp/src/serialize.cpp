@@ -122,6 +122,21 @@ State State::read_binary(string path) {
     return state; // return state object
 }
 
+void Precinct_Group::write_binary(string path) {
+    ofstream ofs(path); // open output stream
+    boost::archive::binary_oarchive oa(ofs); // open archive stream
+    oa << *this; // put this pointer into stream
+    ofs.close(); // close stream
+}
+
+Precinct_Group Precinct_Group::read_binary(string path) {
+    Precinct_Group pg = Precinct_Group(); // blank object
+    ifstream ifs(path); // open input stream
+    boost::archive::binary_iarchive ia(ifs); // open archive stream
+    ia >> pg;
+    return pg; // return precinct group object
+}
+
 template<class Archive> void State::serialize(Archive & ar, const unsigned int version) {
     // write districts, precincts, name, and border
     ar & state_districts;

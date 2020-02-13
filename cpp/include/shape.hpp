@@ -167,6 +167,10 @@ class Precinct_Group : public Shape {
         Precinct_Group(){}; // default constructor
         Precinct_Group(coordinate_set shape)
             : Shape(shape) {}; // call the superclass constructor
+        
+        // serialize and read to and from binary
+        void write_binary(string path);
+        static Precinct_Group read_binary(string path);
 
         // for boost serialization
         friend class boost::serialization::access;
@@ -176,6 +180,9 @@ class Precinct_Group : public Shape {
         int id; // the district id number
 };
 
+// for cleaner naming of types when writing community algorithm
+typedef Precinct_Group Community;
+typedef vector<Precinct_Group> Communities;
 
 /*
     Derived shape class for defining a state.
@@ -212,8 +219,8 @@ class State : public Precinct_Group {
         template<class Archive> void serialize(Archive & ar, const unsigned int version);
 
         // for the community generation algorithm
-        vector<Precinct_Group> generate_communities(int num_communities, float compactness_tolerance, float partisanship_tolerance, float population_tolerance);
-        vector<Precinct_Group> generate_initial_communities(int num_communities);
+        Communities generate_communities(int num_communities, float compactness_tolerance, float partisanship_tolerance, float population_tolerance);
+        Communities generate_initial_communities(int num_communities);
 
         // return precinct that can be added to the current precinct that won't create islands in the state
         p_index get_addable_precinct(p_index_set available_precincts, p_index current_precinct);
