@@ -99,6 +99,22 @@ class Shape {
         int pop = 0; // total population
 };
 
+class Multi_Shape {
+    /*
+        A class containing a vector of shapes
+    */
+
+    public: 
+
+        Multi_Shape(){}; // default constructor
+
+        Multi_Shape(vector<Shape> s) {
+            // constructor with assignment
+            shapes = s;
+        }
+
+    vector<Shape> shapes;
+};
 
 class Precinct : public Shape {
 
