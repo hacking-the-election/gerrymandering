@@ -17,6 +17,7 @@ settings.json
 cpp/bin/
 cpp/src/combine_districts
 cpp/test/test
+cpp/lib/clipper/
 
 # lol-cubes
 notes
