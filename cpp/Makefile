@@ -15,4 +15,4 @@ state_serializer:
 
 community:
 	@echo "compiling community algorithm executor"
-	@${CC} -std=c++${V} ${STATE_FILES} src/algorithm/community/generate_communities.cpp src/algorithm/community/community.cpp ${BOOST} ${SDL} -o ${BINDIR}/generate_communities
+	@${CC} -std=c++${V} ${STATE_FILES} lib/clipper/clipper.cpp src/algorithm/community/generate_communities.cpp src/algorithm/community/community.cpp ${BOOST} ${SDL} -o ${BINDIR}/generate_communities
