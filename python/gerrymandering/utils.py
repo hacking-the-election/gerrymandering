@@ -45,8 +45,8 @@ def get_segments_collinear(segment_1, segment_2):
     Returns whether or not two segments are collinear
     """
 
-    f = equation(segment_1)
-    g = equation(segment_2)
+    f = get_equation(segment_1)
+    g = get_equation(segment_2)
     # if two lines have more than one shared point,
     # they are the same line
     return (f(0) == g(0)) and (f(1) == g(1))
@@ -106,7 +106,7 @@ def get_point_in_polygon(point, shape):
             # one endpoint is above point, the other is below
 
             # y-value of segment at point 
-            y_c = equation(segment)(point[0])
+            y_c = get_equation(segment)(point[0])
             if y_c > point[1]:  # point is below segment
                 crossings += 1
     
@@ -165,7 +165,7 @@ class Community:
     A collection of precincts
     """
     
-    def __init__(self, precincts):
+    def __init__(self, precincts, identifier):
         self.precincts = precincts
         # unpack coords from unnecessary higher dimesions
         for precinct in self.precincts:
@@ -173,6 +173,7 @@ class Community:
             while type(coords[0][0]) != type(1.0):
                 coords = coords[0]
             precinct.coords = coords
+        self.id = identifier
 
     @property
     def border(self):
@@ -260,18 +261,23 @@ def get_exchangeable_precincts(community, communities):
     Finds exchangeable precincts between a community and its neighbors.
 
     Args:
-    `community`: Community object for community you are finding
-                 precincts from
-    `communities`: A list of all the communites in a state
+    `community`: id for community to find precincts of
+    `communities`: Dict of ids of all communities in state
 
     Returns:
-    Dict with keys as precinct ids and values as lists of neighboring
-    communities.
+    Dict with keys as precinct ids and values as lists of ids of
+    neighboring communities.
     """
 
-    # outside_precincts = {}
+    outside_precincts = {}
 
-    # border = community.border  # so its only calculated once
-    # for precinct in community.precincts:
-    #     if get_if_bordering(precinct)
+    borders = {key: val.border for key, val in communities.items()}
+    for precinct in community.precincts:
+        if get_if_bordering(precinct.coords, borders[community]):
+            bordering_communities = [
+                c.id for c in communities
+                if get_if_bordering(precinct.coords, borders[c.id])
+                ]
+            outside_precincts[precinct.vote_id] = bordering_communities
 
+    return outside_precincts

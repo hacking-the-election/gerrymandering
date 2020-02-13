@@ -4,8 +4,12 @@ Algorithm implementation for breaking a state into political communities
 
 import pickle
 import random
+from os.path import abspath, dirname
+import sys
 
-from utils import *
+sys.path.append(abspath(dirname(dirname(__file__))))
+
+from gerrymandering.utils import Community, get_if_addable, get_segments
 
 
 def refine_for_partisanship(state, communities, max_standard_deviation):
@@ -34,7 +38,7 @@ def make_communities(state_file, number_of_communities,
     """
     `state_file` - path to state that is to be divided into communities
     """
-    
+
     with open(state_file, 'rb') as f:
         precincts, districts = pickle.load(f)
 
@@ -51,9 +55,9 @@ def make_communities(state_file, number_of_communities,
     # create random communities of similar size (in precincts)
     communities = []
 
-    border = Community(precincts)
-    for s in community_sizes:
-        community = Community([])
+    border = Community(precincts, 1)
+    for i, s in enumerate(community_sizes):
+        community = Community([], i + 2)
         for p in range(s):
             eligible_precincts = border.precincts[:]
             precinct = random.choice(eligible_precincts)
@@ -62,5 +66,7 @@ def make_communities(state_file, number_of_communities,
                 eligible_precincts.remove(precinct)
                 precinct = random.choice(border.precincts)
             community.precincts.append(precinct)
+
+    return communities
 
     

@@ -5,6 +5,10 @@ usage: python3 load_precincts.py [state_file]
 
 import json
 import pickle
+from os.path import abspath, dirname
+import sys
+
+sys.path.append(abspath(dirname(__file__)))
 
 from save_precincts import Precinct
 
