@@ -1,4 +1,6 @@
 # General:
+   Now:
+    - NUMPY
    Later:
     - Predict errors and create custom exceptions to throw in those cases
 
@@ -13,3 +15,6 @@
    Now:
     - write tests for utils.py
     - write communities algorithm
+    - write get_exchangleable_precincts function
+    - update get_addable_precincts to new function
+    - get c++ binary and use with get_border function

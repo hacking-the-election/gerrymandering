@@ -12,3 +12,8 @@ args for `save` subcommand (positional):
 args for `load` subcommand
 
     state_file - path to file containing pickled state data
+
+args for `json` subcommand
+
+    state_file - path to file containing pickled state data
+    output_file - path to file where json is to be written

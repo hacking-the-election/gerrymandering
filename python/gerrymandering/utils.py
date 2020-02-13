@@ -1,12 +1,20 @@
 """
 Useful computational geometry functions and classes
 for communities algorithm
+
+Note for docstrings:
+"set of segments" means set of lists of lists of floats
+ex.
+{[[1.0, 2.0], [1.0, 3.0]], [[1.0, 3.0], [1.0, 4.0]]}
+"list of points" means an ordered list of points that go around the
+border of a polygon, with each point being a list of floats
 """
 
 
 import itertools
 import math
 
+from Polygon import Polygon
 
 # ===================================================
 # general geometry functions
@@ -28,7 +36,7 @@ def get_segments(shape):
     Returns set of segments from list of vertices
     """
     segments = set([shape[i:i + 2] if i + 2 <= len(shape) else
-                   [shape[-1], shape[0]] for i in range(0, len(shape), 2)])
+                   [shape[-1], shape[0]] for i in range(len(shape))])
     return segments
 
 
@@ -37,8 +45,8 @@ def get_segments_collinear(segment_1, segment_2):
     Returns whether or not two segments are collinear
     """
 
-    f = equation(segment_1)
-    g = equation(segment_2)
+    f = get_equation(segment_1)
+    g = get_equation(segment_2)
     # if two lines have more than one shared point,
     # they are the same line
     return (f(0) == g(0)) and (f(1) == g(1))
@@ -65,39 +73,7 @@ def get_if_bordering(shape_1, shape_2):
 
 
 def get_border(shapes):
-    """
-    Returns the vertices of the larger polygon that the smaller ones
-    make up
-    
-    `shapes`: a list of lists of coords representing the vertices of a
-              polygon. These shapes must be clustered together to make
-              one larger polygon.
-    """
-
-    segments = set([get_segments(shape) for shape in shapes])
-
-    inner_segments = {}
-
-    for segment_1 in segments:
-        if segment not in inner_segments:
-            for segment_2 in segments - {segment_1}:
-                if get_segments_collinear(segment_1, segment_2):
-                    # segments are collinear
-                    xs_1 = [p[0] for p in segment_1]
-                    xs_2 = [p[0] for p in segment_2]
-                    if max(xs_1) > min(xs_2) and max(xs_2) > min(xs_1):
-                        # segments have overlapping bounding boxes
-                        inner_segments.add(segment_1)
-                        inner_segments.add(segment_2)
-                        break
-
-    outer_segments = segments - inner_segments
-
-    # points are in order as groups of two (enough to draw the shape)
-    outer_vertices = [vertex for vertex in segment
-                      for segment in outer_segments]
-
-    return outer_vertices
+    pass
 
 
 def get_point_in_polygon(point, shape):
@@ -130,7 +106,7 @@ def get_point_in_polygon(point, shape):
             # one endpoint is above point, the other is below
 
             # y-value of segment at point 
-            y_c = equation(segment)(point[0])
+            y_c = get_equation(segment)(point[0])
             if y_c > point[1]:  # point is below segment
                 crossings += 1
     
@@ -144,9 +120,9 @@ def get_distance(p1, p2):
     return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
 
 
-def get_permeter(shape):
+def get_perimeter(shape):
     """
-    Returns the permeter of set of segments `shape`
+    Returns the perimeter of set of segments `shape`
     """
     return sum([get_distance(*seg) for seg in shape])
 
@@ -171,8 +147,9 @@ def get_schwartsberg_compactness(shape):
     `shape`
     """
     
-    compactness = get_perimeter(shape)
-                  / (2 * math.pi * math.sqrt(get_area(shape) / math.pi))
+
+    compactness = (get_perimeter(shape)
+                   / (2 * math.pi * math.sqrt(get_area(shape) / math.pi)))
     if compactness < 1:
         return 1 / compactness
     else:
@@ -188,22 +165,22 @@ class Community:
     A collection of precincts
     """
     
-    def __init__(self, precincts):
+    def __init__(self, precincts, identifier):
         self.precincts = precincts
+        # unpack coords from unnecessary higher dimesions
+        for precinct in self.precincts:
+            coords = precinct.coords[:]
+            while type(coords[0][0]) != type(1.0):
+                coords = coords[0]
+            precinct.coords = coords
+        self.id = identifier
 
     @property
     def border(self):
         """
         The outside edge of the community (in segments)
         """
-        precinct_coords = [p.coords for p in self.precincts]
-        # unpack coords from unnecessary higher dimesions
-        for i, precinct in enumerate(p.coords):
-            coords = precinct
-            while type(coords[0][0]) != type(1.0):
-                coords = coords[0]
-            precinct_coords[i] = coords
-        return get_segments(get_border([]))
+        return get_segments(get_border([p.coords for p in self.precincts]))
 
     @property
     def partisanship(self):
@@ -212,11 +189,24 @@ class Community:
         """
         rep_sum = 0
         total_sum = 0
-        for precinct in self.precincts
+        for precinct in self.precincts:
             if (r_sum := precinct.r_election_sum) != -1:
                 rep_sum += r_sum
                 total_sum += r_sum + precinct.d_election_data
         return rep_sum / total_sum
+
+    def get_standard_deviation(self):
+        """
+        Standard deviation of republican percentage in precincts
+        """
+
+        rep_percentages = [
+            p.r_election_sum / (p.r_election_sum + p.d_election_sum) * 100
+            for p in self.precincts]
+
+        mean = sum(rep_percentages) / len(rep_percentages)
+        
+        return math.sqrt(sum([(p - mean) ** 2 for p in rep_percentages]))
 
 
 def get_if_addable(precinct, community, boundary):
@@ -265,3 +255,29 @@ def get_if_addable(precinct, community, boundary):
                 return False
 
     return True
+
+def get_exchangeable_precincts(community, communities):
+    """
+    Finds exchangeable precincts between a community and its neighbors.
+
+    Args:
+    `community`: id for community to find precincts of
+    `communities`: Dict of ids of all communities in state
+
+    Returns:
+    Dict with keys as precinct ids and values as lists of ids of
+    neighboring communities.
+    """
+
+    outside_precincts = {}
+
+    borders = {key: val.border for key, val in communities.items()}
+    for precinct in community.precincts:
+        if get_if_bordering(precinct.coords, borders[community]):
+            bordering_communities = [
+                c.id for c in communities
+                if get_if_bordering(precinct.coords, borders[c.id])
+                ]
+            outside_precincts[precinct.vote_id] = bordering_communities
+
+    return outside_precincts
