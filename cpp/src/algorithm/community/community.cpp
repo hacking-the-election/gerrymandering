@@ -81,7 +81,50 @@ void State::generate_initial_communities(int num_communities) {
 void State::refine_compactness(float compactness_tolerance) {
 }
 
+p_index State::get_partisanship_community(float partisanship_tolerance) {
+    /*
+        Returns the index of a community with the worst (highest)
+        standard deviation (in terms of partisanship).
+
+        Used in algorithm to determine next community to optimize.
+    */
+
+    p_index i = -1;
+    float max = 0;
+    p_index x = 0;
+
+    for (Community c : state_communities) {
+        float stdev = get_standard_deviation(c);
+        if (stdev > partisanship_tolerance && stdev > max) {
+            i = x;
+            max = stdev;
+        }
+        x++;
+    }
+
+    return i;
+}
+
 void State::refine_partisan(float partisanship_tolerance) {
+    /*
+        A function to optimize the partisanship of a community -
+        in short, to minimize the stdev of partisanship of precincts
+        within each community.
+
+        Loops through each community above the threshold, optimizes it
+    */
+    
+    p_index worst_community = get_partisanship_community(partisanship_tolerance);
+    bool is_done = (worst_community == -1);
+    
+    while (!is_done) {
+        Community c = state_communities[worst_community];
+        get_inner_boundary_precincts(c);
+
+        // update worst_community, check stop condition
+        worst_community = get_partisanship_community(partisanship_tolerance);
+        is_done = (worst_community == -1);
+    }
 }
 
 void State::refine_population(float population_tolerance) {
@@ -170,4 +213,4 @@ void State::generate_communities(int num_communities, float compactness_toleranc
         cout << changed_precincts << " precincts changed" << endl;
         i++;
     }
-}   
+}
