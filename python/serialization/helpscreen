@@ -8,6 +8,7 @@ args for `save` subcommand (positional):
     state - name of state
     objects_dir - path to directory where pickled state file will be stored
     metadata_file - path to file containing state metadata for column names
+    population_file - path to file containing statewide precinct-level voter registration or population data
 
 args for `load` subcommand
 
