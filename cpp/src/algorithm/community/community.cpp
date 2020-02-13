@@ -92,10 +92,18 @@ int measure_difference(vector<Precinct_Group> communities, vector<Precinct_Group
         // for each precinct in the community
         for (int x = 0; x < communities[i].precincts.size(); x++) {
             // check for precinct in corrosponding new_community array
-            if (!(find(new_communities[i].precincts.begin(), new_communities[i].precincts.end(), communities[i].precincts[x]) != new_communities[i].precincts.end())) {
-                // precinct moved communities
-                changed_precincts++;
+            Precinct old_p = communities[i].precincts[x];
+            vector<Precinct> plist = new_communities[i].precincts;
+            bool found = false;
+            int index = 0;
+
+            while (!found && index < plist.size()) {
+                Precinct p = plist[index];
+                if (old_p == p) found = true;
+                index++;
             }
+
+            if (found) changed_precincts++;
         }
     }
 

@@ -221,11 +221,18 @@ Multi_Shape clipper_mult_int_to_shape(Paths paths) {
 
     for (Path p : paths) {
         coordinate_set border;
-
+        cout << "PATH" << endl;
+        int c = 0;
         for (IntPoint point : p) {
-            coordinate p = {(float)((float)point.X / (float)c), (float)((float)point.Y / (float) c)};
-            border.push_back(p);
-            cout << "{" << p[0] << ", " << p[1] << "}" << endl;
+            coordinate coord = {(float)((float)point.X / (float)c), (float)((float)point.Y / (float) c)};
+            border.push_back(coord);
+            
+            if (coord[0] == 0 || coord[1] == 0) {
+                cout << "FAIL" << endl;
+            }
+
+            // cout << "{" << p[0] << ", " << p[1] << "}, ";
+            c++;
         }
 
         Shape s(border);

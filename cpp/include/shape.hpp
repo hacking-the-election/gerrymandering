@@ -143,6 +143,11 @@ class Precinct : public Shape {
         friend class boost::serialization::access;
         template<class Archive> void serialize(Archive & ar, const unsigned int version);
         
+        //! beware of the following line, could cause problems for serialization
+        friend bool operator== (Precinct& p1, Precinct& p2) {
+            return (p1.border == p2.border);
+        }
+
         int dem; // democratic vote total
         int rep; // republican vote total
 };

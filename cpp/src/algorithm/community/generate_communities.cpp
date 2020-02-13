@@ -29,6 +29,7 @@ int main(int argc, char* argv[]) {
     state.precincts = state.state_precincts;
 
     // cout << "generating exterior border" << endl;
+    generate_exterior_border(state);
 
     int districts_in_state = state.state_districts.size();
     // vector<Precinct_Group> political_communities = state.generate_communities(districts_in_state, 0.5, 0.2, 0.15);
