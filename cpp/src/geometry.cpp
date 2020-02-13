@@ -168,7 +168,7 @@ bool is_colinear(segment s0, segment s1) {
     return (calculate_line(s0) == calculate_line(s1));
 }
 
-float get_standard_deviation(Precinct_Group pg) {
+float get_standard_deviation_partisanship(Precinct_Group pg) {
     float mean = pg.precincts[0].get_ratio();
 
     for (int i = 1; i < pg.precincts.size(); i++)
@@ -181,6 +181,24 @@ float get_standard_deviation(Precinct_Group pg) {
         dev_mean += pow(pg.precincts[i].get_ratio() - mean, 2);
 
     return ((float) sqrt(dev_mean));
+}
+
+float get_median_partisanship(Precinct_Group pg) {
+    float median;
+    vector<float> ratios;
+    int s = pg.precincts.size();
+
+    for (Precinct p : pg.precincts)
+        ratios.push_back(p.get_ratio);
+
+    sort(ratios.begin(), ratios.end());
+
+    if (s % 2 == 0)
+        median = (ratios[(s - 1) / 2] + ratios[s / 2]) / 2.0;
+    else
+        median = ratios[s / 2];
+
+    return median;
 }
 
 Multi_Shape generate_exterior_border(Precinct_Group precinct_group) {

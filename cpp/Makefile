@@ -3,7 +3,7 @@
 CC = g++
 BINDIR = bin
 STATE_FILES = src/parse.cpp src/shape.cpp src/geometry.cpp src/gui.cpp src/serialize.cpp src/util.cpp
-BOOST = -lboost_serialization
+BOOST = -lboost_serialization -lboost_filesystem
 SDL = -lSDL2 -lSDL2main
 V = 11
 

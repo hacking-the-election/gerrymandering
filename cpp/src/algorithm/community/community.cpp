@@ -15,13 +15,27 @@
 #include <algorithm>
 #include <boost/filesystem.hpp>
 
+/*
+    Define constants to be used in the algorithm.    
+    These will not be passed to the algorithm
+    as arguments, as they define things like stop
+    conditions.
+*/
+
 const int CHANGED_PRECINT_TOLERANCE = 10; // percent of precincts that can change from iteration
 
 void save_community_state(Communities communities, string write_path) {
     /*
         Saves a community to a file at a specific point in the
-        pipeline. Useful for visualization and checks
+        pipeline. Useful for visualization and checks.
+
+        Save structure is as follows:
+            write_path/
+                community_1
+                ...
+                community_n
     */
+
    int c_index = 0;
    boost::filesystem::create_directory(write_path);
 
@@ -30,7 +44,6 @@ void save_community_state(Communities communities, string write_path) {
        c_index++;
    }
 }
-
 
 void State::generate_initial_communities(int num_communities) {
     
@@ -94,7 +107,7 @@ p_index State::get_partisanship_community(float partisanship_tolerance) {
     p_index x = 0;
 
     for (Community c : state_communities) {
-        float stdev = get_standard_deviation(c);
+        float stdev = get_standard_deviation_partisanship(c);
         if (stdev > partisanship_tolerance && stdev > max) {
             i = x;
             max = stdev;
@@ -119,8 +132,19 @@ void State::refine_partisan(float partisanship_tolerance) {
     
     while (!is_done) {
         Community c = state_communities[worst_community];
-        get_inner_boundary_precincts(c);
+        
+        float median = get_median_partisanship(c);
+        p_index worst_precinct = 0, x = 0;
+        float diff = 0;
 
+        for (Precinct p : c.precincts) {
+            float t_diff = abs(median - p.get_ratio());
+            if (t_diff > diff) diff = t_diff;
+            worst_precinct = x;
+            x++;
+        }
+
+        
         // update worst_community, check stop condition
         worst_community = get_partisanship_community(partisanship_tolerance);
         is_done = (worst_community == -1);
