@@ -35,3 +35,6 @@ unit_interval compactness(Shape shape);
 Path shape_to_clipper_int(Shape shape);
 Shape clipper_int_to_shape(Path path);
 Multi_Shape clipper_mult_int_to_shape(Paths paths);
+
+// for algorithm helper methods
+float get_standard_deviation(Precinct_Group pg);

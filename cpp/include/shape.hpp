@@ -220,10 +220,13 @@ class State : public Precinct_Group {
 
         // for the community generation algorithm
         void generate_communities(int num_communities, float compactness_tolerance, float partisanship_tolerance, float population_tolerance);
+       
         // initial random configuration of communities
         void generate_initial_communities(int num_communities);
+
         // for the iterative methods
         void refine_compactness(float compactness_tolerance);
+        p_index get_partisanship_community(float compactness_tolerance);
         void refine_partisan(float partisanship_tolerance);
         void refine_population(float population_tolerance);
 

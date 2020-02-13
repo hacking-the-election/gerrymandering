@@ -168,6 +168,21 @@ bool is_colinear(segment s0, segment s1) {
     return (calculate_line(s0) == calculate_line(s1));
 }
 
+float get_standard_deviation(Precinct_Group pg) {
+    float mean = pg.precincts[0].get_ratio();
+
+    for (int i = 1; i < pg.precincts.size(); i++)
+        mean += pg.precincts[i].get_ratio();
+
+    mean /= pg.precincts.size();
+    float dev_mean = pow(pg.precincts[0].get_ratio() - mean, 2);
+
+    for (int i = 1; i < pg.precincts.size(); i++)
+        dev_mean += pow(pg.precincts[i].get_ratio() - mean, 2);
+
+    return ((float) sqrt(dev_mean));
+}
+
 Multi_Shape generate_exterior_border(Precinct_Group precinct_group) {
 
     /*
