@@ -30,8 +30,18 @@ Multi_Shape generate_exterior_border(Precinct_Group p);
 // get precincts on the inside border of a precinct group
 p_index_set get_inner_boundary_precincts(Precinct_Group shape);
 p_index_set get_bordering_precincts(Precinct_Group shape, int p_index);
+
+// overload get_bordering_shapes for vector inheritance problem
+p_index_set get_bordering_shapes(vector<Shape> shapes, Shape shape);
+p_index_set get_bordering_shapes(vector<Precinct_Group> shapes, Shape shape);
+
 unit_interval compactness(Shape shape);
 
 Path shape_to_clipper_int(Shape shape);
 Shape clipper_int_to_shape(Path path);
 Multi_Shape clipper_mult_int_to_shape(Paths paths);
+
+// for algorithm helper methods
+float get_standard_deviation_partisanship(Precinct_Group pg);
+float get_median_partisanship(Precinct_Group pg);
+

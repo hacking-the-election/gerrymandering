@@ -92,6 +92,16 @@ class Shape {
         coordinate center();
         segments get_segments();
 
+        //! beware of the following line, could cause problems for serialization
+        friend bool operator== (Shape& p1, Shape& p2) {
+            return (p1.border == p2.border);
+        }
+
+        //! beware of the following line, could cause problems for serialization
+        friend bool operator!= (Shape& p1, Shape& p2) {
+            return (p1.border != p2.border);
+        }
+
         // for boost serialization
         friend class boost::serialization::access;
         template<class Archive> void serialize(Archive & ar, const unsigned int version);
@@ -142,11 +152,6 @@ class Precinct : public Shape {
         // for boost serialization
         friend class boost::serialization::access;
         template<class Archive> void serialize(Archive & ar, const unsigned int version);
-        
-        //! beware of the following line, could cause problems for serialization
-        friend bool operator== (Precinct& p1, Precinct& p2) {
-            return (p1.border == p2.border);
-        }
 
         int dem; // democratic vote total
         int rep; // republican vote total
@@ -220,10 +225,14 @@ class State : public Precinct_Group {
 
         // for the community generation algorithm
         void generate_communities(int num_communities, float compactness_tolerance, float partisanship_tolerance, float population_tolerance);
+        void give_precinct(p_index precinct, p_index community, string t_type);
+
         // initial random configuration of communities
         void generate_initial_communities(int num_communities);
+
         // for the iterative methods
         void refine_compactness(float compactness_tolerance);
+        p_index get_partisanship_community(float compactness_tolerance);
         void refine_partisan(float partisanship_tolerance);
         void refine_population(float population_tolerance);
 

@@ -15,13 +15,28 @@
 #include <algorithm>
 #include <boost/filesystem.hpp>
 
+/*
+    Define constants to be used in the algorithm.    
+    These will not be passed to the algorithm
+    as arguments, as they define things like stop
+    conditions.
+*/
+
 const int CHANGED_PRECINT_TOLERANCE = 10; // percent of precincts that can change from iteration
+const int MAX_ITERATIONS = 3; // max number of times we can change a community
 
 void save_community_state(Communities communities, string write_path) {
     /*
         Saves a community to a file at a specific point in the
-        pipeline. Useful for visualization and checks
+        pipeline. Useful for visualization and checks.
+
+        Save structure is as follows:
+            write_path/
+                community_1
+                ...
+                community_n
     */
+
    int c_index = 0;
    boost::filesystem::create_directory(write_path);
 
@@ -30,7 +45,6 @@ void save_community_state(Communities communities, string write_path) {
        c_index++;
    }
 }
-
 
 void State::generate_initial_communities(int num_communities) {
     
@@ -81,7 +95,112 @@ void State::generate_initial_communities(int num_communities) {
 void State::refine_compactness(float compactness_tolerance) {
 }
 
+p_index State::get_partisanship_community(float partisanship_tolerance) {
+    /*
+        Returns the index of a community with the worst (highest)
+        standard deviation (in terms of partisanship).
+
+        Used in algorithm to determine next community to optimize.
+    */
+
+    p_index i = -1;
+    float max = 0;
+    p_index x = 0;
+
+    for (Community c : state_communities) {
+        float stdev = get_standard_deviation_partisanship(c);
+        if (stdev > partisanship_tolerance && stdev > max) {
+            i = x;
+            max = stdev;
+        }
+        x++;
+    }
+
+    return i;
+}
+
+void State::give_precinct(p_index precinct, p_index community, string t_type) {
+    Precinct precinct_shape = this->state_communities[community].precincts[precinct];
+    
+    // get communities that border the current community
+    p_index_set bordering_communities_i = get_bordering_shapes(this->state_communities, this->state_communities[community]);
+    // convert to actual shape array
+    Communities bordering_communities;
+    for (p_index i : bordering_communities_i)
+        bordering_communities.push_back(this->state_communities[i]);
+
+    // of those communities, get the ones that also border the precinct
+    p_index_set exchangeable_communities_i = get_bordering_shapes(bordering_communities, precinct_shape);
+    // convert to shape array
+    Communities exchangeable_communities;
+    for (p_index i : exchangeable_communities_i)
+        exchangeable_communities.push_back(this->state_communities[i]);
+
+    p_index exchange_choice;
+
+    if (t_type == "partisan") {
+        // get closest average to precinct
+        float min = abs(get_median_partisanship(exchangeable_communities[0]) - precinct_shape.get_ratio());
+        p_index choice = 0;
+        p_index index = 0;
+
+        for (int i = 1; i < exchangeable_communities.size(); i++) {
+            index++;
+            Community c = exchangeable_communities[i];
+            float diff = abs(get_median_partisanship(c) - precinct_shape.get_ratio());
+            if (diff < min) {
+                min = diff;
+                choice = index;
+            }
+        }
+        exchange_choice = choice;
+    }
+
+    Community chosen_c = exchangeable_communities[exchange_choice];
+    // add precinct to new community
+    chosen_c.add_precinct(precinct_shape);
+    // remove precinct from previous community
+    this->state_communities[community].precincts.erase(this->state_communities[community].precincts.begin() + precinct);
+}
+
 void State::refine_partisan(float partisanship_tolerance) {
+    /*
+        A function to optimize the partisanship of a community -
+        in short, to minimize the stdev of partisanship of precincts
+        within each community.
+
+        Loops through each community above the threshold, optimizes it
+    */
+    
+    p_index worst_community = get_partisanship_community(partisanship_tolerance);
+    bool is_done = (worst_community == -1);
+    vector<int> num_changes(state_communities.size());
+    // fill(num_changes.begin(), num_changes.end(), 0);
+
+    while (!is_done) {
+        Community c = state_communities[worst_community];
+        
+        float median = get_median_partisanship(c);
+        p_index worst_precinct = 0, x = 0;
+        float diff = 0;
+
+        for (Precinct p : c.precincts) {
+            float t_diff = abs(median - p.get_ratio());
+            if (t_diff > diff) diff = t_diff;
+            worst_precinct = x;
+            x++;
+        }
+
+        give_precinct(worst_precinct, worst_community, "partisan");
+        // UH OH UH OH
+        // THIS FUNCTION WILL ALWAYS CHANGE WHAT
+        // THE INDEXES OF PRECINCTS MEAN
+
+        num_changes[worst_community] += 1; // update the changelist
+        // update worst_community, check stop condition
+        worst_community = get_partisanship_community(partisanship_tolerance);
+        is_done = (worst_community == -1 || num_changes[worst_community] == MAX_ITERATIONS);
+    }
 }
 
 void State::refine_population(float population_tolerance) {
@@ -170,4 +289,4 @@ void State::generate_communities(int num_communities, float compactness_toleranc
         cout << changed_precincts << " precincts changed" << endl;
         i++;
     }
-}   
+}
