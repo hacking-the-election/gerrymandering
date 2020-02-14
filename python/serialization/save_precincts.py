@@ -254,7 +254,7 @@ class Precinct:
         
         else:
             pop = {p["properties"][json_id][1:] if state == "colorado"
-            else ''.join([x for x in json_id]) if len(json_id) > 1
+            else ' '.join([p['properties'][x] for x in json_id]) if len(json_id) > 1
             else p["properties"][json_id[0]]:
             convert_to_int(sum(num for num in p["properties"][json_pop])) if len(json_pop) > 1
             else convert_to_int(p["properties"][json_pop][0])
@@ -298,7 +298,7 @@ class Precinct:
                     elif len(json_id) == 1:
                         geo_data_id = precinct["properties"][json_id[0]]
                     else:
-                        geo_data_id = ''.join([x for x in precinct["properties"][json_id]])
+                        geo_data_id = ' '.join([precinct["properties"][x] for x in json_id])
                     if tostring(geo_data_id) == str(precinct_id):
                         precinct_coords[precinct_id] = \
                             precinct['geometry']['coordinates']
@@ -343,7 +343,7 @@ class Precinct:
             precinct_coords = {}
             for precinct in geo_data['features']:
                 if len(json_id) > 1:
-                    precinct_id = ''.join([x for x in precinct['properties'][json_id]])
+                    precinct_id = ' '.join([precinct['properties'][x] for x in json_id])
                 else:
                     precinct_id = precinct['properties'][json_id[0]]
                 dem_cols[precinct_id] = \

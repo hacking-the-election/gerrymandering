@@ -32,5 +32,5 @@
     "wyoming": {"dem_keys":["ndv_08"],"rep_keys":["nrv_08"],"ele_id":"geoid10","geo_id":["GEOID10"],"pop_key":["VAP"]},
     "new hampshire": {"dem_keys":["pres_dem08"],"rep_keys":["pres_dem08"],"ele_id":"geoid10","geo_id":["GEOID10"],"pop_key":["VAP"]},
     "georgia": {"dem_keys":["PRES16D", "SEN16D"], "rep_keys":["PRES16R", "SEN16R"], "ele_id":"none", "geo_id":["ID"],"pop_key":["POPULATION"]},
-    "maryland":{"dem_keys":["PRES_DVOTE"], "rep_keys":["PRES_RVOTE"], "ele_id": "none", "geo_id":["VTDST10"], "pop_key":["TOTAL_ELIGIBLE_VOTERS"]}
+    "maryland":{"dem_keys":["PRES_DVOTE"], "rep_keys":["PRES_RVOTE"], "ele_id": "none", "geo_id":["COUNTY_NAM", "VTDST10"], "pop_key":["TOTAL_ELIGIBLE_VOTERS"]}
 }
