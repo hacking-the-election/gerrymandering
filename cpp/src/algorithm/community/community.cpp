@@ -23,6 +23,7 @@
 */
 
 const int CHANGED_PRECINT_TOLERANCE = 10; // percent of precincts that can change from iteration
+const int MAX_ITERATIONS = 3; // max number of times we can change a community
 
 void save_community_state(Communities communities, string write_path) {
     /*
@@ -118,6 +119,26 @@ p_index State::get_partisanship_community(float partisanship_tolerance) {
     return i;
 }
 
+void State::give_precinct(p_index precinct, p_index community, string t_type) {
+    // get communities that border the current community
+    p_index_set bordering_communities_i = get_bordering_shapes(this->state_communities, this->state_communities[community]);
+    // convert to actual shape array
+    Communities bordering_communities;
+    for (p_index i : bordering_communities_i)
+        bordering_communities.push_back(this->state_communities[i]);
+
+    // of those communities, get the ones that also border the precinct
+    p_index_set exchangeable_communities_i = get_bordering_shapes(bordering_communities, this->state_communities[community].precincts[precinct]);
+    // convert to shape array
+    Communities exchangeable_communities;
+    for (p_index i : exchangeable_communities_i)
+        exchangeable_communities.push_back(this->state_communities[i]);
+
+    if (t_type == "partisan") {
+        
+    }
+}
+
 void State::refine_partisan(float partisanship_tolerance) {
     /*
         A function to optimize the partisanship of a community -
@@ -129,7 +150,9 @@ void State::refine_partisan(float partisanship_tolerance) {
     
     p_index worst_community = get_partisanship_community(partisanship_tolerance);
     bool is_done = (worst_community == -1);
-    
+    vector<int> num_changes(state_communities.size());
+    // fill(num_changes.begin(), num_changes.end(), 0);
+
     while (!is_done) {
         Community c = state_communities[worst_community];
         
@@ -144,10 +167,12 @@ void State::refine_partisan(float partisanship_tolerance) {
             x++;
         }
 
-        
+        give_precinct(worst_precinct, worst_community, "partisan");
+
+        num_changes[worst_community] += 1; // update the changelist
         // update worst_community, check stop condition
         worst_community = get_partisanship_community(partisanship_tolerance);
-        is_done = (worst_community == -1);
+        is_done = (worst_community == -1 || num_changes[worst_community] == MAX_ITERATIONS);
     }
 }
 
