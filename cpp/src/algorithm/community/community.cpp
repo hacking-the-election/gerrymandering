@@ -120,6 +120,8 @@ p_index State::get_partisanship_community(float partisanship_tolerance) {
 }
 
 void State::give_precinct(p_index precinct, p_index community, string t_type) {
+    Precinct precinct_shape = this->state_communities[community].precincts[precinct];
+    
     // get communities that border the current community
     p_index_set bordering_communities_i = get_bordering_shapes(this->state_communities, this->state_communities[community]);
     // convert to actual shape array
@@ -128,15 +130,37 @@ void State::give_precinct(p_index precinct, p_index community, string t_type) {
         bordering_communities.push_back(this->state_communities[i]);
 
     // of those communities, get the ones that also border the precinct
-    p_index_set exchangeable_communities_i = get_bordering_shapes(bordering_communities, this->state_communities[community].precincts[precinct]);
+    p_index_set exchangeable_communities_i = get_bordering_shapes(bordering_communities, precinct_shape);
     // convert to shape array
     Communities exchangeable_communities;
     for (p_index i : exchangeable_communities_i)
         exchangeable_communities.push_back(this->state_communities[i]);
 
+    p_index exchange_choice;
+
     if (t_type == "partisan") {
-        
+        // get closest average to precinct
+        float min = abs(get_median_partisanship(exchangeable_communities[0]) - precinct_shape.get_ratio());
+        p_index choice = 0;
+        p_index index = 0;
+
+        for (int i = 1; i < exchangeable_communities.size(); i++) {
+            index++;
+            Community c = exchangeable_communities[i];
+            float diff = abs(get_median_partisanship(c) - precinct_shape.get_ratio());
+            if (diff < min) {
+                min = diff;
+                choice = index;
+            }
+        }
+        exchange_choice = choice;
     }
+
+    Community chosen_c = exchangeable_communities[exchange_choice];
+    // add precinct to new community
+    chosen_c.add_precinct(precinct_shape);
+    // remove precinct from previous community
+    this->state_communities[community].precincts.erase(this->state_communities[community].precincts.begin() + precinct);
 }
 
 void State::refine_partisan(float partisanship_tolerance) {
@@ -168,6 +192,9 @@ void State::refine_partisan(float partisanship_tolerance) {
         }
 
         give_precinct(worst_precinct, worst_community, "partisan");
+        // UH OH UH OH
+        // THIS FUNCTION WILL ALWAYS CHANGE WHAT
+        // THE INDEXES OF PRECINCTS MEAN
 
         num_changes[worst_community] += 1; // update the changelist
         // update worst_community, check stop condition
