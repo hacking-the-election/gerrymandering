@@ -25,6 +25,11 @@
 const int CHANGED_PRECINT_TOLERANCE = 10; // percent of precincts that can change from iteration
 const int MAX_ITERATIONS = 3; // max number of times we can change a community
 
+// id's for determining the current process within functions
+const int PARTISANSHIP = 0;
+const int COMPACTNESS = 1;
+const int POPULATION = 2;
+
 void save_community_state(Communities communities, string write_path) {
     /*
         Saves a community to a file at a specific point in the
@@ -95,31 +100,49 @@ void State::generate_initial_communities(int num_communities) {
 void State::refine_compactness(float compactness_tolerance) {
 }
 
-p_index State::get_partisanship_community(float partisanship_tolerance) {
+p_index State::get_next_community(float tolerance, int process) {
     /*
-        Returns the index of a community with the worst (highest)
-        standard deviation (in terms of partisanship).
-
-        Used in algorithm to determine next community to optimize.
+        Returns next candidate community depending on which process
+        the algorithm is currently running. Used in algorithm to determine
+        next community to optimize.
     */
 
     p_index i = -1;
-    float max = 0;
-    p_index x = 0;
 
-    for (Community c : state_communities) {
-        float stdev = get_standard_deviation_partisanship(c);
-        if (stdev > partisanship_tolerance && stdev > max) {
-            i = x;
-            max = stdev;
+    if (process = PARTISANSHIP) {
+        /*
+            Find community with standard deviation of partisanship
+            ratios that are most outside range of tolerance
+        */
+        float max = 0;
+        p_index x = 0;
+
+        for (Community c : state_communities) {
+            float stdev = get_standard_deviation_partisanship(c);
+            if (stdev > tolerance && stdev > max) {
+                i = x;
+                max = stdev;
+            }
+            x++;
         }
-        x++;
+    }
+    else if (process == COMPACTNESS) {
+
+    }
+    else if (process == POPULATION) {
+
     }
 
     return i;
 }
 
 void State::give_precinct(p_index precinct, p_index community, string t_type) {
+    /*
+        Performs a precinct transaction by giving `precinct` from `community` to
+        a possible other community (dependent on which function it's being used for).
+        This is the only way community borders can change.
+    */
+
     Precinct precinct_shape = this->state_communities[community].precincts[precinct];
     
     // get communities that border the current community
@@ -161,6 +184,13 @@ void State::give_precinct(p_index precinct, p_index community, string t_type) {
     chosen_c.add_precinct(precinct_shape);
     // remove precinct from previous community
     this->state_communities[community].precincts.erase(this->state_communities[community].precincts.begin() + precinct);
+
+    // update relevant borders after transactions
+    for (Community c : bordering_communities)
+        c.border = generate_exterior_border(c);
+    this->state_communities[community].border = generate_exterior_border(this->state_communities[community]);
+    
+    return;
 }
 
 void State::refine_partisan(float partisanship_tolerance) {
@@ -172,10 +202,9 @@ void State::refine_partisan(float partisanship_tolerance) {
         Loops through each community above the threshold, optimizes it
     */
     
-    p_index worst_community = get_partisanship_community(partisanship_tolerance);
+    p_index worst_community = get_next_community(partisanship_tolerance, PARTISANSHIP);
     bool is_done = (worst_community == -1);
     vector<int> num_changes(state_communities.size());
-    // fill(num_changes.begin(), num_changes.end(), 0);
 
     while (!is_done) {
         Community c = state_communities[worst_community];
@@ -192,18 +221,28 @@ void State::refine_partisan(float partisanship_tolerance) {
         }
 
         give_precinct(worst_precinct, worst_community, "partisan");
-        // UH OH UH OH
-        // THIS FUNCTION WILL ALWAYS CHANGE WHAT
-        // THE INDEXES OF PRECINCTS MEAN
-
         num_changes[worst_community] += 1; // update the changelist
         // update worst_community, check stop condition
-        worst_community = get_partisanship_community(partisanship_tolerance);
+        worst_community = get_next_community(partisanship_tolerance, PARTISANSHIP);
+        // if the community is within the tolerance, or if it has been modified too many times
         is_done = (worst_community == -1 || num_changes[worst_community] == MAX_ITERATIONS);
     }
 }
 
 void State::refine_population(float population_tolerance) {
+
+    p_index worst_community = get_next_community(population_tolerance, POPULATION);
+    bool is_done = (worst_community == -1);
+    vector<int> num_changes(state_communities.size());
+    
+    while (!is_done) {
+        Community c = state_communities[worst_community];
+
+        num_changes[worst_community] += 1; // update the changelist
+        // check stop condition, update current community
+        worst_community = get_next_community(population_tolerance, POPULATION);
+        is_done = (worst_community == -1 || num_changes[worst_community] == MAX_ITERATIONS);
+    }
 }
 
 int measure_difference(Communities communities, Communities new_communities) {

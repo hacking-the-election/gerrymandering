@@ -165,7 +165,7 @@ class Precinct_Group : public Shape {
     */
 
     public:
-        
+        Multi_Shape border;
         vector<Precinct> precincts;
         void add_precinct(Precinct pre) {precincts.push_back(pre);};
 
@@ -232,7 +232,7 @@ class State : public Precinct_Group {
 
         // for the iterative methods
         void refine_compactness(float compactness_tolerance);
-        p_index get_partisanship_community(float compactness_tolerance);
+        p_index get_next_community(float compactness_tolerance, int process);
         void refine_partisan(float partisanship_tolerance);
         void refine_population(float population_tolerance);
 
