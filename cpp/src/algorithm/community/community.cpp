@@ -33,7 +33,8 @@
 #include <numeric>   // for std::iota
 #include <algorithm> // sorting, seeking algorithms
 
-
+#define VERBOSE 1
+ 
 /*================================================
  Define constants to be used in the algorithm.    
  These will not be passed to the algorithm
@@ -94,9 +95,6 @@ void State::generate_initial_communities(int num_communities) {
     this->state_communities.push_back(community); // add last community
 }
 
-void State::refine_compactness(float compactness_tolerance) {
-}
-
 p_index State::get_next_community(float tolerance, int process) {
     /*
         Returns next candidate community depending on which process
@@ -124,7 +122,17 @@ p_index State::get_next_community(float tolerance, int process) {
         }
     }
     else if (process == COMPACTNESS) {
+        unit_interval min = 1;
+        p_index x = 0;
 
+        for (Community c : state_communities) {
+            unit_interval t_compactness = compactness(c);
+            if (t_compactness < min && t_compactness < tolerance) {
+                min = t_compactness;
+                i = x;
+            }
+            x++;
+        }
     }
     else if (process == POPULATION) {
         /*
@@ -207,6 +215,25 @@ void State::give_precinct(p_index precinct, p_index community, string t_type) {
     return;
 }
 
+void State::refine_compactness(float compactness_tolerance) {
+    /* 
+        Optimize the state's communities for population. Attempts
+        to minimize difference in population across the state
+        with a tolerance for acceptable +- percent difference
+    */
+    p_index worst_community = get_next_community(compactness_tolerance, COMPACTNESS);
+    bool is_done = (worst_community == -1);
+    vector<int> num_changes(state_communities.size());
+
+    while (!is_done) {
+        num_changes[worst_community] += 1; // update the changelist
+        // update worst_community, check stop condition
+        worst_community = get_next_community(compactness_tolerance, COMPACTNESS);
+        // if the community is within the tolerance, or if it has been modified too many times
+        is_done = (worst_community == -1 || num_changes[worst_community] == MAX_ITERATIONS);
+    }
+}
+
 void State::refine_partisan(float partisanship_tolerance) {
     /*
         A function to optimize the partisanship of a community -
@@ -260,7 +287,9 @@ void State::refine_population(float population_tolerance) {
     // begin main iterative loop
     while (!is_done) {
         Community c = state_communities[worst_community];
-        while (c.get_population() )
+        while (c.get_population() < ideal_range[0] || c.get_population() > ideal_range[1]) {
+            //!! Figure out which method we're using for precinct exchange
+        }
 
         // update the changelist
         num_changes[worst_community] += 1; 
@@ -285,7 +314,7 @@ int measure_difference(Communities communities, Communities new_communities) {
     for (int i = 0; i < communities.size(); i++) {
         // for each precinct in the community
         for (int x = 0; x < communities[i].precincts.size(); x++) {
-            // check for precinct in corrosponding new_community array
+            // check for precinct in corresponding new_community array
             Precinct old_p = communities[i].precincts[x];
             vector<Precinct> plist = new_communities[i].precincts;
             bool found = false;
@@ -346,12 +375,31 @@ void State::generate_communities(int num_communities, float compactness_toleranc
         cout << "On iteration " << i << endl;
         old_communities = this->state_communities;
 
+        #ifdef VERBOSE
+            cout << "refining compacntess..." << endl;
+        #endif
         refine_compactness(compactness_tolerance);
+        
+        #ifdef VERBOSE
+            cout << "refining partisanship..." << endl;
+        #endif
         refine_partisan(partisanship_tolerance);
+        
+        #ifdef VERBOSE
+            cout << "refining population..." << endl;
+        #endif
         refine_population(population_tolerance);
         
+        #ifdef VERBOSE
+            cout << "measuring precincts changed..." << endl;
+        #endif
+        
         changed_precincts = measure_difference(old_communities, this->state_communities);
-        cout << changed_precincts << " precincts changed" << endl;
+        
+        #ifdef VERBOSE
+            cout << changed_precincts << " precincts changed." << endl;
+        #endif
+        
         i++;
     }
 }
