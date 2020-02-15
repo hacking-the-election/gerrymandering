@@ -26,3 +26,13 @@ vector<int> Precinct::voter_data() {
     // get vector of voting data
     return {dem, rep};
 }
+
+int Precinct_Group::get_population() {
+    // Returns total population in a Precinct_Group
+
+    int total = 0;
+    for (Precinct p : precincts)
+        total += p.pop;
+
+    return total;
+}

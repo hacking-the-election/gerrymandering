@@ -177,6 +177,7 @@ class Precinct_Group : public Shape {
         void write_binary(string path);
         static Precinct_Group read_binary(string path);
 
+        int get_population();
         // for boost serialization
         friend class boost::serialization::access;
         template<class Archive> void serialize(Archive & ar, const unsigned int version);
@@ -238,6 +239,8 @@ class State : public Precinct_Group {
 
         // return precinct that can be added to the current precinct that won't create islands in the state
         p_index get_addable_precinct(p_index_set available_precincts, p_index current_precinct);
+        // write out communities at a certain point in time
+        void save_communities(string write_path);
 
         // name of state
         string name = "no_name";

@@ -6,12 +6,12 @@
  quantifying gerrymandering and redistricting. This
  algorithm is the main result of the project
  hacking-the-election, and detailed techincal
- documents can be found in the /docs/ root folder of
+ documents can be found in the /docs root folder of
  this repository.
 
  Visit https://hacking-the-election.github.io for
  more information on this project.
-
+ 
  Useful links for explanations, visualizations,
  results, and other information:
 
