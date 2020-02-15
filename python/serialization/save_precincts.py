@@ -33,6 +33,8 @@ import warnings
 
 import numpy as np
 
+from collections import Counter
+
 
 logging.basicConfig(level=logging.WARNING, filename="precincts.log")
 
@@ -173,14 +175,14 @@ class Precinct:
         is_population_data = False  # whether or not there is an
         # individual population file
         if population_file != 'none':
-
+            is_population_data = True
             with open(population_file, 'r') as f:
                 population_data = f.read().strip()
 
-            population_data_rows = [row.split('\t') for row in election_data.split('\n')]
+            population_data_rows = [row.split('\t') for row in population_data.split('\n')]
 
-            population_data_columns = [[data_rows[x][y] for x in range(len(data_rows))]
-                for y in range(len(data_rows[0]))]
+            population_data_columns = [[population_data_rows[x][y] for x in range(len(population_data_rows))]
+                for y in range(len(population_data_rows[0]))]
 
         # (this is a poorly named variable and feel free to change it)
         is_election_data = True  # whether or not there is an
@@ -225,26 +227,42 @@ class Precinct:
                 precinct_geo_ids.append(
                     tostring(precinct['properties'][json_id])[1:])
             else:
-                precinct_geo_ids.append(
-                    tostring(precinct['properties'][json_id]))
+                if len(json_id) > 1:
+                    precinct_id = ''
+                    for thing in json_id:
+                        precinct_id += precinct['properties'][thing]
+                    precinct_geo_ids.append(tostring(precinct_id))
+                else:
+                    precinct_geo_ids.append(
+                        tostring(precinct['properties'][json_id[0]]))
 
         dem_keys = STATE_METADATA[state]["dem_keys"]
         rep_keys = STATE_METADATA[state]["rep_keys"]
 
+        print(is_population_data)
+
         if is_population_data:
-            pop = {p["properties"][json_id][1:] if state == "colorado"
-                    else p["properties"][json_id]:
-                    convert_to_int(p["properties"][json_pop])
-                    for p in geo_data["features"]}
-        else:
             pop = {}
             # here is where the individual processes for each state
             # will go for linking ids to population
+            # Use population_data_columns
+
+            # note: with population_file, pop_key links to the key for population data. 
+            # the key for linking to geodata is what is in the conditionals below
             if state == 'maryland':
                 pass
+        
+        else:
+            pop = {p["properties"][json_id][1:] if state == "colorado"
+            else ' '.join([p['properties'][x] for x in json_id]) if len(json_id) > 1
+            else p["properties"][json_id[0]]:
+            convert_to_int(sum(num for num in p["properties"][json_pop])) if len(json_pop) > 1
+            else convert_to_int(p["properties"][json_pop][0])
+            for p in geo_data["features"]}
 
         # get election and geo data (separate processes for whether or
         # not there is an individual election data file)
+
         if is_election_data:
             # geodata and election data are in separate files
 
@@ -277,43 +295,45 @@ class Precinct:
                 for precinct in geo_data["features"]:
                     if state == "colorado":
                         geo_data_id = precinct["properties"][json_id][1:]
+                    elif len(json_id) == 1:
+                        geo_data_id = precinct["properties"][json_id[0]]
                     else:
-                        geo_data_id = precinct["properties"][json_id]
+                        geo_data_id = ' '.join([precinct["properties"][x] for x in json_id])
                     if tostring(geo_data_id) == str(precinct_id):
                         precinct_coords[precinct_id] = \
                             precinct['geometry']['coordinates']
 
-                # append precinct objects to precinct_list
-                for precinct_id in precinct_geo_ids:
-                    # if precinct id corresponds to any json obejcts
-                    if precinct_id in (
-                            precinct_ids_only := [precinct[0] for precinct
-                                                in precinct_ele_ids]):
+            # append precinct objects to precinct_list
+            for precinct_id in precinct_geo_ids:
+                # if precinct id corresponds to any json obejcts
+                if precinct_id in (
+                        precinct_ids_only := [precinct[0] for precinct
+                                            in precinct_ele_ids]):
 
-                        precinct_row = precinct_ele_ids[
-                            precinct_ids_only.index(precinct_id)][1]
+                    precinct_row = precinct_ele_ids[
+                        precinct_ids_only.index(precinct_id)][1]
 
-                        precinct_list.append(Precinct(
-                            to_numpy_array(precinct_coords[precinct_id]),
-                            state,
-                            precinct_id,
-                            pop[precinct_id],
-                            dem_cols[precinct_id],
-                            rep_cols[precinct_id]
-                        ))
-                    else:
-                        warnings.warn(
-                            f"Precinct from {state} with id {precinct_id} was " \
-                            + "not found in election data."
-                        )
-                        precinct_list.append(Precinct(
-                            to_numpy_array(precinct_coords[precinct_id]),
-                            state,
-                            precinct_id,
-                            pop[precinct_id],
-                            {"placeholder":-1},
-                            {"placeholder":-1}
-                        ))
+                    precinct_list.append(Precinct(
+                        to_numpy_array(precinct_coords[precinct_id]),
+                        state,
+                        precinct_id,
+                        pop[precinct_id],
+                        dem_cols[precinct_id],
+                        rep_cols[precinct_id]
+                    ))
+                else:
+                    warnings.warn(
+                        f"Precinct from {state} with id {precinct_id} was " \
+                        + "not found in election data."
+                    )
+                    precinct_list.append(Precinct(
+                        to_numpy_array(precinct_coords[precinct_id]),
+                        state,
+                        precinct_id,
+                        pop[precinct_id],
+                        {"placeholder":-1},
+                        {"placeholder":-1}
+                    ))
 
         else:
             # there is only a json file - no election data
@@ -322,13 +342,17 @@ class Precinct:
             rep_cols = {}
             precinct_coords = {}
             for precinct in geo_data['features']:
-                dem_cols[precinct['properties'][json_id]] = \
+                if len(json_id) > 1:
+                    precinct_id = ' '.join([precinct['properties'][x] for x in json_id])
+                else:
+                    precinct_id = precinct['properties'][json_id[0]]
+                dem_cols[precinct_id] = \
                     {key: convert_to_int(precinct['properties'][key])
                      for key in dem_keys}
-                rep_cols[precinct['properties'][json_id]] = \
+                rep_cols[precinct_id] = \
                     {key: convert_to_int(precinct['properties'][key])
                      for key in rep_keys}
-                precinct_coords[precinct['properties'][json_id]] = \
+                precinct_coords[precinct_id] = \
                     precinct['geometry']['coordinates']
 
             for precinct_id in precinct_coords.keys():
