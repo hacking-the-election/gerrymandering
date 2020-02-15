@@ -84,13 +84,13 @@ class Shape {
         string shape_id;
 
         // gui methods
-        void draw(); // prints to an SDL window
+        virtual void draw(); // prints to an SDL window
 
         // calculation methods
-        float area();
-        float perimeter();
-        coordinate center();
-        segments get_segments();
+        virtual float area();
+        virtual float perimeter();
+        virtual coordinate center();
+        virtual segments get_segments();
 
         //! beware of the following line, could cause problems for serialization
         friend bool operator== (Shape& p1, Shape& p2) {
@@ -159,11 +159,20 @@ class Multi_Shape : public Shape {
             for (Precinct p : s)
                 border.push_back(Shape(p.border));
         }
-    // for boost serialization
-    friend class boost::serialization::access;
-    template<class Archive> void serialize(Archive & ar, const unsigned int version);
+        // for boost serialization
+        friend class boost::serialization::access;
+        template<class Archive> void serialize(Archive & ar, const unsigned int version);
 
-    vector<Shape> border;
+        vector<Shape> border;
+
+        // gui methods
+        virtual void draw(); // prints to an SDL window
+
+        // calculation methods
+        float area();
+        float perimeter();
+        coordinate center();
+        segments get_segments();
 };
 
 class Precinct_Group : public Multi_Shape {
@@ -253,6 +262,7 @@ class State : public Precinct_Group {
         // write out communities at a certain point in time
         void save_communities(string write_path);
 
+        void draw();
         // name of state
         string name = "no_name";
 
@@ -260,6 +270,4 @@ class State : public Precinct_Group {
         vector<Shape> state_districts;
         vector<Precinct> state_precincts;
         Communities state_communities;
-
-        void draw();
 };

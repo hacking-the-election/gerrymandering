@@ -341,6 +341,7 @@ State State::generate_from_file(string precinct_geoJSON, string voter_data, stri
     // generate state data from files
     if (VERBOSE) cout << "generating state with shape arrays..." << endl;
     State state = State(district_shapes, precincts, state_shape_v);
-
+    state.draw();
+    
     return state; // return the state object
 }
