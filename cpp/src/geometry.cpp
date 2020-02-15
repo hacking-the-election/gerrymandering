@@ -276,12 +276,12 @@ Multi_Shape generate_exterior_border(Precinct_Group precinct_group) {
         Equivalent to 'dissolve' in mapshaper - remove bordering edges
     */
 
-	Paths subj(precinct_group.precincts.size());
+	Paths subj;
 
-    for (int i = 0; i < precinct_group.precincts.size(); i++)
-        subj[i] = shape_to_clipper_int(precinct_group.precincts[i]);
+    for (int i = 0; i < precinct_group.precincts.size() - 1; i++)
+        subj.push_back(shape_to_clipper_int(precinct_group.precincts[i]));
 
-    Paths clip(0);
+    Paths clip = {shape_to_clipper_int(precinct_group.precincts[precinct_group.precincts.size() - 1])};
     Paths solutions;
 
     Clipper c;
@@ -361,7 +361,7 @@ Multi_Shape clipper_mult_int_to_shape(Paths paths) {
         }
 
         Shape s(border);
-        ms.shapes.push_back(s);
+        ms.border.push_back(s);
     }
 
     return ms;

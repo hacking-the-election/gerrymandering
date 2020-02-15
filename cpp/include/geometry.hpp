@@ -6,6 +6,8 @@
  manipulations and searching algorithms.
 ========================================*/
 
+#pragma once // avoid multiple includes
+
 #include <math.h>  // for rounding functions
 #include <cmath>
 #include "../lib/clipper/clipper.hpp"

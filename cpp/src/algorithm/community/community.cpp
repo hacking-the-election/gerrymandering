@@ -30,7 +30,7 @@
 #include "../../../include/geometry.hpp" // geometry modification, border functions
 
 #include <math.h>    // for rounding functions
-#include <numeric>   // for std::iota
+#include <numeric>   // include std::iota
 #include <algorithm> // sorting, seeking algorithms
 
 #define VERBOSE 1
@@ -104,7 +104,7 @@ p_index State::get_next_community(float tolerance, int process) {
 
     p_index i = -1;
 
-    if (process = PARTISANSHIP) {
+    if (process == PARTISANSHIP) {
         /*
             Find community with standard deviation of partisanship
             ratios that are most outside range of tolerance
@@ -209,8 +209,9 @@ void State::give_precinct(p_index precinct, p_index community, string t_type) {
 
     // update relevant borders after transactions
     for (Community c : bordering_communities)
-        c.border = generate_exterior_border(c);
-    this->state_communities[community].border = generate_exterior_border(this->state_communities[community]);
+        c.border = generate_exterior_border(c).border;
+
+    this->state_communities[community].border = generate_exterior_border(this->state_communities[community]).border;
     
     return;
 }

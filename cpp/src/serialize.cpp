@@ -18,7 +18,7 @@ string State::to_json() {
     */
    
     // begin json string
-    // string str = "{" + N; 
+    string str = "{" + N; 
 
     // str += T + OQ + "state" + CQC + "{" + N
     //     + TAB(2) + OQ + "name" + CQC + OQ + name + CQ + C + N
@@ -94,7 +94,7 @@ string State::to_json() {
 
     // str += T + "}" + N; // close state
     // str += "}" + N; // close json
-    // return str;
+    return str;
 }
 
 
@@ -144,6 +144,12 @@ template<class Archive> void State::serialize(Archive & ar, const unsigned int v
     ar & state_precincts;
     ar & name;
     ar & border;
+    ar & pop;
+}
+
+template<class Archive> void Multi_Shape::serialize(Archive & ar, const unsigned int version) {
+    ar & border;
+    ar & shape_id;
     ar & pop;
 }
 
