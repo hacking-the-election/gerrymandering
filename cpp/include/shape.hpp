@@ -109,23 +109,6 @@ class Shape {
         int pop = 0; // total population
 };
 
-class Multi_Shape {
-    /*
-        A class containing a vector of shapes
-    */
-
-    public: 
-
-        Multi_Shape(){}; // default constructor
-
-        Multi_Shape(vector<Shape> s) {
-            // constructor with assignment
-            shapes = s;
-        }
-
-    vector<Shape> shapes;
-};
-
 class Precinct : public Shape {
 
     // Derived shape class for defining a precinct
@@ -157,7 +140,33 @@ class Precinct : public Shape {
         int rep; // republican vote total
 };
 
-class Precinct_Group : public Shape {
+class Multi_Shape : public Shape {
+    /*
+        A class containing a vector of shapes
+    */
+
+    public: 
+
+        Multi_Shape(){}; // default constructor
+
+        Multi_Shape(vector<Shape> s) {
+            // constructor with assignment
+            border = s;
+        }
+        
+        Multi_Shape(vector<Precinct> s) {
+            // constructor with assignment
+            for (Precinct p : s)
+                border.push_back(Shape(p.border));
+        }
+    // for boost serialization
+    friend class boost::serialization::access;
+    template<class Archive> void serialize(Archive & ar, const unsigned int version);
+
+    vector<Shape> border;
+};
+
+class Precinct_Group : public Multi_Shape {
 
     /* 
         Derived class for defining a district
@@ -165,14 +174,16 @@ class Precinct_Group : public Shape {
     */
 
     public:
-        Multi_Shape border;
         vector<Precinct> precincts;
         void add_precinct(Precinct pre) {precincts.push_back(pre);};
 
         Precinct_Group(){}; // default constructor
-        Precinct_Group(coordinate_set shape)
-            : Shape(shape) {}; // call the superclass constructor
+        Precinct_Group(vector<Shape> shapes)
+            : Multi_Shape(shapes) {}; // call the superclass constructor
         
+        Precinct_Group(vector<Precinct> shapes)
+            : Multi_Shape(shapes) {}; // call the superclass constructor
+
         // serialize and read to and from binary
         void write_binary(string path);
         static Precinct_Group read_binary(string path);
@@ -206,7 +217,7 @@ class State : public Precinct_Group {
 
         State(){}; // default constructor
 
-        State(vector<Precinct_Group> districts, vector<Precinct> precincts, coordinate_set shape) : Precinct_Group(shape) {
+        State(vector<Shape> districts, vector<Precinct> precincts, vector<Shape> shapes) : Precinct_Group(shapes) {
             // simple assignment constructor
             state_districts = districts;
             state_precincts = precincts;
@@ -246,7 +257,7 @@ class State : public Precinct_Group {
         string name = "no_name";
 
         // arrays of shapes in state
-        vector<Precinct_Group> state_districts;
+        vector<Shape> state_districts;
         vector<Precinct> state_precincts;
         Communities state_communities;
 
