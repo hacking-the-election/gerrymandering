@@ -141,7 +141,7 @@ Precinct_Group Precinct_Group::read_binary(string path) {
 template<class Archive> void State::serialize(Archive & ar, const unsigned int version) {
     // write districts, precincts, name, and border
     ar & state_districts;
-    ar & state_precincts;
+    ar & precincts;
     ar & name;
     ar & border;
     ar & pop;

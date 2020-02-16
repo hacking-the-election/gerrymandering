@@ -220,10 +220,10 @@ class State : public Precinct_Group {
 
         State(){}; // default constructor
 
-        State(vector<Shape> districts, vector<Precinct> precincts, vector<Shape> shapes) : Precinct_Group(shapes) {
+        State(vector<Shape> districts, vector<Precinct> state_precincts, vector<Shape> shapes) : Precinct_Group(shapes) {
             // simple assignment constructor
             state_districts = districts;
-            state_precincts = precincts;
+            precincts = state_precincts;
         };
 
         // generate a file from proper raw input
@@ -255,12 +255,11 @@ class State : public Precinct_Group {
         p_index get_addable_precinct(p_index_set available_precincts, p_index current_precinct);
         // write out communities at a certain point in time
         void save_communities(string write_path);
-
+        virtual void draw();
         // name of state
         string name = "no_name";
 
         // arrays of shapes in state
         vector<Shape> state_districts;
-        vector<Precinct> state_precincts;
         Communities state_communities;
 };

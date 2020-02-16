@@ -104,8 +104,14 @@ map<string, vector<int> > parse_voter_data(string voter_data) {
 
     // iterate over each precinct
     for (int x = 1; x < data_list.size(); x++) {
-        string id = split(data_list[x][precinct_id_col], "\"")[1]; // remove quotes
-        // string id = data_list[x][precinct_id_col];
+        string id;
+
+        // remove quotes from string
+        if (data_list[x][precinct_id_col].substr(0, 1) == "\"")
+            id = split(data_list[x][precinct_id_col], "\"")[1];
+        else
+            id = data_list[x][precinct_id_col];
+                
         int demT = 0, repT = 0;
 
         // get the right voter columns, add to party total
@@ -113,7 +119,7 @@ map<string, vector<int> > parse_voter_data(string voter_data) {
             string d = data_list[x][d_index[i]];
             string r = data_list[x][r_index[i]];
 
-            if (is_number(d))
+            if (is_number(d)) 
                 demT += stoi(d);
             if (is_number(r))
                 repT += stoi(r);
@@ -146,7 +152,7 @@ vector<vector<float> > string_to_vector(string str) {
     return v;
 }
 
-vector<Shape> parse_coordinates(string geoJSON) {
+vector<Shape> parse_coordinates(string geoJSON, bool parsing_precincts) {
 
     // parses a geoJSON state into an array of shapes
 
@@ -165,7 +171,7 @@ vector<Shape> parse_coordinates(string geoJSON) {
             id = shapes["features"][i]["properties"][geodata_id.c_str()].GetString();
             // id = id.substr(1, id.size());
         }
-        else {
+        else if (parsing_precincts) {
             cout << "If this is parsing precincts, you have no precinct id." << endl;
             cout << "If future k-vernooy runs into this error, it means that GEOID10 in your geoJSON in your voter data is missing. To fix... maybe try a loose comparison of the names?" << endl;
         }
@@ -177,7 +183,7 @@ vector<Shape> parse_coordinates(string geoJSON) {
             //     pop = stoi(tmp);
             // }
         }
-        else
+        else if (parsing_precincts)
             cout << "\e[31merror: \e[0mNo population data" << endl;
         
         // create empty string buffer
@@ -318,10 +324,10 @@ State State::generate_from_file(string precinct_geoJSON, string voter_data, stri
 
     // generate shapes from coordinates
     if (VERBOSE) cout << "generating coordinate array from precinct file..." << endl;
-    vector<Shape> precinct_shapes = parse_coordinates(precinct_geoJSON);
+    vector<Shape> precinct_shapes = parse_coordinates(precinct_geoJSON, true);
 
     if (VERBOSE) cout << "generating coordinate array from district file..." << endl;
-    vector<Shape> district_shapes = parse_coordinates(district_geoJSON);
+    vector<Shape> district_shapes = parse_coordinates(district_geoJSON, false);
     
     // create a vector of precinct objects from border and voter data
     if (VERBOSE) cout << "parsing voter data from tsv..." << endl;
@@ -341,5 +347,6 @@ State State::generate_from_file(string precinct_geoJSON, string voter_data, stri
     // generate state data from files
     if (VERBOSE) cout << "generating state with shape arrays..." << endl;
     State state = State(district_shapes, precincts, state_shape_v);
+    state.draw();
     return state; // return the state object
 }

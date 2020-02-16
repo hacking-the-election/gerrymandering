@@ -9,6 +9,7 @@ V = 11
 CLIPPER = lib/clipper/clipper.cpp
 
 all: community
+#all: state_serializer
 
 state_serializer:
 	@echo "compiling state serializer..."

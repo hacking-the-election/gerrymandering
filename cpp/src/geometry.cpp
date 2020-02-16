@@ -278,16 +278,13 @@ Multi_Shape generate_exterior_border(Precinct_Group precinct_group) {
 
 	Paths subj;
 
-    for (int i = 0; i < precinct_group.precincts.size() - 1; i++)
+    for (int i = 0; i < precinct_group.precincts.size(); i++)
         subj.push_back(shape_to_clipper_int(precinct_group.precincts[i]));
 
-    Paths clip = {shape_to_clipper_int(precinct_group.precincts[precinct_group.precincts.size() - 1])};
     Paths solutions;
-
     Clipper c;
 	c.AddPaths(subj, ptSubject, true);
-	c.AddPaths(clip, ptClip, true);
-	c.Execute(ctUnion, solutions, pftNonZero, pftNonZero);
+	c.Execute(ctUnion, solutions, pftNonZero);
 
     return clipper_mult_int_to_shape(solutions);
 }

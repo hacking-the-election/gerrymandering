@@ -26,12 +26,11 @@ int main(int argc, char* argv[]) {
     // read binary file from path
     string read_path = string(argv[1]);
     State state = State::read_binary(read_path);
-    state.precincts = state.state_precincts;
     // define rectangle shapes
-
+    // state.draw();
     cout << "generating exterior border" << endl;
     Multi_Shape border = generate_exterior_border(state);
-    cout << border.border.size() << endl;
+    // cout << border.border.size() << endl;
     border.draw();
 
     // int districts_in_state = state.state_districts.size();

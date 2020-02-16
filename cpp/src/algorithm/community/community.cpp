@@ -56,7 +56,7 @@ void State::generate_initial_communities(int num_communities) {
         Returns config as a Precinct Group object.
     */
 
-    int num_precincts = state_precincts.size();
+    int num_precincts = precincts.size();
     // determine amount of precincts to be added to each community
     vector<int> sizes;
     int base = floor(num_precincts / num_communities); // the base num
@@ -78,7 +78,7 @@ void State::generate_initial_communities(int num_communities) {
 
         for (int x = 0; x < sizes[index] - 1; x++) {
             p = get_addable_precinct(available_pre, p);
-            community.add_precinct(this->state_precincts[p]);
+            community.add_precinct(this->precincts[p]);
             available_pre.erase(remove(available_pre.begin(), available_pre.end(), p), available_pre.end());
         }
 
@@ -89,7 +89,7 @@ void State::generate_initial_communities(int num_communities) {
     // add the last community that has no precincts yet
     Community community;
     for (p_index precinct : available_pre) {
-        community.add_precinct(this->state_precincts[precinct]);
+        community.add_precinct(this->precincts[precinct]);
     }
     
     this->state_communities.push_back(community); // add last community
