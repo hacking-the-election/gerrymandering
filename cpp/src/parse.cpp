@@ -16,11 +16,12 @@
 #define VERBOSE 1  // print progress messages
 
 // constant id strings
-const string election_id_header = "vtd_key";
+//ndv	nrv	geoid10	GEOID10	POP100
+const string election_id_header = "geoid10";
 const vector<string> d_head = {"ndv"};
 const vector<string> r_head = {"nrv"};
-const string geodata_id = "VTD_KEY";
-const string population_id = "PL10AA_TOT";
+const string geodata_id = "GEOID10";
+const string population_id = "POP100";
 
 
 vector<vector<string> > parse_sv(string tsv, string delimiter) {
@@ -76,7 +77,6 @@ map<string, vector<int> > parse_voter_data(string voter_data) {
         = parse_sv(voter_data, "\t"); // array of voter data
 
     int precinct_id_col = -1; // the column index that holds precinct id's
-    cout << "a" << endl;
     // indices of usable data
     vector<int> d_index;
     vector<int> r_index;
@@ -104,8 +104,8 @@ map<string, vector<int> > parse_voter_data(string voter_data) {
 
     // iterate over each precinct
     for (int x = 1; x < data_list.size(); x++) {
-        // string id = split(data_list[x][precinct_id_col], "\"")[1]; // remove quotes
-        string id = data_list[x][precinct_id_col];
+        string id = split(data_list[x][precinct_id_col], "\"")[1]; // remove quotes
+        // string id = data_list[x][precinct_id_col];
         int demT = 0, repT = 0;
 
         // get the right voter columns, add to party total
@@ -330,18 +330,16 @@ State State::generate_from_file(string precinct_geoJSON, string voter_data, stri
     if (VERBOSE) cout << "merging parsed geodata with parsed voter data into precinct array..." << endl;
     vector<Precinct> precincts = merge_data(precinct_shapes, precinct_voter_data);
     Precinct_Group pre_group(precincts);
+    // Multi_Shape state_shape = generate_exterior_border(pre_group);
 
-    // a dummy state shape
-    Multi_Shape state_shape = generate_exterior_border(pre_group);
-    vector<Shape> state_shape_v;
-    for (Shape s : state_shape.border) {
-        state_shape_v.push_back(s);
-    }
+    vector<Shape> state_shape_v; // dummy exterior border
+    
+    // for (Shape s : state_shape.border) {
+    //     state_shape_v.push_back(s);
+    // }
 
     // generate state data from files
     if (VERBOSE) cout << "generating state with shape arrays..." << endl;
     State state = State(district_shapes, precincts, state_shape_v);
-    state.draw();
-    
     return state; // return the state object
 }

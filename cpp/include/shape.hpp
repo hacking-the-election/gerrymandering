@@ -167,12 +167,6 @@ class Multi_Shape : public Shape {
 
         // gui methods
         virtual void draw(); // prints to an SDL window
-
-        // calculation methods
-        float area();
-        float perimeter();
-        coordinate center();
-        segments get_segments();
 };
 
 class Precinct_Group : public Multi_Shape {
@@ -262,7 +256,6 @@ class State : public Precinct_Group {
         // write out communities at a certain point in time
         void save_communities(string write_path);
 
-        void draw();
         // name of state
         string name = "no_name";
 

@@ -27,14 +27,14 @@ int main(int argc, char* argv[]) {
     string read_path = string(argv[1]);
     State state = State::read_binary(read_path);
     state.precincts = state.state_precincts;
+    // define rectangle shapes
 
     cout << "generating exterior border" << endl;
-    for (Shape s : generate_exterior_border(state).border) {
-        s.draw();
-    }
+    Multi_Shape border = generate_exterior_border(state);
+    cout << border.border.size() << endl;
+    border.draw();
 
-
-    int districts_in_state = state.state_districts.size();
+    // int districts_in_state = state.state_districts.size();
     // vector<Precinct_Group> political_communities = state.generate_communities(districts_in_state, 0.5, 0.2, 0.15);
     
     // write as binary
