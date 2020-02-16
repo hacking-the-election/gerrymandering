@@ -16,12 +16,12 @@
 #define VERBOSE 1  // print progress messages
 
 // constant id strings
-//ndv	nrv	geoid10	GEOID10	POP100
+//ndv_08	nrv_08	geoid10	GEOID10	VAP
 const string election_id_header = "geoid10";
-const vector<string> d_head = {"ndv"};
-const vector<string> r_head = {"nrv"};
+const vector<string> d_head = {"ndv_08"};
+const vector<string> r_head = {"nrv_08"};
 const string geodata_id = "GEOID10";
-const string population_id = "POP100";
+const string population_id = "VAP";
 
 
 vector<vector<string> > parse_sv(string tsv, string delimiter) {

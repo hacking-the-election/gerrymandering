@@ -278,15 +278,17 @@ Multi_Shape generate_exterior_border(Precinct_Group precinct_group) {
 
 	Paths subj;
 
-    for (int i = 0; i < precinct_group.precincts.size(); i++)
-        subj.push_back(shape_to_clipper_int(precinct_group.precincts[i]));
-
-    Paths solutions;
+    for (Precinct p : precinct_group.precincts)
+        subj.push_back(shape_to_clipper_int(p));
+    // Paths solutions
+    PolyTree solutions;
     Clipper c;
-	c.AddPaths(subj, ptSubject, true);
-	c.Execute(ctUnion, solutions, pftNonZero);
+	
+    c.AddPaths(subj, ptSubject, false);
+    c.Execute(ctUnion, solutions, pftNonZero);
 
-    return clipper_mult_int_to_shape(solutions);
+    return poly_tree_to_shape(solutions);
+    // return clipper_mult_int_to_shape(solutions);
 }
 
 p_index State::get_addable_precinct(p_index_set available_precincts, p_index current_precinct) {
@@ -331,6 +333,28 @@ Shape clipper_int_to_shape(Path path) {
     return s;
 }
 
+Multi_Shape poly_tree_to_shape(PolyTree tree) {
+    /*
+        Loops through top-level children of a
+        PolyTree to access outer-level polygons. Returns
+        a multi_shape object containing these outer polys.
+    */
+   
+    Multi_Shape ms;
+
+    int x = 0;
+    cout << tree.ChildCount() << endl;
+    for (PolyNode* polynode : tree.Childs) {
+        // cout << "polynode" << endl;
+        if (polynode->IsHole()) x++;
+        Shape s = clipper_int_to_shape(polynode->Contour);
+        ms.border.push_back(s);
+    }
+    cout << x << endl;
+    cout << "Finished" << endl;
+    return ms;
+}
+
 Multi_Shape clipper_mult_int_to_shape(Paths paths) {
     /*
         Create a Multi_Shape object from a clipper Paths
@@ -341,7 +365,7 @@ Multi_Shape clipper_mult_int_to_shape(Paths paths) {
     // WHY IS CLIPPER RETURNING SO MANY POLYS?
 
     Multi_Shape ms;
-
+    
     for (Path p : paths) {
         coordinate_set border;
 

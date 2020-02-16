@@ -11,6 +11,7 @@
 #include "../../../include/util.hpp"
 #include "../../../include/geometry.hpp"
 
+
 int main(int argc, char* argv[]) {
     
     /*
@@ -28,7 +29,6 @@ int main(int argc, char* argv[]) {
     State state = State::read_binary(read_path);
     // define rectangle shapes
     // state.draw();
-    cout << "generating exterior border" << endl;
     Multi_Shape border = generate_exterior_border(state);
     // cout << border.border.size() << endl;
     border.draw();
