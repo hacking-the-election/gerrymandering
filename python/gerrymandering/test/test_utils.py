@@ -5,6 +5,7 @@ Unit tests for utils.py
 import sys
 from os.path import abspath, dirname
 import unittest
+import time
 
 import numpy as np
 
@@ -16,6 +17,14 @@ from serialization.save_precincts import Precinct
 from gerrymandering.utils import get_equation, get_segments, get_border
 
 
+def timed(func, *args, **kwargs):
+    def timed_func(*args, **kwargs):
+        start_time = time.time()
+        func(*args, **kwargs)
+        print(f"{func.__name__} took {time.time() - start_time} seconds")
+    return timed_func
+
+
 class TestUtils(unittest.TestCase):
 
     def __init__(self, *args, **kwargs):
@@ -23,7 +32,6 @@ class TestUtils(unittest.TestCase):
         unittest.TestCase.__init__(self, *args, **kwargs)
 
         self.vermont = load(dirname(__file__) + "/vermont.pickle")
-        # self.vermont = load("/Users/Mukeshkhare/Desktop/GCRSEF2020/data/bin/python/alabama.pickle")
 
     def test_get_equation(self):
         
@@ -50,17 +58,10 @@ class TestUtils(unittest.TestCase):
         # with self.assertRaises(ValueError):
         #     pass
 
-
+    @timed
     def test_get_border(self):
-        # convert_to_json(get_border([p.coords for p in self.vermont[0]]), "test_vermont.json")
-        # shapes_1 = [[[0, 0], [0, 5], [2, 4], [3, 2]], [[2.5, 3], [3.5, 1], [6, 6], [6, 0]]]
 
-        convert_to_json(get_border([p.coords for p in self.vermont[0]]), "test_vermont_border.json")
-        # print(get_border([p.coords for p in self.vermont[0][:2]]))
-
-        # convert_to_json([p.coords for p in self.vermont[0][:2]], "test_get_border.json")
-
-        # print(get_border(shapes_1))
+        convert_to_json(get_border([p.coords for p in self.vermont[0]]), "test_get_border.json")
 
     def test_get_schwartsberg_compactness(self):
         pass

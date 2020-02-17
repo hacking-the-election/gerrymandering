@@ -109,6 +109,8 @@ def get_border(shapes):
                 polygon_list.append(Polygon([tuple(coord) for coord in polygon]))
             except ValueError:
                 polygon_list.append(Polygon([tuple(coord) for coord in polygon[0]]))
+            except AssertionError as ae:
+                polygon_list.append(Polygon([tuple(coord) for coord in polygon[0]]))
         polygons.append(polygon_list)
         
     multipolygons = []
