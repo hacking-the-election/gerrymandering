@@ -26,6 +26,8 @@
 using namespace std;
 using namespace rapidjson;
 
+// =================================================================
+
 /*
     structure of class definitions:
     - Base shape class - contains border + id
@@ -33,6 +35,12 @@ using namespace rapidjson;
         - Derived district class
         - Derived state class - has array of precincts + districts
 */
+
+class Shape;
+class Multi_Shape;
+class Precinct;
+class Precinct_Group;
+class State;
 
 // simplify the coordinate modification system
 typedef vector<float> coordinate;
@@ -107,6 +115,7 @@ class Shape {
         template<class Archive> void serialize(Archive & ar, const unsigned int version);
 
         int pop = 0; // total population
+        bool is_part_of_multi_polygon = false; // for parsing rules
 };
 
 class Precinct : public Shape {
@@ -117,13 +126,13 @@ class Precinct : public Shape {
 
         Precinct(){}; // default constructor
 
-        Precinct(coordinate_set shape, int demV, int repV) : Shape(shape) {
+        Precinct(coordinate_set shapes, int demV, int repV) : Shape(shapes) {
             // assigning vote data
             dem = demV;
             rep = repV;
         }
 
-        Precinct(coordinate_set shape, int demV, int repV, string id) : Shape(shape, id) {
+        Precinct(coordinate_set shapes, int demV, int repV, string id) : Shape(shapes, id) {
             // overloaded constructor for adding shape id
             dem = demV;
             rep = repV;
@@ -154,10 +163,17 @@ class Multi_Shape : public Shape {
             border = s;
         }
         
+        Multi_Shape(vector<Shape> s, string t_id) {
+            // constructor with assignment
+            border = s;
+            shape_id = t_id;
+        }
+
         Multi_Shape(vector<Precinct> s) {
             // constructor with assignment
-            for (Precinct p : s)
+            for (Precinct p : s) {
                 border.push_back(Shape(p.border));
+            }
         }
         // for boost serialization
         friend class boost::serialization::access;
@@ -220,7 +236,7 @@ class State : public Precinct_Group {
 
         State(){}; // default constructor
 
-        State(vector<Shape> districts, vector<Precinct> state_precincts, vector<Shape> shapes) : Precinct_Group(shapes) {
+        State(vector<Multi_Shape> districts, vector<Precinct> state_precincts, vector<Shape> shapes) : Precinct_Group(shapes) {
             // simple assignment constructor
             state_districts = districts;
             precincts = state_precincts;
@@ -260,6 +276,6 @@ class State : public Precinct_Group {
         string name = "no_name";
 
         // arrays of shapes in state
-        vector<Shape> state_districts;
+        vector<Multi_Shape> state_districts;
         Communities state_communities;
 };

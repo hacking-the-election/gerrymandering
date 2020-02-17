@@ -1,7 +1,6 @@
 /*=======================================
  geometry.hpp                   k-vernooy
  last modified:               Mon, Feb 10
-
  Declarations of functions for geometrical
  manipulations and searching algorithms.
 ========================================*/
@@ -16,8 +15,8 @@
 
 #include "shape.hpp"
 #include "../lib/clipper/clipper.hpp"
-#include "../lib/clipper/gpc.h"
 
+using namespace ClipperLib;
 using namespace std;
 
 // coordinate manipulation for gui draw methods
@@ -37,10 +36,11 @@ p_index_set get_bordering_shapes(vector<Precinct_Group> shapes, Shape shape);
 
 unit_interval compactness(Shape shape);
 
-gpc_vertex_list shape_to_vertex_list(Shape shape);
-Shape vertex_list_to_shape(gpc_vertex_list v);
-gpc_polygon shape_to_poly(Multi_Shape shape);
-Multi_Shape poly_to_shape(gpc_polygon poly);
+Path shape_to_path(Shape shape);
+Shape path_to_shape(Path path);
+Paths multi_shape_to_paths(Multi_Shape ms);
+Multi_Shape paths_to_shape(Paths paths);
+Multi_Shape poly_tree_to_shape(PolyTree tree);
 
 // for algorithm helper methods
 float get_standard_deviation_partisanship(Precinct_Group pg);
