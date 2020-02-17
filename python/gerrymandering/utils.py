@@ -16,9 +16,6 @@ import numpy as np
 from shapely.ops import unary_union
 from shapely.geometry import MultiPolygon, Polygon
 
-import logging
-logging.basicConfig(level=logging.INFO, filename="precincts.log")
-
 # ===================================================
 # general geometry functions
 
@@ -102,35 +99,71 @@ def get_border(shapes):
     Returns array of vertices
     """
 
+    # find union of shapes
+
     polygons = []
     for multipolygon in shapes:
         polygon_list = []
         for polygon in multipolygon:
             try:
                 polygon_list.append(Polygon([tuple(coord) for coord in polygon]))
-            except ValueError as ve:
-                logging.info(polygon)
-                raise ve
+            except ValueError:
+                polygon_list.append(Polygon([tuple(coord) for coord in polygon[0]]))
         polygons.append(polygon_list)
         
     multipolygons = []
     for shape in polygons:
-        try:
-            multipolygons.append(MultiPolygon(shape))
-        except ValueError as ve:
-            logging.info(shape)
-            raise ve
-
-    # border = []
-    # for multipolygon in multipolygons:
-    #     border.append([list(p.exterior.coords) for p in multipolygon.geoms])
+        multipolygons.append(MultiPolygon(shape))
 
     union = unary_union(multipolygons)
-    # border = [[list(coord) for coord in polygon.exterior.coords]
-    #           for polygon in union.geoms]
-    border = [[list(coord) for coord in union.exterior.coords]]
 
-    return border
+    # display with matplotlib
+
+    # from matplotlib import pyplot
+    # from descartes import PolygonPatch
+
+    # SIZE = (8.0, 8.0*(math.sqrt(5)-1.0/2.0))
+
+    # fig = pyplot.figure(1, figsize=SIZE, dpi=90)
+    # ax = fig.add_subplot(121)
+    # for ob in multipolygons:
+    #     p = PolygonPatch(ob, alpha=0.5, zorder=1)
+    #     ax.add_patch(p)
+
+    # og_xs = []
+    # og_ys = []
+    # for multipolygon in multipolygons:
+    #     for polygon in multipolygon.geoms:
+    #         for coord in list(polygon.exterior.coords):
+    #             og_xs.append(coord[0])
+    #             og_ys.append(coord[1])
+
+    # ax1 = fig.add_subplot(122)
+    # patch2b = PolygonPatch(union, alpha=0.5, zorder=2)
+    # ax1.add_patch(patch2b)
+
+    # border = [[list(coord) for coord in union.exterior.coords]]
+    # border_xs = [coord[0] for coord in border[0]]
+    # border_ys = [coord[1] for coord in border[0]]
+
+    # ax.set_autoscaley_on(False)
+    # ax.set_autoscalex_on(False)
+    # ax.set_ylim([min(og_ys), max(og_ys)])
+    # ax.set_xlim([min(og_xs), max(og_xs)])
+
+    # ax1.set_autoscaley_on(False)
+    # ax1.set_autoscalex_on(False)
+    # ax1.set_ylim([min(border_ys), max(border_ys)])
+    # ax1.set_xlim([min(border_xs), max(border_xs)])
+
+    # pyplot.show()
+
+    real_border = np.concatenate([
+        np.concatenate([np.asarray(t.exterior)[:, :2]] +
+                    [np.asarray(r)[:, :2] for r in t.interiors])
+        for t in [union]])
+
+    return [[real_border.tolist()]]
 
 
 def get_point_in_polygon(point, shape):

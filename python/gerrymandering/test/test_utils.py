@@ -23,6 +23,7 @@ class TestUtils(unittest.TestCase):
         unittest.TestCase.__init__(self, *args, **kwargs)
 
         self.vermont = load(dirname(__file__) + "/vermont.pickle")
+        # self.vermont = load("/Users/Mukeshkhare/Desktop/GCRSEF2020/data/bin/python/alabama.pickle")
 
     def test_get_equation(self):
         
@@ -54,7 +55,8 @@ class TestUtils(unittest.TestCase):
         # convert_to_json(get_border([p.coords for p in self.vermont[0]]), "test_vermont.json")
         # shapes_1 = [[[0, 0], [0, 5], [2, 4], [3, 2]], [[2.5, 3], [3.5, 1], [6, 6], [6, 0]]]
 
-        convert_to_json(get_border([p.coords for p in self.vermont[0][:2]]), "test_vermont.json")
+        convert_to_json(get_border([p.coords for p in self.vermont[0]]), "test_vermont_border.json")
+        # print(get_border([p.coords for p in self.vermont[0][:2]]))
 
         # convert_to_json([p.coords for p in self.vermont[0][:2]], "test_get_border.json")
 
