@@ -108,16 +108,13 @@ class TestUtils(unittest.TestCase):
         (outer border of connecticut and its 5th congresssional district)
         """
 
-        outer_border = clip([p.coords for p in self.connecticut[0]], UNION)
+        connecticut_district_coords = [
+            d["geometry"]["coordinates"]
+            for d in self.connecticut[1]["features"]]
 
-        # uncomment and add pickle containing outer border for speed
+        outer_border = clip(connecticut_district_coords, UNION)
 
-        # with open("test_get_difference.pickle", "rb") as f:
-        #     outer_border = pickle.load(f)
-
-        difference = clip([outer_border, self.connecticut[1]["features"][4]["geometry"]["coordinates"]], DIFFERENCE)
-
-        convert_to_json(difference, "test_get_difference.json")
+        difference = clip([outer_border, connecticut_district_coords[4]], DIFFERENCE)
 
 
     def test_get_schwartsberg_compactness(self):
