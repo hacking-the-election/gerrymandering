@@ -31,7 +31,12 @@ class TestUtils(unittest.TestCase):
 
         unittest.TestCase.__init__(self, *args, **kwargs)
 
+        # for small tests that shouldnt take long
         self.vermont = load(dirname(__file__) + "/vermont.pickle")
+        # for big tests to find problems
+        self.alabama = load(dirname(__file__) + "/alabama.pickle")
+        # for things with islands
+        self.hawaii = load(dirname(__file__) + "/hawaii.pickle")
 
     def test_get_equation(self):
         
@@ -61,7 +66,7 @@ class TestUtils(unittest.TestCase):
     @timed
     def test_get_border(self):
 
-        convert_to_json(get_border([p.coords for p in self.vermont[0]]), "test_get_border.json")
+        get_border([p.coords for p in self.vermont[0][:len(self.vermont[0]) // 7]])
 
     def test_get_schwartsberg_compactness(self):
         pass
