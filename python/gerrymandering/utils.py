@@ -107,10 +107,12 @@ def get_border(shapes):
         for polygon in multipolygon:
             try:
                 polygon_list.append(Polygon([tuple(coord) for coord in polygon]))
-            except ValueError:
-                polygon_list.append(Polygon([tuple(coord) for coord in polygon[0]]))
-            except AssertionError as ae:
-                polygon_list.append(Polygon([tuple(coord) for coord in polygon[0]]))
+            except (ValueError, AssertionError):
+                # if there is a multipolygon precinct (which there
+                # shouldn't be, because those will be broken into
+                # separate precincts in the serialization process)
+                for p in polygon:
+                    polygon_list.append(Polygon([tuple(coord) for coord in p]))
         polygons.append(polygon_list)
         
     multipolygons = []
