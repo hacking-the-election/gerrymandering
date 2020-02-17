@@ -34,6 +34,12 @@ using namespace rapidjson;
         - Derived state class - has array of precincts + districts
 */
 
+class Shape;
+class Multi_Shape;
+class Precinct;
+class Precinct_Group;
+class State;
+
 // simplify the coordinate modification system
 typedef vector<float> coordinate;
 typedef vector<coordinate> coordinate_set;
@@ -109,7 +115,44 @@ class Shape {
         int pop = 0; // total population
 };
 
-class Precinct : public Shape {
+class Multi_Shape : public Shape {
+    /*
+        A class containing a vector of shapes
+    */
+
+    public: 
+
+        Multi_Shape(){}; // default constructor
+
+        Multi_Shape(vector<Shape> s) {
+            // constructor with assignment
+            border = s;
+        }
+        
+        Multi_Shape(vector<Shape> s, string t_id) {
+            // constructor with assignment
+            border = s;
+            shape_id = t_id;
+        }
+
+        Multi_Shape(vector<Precinct> s) {
+            // constructor with assignment
+            for (Precinct p : s) {
+                for (Shape s : p.border)
+                    border.push_back(Shape());
+            }
+        }
+        // for boost serialization
+        friend class boost::serialization::access;
+        template<class Archive> void serialize(Archive & ar, const unsigned int version);
+
+        vector<Shape> border;
+
+        // gui methods
+        virtual void draw(); // prints to an SDL window
+};
+
+class Precinct : public Multi_Shape {
 
     // Derived shape class for defining a precinct
 
@@ -117,13 +160,13 @@ class Precinct : public Shape {
 
         Precinct(){}; // default constructor
 
-        Precinct(coordinate_set shape, int demV, int repV) : Shape(shape) {
+        Precinct(vector<Shape> shapes, int demV, int repV) : Multi_Shape(shapes) {
             // assigning vote data
             dem = demV;
             rep = repV;
         }
 
-        Precinct(coordinate_set shape, int demV, int repV, string id) : Shape(shape, id) {
+        Precinct(vector<Shape> shapes, int demV, int repV, string id) : Multi_Shape(shapes, id) {
             // overloaded constructor for adding shape id
             dem = demV;
             rep = repV;
@@ -140,34 +183,6 @@ class Precinct : public Shape {
         int rep; // republican vote total
 };
 
-class Multi_Shape : public Shape {
-    /*
-        A class containing a vector of shapes
-    */
-
-    public: 
-
-        Multi_Shape(){}; // default constructor
-
-        Multi_Shape(vector<Shape> s) {
-            // constructor with assignment
-            border = s;
-        }
-        
-        Multi_Shape(vector<Precinct> s) {
-            // constructor with assignment
-            for (Precinct p : s)
-                border.push_back(Shape(p.border));
-        }
-        // for boost serialization
-        friend class boost::serialization::access;
-        template<class Archive> void serialize(Archive & ar, const unsigned int version);
-
-        vector<Shape> border;
-
-        // gui methods
-        virtual void draw(); // prints to an SDL window
-};
 
 class Precinct_Group : public Multi_Shape {
 
