@@ -30,30 +30,16 @@ import logging
 import pickle
 import sys
 import warnings
-
-import numpy as np
-
 from collections import Counter
 
 
-logging.basicConfig(level=logging.WARNING, filename="precincts.log")
+logging.basicConfig(level=logging.INFO, filename="precincts.log")
 
 
 def customwarn(message, category, filename, lineno, file=None, line=None):
     logging.warning(warnings.formatwarning(message, category, filename, lineno))
 
 warnings.showwarning = customwarn
-
-
-def to_numpy_array(lst):
-    """
-    Removes unnecessary dimensions from lists and returns
-    equivalent numpy.array
-    """
-
-    while len(lst) == 1 and type(lst[0]) == type([]):
-        lst = lst[0]
-    return np.array(lst)
 
 
 def save(state, precinct_list, district_dict, objects_dir):
@@ -239,7 +225,7 @@ class Precinct:
         dem_keys = STATE_METADATA[state]["dem_keys"]
         rep_keys = STATE_METADATA[state]["rep_keys"]
 
-        print(is_population_data)
+        # print(is_population_data)
 
         if is_population_data:
             pop = {}
@@ -314,7 +300,7 @@ class Precinct:
                         precinct_ids_only.index(precinct_id)][1]
 
                     precinct_list.append(Precinct(
-                        to_numpy_array(precinct_coords[precinct_id]),
+                        precinct_coords[precinct_id],
                         state,
                         precinct_id,
                         pop[precinct_id],
@@ -327,7 +313,7 @@ class Precinct:
                         + "not found in election data."
                     )
                     precinct_list.append(Precinct(
-                        to_numpy_array(precinct_coords[precinct_id]),
+                        precinct_coords[precinct_id],
                         state,
                         precinct_id,
                         pop[precinct_id],
@@ -357,7 +343,7 @@ class Precinct:
 
             for precinct_id in precinct_coords.keys():
                 precinct_list.append(Precinct(
-                    to_numpy_array(precinct_coords[precinct_id]),
+                    precinct_coords[precinct_id],
                     state,
                     precinct_id,
                     pop[precinct_id],
