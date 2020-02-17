@@ -6,8 +6,10 @@ import sys
 from os.path import abspath, dirname
 import unittest
 import time
+import pickle
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 sys.path.append(abspath(dirname(dirname(dirname(__file__)))))
 
@@ -17,7 +19,7 @@ from serialization.save_precincts import Precinct
 from gerrymandering.utils import get_equation, get_segments, get_border
 
 
-def timed(func, *args, **kwargs):
+def print_time(func):
     def timed_func(*args, **kwargs):
         start_time = time.time()
         func(*args, **kwargs)
@@ -25,18 +27,47 @@ def timed(func, *args, **kwargs):
     return timed_func
 
 
+def return_time(func):
+    def timed_func(*args, **kwargs):
+        start_time = time.time()
+        func(*args, **kwargs)
+        return time.time() - start_time
+    return timed_func
+
+
 class TestUtils(unittest.TestCase):
+
+    # for small tests that shouldnt take long
+    vermont = load(dirname(__file__) + "/vermont.pickle")
+    # for big tests to find problems
+    alabama = load(dirname(__file__) + "/alabama.pickle")
+    # for things with islands
+    hawaii = load(dirname(__file__) + "/hawaii.pickle")
+
+    @classmethod
+    def plot_get_border(cls):
+        """
+        Creates scatter plot of all relationship between number of
+        precincts and time
+        """
+
+        timed_get_border = return_time(get_border)
+
+        X = np.arange(1, len(cls.alabama[0]) + 1)
+        Y = np.array([])
+        for i in range(1, len(cls.alabama[0]) + 1):
+            t = timed_get_border([p.coords for p in cls.alabama[0][:i]])
+            np.append(Y, [t])
+
+        with open("border_time.pickle", "wb+") as f:
+            pickle.dump(Y, f)
+        
+        plt.scatter(X, Y)
+        plt.show()
 
     def __init__(self, *args, **kwargs):
 
         unittest.TestCase.__init__(self, *args, **kwargs)
-
-        # for small tests that shouldnt take long
-        self.vermont = load(dirname(__file__) + "/vermont.pickle")
-        # for big tests to find problems
-        self.alabama = load(dirname(__file__) + "/alabama.pickle")
-        # for things with islands
-        self.hawaii = load(dirname(__file__) + "/hawaii.pickle")
 
     def test_get_equation(self):
         
@@ -58,12 +89,7 @@ class TestUtils(unittest.TestCase):
         # vermont polygon
         shape_2 = np.array(self.vermont[0][0].coords)
 
-        # self.assertEqual(get_segments(shape_1))
-        
-        # with self.assertRaises(ValueError):
-        #     pass
-
-    @timed
+    @print_time
     def test_get_border(self):
 
         get_border([p.coords for p in self.vermont[0][:len(self.vermont[0]) // 7]])
@@ -82,5 +108,8 @@ class TestUtils(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main()
+    if "border_graph" in sys.argv:
+        TestUtils.plot_get_border()
+    else:
+        unittest.main()
 
