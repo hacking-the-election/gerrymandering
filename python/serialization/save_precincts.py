@@ -204,7 +204,7 @@ class Precinct:
             else p["properties"][json_id[0]]:
             convert_to_int(sum(num for num in 
             p["properties"][json_pop])) if len(json_pop) > 1
-            else convert_to_int(p["properties"][json_pop][0])
+            else convert_to_int(p["properties"][json_pop[0]])
             for p in geo_data["features"]}
 
         # whether or not there is an
