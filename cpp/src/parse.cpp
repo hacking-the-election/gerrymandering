@@ -16,12 +16,12 @@
 #define VERBOSE 1  // print progress messages
 
 // constant id strings
-//ndv_08	nrv_08	geoid10	GEOID10	VAP
+//ndv	nrv	geoid10	GEOID10	POP100
 const string election_id_header = "geoid10";
-const vector<string> d_head = {"ndv_08"};
-const vector<string> r_head = {"nrv_08"};
+const vector<string> d_head = {"ndv"};
+const vector<string> r_head = {"nrv"};
 const string geodata_id = "GEOID10";
-const string population_id = "VAP";
+const string population_id = "POP100";
 
 
 vector<vector<string> > parse_sv(string tsv, string delimiter) {
@@ -154,15 +154,14 @@ coordinate_set string_to_vector(string str) {
 
 vector<coordinate_set> multi_string_to_vector(string str) {
     // takes a json array string and returns a parsed vector
-
+    
     vector<coordinate_set> v;
-
     Document mp;
     mp.Parse(str.c_str());
 
     for (int i = 0; i < mp.Size(); i++) {
         // for each polygon
-        coordinate_set poly;
+        coordinate_set poly = {};
 
         for (int j = 0; j < mp[i][0].Size(); j++) {
             coordinate point = {mp[i][0][j][0].GetFloat(), mp[i][0][j][1].GetFloat()};
@@ -175,14 +174,12 @@ vector<coordinate_set> multi_string_to_vector(string str) {
     return v;
 }
 
-vector<Shape> parse_coordinates(string geoJSON, bool parsing_precincts) {
+vector<Shape> parse_precinct_coordinates(string geoJSON) {
     /* 
         Parses a geoJSON file into an array of Shape
         objects - finds ID using top-level defined constants,
         and splits multipolygons into separate shapes (of the same id)
     */
-
-    // int mptotal; // track multipolygons
 
     Document shapes;
     shapes.Parse(geoJSON.c_str()); // parse json
@@ -199,7 +196,7 @@ vector<Shape> parse_coordinates(string geoJSON, bool parsing_precincts) {
         if (shapes["features"][i]["properties"].HasMember(geodata_id.c_str())) {
             id = shapes["features"][i]["properties"][geodata_id.c_str()].GetString();
         }
-        else if (parsing_precincts) {
+        else {
             cout << "\e[31merror: \e[0mYou have no precinct id." << endl;
             cout << "If future k-vernooy runs into this error, it means that GEOID10 in your geoJSON in your voter data is missing. To fix... maybe try a loose comparison of the names?" << endl;
         }
@@ -207,7 +204,7 @@ vector<Shape> parse_coordinates(string geoJSON, bool parsing_precincts) {
         // get the population from geodata
         if (shapes["features"][i]["properties"].HasMember(population_id.c_str()))
             pop = shapes["features"][i]["properties"][population_id.c_str()].GetInt();
-        else if (parsing_precincts)
+        else
             cout << "\e[31merror: \e[0mNo population data" << endl;
         
         // create empty string buffer
@@ -224,11 +221,9 @@ vector<Shape> parse_coordinates(string geoJSON, bool parsing_precincts) {
             coordinate_set border = string_to_vector(coords);
             Shape shape(border, id);
             shape.pop = pop;
-            shapes_vector.push_back(shape);
+            // shapes_vector.push_back(shape);
         }
         else {
-            // cout << "Found a multipolygon!" << endl;
-            // mptotal++;
             vector<coordinate_set> borders = multi_string_to_vector(coords);
 
             // calculate area of multipolygon
@@ -253,6 +248,57 @@ vector<Shape> parse_coordinates(string geoJSON, bool parsing_precincts) {
     return shapes_vector;
 }
 
+
+vector<Multi_Shape> parse_district_coordinates(string geoJSON) {
+    /* 
+        Parses a geoJSON file into an array of Multi_Shape
+        objects - finds ID using top-level defined constants
+    */
+
+    Document shapes;
+    shapes.Parse(geoJSON.c_str()); // parse json
+
+    // vector of shapes to be returned
+    vector<Multi_Shape> shapes_vector;
+
+    for ( int i = 0; i < shapes["features"].Size(); i++ ) {
+        string coords;
+        int pop = 0;
+
+        // create empty string buffer
+        StringBuffer buffer;
+        buffer.Clear();
+        Writer<rapidjson::StringBuffer> writer(buffer);
+
+        // write the coordinate array to a string
+        shapes["features"][i]["geometry"]["coordinates"].Accept(writer);
+        coords = buffer.GetString();
+
+        if (shapes["features"][i]["geometry"]["type"] == "Polygon") {
+            // vector parsed from coordinate string
+            coordinate_set border = string_to_vector(coords);
+            Shape shape(border);
+            vector<Shape> s = {shape};
+            
+            Multi_Shape ms(s);
+            shapes_vector.push_back(ms);
+        }
+        else {
+            Multi_Shape ms;
+            vector<coordinate_set> borders = multi_string_to_vector(coords);
+
+            for (coordinate_set cs : borders) {
+                Shape shape(cs);
+                ms.border.push_back(shape);
+            }
+
+            shapes_vector.push_back(ms);
+        }
+    }
+
+    // cout << mptotal << " multipolygons found!" << endl;
+    return shapes_vector;
+}
 
 vector<Precinct> merge_data( vector<Shape> precinct_shapes, map<string, vector<int> > voter_data) {
 
@@ -318,10 +364,10 @@ State State::generate_from_file(string precinct_geoJSON, string voter_data, stri
 
     // generate shapes from coordinates
     if (VERBOSE) cout << "generating coordinate array from precinct file..." << endl;
-    vector<Shape> precinct_shapes = parse_coordinates(precinct_geoJSON, true);
+    vector<Shape> precinct_shapes = parse_precinct_coordinates(precinct_geoJSON);
 
     if (VERBOSE) cout << "generating coordinate array from district file..." << endl;
-    vector<Shape> district_shapes = parse_coordinates(district_geoJSON, false);
+    vector<Multi_Shape> district_shapes = parse_district_coordinates(district_geoJSON);
     
     // create a vector of precinct objects from border and voter data
     if (VERBOSE) cout << "parsing voter data from tsv..." << endl;
@@ -330,17 +376,17 @@ State State::generate_from_file(string precinct_geoJSON, string voter_data, stri
     if (VERBOSE) cout << "merging parsed geodata with parsed voter data into precinct array..." << endl;
     vector<Precinct> precincts = merge_data(precinct_shapes, precinct_voter_data);
     Precinct_Group pre_group(precincts);
-    // Multi_Shape state_shape = generate_exterior_border(pre_group);
-
     vector<Shape> state_shape_v; // dummy exterior border
-    
-    // for (Shape s : state_shape.border) {
-    //     state_shape_v.push_back(s);
-    // }
 
     // generate state data from files
     if (VERBOSE) cout << "generating state with shape arrays..." << endl;
     State state = State(district_shapes, precincts, state_shape_v);
+
     state.draw();
+
+    Multi_Shape border = generate_exterior_border(state);
+    cout << border.border.size() << endl;
+    border.draw();
+
     return state; // return the state object
 }

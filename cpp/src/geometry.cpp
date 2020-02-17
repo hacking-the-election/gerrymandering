@@ -280,14 +280,15 @@ Multi_Shape generate_exterior_border(Precinct_Group precinct_group) {
 
     for (Precinct p : precinct_group.precincts)
         subj.push_back(shape_to_path(p));
+
     // Paths solutions
-    PolyTree solutions;
+    Paths solutions;
     Clipper c;
 	
-    c.AddPaths(subj, ptSubject, false);
+    c.AddPaths(subj, ptSubject, true);
     c.Execute(ctUnion, solutions, pftNonZero);
 
-    return poly_tree_to_shape(solutions);
+    return paths_to_shape(solutions);
     // return clipper_mult_int_to_shape(solutions);
 }
 
@@ -350,6 +351,7 @@ Multi_Shape poly_tree_to_shape(PolyTree tree) {
         Shape s = path_to_shape(polynode->Contour);
         ms.border.push_back(s);
     }
+
     cout << x << endl;
     cout << "Finished" << endl;
     return ms;

@@ -236,7 +236,7 @@ class State : public Precinct_Group {
 
         State(){}; // default constructor
 
-        State(vector<Shape> districts, vector<Precinct> state_precincts, vector<Shape> shapes) : Precinct_Group(shapes) {
+        State(vector<Multi_Shape> districts, vector<Precinct> state_precincts, vector<Shape> shapes) : Precinct_Group(shapes) {
             // simple assignment constructor
             state_districts = districts;
             precincts = state_precincts;
@@ -276,6 +276,6 @@ class State : public Precinct_Group {
         string name = "no_name";
 
         // arrays of shapes in state
-        vector<Shape> state_districts;
+        vector<Multi_Shape> state_districts;
         Communities state_communities;
 };
