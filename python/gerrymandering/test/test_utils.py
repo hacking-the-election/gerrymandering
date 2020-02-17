@@ -44,6 +44,8 @@ class TestUtils(unittest.TestCase):
     alabama = load(dirname(__file__) + "/alabama.pickle")
     # for things with islands
     hawaii = load(dirname(__file__) + "/hawaii.pickle")
+    # for small tests that need more than one district
+    connecticut = load(dirname(__file__) + "/connecticut.pickle")
 
     @classmethod
     def plot_get_border(cls):
@@ -92,8 +94,31 @@ class TestUtils(unittest.TestCase):
 
     @print_time
     def test_get_border(self):
+        """
+        Prints the speed of finding the exterior border of a group of
+        polygons (precincts of vermont)
+        """
 
         clip([p.coords for p in self.vermont[0]], UNION)
+
+    @print_time
+    def test_get_difference(self):
+        """
+        Prints the speed of finding the difference between two polygons
+        (outer border of connecticut and its 5th congresssional district)
+        """
+
+        outer_border = clip([p.coords for p in self.connecticut[0]], UNION)
+
+        # uncomment and add pickle containing outer border for speed
+
+        # with open("test_get_difference.pickle", "rb") as f:
+        #     outer_border = pickle.load(f)
+
+        difference = clip([outer_border, self.connecticut[1]["features"][4]["geometry"]["coordinates"]], DIFFERENCE)
+
+        convert_to_json(difference, "test_get_difference.json")
+
 
     def test_get_schwartsberg_compactness(self):
         pass

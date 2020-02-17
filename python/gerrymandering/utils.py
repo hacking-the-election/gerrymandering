@@ -220,7 +220,7 @@ def clip(shapes, clip_type):
             raise ValueError(
                 "polygon clip of type DIFFERENCE takes exactly 2 input shapes"
                 )
-        solution = multipolygons[0].difference(multipolygons[1])
+        solution = multipolygons[0].buffer(0.0000001).difference(multipolygons[1].buffer(0.0000001))
     else:
         raise ValueError(
             "invalid clip type. use utils.UNION or utils.DIFFERENCE")
