@@ -29,6 +29,17 @@ string readf(string path) {
     return buffer.str();
 };
 
+void writef(string contents, string path) {
+    /*
+        Write a string to a file. This method appends
+        to the file rather than overwriting contents just in case.
+    */
+
+    ofstream of(path);
+    of << contents;
+    of.close();
+}
+
 vector<string> split(string str, string del) {
     
     /*

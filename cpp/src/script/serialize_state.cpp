@@ -40,12 +40,12 @@ int main(int argc, char* argv[]) {
     state.write_binary(write_path); // write as binary
     
     cout << "State " << state.name << " successfully written to " << write_path << endl;
-    cout << "Num of precincts: " << state.state_precincts.size() << endl;
+    cout << "Num of precincts: " << state.precincts.size() << endl;
     cout << "Num of districts: " << state.state_districts.size() << endl;
 
     int dem, rep, pop;
 
-    for (Precinct pre : state.state_precincts) {
+    for (Precinct pre : state.precincts) {
         dem += pre.dem;
         rep += pre.rep;
         pop += pre.pop;
