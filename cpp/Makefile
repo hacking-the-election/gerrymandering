@@ -6,7 +6,8 @@ STATE_FILES = src/parse.cpp src/shape.cpp src/geometry.cpp src/gui.cpp src/seria
 BOOST = -lboost_serialization -lboost_filesystem
 SDL = -lSDL2 -lSDL2main
 V = 11
-CLIPPER = lib/clipper/clipper.cpp
+CLIPPER = lib/clipper/gpc.c
+OPT = -Wall -pedantic -Wextra
 
 all: community
 #all: state_serializer

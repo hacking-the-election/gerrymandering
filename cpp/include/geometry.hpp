@@ -37,10 +37,10 @@ p_index_set get_bordering_shapes(vector<Precinct_Group> shapes, Shape shape);
 
 unit_interval compactness(Shape shape);
 
-gpc_vertext_list shape_to_vertex_list(Shape shape);
-Shape vertext_list_to_shape(gpc_vertex_list v);
-Multi_Shape poly_to_shape(Paths paths);
-Multi_Shape poly_tree_to_shape(PolyTree tree);
+gpc_vertex_list shape_to_vertex_list(Shape shape);
+Shape vertex_list_to_shape(gpc_vertex_list v);
+gpc_polygon shape_to_poly(Multi_Shape shape);
+Multi_Shape poly_to_shape(gpc_polygon poly);
 
 // for algorithm helper methods
 float get_standard_deviation_partisanship(Precinct_Group pg);

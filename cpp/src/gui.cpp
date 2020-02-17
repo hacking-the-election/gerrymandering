@@ -140,7 +140,6 @@ void Shape::draw() {
         open an SDL window, create a pixel array 
         with the shape's geometry, and print it to the window
     */
-    cout << "a" << endl;
     int dim[2] = {900, 900}; // the size of the SDL window
 
     // prepare array of coordinates to be drawn
@@ -189,7 +188,6 @@ bounding_box normalize_coordinates(Multi_Shape* multi_shape) {
         bottom = multi_shape->border[0].border[0][1], 
         left = multi_shape->border[0].border[0][0], 
         right = multi_shape->border[0].border[0][0];
-    cout << "bottom: " << bottom << ", left:" << left << endl;
 
     // loop through and find actual corner using ternary assignment
     for (int i = 0; i < multi_shape->border.size(); i++) {
@@ -201,7 +199,6 @@ bounding_box normalize_coordinates(Multi_Shape* multi_shape) {
         }
     }
 
-    cout << "bottom: " << bottom << ", left:" << left << endl;
     for (int i = 0; i < multi_shape->border.size(); i++) {
         // add to each coordinate to move it to quadrant 1
         for (int x = 0; x < multi_shape->border[i].border.size(); x++) {
@@ -297,13 +294,8 @@ void Multi_Shape::draw() {
 
     // prepare array of coordinates to be drawn
     bounding_box box = normalize_coordinates(this);
-    cout << this->border[0].border[0][0] << ", " << this->border[0].border[0][1] << endl;
     vector<Shape> shapes = resize_coordinates(box, this->border, dim[0], dim[1]);
-    for (Shape s : shapes) {
-        for (coordinate c : s.border) {
-            cout << c[0] << ", " << c[1] << endl;
-        }
-    }
+
     coordinate_set shape = connect_dots(shapes);
     // write coordinates to pixel array
     Uint32 * pixels = pix_array(shape, dim[0], dim[1]);
