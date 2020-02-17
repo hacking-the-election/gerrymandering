@@ -160,12 +160,20 @@ def get_border(shapes):
 
     # pyplot.show()
 
-    real_border = np.concatenate([
-        np.concatenate([np.asarray(t.exterior)[:, :2]] +
-                    [np.asarray(r)[:, :2] for r in t.interiors])
-        for t in [union]])
+    real_border = []
+    if isinstance(union, Polygon):
+        real_border.append(
+            np.concatenate([np.concatenate(
+                [np.asarray(t.exterior)[:, :2]] + [np.asarray(r)[:, :2] 
+                for r in t.interiors]) for t in [union]]).tolist())
+    elif isinstance(union, MultiPolygon):
+        for polygon in union.geoms:
+            real_border.append(
+            np.concatenate([np.concatenate(
+                [np.asarray(t.exterior)[:, :2]] + [np.asarray(r)[:, :2] 
+                for r in t.interiors]) for t in [polygon]]).tolist())
 
-    return [[real_border.tolist()]]
+    return [real_border]
 
 
 def get_point_in_polygon(point, shape):
