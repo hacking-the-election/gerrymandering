@@ -9,6 +9,7 @@
 
 #include "../include/shape.hpp"
 #include "../include/term_disp.hpp"
+#include <boost/filesystem.hpp>
 
 string State::to_json() {
     /*
@@ -19,80 +20,80 @@ string State::to_json() {
     // begin json string
     string str = "{" + N; 
 
-    str += T + OQ + "state" + CQC + "{" + N
-        + TAB(2) + OQ + "name" + CQC + OQ + name + CQ + C + N
-        + TAB(2) + OQ + "precincts" + CQC + "[" + N;
+    // str += T + OQ + "state" + CQC + "{" + N
+    //     + TAB(2) + OQ + "name" + CQC + OQ + name + CQ + C + N
+    //     + TAB(2) + OQ + "precincts" + CQC + "[" + N;
     
-    for ( Precinct precinct : state_precincts ) {
-        str += TAB(3) + "{" + N;
+    // for ( Precinct precinct : state_precincts ) {
+    //     str += TAB(3) + "{" + N;
 
-        // print name of precinct
-        if (precinct.shape_id.size() == 0) {
-            str += TAB(4) + OQ + "name" + CQC 
-                + OQ + "no_name" + CQ + C + N;
-        }
-        else {
-            str += TAB(4) + OQ + "name" + CQC 
-                + OQ + precinct.shape_id + CQ + C + N;
-        }
+    //     // print name of precinct
+    //     if (precinct.shape_id.size() == 0) {
+    //         str += TAB(4) + OQ + "name" + CQC 
+    //             + OQ + "no_name" + CQ + C + N;
+    //     }
+    //     else {
+    //         str += TAB(4) + OQ + "name" + CQC 
+    //             + OQ + precinct.shape_id + CQ + C + N;
+    //     }
 
-        // print coordinates of precinct
-        str += TAB(4) + OQ + "coordinates" + CQC + "[";
-        for (vector<float> coordset: precinct.border) {
-            str += "[" + to_string(coordset[0]) + ", " 
-                + to_string(coordset[1]) + "], ";
-        }
+    //     // print coordinates of precinct
+    //     str += TAB(4) + OQ + "coordinates" + CQC + "[";
+    //     for (vector<float> coordset: precinct.border) {
+    //         str += "[" + to_string(coordset[0]) + ", " 
+    //             + to_string(coordset[1]) + "], ";
+    //     }
 
-        // remove last comma char
-        str = str.substr(0, str.size() - 2);
-        str += "]" + C + N;
+    //     // remove last comma char
+    //     str = str.substr(0, str.size() - 2);
+    //     str += "]" + C + N;
 
-        // print voter data for the precinct
-        str += TAB(4) + OQ + "voter_data" + CQC + "{"
-            + OQ + "dem" + CQC + to_string(precinct.voter_data()[0]) + ", "
-            + OQ + "rep" + CQC + to_string(precinct.voter_data()[1]) + "}" + N;
+    //     // print voter data for the precinct
+    //     str += TAB(4) + OQ + "voter_data" + CQC + "{"
+    //         + OQ + "dem" + CQC + to_string(precinct.voter_data()[0]) + ", "
+    //         + OQ + "rep" + CQC + to_string(precinct.voter_data()[1]) + "}" + N;
         
-        str += TAB(3) + "}," + N;
-    }
+    //     str += TAB(3) + "}," + N;
+    // }
 
-    str = str.substr(0, str.size() - 2) + N;
-    str += TAB(2) + "]" + C + N; // close precincts array
+    // str = str.substr(0, str.size() - 2) + N;
+    // str += TAB(2) + "]" + C + N; // close precincts array
 
 
-    str += TAB(2) + OQ + "districts" + CQC + "[" + N;
+    // str += TAB(2) + OQ + "districts" + CQC + "[" + N;
 
-    for ( Precinct_Group district : state_districts ) {
-        str += TAB(3) + "{" + N;
+    // for ( Precinct_Group district : state_districts ) {
+    //     str += TAB(3) + "{" + N;
 
-        // print name of precinct
-        if (district.shape_id.size() == 0) {
-            str += TAB(4) + OQ + "name" + CQC 
-                + OQ + "no_name" + CQ + C + N;
-        }
-        else {
-            str += TAB(4) + OQ + "name" + CQC 
-                + OQ + district.shape_id + CQ + C + N;
-        }
+    //     // print name of precinct
+    //     if (district.shape_id.size() == 0) {
+    //         str += TAB(4) + OQ + "name" + CQC 
+    //             + OQ + "no_name" + CQ + C + N;
+    //     }
+    //     else {
+    //         str += TAB(4) + OQ + "name" + CQC 
+    //             + OQ + district.shape_id + CQ + C + N;
+    //     }
 
-        // print coordinates of precinct
-        str += TAB(4) + OQ + "coordinates" + CQC + "[";
-        for (vector<float> coordset : district.border) {
-            str += "[" + to_string(coordset[0]) + ", " 
-                + to_string(coordset[1]) + "], ";
-        }
+    //     // print coordinates of precinct
+    //     str += TAB(4) + OQ + "coordinates" + CQC + "[";
+    //     for (coordinate coordset : district.border) {
+    //         str += "[" + to_string(coordset[0]) + ", " 
+    //             + to_string(coordset[1]) + "], ";
+    //     }
 
-        // remove last comma char
-        str = str.substr(0, str.size() - 2);
-        str += "]" + N;
+    //     // remove last comma char
+    //     str = str.substr(0, str.size() - 2);
+    //     str += "]" + N;
 
-        str += TAB(3) + "}," + N;
-    }
+    //     str += TAB(3) + "}," + N;
+    // }
 
-    str = str.substr(0, str.size() - 2) + N;
-    str += TAB(2) + "]" + N; // close districts array
+    // str = str.substr(0, str.size() - 2) + N;
+    // str += TAB(2) + "]" + N; // close districts array
 
-    str += T + "}" + N; // close state
-    str += "}" + N; // close json
+    // str += T + "}" + N; // close state
+    // str += "}" + N; // close json
     return str;
 }
 
@@ -140,9 +141,15 @@ Precinct_Group Precinct_Group::read_binary(string path) {
 template<class Archive> void State::serialize(Archive & ar, const unsigned int version) {
     // write districts, precincts, name, and border
     ar & state_districts;
-    ar & state_precincts;
+    ar & precincts;
     ar & name;
     ar & border;
+    ar & pop;
+}
+
+template<class Archive> void Multi_Shape::serialize(Archive & ar, const unsigned int version) {
+    ar & border;
+    ar & shape_id;
     ar & pop;
 }
 
@@ -177,4 +184,26 @@ template<class Archive> void Shape::serialize(Archive & ar, const unsigned int v
     ar & shape_id;
     ar & border;
     ar & pop;
+}
+
+
+void State::save_communities(string write_path) {
+    /*
+        Saves a community to a file at a specific point in the
+        pipeline. Useful for visualization and checks.
+
+        Save structure is as follows:
+            write_path/
+                community_1
+                ...
+                community_n
+    */
+
+   int c_index = 0;
+   boost::filesystem::create_directory(write_path);
+
+   for (Community c : state_communities) {
+       c.write_binary(write_path + "/community_" + to_string(c_index));
+       c_index++;
+   }
 }

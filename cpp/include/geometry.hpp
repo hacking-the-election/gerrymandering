@@ -6,19 +6,19 @@
  manipulations and searching algorithms.
 ========================================*/
 
+#pragma once // avoid multiple includes
+
 #include <math.h>  // for rounding functions
 #include <cmath>
-#include "../lib/clipper/clipper.hpp"
 #include <algorithm> // for reverse, unique
 #include <iostream>
 #include <string>
+
 #include "shape.hpp"
+#include "../lib/clipper/clipper.hpp"
+#include "../lib/clipper/gpc.h"
 
 using namespace std;
-using namespace ClipperLib;
-
-typedef vector<DoublePoint> DoublePath;
-typedef vector<DoublePath> DoublePaths;
 
 // coordinate manipulation for gui draw methods
 bounding_box normalize_coordinates(Shape* shape);
@@ -37,11 +37,11 @@ p_index_set get_bordering_shapes(vector<Precinct_Group> shapes, Shape shape);
 
 unit_interval compactness(Shape shape);
 
-Path shape_to_clipper_int(Shape shape);
-Shape clipper_int_to_shape(Path path);
-Multi_Shape clipper_mult_int_to_shape(Paths paths);
+gpc_vertex_list shape_to_vertex_list(Shape shape);
+Shape vertex_list_to_shape(gpc_vertex_list v);
+gpc_polygon shape_to_poly(Multi_Shape shape);
+Multi_Shape poly_to_shape(gpc_polygon poly);
 
 // for algorithm helper methods
 float get_standard_deviation_partisanship(Precinct_Group pg);
 float get_median_partisanship(Precinct_Group pg);
-

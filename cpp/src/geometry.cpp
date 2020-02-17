@@ -275,22 +275,25 @@ Multi_Shape generate_exterior_border(Precinct_Group precinct_group) {
         Get the exterior border of a shape with interior components.
         Equivalent to 'dissolve' in mapshaper - remove bordering edges
     */
-
-	Paths subj(precinct_group.precincts.size());
+    gpc_polygon clip, result, subject;
+    
+    subject.num_contours = (int) precinct_group.precincts.size();
+    subject.contour = new gpc_vertex_list[precinct_group.precincts.size()];
 
     for (int i = 0; i < precinct_group.precincts.size(); i++)
-        subj[i] = shape_to_clipper_int(precinct_group.precincts[i]);
+        subject.contour[i] = shape_to_vertex_list(precinct_group.precincts[i]);
 
-    Paths clip(0);
-    Paths solutions;
+    clip.num_contours = 1;
+    clip.contour = new gpc_vertex_list[1];
+    clip.contour[0] = shape_to_vertex_list(precinct_group.precincts[precinct_group.precincts.size() - 1]);
+    
+    gpc_polygon_clip(GPC_UNION, &subject, &clip, &result);
+    Multi_Shape border = poly_to_shape(result);
 
-    Clipper c;
-	c.AddPaths(subj, ptSubject, true);
-	c.AddPaths(clip, ptClip, true);
-	c.Execute(ctUnion, solutions, pftNonZero, pftNonZero);
-
-    return clipper_mult_int_to_shape(solutions);
+    cout << border.border.size() << endl;
+    return border;
 }
+
 
 p_index State::get_addable_precinct(p_index_set available_precincts, p_index current_precinct) {
     /*
@@ -303,65 +306,63 @@ p_index State::get_addable_precinct(p_index_set available_precincts, p_index cur
     return ret;
 }
 
-Path shape_to_clipper_int(Shape shape) {
+gpc_vertex_list shape_to_vertex_list(Shape shape) {
     /*
-        Creates a clipper Path object from a
-        given Shape object by looping through points
+        Convert a gpc vertex array into a single polygon.
+        gpc_vertex_list contains a single contour - not a multipolygon
     */
 
-    Path p(shape.border.size());
+    gpc_vertex_list vertex_list = {.num_vertices = (int) shape.border.size(), .vertex = new gpc_vertex[shape.border.size()]};
 
-    for (coordinate point : shape.border ) {
-        p << IntPoint(point[0] * c, point[1] * c);
+    int index = 0;
+    for (coordinate coord : shape.border) {
+        gpc_vertex vertex;
+        vertex.x = coord[0];
+        vertex.y = coord[1];
+        
+        vertex_list.vertex[index] = vertex;
+        index++;
     }
 
-    return p;
+    return vertex_list;
 }
 
-Shape clipper_int_to_shape(Path path) {
+Shape vertex_list_to_shape(gpc_vertex_list v) {
     /*
-        Creates a shape object from a clipper Path
-        object by looping through points
+        Convert a one-dimensional gpc_vertex_list to a
+        single Shape object. For use with gpc clipping.
     */
 
     Shape s;
 
-    for (IntPoint point : path ) {
-        coordinate p = {(float)((float)point.X / (float)c), (float)((float)point.Y / (float) c)};
-        s.border.push_back(p);
+    for (int i = 0; i < v.num_vertices; i++) {
+        coordinate c = {(float) v.vertex[i].x, (float) v.vertex[i].y};
+        s.border.push_back(c);
     }
 
     return s;
 }
 
-Multi_Shape clipper_mult_int_to_shape(Paths paths) {
-    /*
-        Create a Multi_Shape object from a clipper Paths
-        (multi path) object through nested iteration
-    */
+gpc_polygon shape_to_poly(Multi_Shape ms) {
+    gpc_polygon poly = {.num_contours = (int) ms.border.size(), .contour = new gpc_vertex_list[ms.border.size()]};
 
-    //! ERROR: THIS DOES NOT WORK RIGHT NOW, 
-    // WHY IS CLIPPER RETURNING SO MANY POLYS?
+    int x = 0;
+    for (Shape shape : ms.border) {
+        gpc_vertex_list vl = shape_to_vertex_list(shape);
+        poly.contour[x] = vl;
+        x++;
+    }
 
+    return poly;
+}
+
+Multi_Shape poly_to_shape(gpc_polygon poly) {
     Multi_Shape ms;
 
-    for (Path p : paths) {
-        coordinate_set border;
-        cout << "PATH" << endl;
-        int c = 0;
-        for (IntPoint point : p) {
-            coordinate coord = {(float)((float)point.X / (float)c), (float)((float)point.Y / (float) c)};
-            border.push_back(coord);
-            
-            if (coord[0] == 0 || coord[1] == 0) {
-                cout << "FAIL" << endl;
-            }
-
-            c++;
-        }
-
-        Shape s(border);
-        ms.shapes.push_back(s);
+    int size_of_array;
+    for (int i = 0; i < poly.num_contours; i++) {
+        Shape s = vertex_list_to_shape(poly.contour[i]);
+        ms.border.push_back(s);
     }
 
     return ms;

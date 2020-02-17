@@ -1,59 +1,62 @@
-/*=======================================
- community.cpp:                 k-vernooy
- last modified:               Mon, Feb 10
+/*==================================================
+ community.cpp:                        k-vernooy
+ last modified:                      Mon, Feb 15
 
- Definition of the community-generation
- algorithm for quantifying gerrymandering
- and redistricting.
-========================================*/
+ Definition of the community-generation algorithm for
+ quantifying gerrymandering and redistricting. This
+ algorithm is the main result of the project
+ hacking-the-election, and detailed techincal
+ documents can be found in the /docs root folder of
+ this repository.
 
-#include "../../../include/shape.hpp"        // class definitions
-#include "../../../include/util.hpp"         // array modification functions
-#include "../../../include/geometry.hpp"
-#include <math.h>                            // for rounding functions
-#include <numeric>
-#include <algorithm>
-#include <boost/filesystem.hpp>
+ Visit https://hacking-the-election.github.io for
+ more information on this project.
+ 
+ Useful links for explanations, visualizations,
+ results, and other information:
 
-/*
-    Define constants to be used in the algorithm.    
-    These will not be passed to the algorithm
-    as arguments, as they define things like stop
-    conditions.
-*/
+ Our data sources for actually running this
+ algorithm can be seen at /data/ or on GitHub:
+ https://github.com/hacking-the-election/data
 
+ This algorithm has been implemented in C++ and in
+ Python. If you're interested in contributing to the
+ open source political movement, please contact us
+ at: hacking.the.election@gmail.com
+==================================================*/
+
+#include "../../../include/shape.hpp"    // class definitions
+#include "../../../include/util.hpp"     // array modification functions
+#include "../../../include/geometry.hpp" // geometry modification, border functions
+
+#include <math.h>    // for rounding functions
+#include <numeric>   // include std::iota
+#include <algorithm> // sorting, seeking algorithms
+
+#define VERBOSE 1
+ 
+/*================================================
+ Define constants to be used in the algorithm.    
+ These will not be passed to the algorithm
+ as arguments, as they define things like stop
+ conditions.
+=================================================*/
 const int CHANGED_PRECINT_TOLERANCE = 10; // percent of precincts that can change from iteration
 const int MAX_ITERATIONS = 3; // max number of times we can change a community
 
-void save_community_state(Communities communities, string write_path) {
-    /*
-        Saves a community to a file at a specific point in the
-        pipeline. Useful for visualization and checks.
+// id's for processes:
+const int PARTISANSHIP = 0;
+const int COMPACTNESS = 1;
+const int POPULATION = 2;
 
-        Save structure is as follows:
-            write_path/
-                community_1
-                ...
-                community_n
-    */
-
-   int c_index = 0;
-   boost::filesystem::create_directory(write_path);
-
-   for (Community c : communities) {
-       c.write_binary(write_path + "/community_" + to_string(c_index));
-       c_index++;
-   }
-}
 
 void State::generate_initial_communities(int num_communities) {
-    
     /*
         Creates an initial random community configuration for a given state
         Returns config as a Precinct Group object.
     */
 
-    int num_precincts = state_precincts.size();
+    int num_precincts = precincts.size();
     // determine amount of precincts to be added to each community
     vector<int> sizes;
     int base = floor(num_precincts / num_communities); // the base num
@@ -75,7 +78,7 @@ void State::generate_initial_communities(int num_communities) {
 
         for (int x = 0; x < sizes[index] - 1; x++) {
             p = get_addable_precinct(available_pre, p);
-            community.add_precinct(this->state_precincts[p]);
+            community.add_precinct(this->precincts[p]);
             available_pre.erase(remove(available_pre.begin(), available_pre.end(), p), available_pre.end());
         }
 
@@ -86,40 +89,82 @@ void State::generate_initial_communities(int num_communities) {
     // add the last community that has no precincts yet
     Community community;
     for (p_index precinct : available_pre) {
-        community.add_precinct(this->state_precincts[precinct]);
+        community.add_precinct(this->precincts[precinct]);
     }
     
     this->state_communities.push_back(community); // add last community
 }
 
-void State::refine_compactness(float compactness_tolerance) {
-}
-
-p_index State::get_partisanship_community(float partisanship_tolerance) {
+p_index State::get_next_community(float tolerance, int process) {
     /*
-        Returns the index of a community with the worst (highest)
-        standard deviation (in terms of partisanship).
-
-        Used in algorithm to determine next community to optimize.
+        Returns next candidate community depending on which process
+        the algorithm is currently running. Used in algorithm to determine
+        next community to optimize.
     */
 
     p_index i = -1;
-    float max = 0;
-    p_index x = 0;
 
-    for (Community c : state_communities) {
-        float stdev = get_standard_deviation_partisanship(c);
-        if (stdev > partisanship_tolerance && stdev > max) {
-            i = x;
-            max = stdev;
+    if (process == PARTISANSHIP) {
+        /*
+            Find community with standard deviation of partisanship
+            ratios that are most outside range of tolerance
+        */
+        float max = 0;
+        p_index x = 0;
+
+        for (Community c : state_communities) {
+            float stdev = get_standard_deviation_partisanship(c);
+            if (stdev > tolerance && stdev > max) {
+                i = x;
+                max = stdev;
+            }
+            x++;
         }
-        x++;
+    }
+    else if (process == COMPACTNESS) {
+        unit_interval min = 1;
+        p_index x = 0;
+
+        for (Community c : state_communities) {
+            unit_interval t_compactness = compactness(c);
+            if (t_compactness < min && t_compactness < tolerance) {
+                min = t_compactness;
+                i = x;
+            }
+            x++;
+        }
+    }
+    else if (process == POPULATION) {
+        /*
+            Find community that is farthest away from the
+            average of (total_pop / number_districts)
+        */
+        int aim = get_population() / state_districts.size();
+        vector<int> range = {aim - (int)(tolerance * aim), aim + (int)(tolerance * aim)};
+        int max = 0; // largest difference
+        p_index x = 0; // keep track of iteration
+        
+        for (Community c : state_communities) {
+            int diff = abs(aim - c.get_population());
+            if ((diff > max) && (diff > (int)(tolerance * aim))) {
+                // community is outside range and more so than the previous one
+                i = x;
+                max = diff;
+            }
+            x++;
+        }
     }
 
     return i;
 }
 
 void State::give_precinct(p_index precinct, p_index community, string t_type) {
+    /*
+        Performs a precinct transaction by giving `precinct` from `community` to
+        a possible other community (dependent on which function it's being used for).
+        This is the only way community borders can change.
+    */
+
     Precinct precinct_shape = this->state_communities[community].precincts[precinct];
     
     // get communities that border the current community
@@ -161,21 +206,45 @@ void State::give_precinct(p_index precinct, p_index community, string t_type) {
     chosen_c.add_precinct(precinct_shape);
     // remove precinct from previous community
     this->state_communities[community].precincts.erase(this->state_communities[community].precincts.begin() + precinct);
+
+    // update relevant borders after transactions
+    for (Community c : bordering_communities)
+        c.border = generate_exterior_border(c).border;
+
+    this->state_communities[community].border = generate_exterior_border(this->state_communities[community]).border;
+    
+    return;
+}
+
+void State::refine_compactness(float compactness_tolerance) {
+    /* 
+        Optimize the state's communities for population. Attempts
+        to minimize difference in population across the state
+        with a tolerance for acceptable +- percent difference
+    */
+    p_index worst_community = get_next_community(compactness_tolerance, COMPACTNESS);
+    bool is_done = (worst_community == -1);
+    vector<int> num_changes(state_communities.size());
+
+    while (!is_done) {
+        num_changes[worst_community] += 1; // update the changelist
+        // update worst_community, check stop condition
+        worst_community = get_next_community(compactness_tolerance, COMPACTNESS);
+        // if the community is within the tolerance, or if it has been modified too many times
+        is_done = (worst_community == -1 || num_changes[worst_community] == MAX_ITERATIONS);
+    }
 }
 
 void State::refine_partisan(float partisanship_tolerance) {
     /*
         A function to optimize the partisanship of a community -
-        in short, to minimize the stdev of partisanship of precincts
+        attempts to minimize the stdev of partisanship of precincts
         within each community.
-
-        Loops through each community above the threshold, optimizes it
     */
     
-    p_index worst_community = get_partisanship_community(partisanship_tolerance);
+    p_index worst_community = get_next_community(partisanship_tolerance, PARTISANSHIP);
     bool is_done = (worst_community == -1);
     vector<int> num_changes(state_communities.size());
-    // fill(num_changes.begin(), num_changes.end(), 0);
 
     while (!is_done) {
         Community c = state_communities[worst_community];
@@ -192,18 +261,44 @@ void State::refine_partisan(float partisanship_tolerance) {
         }
 
         give_precinct(worst_precinct, worst_community, "partisan");
-        // UH OH UH OH
-        // THIS FUNCTION WILL ALWAYS CHANGE WHAT
-        // THE INDEXES OF PRECINCTS MEAN
-
         num_changes[worst_community] += 1; // update the changelist
         // update worst_community, check stop condition
-        worst_community = get_partisanship_community(partisanship_tolerance);
+        worst_community = get_next_community(partisanship_tolerance, PARTISANSHIP);
+        // if the community is within the tolerance, or if it has been modified too many times
         is_done = (worst_community == -1 || num_changes[worst_community] == MAX_ITERATIONS);
     }
 }
 
 void State::refine_population(float population_tolerance) {
+    /* 
+        Optimize the state's communities for population. Attempts
+        to minimize difference in population across the state
+        with a tolerance for acceptable +- percent difference
+    */
+
+    // find the first community to be optimized
+    p_index worst_community = get_next_community(population_tolerance, POPULATION);
+    bool is_done = (worst_community == -1); // initialize stop condition
+    vector<int> num_changes(state_communities.size());
+
+    // calculate the range each community's population should be within
+    int aim = get_population() / state_districts.size();
+    vector<int> ideal_range = {aim - (int)(population_tolerance * aim), aim + (int)(population_tolerance * aim)};
+    
+    // begin main iterative loop
+    while (!is_done) {
+        Community c = state_communities[worst_community];
+        while (c.get_population() < ideal_range[0] || c.get_population() > ideal_range[1]) {
+            //!! Figure out which method we're using for precinct exchange
+        }
+
+        // update the changelist
+        num_changes[worst_community] += 1; 
+        
+        // check stop condition, update the community that needs to be optimized
+        worst_community = get_next_community(population_tolerance, POPULATION);
+        is_done = (worst_community == -1 || num_changes[worst_community] == MAX_ITERATIONS);
+    }
 }
 
 int measure_difference(Communities communities, Communities new_communities) {
@@ -220,7 +315,7 @@ int measure_difference(Communities communities, Communities new_communities) {
     for (int i = 0; i < communities.size(); i++) {
         // for each precinct in the community
         for (int x = 0; x < communities[i].precincts.size(); x++) {
-            // check for precinct in corrosponding new_community array
+            // check for precinct in corresponding new_community array
             Precinct old_p = communities[i].precincts[x];
             vector<Precinct> plist = new_communities[i].precincts;
             bool found = false;
@@ -281,12 +376,31 @@ void State::generate_communities(int num_communities, float compactness_toleranc
         cout << "On iteration " << i << endl;
         old_communities = this->state_communities;
 
+        #ifdef VERBOSE
+            cout << "refining compacntess..." << endl;
+        #endif
         refine_compactness(compactness_tolerance);
+        
+        #ifdef VERBOSE
+            cout << "refining partisanship..." << endl;
+        #endif
         refine_partisan(partisanship_tolerance);
+        
+        #ifdef VERBOSE
+            cout << "refining population..." << endl;
+        #endif
         refine_population(population_tolerance);
         
+        #ifdef VERBOSE
+            cout << "measuring precincts changed..." << endl;
+        #endif
+        
         changed_precincts = measure_difference(old_communities, this->state_communities);
-        cout << changed_precincts << " precincts changed" << endl;
+        
+        #ifdef VERBOSE
+            cout << changed_precincts << " precincts changed." << endl;
+        #endif
+        
         i++;
     }
 }

@@ -84,13 +84,13 @@ class Shape {
         string shape_id;
 
         // gui methods
-        void draw(); // prints to an SDL window
+        virtual void draw(); // prints to an SDL window
 
         // calculation methods
-        float area();
-        float perimeter();
-        coordinate center();
-        segments get_segments();
+        virtual float area();
+        virtual float perimeter();
+        virtual coordinate center();
+        virtual segments get_segments();
 
         //! beware of the following line, could cause problems for serialization
         friend bool operator== (Shape& p1, Shape& p2) {
@@ -107,23 +107,6 @@ class Shape {
         template<class Archive> void serialize(Archive & ar, const unsigned int version);
 
         int pop = 0; // total population
-};
-
-class Multi_Shape {
-    /*
-        A class containing a vector of shapes
-    */
-
-    public: 
-
-        Multi_Shape(){}; // default constructor
-
-        Multi_Shape(vector<Shape> s) {
-            // constructor with assignment
-            shapes = s;
-        }
-
-    vector<Shape> shapes;
 };
 
 class Precinct : public Shape {
@@ -157,7 +140,36 @@ class Precinct : public Shape {
         int rep; // republican vote total
 };
 
-class Precinct_Group : public Shape {
+class Multi_Shape : public Shape {
+    /*
+        A class containing a vector of shapes
+    */
+
+    public: 
+
+        Multi_Shape(){}; // default constructor
+
+        Multi_Shape(vector<Shape> s) {
+            // constructor with assignment
+            border = s;
+        }
+        
+        Multi_Shape(vector<Precinct> s) {
+            // constructor with assignment
+            for (Precinct p : s)
+                border.push_back(Shape(p.border));
+        }
+        // for boost serialization
+        friend class boost::serialization::access;
+        template<class Archive> void serialize(Archive & ar, const unsigned int version);
+
+        vector<Shape> border;
+
+        // gui methods
+        virtual void draw(); // prints to an SDL window
+};
+
+class Precinct_Group : public Multi_Shape {
 
     /* 
         Derived class for defining a district
@@ -165,18 +177,21 @@ class Precinct_Group : public Shape {
     */
 
     public:
-        
         vector<Precinct> precincts;
         void add_precinct(Precinct pre) {precincts.push_back(pre);};
 
         Precinct_Group(){}; // default constructor
-        Precinct_Group(coordinate_set shape)
-            : Shape(shape) {}; // call the superclass constructor
+        Precinct_Group(vector<Shape> shapes)
+            : Multi_Shape(shapes) {}; // call the superclass constructor
         
+        Precinct_Group(vector<Precinct> shapes)
+            : Multi_Shape(shapes) {}; // call the superclass constructor
+
         // serialize and read to and from binary
         void write_binary(string path);
         static Precinct_Group read_binary(string path);
 
+        int get_population();
         // for boost serialization
         friend class boost::serialization::access;
         template<class Archive> void serialize(Archive & ar, const unsigned int version);
@@ -205,10 +220,10 @@ class State : public Precinct_Group {
 
         State(){}; // default constructor
 
-        State(vector<Precinct_Group> districts, vector<Precinct> precincts, coordinate_set shape) : Precinct_Group(shape) {
+        State(vector<Shape> districts, vector<Precinct> state_precincts, vector<Shape> shapes) : Precinct_Group(shapes) {
             // simple assignment constructor
             state_districts = districts;
-            state_precincts = precincts;
+            precincts = state_precincts;
         };
 
         // generate a file from proper raw input
@@ -232,20 +247,19 @@ class State : public Precinct_Group {
 
         // for the iterative methods
         void refine_compactness(float compactness_tolerance);
-        p_index get_partisanship_community(float compactness_tolerance);
+        p_index get_next_community(float compactness_tolerance, int process);
         void refine_partisan(float partisanship_tolerance);
         void refine_population(float population_tolerance);
 
         // return precinct that can be added to the current precinct that won't create islands in the state
         p_index get_addable_precinct(p_index_set available_precincts, p_index current_precinct);
-
+        // write out communities at a certain point in time
+        void save_communities(string write_path);
+        virtual void draw();
         // name of state
         string name = "no_name";
 
         // arrays of shapes in state
-        vector<Precinct_Group> state_districts;
-        vector<Precinct> state_precincts;
+        vector<Shape> state_districts;
         Communities state_communities;
-
-        void draw();
 };
