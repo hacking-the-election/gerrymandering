@@ -13,6 +13,11 @@ import itertools
 import math
 
 import numpy as np
+from shapely.ops import unary_union
+from shapely.geometry import MultiPolygon, Polygon
+
+import logging
+logging.basicConfig(level=logging.INFO, filename="precincts.log")
 
 # ===================================================
 # general geometry functions
@@ -23,6 +28,10 @@ def get_equation(segment):
     Returns the function representing the equation of a line segment
     containing 2 or more points
     """
+
+    if not np.array_equal(np.unique(segment, axis=0), (segment)):
+        raise ValueError("points of segment must be unique")
+
     m = ( (segment[0][1] - segment[1][1])
         / (segment[0][0] - segment[1][0]))
     b = m * (- segment[1][0]) + segment[1][1]
@@ -32,6 +41,14 @@ def get_equation(segment):
 def get_segments(shape):
     """
     Returns array of segments from array of vertices
+
+    ex.
+    [[0, 0], [2, 0], [2, 2], [0, 2]] -> [
+        [[0, 0], [2, 0]],
+        [[2, 0], [2, 2]],
+        [[2, 2], [0, 2]],
+        [[0, 2], [0, 0]]
+    ]
     """
     segments = np.array([shape[i:i + 2] if i + 2 <= len(shape) else
                         [shape[-1], shape[0]] for i in range(len(shape))])
@@ -76,7 +93,44 @@ def get_if_bordering(shape_1, shape_2):
 
 
 def get_border(shapes):
-    pass
+    """
+    Finds external border of a group of shapes
+
+    Args:
+    `shapes`: array of array of array of vertices
+
+    Returns array of vertices
+    """
+
+    polygons = []
+    for multipolygon in shapes:
+        polygon_list = []
+        for polygon in multipolygon:
+            try:
+                polygon_list.append(Polygon([tuple(coord) for coord in polygon]))
+            except ValueError as ve:
+                logging.info(polygon)
+                raise ve
+        polygons.append(polygon_list)
+        
+    multipolygons = []
+    for shape in polygons:
+        try:
+            multipolygons.append(MultiPolygon(shape))
+        except ValueError as ve:
+            logging.info(shape)
+            raise ve
+
+    # border = []
+    # for multipolygon in multipolygons:
+    #     border.append([list(p.exterior.coords) for p in multipolygon.geoms])
+
+    union = unary_union(multipolygons)
+    # border = [[list(coord) for coord in polygon.exterior.coords]
+    #           for polygon in union.geoms]
+    border = [[list(coord) for coord in union.exterior.coords]]
+
+    return border
 
 
 def get_point_in_polygon(point, shape):

@@ -6,12 +6,14 @@ import sys
 from os.path import abspath, dirname
 import unittest
 
+import numpy as np
+
 sys.path.append(abspath(dirname(dirname(dirname(__file__)))))
 
 from utils import convert_to_json
 from serialization.load_precincts import load
 from serialization.save_precincts import Precinct
-from gerrymandering.utils import *
+from gerrymandering.utils import get_equation, get_segments, get_border
 
 
 class TestUtils(unittest.TestCase):
@@ -21,15 +23,42 @@ class TestUtils(unittest.TestCase):
         unittest.TestCase.__init__(self, *args, **kwargs)
 
         self.vermont = load(dirname(__file__) + "/vermont.pickle")
-        for precinct in self.vermont[0]:
-            coords = precinct.coords[:]
-            while type(coords[0][0]) != type(1.0):
-                coords = coords[0]
-            precinct.coords = coords
+
+    def test_get_equation(self):
+        
+        seg1 = np.array([[3, 1], [7, 0]])
+        seg2 = np.array([[0, 0], [0, 0]])
+        seg3 = np.array([])
+
+        self.assertEqual(-748.25, get_equation(seg1)(3000))
+        with self.assertRaises(ValueError):
+            get_equation(seg2)
+        with self.assertRaises(ValueError):
+            get_equation(seg3)
+
+
+    def test_get_segments(self):
+
+        # normal polygon
+        shape_1 = np.array([[0, 0], [2, 0], [2, 2], [0, 2]])
+        # vermont polygon
+        shape_2 = np.array(self.vermont[0][0].coords)
+
+        # self.assertEqual(get_segments(shape_1))
+        
+        # with self.assertRaises(ValueError):
+        #     pass
 
 
     def test_get_border(self):
-        pass
+        # convert_to_json(get_border([p.coords for p in self.vermont[0]]), "test_vermont.json")
+        # shapes_1 = [[[0, 0], [0, 5], [2, 4], [3, 2]], [[2.5, 3], [3.5, 1], [6, 6], [6, 0]]]
+
+        convert_to_json(get_border([p.coords for p in self.vermont[0][:2]]), "test_vermont.json")
+
+        # convert_to_json([p.coords for p in self.vermont[0][:2]], "test_get_border.json")
+
+        # print(get_border(shapes_1))
 
     def test_get_schwartsberg_compactness(self):
         pass
