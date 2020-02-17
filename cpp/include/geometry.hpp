@@ -15,8 +15,8 @@
 
 #include "shape.hpp"
 #include "../lib/clipper/clipper.hpp"
-#include "../lib/clipper/gpc.h"
 
+using namespace ClipperLib;
 using namespace std;
 
 // coordinate manipulation for gui draw methods
@@ -36,9 +36,10 @@ p_index_set get_bordering_shapes(vector<Precinct_Group> shapes, Shape shape);
 
 unit_interval compactness(Shape shape);
 
-gpc_vertext_list shape_to_vertex_list(Shape shape);
-Shape vertext_list_to_shape(gpc_vertex_list v);
-Multi_Shape poly_to_shape(Paths paths);
+Path shape_to_path(Shape shape);
+Shape path_to_shape(Path path);
+Paths multi_shape_to_paths(Multi_Shape ms);
+Multi_Shape paths_to_shape(Paths paths);
 Multi_Shape poly_tree_to_shape(PolyTree tree);
 
 // for algorithm helper methods

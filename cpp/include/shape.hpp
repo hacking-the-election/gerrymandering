@@ -26,6 +26,8 @@
 using namespace std;
 using namespace rapidjson;
 
+// =================================================================
+
 /*
     structure of class definitions:
     - Base shape class - contains border + id
@@ -113,6 +115,38 @@ class Shape {
         template<class Archive> void serialize(Archive & ar, const unsigned int version);
 
         int pop = 0; // total population
+        bool is_part_of_multi_polygon = false; // for parsing rules
+};
+
+class Precinct : public Shape {
+
+    // Derived shape class for defining a precinct
+
+    public:
+
+        Precinct(){}; // default constructor
+
+        Precinct(coordinate_set shapes, int demV, int repV) : Shape(shapes) {
+            // assigning vote data
+            dem = demV;
+            rep = repV;
+        }
+
+        Precinct(coordinate_set shapes, int demV, int repV, string id) : Shape(shapes, id) {
+            // overloaded constructor for adding shape id
+            dem = demV;
+            rep = repV;
+        }
+
+        double get_ratio();        // returns dem/total ratio
+        vector<int> voter_data();  // get data in {dem, rep} format
+    
+        // for boost serialization
+        friend class boost::serialization::access;
+        template<class Archive> void serialize(Archive & ar, const unsigned int version);
+
+        int dem; // democratic vote total
+        int rep; // republican vote total
 };
 
 class Multi_Shape : public Shape {
@@ -138,8 +172,7 @@ class Multi_Shape : public Shape {
         Multi_Shape(vector<Precinct> s) {
             // constructor with assignment
             for (Precinct p : s) {
-                for (Shape s : p.border)
-                    border.push_back(Shape());
+                border.push_back(Shape(p.border));
             }
         }
         // for boost serialization
@@ -151,38 +184,6 @@ class Multi_Shape : public Shape {
         // gui methods
         virtual void draw(); // prints to an SDL window
 };
-
-class Precinct : public Multi_Shape {
-
-    // Derived shape class for defining a precinct
-
-    public:
-
-        Precinct(){}; // default constructor
-
-        Precinct(vector<Shape> shapes, int demV, int repV) : Multi_Shape(shapes) {
-            // assigning vote data
-            dem = demV;
-            rep = repV;
-        }
-
-        Precinct(vector<Shape> shapes, int demV, int repV, string id) : Multi_Shape(shapes, id) {
-            // overloaded constructor for adding shape id
-            dem = demV;
-            rep = repV;
-        }
-
-        double get_ratio();        // returns dem/total ratio
-        vector<int> voter_data();  // get data in {dem, rep} format
-    
-        // for boost serialization
-        friend class boost::serialization::access;
-        template<class Archive> void serialize(Archive & ar, const unsigned int version);
-
-        int dem; // democratic vote total
-        int rep; // republican vote total
-};
-
 
 class Precinct_Group : public Multi_Shape {
 

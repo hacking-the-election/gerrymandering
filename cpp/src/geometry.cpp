@@ -279,7 +279,7 @@ Multi_Shape generate_exterior_border(Precinct_Group precinct_group) {
 	Paths subj;
 
     for (Precinct p : precinct_group.precincts)
-        subj.push_back(shape_to_clipper_int(p));
+        subj.push_back(shape_to_path(p));
     // Paths solutions
     PolyTree solutions;
     Clipper c;
@@ -302,7 +302,7 @@ p_index State::get_addable_precinct(p_index_set available_precincts, p_index cur
     return ret;
 }
 
-Path shape_to_clipper_int(Shape shape) {
+Path shape_to_path(Shape shape) {
     /*
         Creates a clipper Path object from a
         given Shape object by looping through points
@@ -317,7 +317,7 @@ Path shape_to_clipper_int(Shape shape) {
     return p;
 }
 
-Shape clipper_int_to_shape(Path path) {
+Shape path_to_shape(Path path) {
     /*
         Creates a shape object from a clipper Path
         object by looping through points
@@ -347,7 +347,7 @@ Multi_Shape poly_tree_to_shape(PolyTree tree) {
     for (PolyNode* polynode : tree.Childs) {
         // cout << "polynode" << endl;
         if (polynode->IsHole()) x++;
-        Shape s = clipper_int_to_shape(polynode->Contour);
+        Shape s = path_to_shape(polynode->Contour);
         ms.border.push_back(s);
     }
     cout << x << endl;
@@ -355,7 +355,7 @@ Multi_Shape poly_tree_to_shape(PolyTree tree) {
     return ms;
 }
 
-Multi_Shape clipper_mult_int_to_shape(Paths paths) {
+Multi_Shape paths_to_shape(Paths paths) {
     /*
         Create a Multi_Shape object from a clipper Paths
         (multi path) object through nested iteration
