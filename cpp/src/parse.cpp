@@ -176,8 +176,13 @@ vector<coordinate_set> multi_string_to_vector(string str) {
 }
 
 vector<Shape> parse_coordinates(string geoJSON, bool parsing_precincts) {
+    /* 
+        Parses a geoJSON file into an array of Shape
+        objects - finds ID using top-level defined constants,
+        and splits multipolygons into separate shapes (of the same id)
+    */
 
-    // parses a geoJSON state into an array of shapes
+    // int mptotal; // track multipolygons
 
     Document shapes;
     shapes.Parse(geoJSON.c_str()); // parse json
@@ -222,7 +227,8 @@ vector<Shape> parse_coordinates(string geoJSON, bool parsing_precincts) {
             shapes_vector.push_back(shape);
         }
         else {
-            cout << "MultiPoly" << endl;
+            // cout << "Found a multipolygon!" << endl;
+            // mptotal++;
             vector<coordinate_set> borders = multi_string_to_vector(coords);
 
             // calculate area of multipolygon
@@ -235,13 +241,15 @@ vector<Shape> parse_coordinates(string geoJSON, bool parsing_precincts) {
             // create many shapes with the same ID, add them to the array
             for (coordinate_set cs : borders) {
                 Shape shape(cs, id);
-                float fract = shape.area / total_area;
+                shape.is_part_of_multi_polygon = true;
+                float fract = shape.area() / total_area;
                 shape.pop = (int) round(pop * fract);
                 shapes_vector.push_back(shape);
             }
         }
     }
 
+    // cout << mptotal << " multipolygons found!" << endl;
     return shapes_vector;
 }
 
@@ -255,6 +263,8 @@ vector<Precinct> merge_data( vector<Shape> precinct_shapes, map<string, vector<i
     */
 
     vector<Precinct> precincts;
+
+    int x = 0;
 
     for (Shape precinct_shape : precinct_shapes) {
         // iterate over shapes array, get the id of the current shape
@@ -272,10 +282,26 @@ vector<Precinct> merge_data( vector<Shape> precinct_shapes, map<string, vector<i
         }
 
         // create a precinct object and add it to the array
-        vector<Shape> precinct_internal_shapes = {precinct_shape};
-        Precinct precinct = Precinct(precinct_internal_shapes, p_data[0], p_data[1], p_id);
-        precinct.pop = precinct_shape.pop;
-        precincts.push_back(precinct);
+        if (precinct_shape.is_part_of_multi_polygon) {
+            float total_area = precinct_shape.area();
+
+            for (int i = 0; i < precinct_shapes.size(); i++) {
+                if (i != x && precinct_shapes[i].shape_id == p_id) {
+                    total_area += precinct_shapes[i].area();
+                }
+            }
+
+            int ratio = precinct_shape.area() / total_area;
+            Precinct precinct = Precinct(precinct_shape.border, p_data[0] * ratio, p_data[1] * ratio, p_id);
+            precinct.pop = precinct_shape.pop;
+            precincts.push_back(precinct);
+        }
+        else {
+            Precinct precinct = Precinct(precinct_shape.border, p_data[0], p_data[1], p_id);
+            precinct.pop = precinct_shape.pop;
+            precincts.push_back(precinct);
+        }
+        x++;
     }
 
     return precincts; // return precincts array
