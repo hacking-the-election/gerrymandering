@@ -28,10 +28,10 @@ DIFFERENCE = 2
 def get_equation(segment):
     """
     Returns the function representing the equation of a line segment
-    containing 2 or more points
+    containing 2 points
     """
 
-    if not np.array_equal(np.unique(segment, axis=0), (segment)):
+    if segment[0][0] == segment[1][0] and segment[0][1] == segment[1][1]:
         raise ValueError("points of segment must be unique")
 
     m = ( (segment[0][1] - segment[1][1])
@@ -80,11 +80,9 @@ def get_segments_collinear(segment_1, segment_2):
     return (f(0) == g(0)) and (f(1) == g(1))
 
 
-def get_if_bordering(shape_1, shape_2):
+def get_if_bordering(polygon_1, polygon_2):
     """
-    Returns whether or not two shapes are bordering
-
-    Both args are arrays of segs
+    Returns whether or not two polygons are bordering
 
     Returns bool
     """
@@ -92,8 +90,11 @@ def get_if_bordering(shape_1, shape_2):
     # based on fact that if two segments are collinear, and their
     # bounding boxes overlap, they are overlapping
 
-    for segment_1 in shape_1:
-        for segment_2 in shape_2:
+    segments_1 = get_segments(polygon_1)
+    segments_2 = get_segments(polygon_2)
+
+    for segment_1 in segments_1:
+        for segment_2 in segments_2:
             # check collinearity
             if get_segments_collinear(segment_1, segment_2):
                 # check bounding boxes
@@ -105,20 +106,18 @@ def get_if_bordering(shape_1, shape_2):
     return False
 
 
-def get_point_in_polygon(point, shape):
+def get_point_in_polygon(polygon, point):
     """
     Returns whether or not point is in polygon
-
-    Args:
-    `shape`: array of segments
-    `point`: point to find whether or not it is in `shape`
+    (with or without holes)
 
     Returns bool
     """
 
     crossings = 0
+    segments = get_segments(polygon)
 
-    for segment in shape:
+    for segment in segments:
         if (
                 # both endpoints are to the left
                 (segment[0][0] < point[0] and segment[1][0] < point[0]) or
@@ -140,7 +139,7 @@ def get_point_in_polygon(point, shape):
             y_c = get_equation(segment)(point[0])
             if y_c > point[1]:  # point is below segment
                 crossings += 1
-    
+
     return crossings % 2 == 1
 
 

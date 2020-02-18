@@ -161,7 +161,7 @@ class TestGeometry(unittest.TestCase):
         self.assertEquals(
             test_get_point_in_polygon_speed(
                     self.poly2,
-                    (456582, 3669030)
+                    (451937, 3666268)
                 ),
                 True
             )
