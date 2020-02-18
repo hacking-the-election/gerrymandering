@@ -221,7 +221,7 @@ vector<Shape> parse_precinct_coordinates(string geoJSON) {
             coordinate_set border = string_to_vector(coords);
             Shape shape(border, id);
             shape.pop = pop;
-            // shapes_vector.push_back(shape);
+            shapes_vector.push_back(shape);
         }
         else {
             vector<coordinate_set> borders = multi_string_to_vector(coords);
@@ -382,7 +382,8 @@ State State::generate_from_file(string precinct_geoJSON, string voter_data, stri
     if (VERBOSE) cout << "generating state with shape arrays..." << endl;
     State state = State(district_shapes, precincts, state_shape_v);
 
-    state.draw();
+    // state.draw();
+    state.precincts[121].draw();
 
     Multi_Shape border = generate_exterior_border(state);
     cout << border.border.size() << endl;

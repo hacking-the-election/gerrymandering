@@ -1,12 +1,15 @@
 /*=======================================
  shape.hpp:                     k-vernooy
- last modified:               Mon, Feb 10
+ last modified:               Mon, Feb 17
  
  Class definitions and method declarations
  for shapes, precincts, states, and 
- districts. 
+ districts. Useful geometry classes and
+ typedefs (coordinate, LinearRing) defined
+ here as well.
 ========================================*/
-#pragma once
+
+#pragma once // avoid multiple includes
 
 #include <iostream>
 #include <string>
@@ -14,11 +17,15 @@
 #include <sstream>
 #include <fstream>
 #include <map>
+#include <array> 
+#include <exception>
 
+// for the rapidjson parser
 #include "../lib/rapidjson/include/rapidjson/document.h"
 #include "../lib/rapidjson/include/rapidjson/writer.h"
 #include "../lib/rapidjson/include/rapidjson/stringbuffer.h"
 
+// for boost binary serialization
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/serialization/vector.hpp>
@@ -36,76 +43,129 @@ using namespace rapidjson;
         - Derived state class - has array of precincts + districts
 */
 
-class Shape;
-class Multi_Shape;
-class Precinct;
-class Precinct_Group;
-class State;
+namespace GeoGerry {
+
+class LinearRing;      // a group of lines
+class Shape;           // Exterior and optional interior LinearRings (for holes)
+class Multi_Shape;     // A group of Shapes
+class Precinct;        // Voter block class
+class Precinct_Group;  // A group of precincts
+class State;           // Contains arrays of the above, as well as methods for various algorithms
+class Exceptions;       // for any error to be thrown
 
 // simplify the coordinate modification system
-typedef vector<float> coordinate;
-typedef vector<coordinate> coordinate_set;
 
-// an array of 4 max/mins:
-typedef vector<float> bounding_box;
+typedef array<double, 2> coordinate;        // a list in form {x1, y1}
+typedef vector<coordinate> coordinate_set;  // list of coordiantes: {{x1, y1}, {x2, y2}}
+typedef array<double, 4> bounding_box;      // an array of 4 max/mins:
 
 // for values between 0-1:
-typedef float unit_interval;
+typedef double unit_interval;
 
 // a set of two coordinates:
-typedef vector<float> segment;
+typedef array<double, 4> segment;
 typedef vector<segment> segments;
 
-/*
-    typedef indexes for precinct algorithm 
-    implementations - rather than using objects, 
-    just use indexes of objects in the array
-*/
+// for defining indices of arrays rather than referring to objects:
 
-typedef int p_index;
-typedef vector<p_index> p_index_set;
-typedef vector<int> seg_index; //  {p_index, segment_index};
+typedef int p_index;                  // defines an index in an array   
+typedef vector<p_index> p_index_set;  // vector of indices in an array
+typedef array<int, 2> seg_index;      // {p_index, segment_index};
+
+class Exceptions {
+    /*
+        For throwing custom errors when I inevitably pass
+        bad inputs to some of these constructors
+    */
+
+    public:
+        struct RingNotClosed : public exception {
+            const char* what() const throw() {
+                return "Points of LinearRing do not make closed shape. Wait how is this even possible?";
+            }
+        };
+};
+
+class LinearRing {
+    /*
+        Contains a mandatory `border` property that contains
+        a simple coordiante_set - a sequence of lines.
+        
+        Basically just a wrapper for the coordinate_set typedef
+        with extended method functionality
+    */
+
+    public: 
+
+        LinearRing() {};
+
+        LinearRing(coordinate_set b) {
+            border = b;
+        }
+
+        virtual float area();            // area of shape using shoelace theorem
+        virtual float perimeter();       // sum distance of segments
+        virtual coordinate center();     // average of all points in shape
+        virtual segments get_segments(); // return a segment list with shape's segments
+
+        coordinate_set border;
+
+        // add operator overloading for object equality
+        friend bool operator== (LinearRing& l1, LinearRing& l2) {
+            return (l1.border == l2.border);
+        }
+
+        // add operator overloading for object inequality
+        friend bool operator!= (LinearRing& l1, LinearRing& l2) {
+            return (l1.border != l2.border);
+        }
+
+        // for boost serialization
+        friend class boost::serialization::access;
+        template<class Archive> void serialize(Archive & ar, const unsigned int version);
+};
 
 class Shape {
-
     /* 
-        Contains a public vector of coordinates 
-        and methods for calculation
+        Contains a public border of a LinearRing object
+        and a public vector of linearRings for holes.
+
+        Shape objects may contain hole(s), but do not have
+        multiple exterior borders
     */
 
     public: 
 
         Shape(){}; // default constructor
 
-        Shape(coordinate_set shape) {
+        Shape(LinearRing shape) {
             // constructor with assignment
             border = shape;
         }
 
-        Shape(coordinate_set shape, string id) {
-            // overload constructor for adding id
+        // overload constructor for adding id
+        Shape(LinearRing shape, string id) {
             border = shape;
             shape_id = id;
         }
 
-        coordinate_set border; // array of coordinates
-        string shape_id;
+        LinearRing border;               // array of coordinates
+        vector<LinearRing> holes;        // array of holes in shape
+        string shape_id;                 // the shape's ID, if applicable
 
-        // gui methods
-        virtual void draw(); // prints to an SDL window
+        virtual void draw();             // prints to an SDL window
 
-        // calculation methods
-        virtual float area();
-        virtual float perimeter();
+        virtual float area();            // return (area of shape - area of holes)
+        virtual float perimeter();  
         virtual coordinate center();
-        virtual segments get_segments();
+        virtual segments get_segments(); // return a segment list with shape's segments
 
-        //! beware of the following line, could cause problems for serialization
+        // add operator overloading for object equality
         friend bool operator== (Shape& p1, Shape& p2) {
             return (p1.border == p2.border);
         }
 
-        //! beware of the following line, could cause problems for serialization
+        // add operator overloading for object inequality
         friend bool operator!= (Shape& p1, Shape& p2) {
             return (p1.border != p2.border);
         }
@@ -141,6 +201,16 @@ class Precinct : public Shape {
         double get_ratio();        // returns dem/total ratio
         vector<int> voter_data();  // get data in {dem, rep} format
     
+        // add operator overloading for object equality
+        friend bool operator== (Precinct& p1, Precinct& p2) {
+            return (p1.border == p2.border && p1.dem == p2.dem && p1.rep == p2.rep && p1.pop == p2.pop);
+        }
+
+        // add operator overloading for object inequality
+        friend bool operator!= (Precinct& p1, Precinct& p2) {
+            return (p1.border != p2.border || p1.dem != p2.dem || p1.rep != p2.rep || p1.pop != p2.pop);
+        }
+
         // for boost serialization
         friend class boost::serialization::access;
         template<class Archive> void serialize(Archive & ar, const unsigned int version);
@@ -152,6 +222,7 @@ class Precinct : public Shape {
 class Multi_Shape : public Shape {
     /*
         A class containing a vector of shapes
+        and methods for drawing said vector
     */
 
     public: 
@@ -181,6 +252,16 @@ class Multi_Shape : public Shape {
 
         vector<Shape> border;
 
+        // add operator overloading for object equality
+        friend bool operator== (Multi_Shape& s1, Multi_Shape& s2) {
+            return (s1.border == s2.border);
+        }
+
+        // add operator overloading for object inequality
+        friend bool operator!= (Multi_Shape& s1, Multi_Shape& s2) {
+            return (s1.border != s2.border);
+        }
+        
         // gui methods
         virtual void draw(); // prints to an SDL window
 };
@@ -220,17 +301,19 @@ class Precinct_Group : public Multi_Shape {
 typedef Precinct_Group Community;
 typedef vector<Precinct_Group> Communities;
 
-/*
-    Derived shape class for defining a state.
-    Includes arrays of precincts, and districts.
-
-    Contains methods for generating from binary files
-    or from raw data with proper district + precinct data
-
-    Contains serialization methods for binary and json.
-*/
 
 class State : public Precinct_Group {
+    /*
+        Derived shape class for defining a state.
+        Includes arrays of precincts, and districts.
+
+        Contains methods for generating from binary files
+        or from raw data with proper district + precinct data
+        and serialization methods for binary and json.
+        
+        This is where the algorithmic methods are defined,
+        for communities and for quantification
+    */
 
     public:
 
@@ -279,3 +362,4 @@ class State : public Precinct_Group {
         vector<Multi_Shape> state_districts;
         Communities state_communities;
 };
+}

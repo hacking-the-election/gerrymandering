@@ -6,8 +6,8 @@ STATE_FILES = src/parse.cpp src/shape.cpp src/geometry.cpp src/gui.cpp src/seria
 BOOST = -lboost_serialization -lboost_filesystem
 SDL = -lSDL2 -lSDL2main
 V = 11
-CLIPPER = lib/clipper/clipper.cpp
-OPT = -Wall -pedantic -Wextra
+CLIPPER = `geos-config --ldflags` -lgeos
+OPT = #-Wall -pedantic -Wextra
 
 #all: community
 all: state_serializer
@@ -18,4 +18,4 @@ state_serializer:
 
 community:
 	@echo "compiling community algorithm executor"
-	@${CC} -std=c++${V} ${STATE_FILES} ${CLIPPER} src/algorithm/community/generate_communities.cpp src/algorithm/community/community.cpp ${BOOST} ${SDL} -o ${BINDIR}/generate_communities
+	@${CC} -std=c++${V} ${STATE_FILES} src/algorithm/community/generate_communities.cpp src/algorithm/community/community.cpp ${BOOST} ${CLIPPER} ${SDL} -o ${BINDIR}/generate_communities
