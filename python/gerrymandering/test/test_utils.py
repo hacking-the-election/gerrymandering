@@ -23,8 +23,9 @@ from gerrymandering.utils import (get_equation, get_segments, clip, UNION,
 def print_time(func):
     def timed_func(*args, **kwargs):
         start_time = time.time()
-        func(*args, **kwargs)
+        output = func(*args, **kwargs)
         print(f"{func.__name__} took {time.time() - start_time} seconds")
+        return output
     return timed_func
 
 
@@ -38,14 +39,26 @@ def return_time(func):
 
 class TestUtils(unittest.TestCase):
 
+    # complete pickle state data files
+    # ================================
+
     # for small tests that shouldnt take long
-    vermont = load(dirname(__file__) + "/vermont.pickle")
+    vermont = load(dirname(__file__) + "/data/vermont.pickle")
     # for big tests to find problems
-    alabama = load(dirname(__file__) + "/alabama.pickle")
+    alabama = load(dirname(__file__) + "/data/alabama.pickle")
     # for things with islands
-    hawaii = load(dirname(__file__) + "/hawaii.pickle")
+    hawaii = load(dirname(__file__) + "/data/hawaii.pickle")
     # for small tests that need more than one district
-    connecticut = load(dirname(__file__) + "/connecticut.pickle")
+    connecticut = load(dirname(__file__) + "/data/connecticut.pickle")
+
+    # function-specific test data
+    # ================================
+    
+    difference_test_data = load(dirname(__file__) \
+                                + "/data/difference_test_data.pickle")
+    border_test_data = load(dirname(__file__) \
+                                + "/data/border_test_data.pickle")
+
 
     @classmethod
     def plot_get_border(cls):
@@ -62,7 +75,8 @@ class TestUtils(unittest.TestCase):
             t = timed_get_border([p.coords for p in cls.vermont[0][:i]])
             Y = np.append(Y, [t])
 
-        with open("border_time.pickle", "wb+") as f:
+        # save the data in case the chart doesn't work
+        with open("test_border_time.pickle", "wb+") as f:
             pickle.dump(Y, f)
         
         plt.scatter(X, Y)
@@ -92,29 +106,36 @@ class TestUtils(unittest.TestCase):
         # vermont polygon
         shape_2 = np.array(self.vermont[0][0].coords)
 
-    @print_time
     def test_get_border(self):
         """
-        Prints the speed of finding the exterior border of a group of
-        polygons (precincts of vermont)
+        Border of precincts of vermont
         """
 
-        clip([p.coords for p in self.vermont[0]], UNION)
+        @print_time
+        def test_get_border_speed():
+            return clip([p.coords for p in self.vermont[0]], UNION)
 
-    @print_time
+        self.assertEqual(test_get_border_speed(), self.border_test_data)
+
     def test_get_difference(self):
         """
-        Prints the speed of finding the difference between two polygons
-        (outer border of connecticut and its 5th congresssional district)
+        Difference between outer border of connecticut and
+        its 5th congressional district
         """
 
-        connecticut_district_coords = [
-            d["geometry"]["coordinates"]
-            for d in self.connecticut[1]["features"]]
+        @print_time
+        def test_get_difference_speed():
+            connecticut_district_coords = [
+                d["geometry"]["coordinates"]
+                for d in self.connecticut[1]["features"]]
 
-        outer_border = clip(connecticut_district_coords, UNION)
+            outer_border = clip(connecticut_district_coords, UNION)
+            difference = clip([outer_border, connecticut_district_coords[4]],
+                              DIFFERENCE)
 
-        difference = clip([outer_border, connecticut_district_coords[4]], DIFFERENCE)
+            return difference
+
+        self.assertEqual(test_get_difference_speed(), self.difference_test_data)
 
 
     def test_get_schwartsberg_compactness(self):
