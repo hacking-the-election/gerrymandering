@@ -40,20 +40,31 @@ def get_equation(segment):
     return lambda x: m * x + b
 
 
-def get_segments(shape):
+def get_segments(polygon):
     """
-    Returns array of segments from array of vertices
+    Returns array of segments from polygon
+    (with or without holes)
 
     ex.
-    [[0, 0], [2, 0], [2, 2], [0, 2]] -> [
-        [[0, 0], [2, 0]],
-        [[2, 0], [2, 2]],
-        [[2, 2], [0, 2]],
-        [[0, 2], [0, 0]]
+    [
+        [[0, 0], [4, 0], [4, 4], [0, 4]],
+        [[1, 1], [1, 3], [3, 3], [3, 1]]
+    ]
+               |
+               v 
+    [
+        [[0, 0], [4, 0]],
+        [[4, 0], [4, 4]],
+        [[4, 4], [0, 4]],
+        [[1, 1], [1, 3]],
+        [[1, 3], [3, 3]],
+        [[3, 3], [3, 1]]
     ]
     """
-    segments = np.array([shape[i:i + 2] if i + 2 <= len(shape) else
-                        [shape[-1], shape[0]] for i in range(len(shape))])
+    segments = np.array(
+        [[shape[i], shape[i+1]] for shape in polygon
+         for i in range(len(shape) - 1)]
+        )
     return segments
 
 
@@ -140,16 +151,18 @@ def get_distance(p1, p2):
     return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
 
 
-def get_perimeter(shape):
+def get_perimeter(polygon):
     """
-    Returns the perimeter of array of segments `shape`
+    Returns the perimeter of polygon (with or without holes)
     """
-    return sum([get_distance(*seg) for seg in shape])
+    distances = np.array(
+        [get_distance(p1, p2) for p1, p2 in get_segments(polygon)])
+    return sum(distances)
 
 
-def get_area(shape):
+def get_simple_area(shape):
     """
-    Returns the area of array of points `shape`
+    Returns the area of polygon (with no holes)
     """
     area = 0
     v2 = shape[-1]
@@ -161,6 +174,17 @@ def get_area(shape):
     area = abs(area / 2)
 
     return area
+
+def get_area(polygon):
+    """
+    Returns the area of polygon (with or without holes)
+    """
+
+    outer_area = get_simple_area(polygon[0])
+    for shape in polygon[1:]:
+        outer_area -= get_simple_area(shape)
+
+    return outer_area
 
 
 def get_schwartsberg_compactness(shape):
