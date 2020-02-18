@@ -54,11 +54,10 @@ class State;           // Contains arrays of the above, as well as methods for v
 class Exceptions;       // for any error to be thrown
 
 // simplify the coordinate modification system
+
 typedef array<double, 2> coordinate;        // a list in form {x1, y1}
 typedef vector<coordinate> coordinate_set;  // list of coordiantes: {{x1, y1}, {x2, y2}}
-
-// an array of 4 max/mins:
-typedef array<double, 4> bounding_box;
+typedef array<double, 4> bounding_box;      // an array of 4 max/mins:
 
 // for values between 0-1:
 typedef double unit_interval;
@@ -67,21 +66,22 @@ typedef double unit_interval;
 typedef array<double, 4> segment;
 typedef vector<segment> segments;
 
-/*
-    typedef indexes for precinct algorithm 
-    implementations - rather than using objects, 
-    just use indexes of objects in the array
-*/
+// for defining indices of arrays rather than referring to objects:
 
-typedef int p_index;
-typedef vector<p_index> p_index_set;
-typedef vector<int> seg_index; //  {p_index, segment_index};
+typedef int p_index;                  // defines an index in an array   
+typedef vector<p_index> p_index_set;  // vector of indices in an array
+typedef array<int, 2> seg_index;      // {p_index, segment_index};
 
 class Exceptions {
+    /*
+        For throwing custom errors when I inevitably pass
+        bad inputs to some of these constructors
+    */
+
     public:
         struct RingNotClosed : public exception {
             const char* what() const throw() {
-                return "Points of LinearRing do not make closed shape.";
+                return "Points of LinearRing do not make closed shape. Wait how is this even possible?";
             }
         };
 };
@@ -98,6 +98,7 @@ class LinearRing {
     public: 
 
         LinearRing() {};
+
         LinearRing(coordinate_set b) {
             border = b;
         }
@@ -118,7 +119,6 @@ class LinearRing {
         friend bool operator!= (LinearRing& l1, LinearRing& l2) {
             return (l1.border != l2.border);
         }
-
 
         // for boost serialization
         friend class boost::serialization::access;
@@ -201,6 +201,16 @@ class Precinct : public Shape {
         double get_ratio();        // returns dem/total ratio
         vector<int> voter_data();  // get data in {dem, rep} format
     
+        // add operator overloading for object equality
+        friend bool operator== (Precinct& p1, Precinct& p2) {
+            return (p1.border == p2.border && p1.dem == p2.dem && p1.rep == p2.rep && p1.pop == p2.pop);
+        }
+
+        // add operator overloading for object inequality
+        friend bool operator!= (Precinct& p1, Precinct& p2) {
+            return (p1.border != p2.border || p1.dem != p2.dem || p1.rep != p2.rep || p1.pop != p2.pop);
+        }
+
         // for boost serialization
         friend class boost::serialization::access;
         template<class Archive> void serialize(Archive & ar, const unsigned int version);
@@ -212,6 +222,7 @@ class Precinct : public Shape {
 class Multi_Shape : public Shape {
     /*
         A class containing a vector of shapes
+        and methods for drawing said vector
     */
 
     public: 
@@ -241,6 +252,16 @@ class Multi_Shape : public Shape {
 
         vector<Shape> border;
 
+        // add operator overloading for object equality
+        friend bool operator== (Multi_Shape& s1, Multi_Shape& s2) {
+            return (s1.border == s2.border);
+        }
+
+        // add operator overloading for object inequality
+        friend bool operator!= (Multi_Shape& s1, Multi_Shape& s2) {
+            return (s1.border != s2.border);
+        }
+        
         // gui methods
         virtual void draw(); // prints to an SDL window
 };
