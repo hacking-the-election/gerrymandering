@@ -134,15 +134,24 @@ class TestGeometry(unittest.TestCase):
 
     def test_get_compactness(self):
 
+        @print_time
+        def test_get_compactness_speed(polygon):
+            return get_schwartsberg_compactness(polygon)
+
         # later to be tested with cpp outputs
-        print(f"{get_schwartsberg_compactness(self.poly1)=}")
-        print(f"{get_schwartsberg_compactness(self.poly2)=}")
+        print("compactness:")
+        print(f"poly1: {test_get_compactness_speed(self.poly1)}")
+        print(f"poly2: {test_get_compactness_speed(self.poly2)}")
 
     def test_get_point_in_polygon(self):
 
+        @print_time
+        def test_get_point_in_polygon_speed(polygon, point):
+            return get_point_in_polygon(polygon, point)
+
         # point is inside hole in polygon
         self.assertEquals(
-            get_point_in_polygon(
+            test_get_point_in_polygon_speed(
                     self.poly1,
                     (456625, 3662331)
                 ),
@@ -150,7 +159,7 @@ class TestGeometry(unittest.TestCase):
             )
         # point is inside polygon
         self.assertEquals(
-            get_point_in_polygon(
+            test_get_point_in_polygon_speed(
                     self.poly2,
                     (456582, 3669030)
                 ),
@@ -159,7 +168,11 @@ class TestGeometry(unittest.TestCase):
 
     def test_get_if_bordering(self):
         
-        self.assertEqual(get_if_bordering(self.poly1, self.poly2), True)
+        @print_time
+        def test_get_if_bordering(polygon1, polygon2):
+            return get_if_bordering(polygon1, polygon2)
+
+        self.assertEqual(test_get_if_bordering(self.poly1, self.poly2), True)
 
 
 class TestCommunities(unittest.TestCase):
