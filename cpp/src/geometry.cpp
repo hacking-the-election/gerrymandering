@@ -17,99 +17,25 @@ const int c = pow(10, 7);
 
 using namespace GeoGerry;
 
-
-coordinate Shape::center() {
-    /* 
-        Returns the average {x,y} of a shape.
-        In the future, could use centroid algorithm
-        for determining center - may be a better measure of center
-    */
-
-    coordinate coords = { border[0][0], border[0][1] };  // initialize with first values
-    
-    // loop and add x and y to respective sums
-    for ( int i = 1; i < border.size(); i++ ) {
-        coords[0] += border[i][0];
-        coords[1] += border[i][1];
-    }
-
-    // divide by number of elements to average
-    coords[0] /= border.size();
-    coords[1] /= border.size();
-
-    return coords; // return averages
-}
-
-float get_distance(segment s) {
-    // Distance formula on a segment array
-    return sqrt(pow((s[2] - s[0]), 2) + pow((s[3] - s[1]), 2));
-}
-
-float get_distance(coordinate c0, coordinate c1) {
-    // Distance formula on two separate points
-    return sqrt(pow((c1[0] - c0[0]), 2) + pow((c1[1] - c0[1]), 2));
-}
-
-float Shape::area() {
-    
-    /*
-        Returns the area of a shape, using latitude * long area
-        An implementation of the shoelace theorem, found at 
-        https://www.mathopenref.com/coordpolygonarea.html
-    */
-
-    float area = 0;
-    int points = border.size() - 1; // last index of border
-
-    for ( int i = 0; i < border.size(); i++ ) {
-        area += (border[points][0] + border[i][0]) * (border[points][1] - border[i][1]);
-        points = i;
-    }
-
-    return (area / 2);
-}
-
-float Shape::perimeter() {
-    /*
-        Returns the perimeter of a shape object using
-        latitude and longitude coordinates by summing distance
-        formula distances for all segments
-    */
-
-    float t = 0;
-    for (segment s : get_segments())
-        t += get_distance(s);    
-
-    return t;
-}
+/*
+    Following methods utilize the segment of segments typedefs.
+    These are useful for summing distances, or checking colinearity,
+    which is used for below border functions.
+*/
 
 segment coords_to_seg(coordinate c1, coordinate c2) {
     // combines coordinates into a segment array
     return {c1[0], c1[1], c2[0], c2[1]};
 }
 
-segments Shape::get_segments() {
-    /*
-        Returns a vector of segments from the
-        coordinate array of a Shape.border property
-    */
+double get_distance(segment s) {
+    // Distance formula on a segment array
+    return sqrt(pow((s[2] - s[0]), 2) + pow((s[3] - s[1]), 2));
+}
 
-    segments segs;
-    
-    for (int i = 0; i < border.size(); i++) {
-
-        coordinate c1 = border[i];
-        coordinate c2;
-
-        if (i == border.size() - 1)
-            c2 = border[0];
-        else
-            c2 = border[i + 1];
-
-        segs.push_back(coords_to_seg(c1, c2));
-    }
-
-    return segs;
+double get_distance(coordinate c0, coordinate c1) {
+    // Distance formula on two separate points
+    return sqrt(pow((c1[0] - c0[0]), 2) + pow((c1[1] - c0[1]), 2));
 }
 
 vector<float> calculate_line(segment s) {
@@ -125,11 +51,17 @@ vector<float> calculate_line(segment s) {
     return {m, b};
 }
 
-bool segments_overlap(segment s0, segment s1) {
+bool get_colinear(segment s0, segment s1) {
+    // returns whether or not two lines have the same equation
+    return (calculate_line(s0) == calculate_line(s1));
+}
+
+bool get_overlap(segment s0, segment s1) {
     /*
         Returns whether or not two segments' bounding boxes
         overlap, meaning one of the extremes of a segment are
-        within the range of the other's
+        within the range of the other's. One shared point does
+        not count to overlap.
     */
    
     if (s0[0] > s0[2])
@@ -138,12 +70,109 @@ bool segments_overlap(segment s0, segment s1) {
         return (((s1[0] < s0[2]) && (s1[0] > s0[0])) || ((s1[2] < s0[2]) && (s1[2] > s0[0])) );
 }
 
+bool get_bordering(segment s0, segment s1) {
+    return (get_colinear(s0, s1) && get_overlap(s0, s1));
+}
+
+segments GeoGerry::LinearRing::get_segments() {
+    /*
+        Returns a vector of segments from the
+        coordinate array of a LinearRing.border property
+    */
+
+    segments segs;
+    
+    // loop through segments
+    for (int i = 0; i < border.size(); i++) {
+        coordinate c1 = border[i];  // starting coord
+        coordinate c2;              // ending coord
+ 
+        // find position of ending coordinate
+        if (i == border.size() - 1)
+            c2 = border[0];
+        else
+            c2 = border[i + 1];
+
+        segs.push_back(coords_to_seg(c1, c2)); // add to list
+    }
+
+    return segs;
+}
+
+coordinate GeoGerry::LinearRing::get_center() {
+    /* 
+        Returns the average {x,y} of a linear ring (set of points).
+        In the future, could use centroid algorithm for determining
+        center - may be a better measure of center
+    */
+
+    coordinate coords = { border[0][0], border[0][1] };  // initialize with first values
+    
+    // loop and add x and y to respective sums
+    for ( int i = 1; i < border.size(); i++ ) {
+        coords[0] += border[i][0];
+        coords[1] += border[i][1];
+    }
+
+    return {coords[0] / border.size(), coords[1] / border.size()}; // return averages
+}
+
+double GeoGerry::LinearRing::get_area() {
+    /*
+        Returns the area of a linear ring, using latitude * long area
+        An implementation of the shoelace theorem, found at 
+        https://www.mathopenref.com/coordpolygonarea.html
+    */
+
+    double area = 0;
+    int points = border.size() - 1; // last index of border
+
+    for ( int i = 0; i < border.size(); i++ ) {
+        area += (border[points][0] + border[i][0]) * (border[points][1] - border[i][1]);
+        points = i;
+    }
+
+    return (area / 2);
+}
+
+double GeoGerry::LinearRing::get_perimeter() {
+    /*
+        Returns the perimeter of a LinearRing object using
+        latitude and longitude coordinates by summing distance
+        formula distances for all segments
+    */
+
+    float t = 0;
+    for (segment s : get_segments())
+        t += get_distance(s);    
+
+    return t;
+}
+
+coordinate GeoGerry::Shape::get_center() {
+    /*
+        Returns average center from list of holes
+        and hull by calling LinearRing::get_center.
+    */
+
+    coordinate center = hull.get_center();
+    
+    for (GeoGerry::LinearRing lr : holes) {
+        coordinate nc = lr.get_center();
+        center[0] += nc[0];
+        center[1] += nc[1];
+    }
+
+    int size = 1 + holes.size();
+    return {center[0] / size, center[1] / size};
+}
+
 bool are_bordering(Shape s0, Shape s1) {
     // returns whether or not two shapes touch each other
 
     for (segment seg0 : s0.get_segments()) {
         for (segment seg1 : s1.get_segments()) {
-            if (calculate_line(seg0) == calculate_line(seg1) && segments_overlap(seg0, seg1)) {
+            if (calculate_line(seg0) == calculate_line(seg1) && get_overlap(seg0, seg1)) {
                 return true;
             }
         }
@@ -222,10 +251,6 @@ unit_interval compactness(Shape shape) {
     float circumference = 2 * circle_radius * PI;
 
     return 1 / (shape.perimeter() / circumference);
-}
-
-bool is_colinear(segment s0, segment s1) {
-    return (calculate_line(s0) == calculate_line(s1));
 }
 
 float get_standard_deviation_partisanship(Precinct_Group pg) {

@@ -103,9 +103,9 @@ class LinearRing {
             border = b;
         }
 
-        virtual float area();            // area of shape using shoelace theorem
-        virtual float perimeter();       // sum distance of segments
-        virtual coordinate center();     // average of all points in shape
+        virtual double get_area();            // area of shape using shoelace theorem
+        virtual double get_perimeter();       // sum distance of segments
+        virtual coordinate get_center();     // average of all points in shape
         virtual segments get_segments(); // return a segment list with shape's segments
 
         coordinate_set border;
@@ -139,25 +139,38 @@ class Shape {
         Shape(){}; // default constructor
 
         Shape(LinearRing shape) {
-            // constructor with assignment
-            border = shape;
+            // no holes in shape
+            hull = shape;
         }
 
         // overload constructor for adding id
         Shape(LinearRing shape, string id) {
-            border = shape;
+            hull = shape;
             shape_id = id;
         }
 
-        LinearRing border;               // array of coordinates
+        Shape(LinearRing ext, vector<LinearRing> interior) {
+            hull = ext;
+            holes = interior;
+        }
+
+        Shape(LinearRing ext, vector<LinearRing> interior, string id) {
+            hull = ext;
+            holes = interior;
+            shape_id = id;
+        }
+
+
+        LinearRing hull;                 // array of coordinates - ext border
         vector<LinearRing> holes;        // array of holes in shape
         string shape_id;                 // the shape's ID, if applicable
 
         virtual void draw();             // prints to an SDL window
 
-        virtual float area();            // return (area of shape - area of holes)
-        virtual float perimeter();  
-        virtual coordinate center();
+        // geometric methods, overwritten in Shape class
+        virtual double get_area();            // return (area of shape - area of holes)
+        virtual double get_perimeter();  
+        virtual coordinate get_center();
         virtual segments get_segments(); // return a segment list with shape's segments
 
         // add operator overloading for object equality
@@ -261,7 +274,7 @@ class Multi_Shape : public Shape {
         friend bool operator!= (Multi_Shape& s1, Multi_Shape& s2) {
             return (s1.border != s2.border);
         }
-        
+
         // gui methods
         virtual void draw(); // prints to an SDL window
 };
@@ -338,17 +351,17 @@ class State : public Precinct_Group {
         template<class Archive> void serialize(Archive & ar, const unsigned int version);
 
         // for the community generation algorithm
-        void generate_communities(int num_communities, float compactness_tolerance, float partisanship_tolerance, float population_tolerance);
+        void generate_communities(int num_communities, double compactness_tolerance, double partisanship_tolerance, double population_tolerance);
         void give_precinct(p_index precinct, p_index community, string t_type);
 
         // initial random configuration of communities
         void generate_initial_communities(int num_communities);
 
         // for the iterative methods
-        void refine_compactness(float compactness_tolerance);
-        p_index get_next_community(float compactness_tolerance, int process);
-        void refine_partisan(float partisanship_tolerance);
-        void refine_population(float population_tolerance);
+        void refine_compactness(double compactness_tolerance);
+        p_index get_next_community(double compactness_tolerance, int process);
+        void refine_partisan(double partisanship_tolerance);
+        void refine_population(double population_tolerance);
 
         // return precinct that can be added to the current precinct that won't create islands in the state
         p_index get_addable_precinct(p_index_set available_precincts, p_index current_precinct);
