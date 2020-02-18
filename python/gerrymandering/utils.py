@@ -16,6 +16,11 @@ import numpy as np
 from shapely.ops import unary_union
 from shapely.geometry import MultiPolygon, Polygon
 
+
+UNION = 1
+DIFFERENCE = 2
+
+
 # ===================================================
 # general geometry functions
 
@@ -87,93 +92,6 @@ def get_if_bordering(shape_1, shape_2):
                     return True
 
     return False
-
-
-def get_border(shapes):
-    """
-    Finds external border of a group of shapes
-
-    Args:
-    `shapes`: array of array of array of vertices
-
-    Returns array of vertices
-    """
-
-    # find union of shapes
-
-    polygons = []
-    for multipolygon in shapes:
-        polygon_list = []
-        for polygon in multipolygon:
-            try:
-                polygon_list.append(Polygon([tuple(coord) for coord in polygon]))
-            except ValueError:
-                polygon_list.append(Polygon([tuple(coord) for coord in polygon[0]]))
-            except AssertionError as ae:
-                polygon_list.append(Polygon([tuple(coord) for coord in polygon[0]]))
-        polygons.append(polygon_list)
-        
-    multipolygons = []
-    for shape in polygons:
-        multipolygons.append(MultiPolygon(shape))
-
-    union = unary_union(multipolygons)
-
-    # display with matplotlib
-
-    # from matplotlib import pyplot
-    # from descartes import PolygonPatch
-
-    # SIZE = (8.0, 8.0*(math.sqrt(5)-1.0/2.0))
-
-    # fig = pyplot.figure(1, figsize=SIZE, dpi=90)
-    # ax = fig.add_subplot(121)
-    # for ob in multipolygons:
-    #     p = PolygonPatch(ob, alpha=0.5, zorder=1)
-    #     ax.add_patch(p)
-
-    # og_xs = []
-    # og_ys = []
-    # for multipolygon in multipolygons:
-    #     for polygon in multipolygon.geoms:
-    #         for coord in list(polygon.exterior.coords):
-    #             og_xs.append(coord[0])
-    #             og_ys.append(coord[1])
-
-    # ax1 = fig.add_subplot(122)
-    # patch2b = PolygonPatch(union, alpha=0.5, zorder=2)
-    # ax1.add_patch(patch2b)
-
-    # border = [[list(coord) for coord in union.exterior.coords]]
-    # border_xs = [coord[0] for coord in border[0]]
-    # border_ys = [coord[1] for coord in border[0]]
-
-    # ax.set_autoscaley_on(False)
-    # ax.set_autoscalex_on(False)
-    # ax.set_ylim([min(og_ys), max(og_ys)])
-    # ax.set_xlim([min(og_xs), max(og_xs)])
-
-    # ax1.set_autoscaley_on(False)
-    # ax1.set_autoscalex_on(False)
-    # ax1.set_ylim([min(border_ys), max(border_ys)])
-    # ax1.set_xlim([min(border_xs), max(border_xs)])
-
-    # pyplot.show()
-
-    real_border = []
-    if isinstance(union, Polygon):
-        real_border.append(
-            np.concatenate([np.concatenate(
-                [np.asarray(t.exterior)[:, :2]] + [np.asarray(r)[:, :2] 
-                for r in t.interiors]) for t in [union]]).tolist())
-    elif isinstance(union, MultiPolygon):
-        for polygon in union.geoms:
-            real_border.append(
-            np.concatenate([np.concatenate(
-                [np.asarray(t.exterior)[:, :2]] + [np.asarray(r)[:, :2] 
-                for r in t.interiors]) for t in [polygon]]).tolist())
-
-    return [real_border]
 
 
 def get_point_in_polygon(point, shape):
@@ -251,12 +169,115 @@ def get_schwartsberg_compactness(shape):
     `shape`
     """
     
+    # perimeter / circumference
     compactness = (get_perimeter(shape)
                    / (2 * math.pi * math.sqrt(get_area(shape) / math.pi)))
-    if compactness < 1:
-        return 1 / compactness
+    return 1 - abs(1 - compactness)  # ensures less than one
+
+
+def clip(shapes, clip_type):
+    """
+    Finds external border of a group of shapes
+
+    Args:
+    `shapes`: array of array of array of vertices
+    `clip_type`: either 1 (union) or 2 (difference)
+
+    if `clip_type` is difference, then there should only be 2 shapes in
+    `shapes`
+
+    Returns array of vertices
+    """
+
+    # find union of shapes
+
+    polygons = []
+    for multipolygon in shapes:
+        polygon_list = []
+        for polygon in multipolygon:
+            try:
+                polygon_list.append(
+                    Polygon([tuple(coord) for coord in polygon]))
+            except (ValueError, AssertionError):
+                # if there is a multipolygon precinct (which there
+                # shouldn't be, because those will be broken into
+                # separate precincts in the serialization process)
+                for p in polygon:
+                    polygon_list.append(
+                        Polygon([tuple(coord) for coord in p]))
+        polygons.append(polygon_list)
+        
+    multipolygons = []
+    for shape in polygons:
+        multipolygons.append(MultiPolygon(shape))
+
+    if clip_type == 1:
+        solution = unary_union(multipolygons)
+    elif clip_type == 2:
+        if len(multipolygons) != 2:
+            raise ValueError(
+                "polygon clip of type DIFFERENCE takes exactly 2 input shapes"
+                )
+        solution = multipolygons[0].buffer(0.0000001).difference(multipolygons[1].buffer(0.0000001))
     else:
-        return compactness
+        raise ValueError(
+            "invalid clip type. use utils.UNION or utils.DIFFERENCE")
+
+    # display with matplotlib
+
+    # from matplotlib import pyplot
+    # from descartes import PolygonPatch
+
+    # SIZE = (8.0, 8.0*(math.sqrt(5)-1.0/2.0))
+
+    # fig = pyplot.figure(1, figsize=SIZE, dpi=90)
+    # ax = fig.add_subplot(121)
+    # for ob in multipolygons:
+    #     p = PolygonPatch(ob, alpha=0.5, zorder=1)
+    #     ax.add_patch(p)
+
+    # og_xs = []
+    # og_ys = []
+    # for multipolygon in multipolygons:
+    #     for polygon in multipolygon.geoms:
+    #         for coord in list(polygon.exterior.coords):
+    #             og_xs.append(coord[0])
+    #             og_ys.append(coord[1])
+
+    # ax1 = fig.add_subplot(122)
+    # patch2b = PolygonPatch(union, alpha=0.5, zorder=2)
+    # ax1.add_patch(patch2b)
+
+    # border = [[list(coord) for coord in solution.exterior.coords]]
+    # border_xs = [coord[0] for coord in border[0]]
+    # border_ys = [coord[1] for coord in border[0]]
+
+    # ax.set_autoscaley_on(False)
+    # ax.set_autoscalex_on(False)
+    # ax.set_ylim([min(og_ys), max(og_ys)])
+    # ax.set_xlim([min(og_xs), max(og_xs)])
+
+    # ax1.set_autoscaley_on(False)
+    # ax1.set_autoscalex_on(False)
+    # ax1.set_ylim([min(border_ys), max(border_ys)])
+    # ax1.set_xlim([min(border_xs), max(border_xs)])
+
+    # pyplot.show()
+
+    real_border = []
+    if isinstance(solution, Polygon):
+        real_border.append(
+            np.concatenate([np.concatenate(
+                [np.asarray(t.exterior)[:, :2]] + [np.asarray(r)[:, :2] 
+                for r in t.interiors]) for t in [solution]]).tolist())
+    elif isinstance(solution, MultiPolygon):
+        for polygon in solution.geoms:
+            real_border.append(
+            np.concatenate([np.concatenate(
+                [np.asarray(t.exterior)[:, :2]] + [np.asarray(r)[:, :2] 
+                for r in t.interiors]) for t in [polygon]]).tolist())
+
+    return [real_border]
 
 
 # ===================================================
