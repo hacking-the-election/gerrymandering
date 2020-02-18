@@ -14,9 +14,13 @@
 #include <string>
 
 #include "shape.hpp"
-#include "../lib/clipper/clipper.hpp"
+#include <geos.h>
+#include <geos/operation.h>
+#include <geos/operation/union/UnaryUnionOp.h>
 
-using namespace ClipperLib;
+using namespace geos;
+using namespace geos::geom;
+using namespace geos::operation;
 using namespace std;
 
 // coordinate manipulation for gui draw methods
@@ -36,11 +40,10 @@ p_index_set get_bordering_shapes(vector<Precinct_Group> shapes, Shape shape);
 
 unit_interval compactness(Shape shape);
 
-Path shape_to_path(Shape shape);
-Shape path_to_shape(Path path);
-Paths multi_shape_to_paths(Multi_Shape ms);
-Multi_Shape paths_to_shape(Paths paths);
-Multi_Shape poly_tree_to_shape(PolyTree tree);
+Geometry* shape_to_poly(Shape shape);
+Shape poly_to_shape(const Geometry* path);
+MultiPolygon* multi_shape_to_poly(Multi_Shape ms);
+Multi_Shape multi_poly_to_shape(MultiPolygon* paths);
 
 // for algorithm helper methods
 float get_standard_deviation_partisanship(Precinct_Group pg);
