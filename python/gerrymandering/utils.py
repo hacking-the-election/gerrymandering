@@ -169,12 +169,10 @@ def get_schwartsberg_compactness(shape):
     `shape`
     """
     
+    # perimeter / circumference
     compactness = (get_perimeter(shape)
                    / (2 * math.pi * math.sqrt(get_area(shape) / math.pi)))
-    if compactness < 1:
-        return 1 / compactness
-    else:
-        return compactness
+    return 1 - abs(1 - compactness)  # ensures less than one
 
 
 def clip(shapes, clip_type):
