@@ -17,7 +17,8 @@ from utils import convert_to_json
 from serialization.load_precincts import load
 from serialization.save_precincts import Precinct
 from gerrymandering.utils import (get_equation, get_segments, clip, UNION,
-                                  DIFFERENCE)
+                                  DIFFERENCE, get_schwartsberg_compactness,
+                                  get_if_bordering, get_point_in_polygon)
 
 
 def print_time(func):
@@ -118,14 +119,44 @@ class TestGeometry(unittest.TestCase):
     Tests for geometric calculations
     """
 
-    def test_compactness(self):
-        pass
+    def __init__(self, *args, **kwargs):
 
-    def test_area(self):
-        pass
+        unittest.TestCase.__init__(self, *args, **kwargs)
 
-    def test_perimeter(self):
-        pass
+        # poly1 has a hole, poly2 does not
+        self.poly1, self.poly2 = load(
+            dirname(__file__) + "/data/geometry_test_data.pickle")
+        # both polygons are precincts from arkansas
+        # poly1 has geoid 05073008 and poly2 has geoid 05027020
+
+    def test_get_compactness(self):
+        
+        # later to be tested with cpp outputs
+        print(f"{get_schwartsberg_compactness(self.poly1)=}")
+        print(f"{get_schwartsberg_compactness(self.poly2)=}")
+
+    def test_get_point_in_polygon(self):
+        
+        # point is inside hole in polygon
+        self.assertEquals(
+            get_point_in_polygon(
+                    self.poly1,
+                    (456625, 3662331)
+                ),
+            False
+            )
+        # point is inside polygon
+        self.assertEquals(
+            get_point_in_polygon(
+                    self.poly2,
+                    (456582, 3669030)
+                ),
+                True
+            )
+
+    def test_get_if_bordering(self):
+        
+        self.assertEqual(get_if_bordering(self.poly1, self.poly2), True)
 
 
 class TestCommunities(unittest.TestCase):
@@ -156,5 +187,6 @@ if __name__ == "__main__":
     else:
         clipping = TestClipping
         communities = TestCommunities
+        geometry = TestGeometry
 
         unittest.main()
