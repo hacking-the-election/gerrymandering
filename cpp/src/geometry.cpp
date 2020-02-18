@@ -40,7 +40,7 @@ double get_distance(coordinate c0, coordinate c1) {
     return sqrt(pow((c1[0] - c0[0]), 2) + pow((c1[1] - c0[1]), 2));
 }
 
-vector<float> calculate_line(segment s) {
+vector<double> calculate_line(segment s) {
     /*
         Use slope/intercept form and substituting
         coordinates in order to determine equation
@@ -171,13 +171,33 @@ coordinate GeoGerry::Shape::get_center() {
 }
 
 double GeoGerry::Shape::get_area() {
+    /*
+        Returns the area of the hull of a shape
+        minus the combined area of any holes
+    */
 
+    double area = hull.get_area();
+    for (GeoGerry::LinearRing h : holes) {
+        area -= h.get_area();
+    }
+
+    return area;
 }
 
-        virtual double get_area();            // return (area of shape - area of holes)
-        virtual double get_perimeter();       // total perimeter of holes + hull
-        virtual coordinate get_center();      // average centers of holes + hull
-        virtual segments get_segments();      // return a segment list with shape's segments
+
+double GeoGerry::Shape::get_perimeter() {
+    /*
+        Returns the sum perimeter of all LinearRings
+        in a shape object, including holes
+    */
+
+    double perimeter = hull.get_perimeter();
+    for (GeoGerry::LinearRing h : holes) {
+        perimeter += h.get_perimeter();
+    }
+
+    return perimeter;
+}
 
 bool are_bordering(Shape s0, Shape s1) {
     // returns whether or not two shapes touch each other

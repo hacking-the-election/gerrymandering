@@ -7,13 +7,12 @@
 
 #pragma once // avoid multiple includes
 
+#include "shape.hpp"
 #include <math.h>  // for rounding functions
 #include <cmath>
 #include <algorithm> // for reverse, unique
 #include <iostream>
 #include <string>
-
-#include "shape.hpp"
 
 // coordinate manipulation for gui draw methods
 bounding_box normalize_coordinates(Shape* shape);

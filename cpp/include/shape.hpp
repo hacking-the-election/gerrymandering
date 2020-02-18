@@ -30,6 +30,9 @@
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/serialization/vector.hpp>
 
+using std::vector;
+using std::array;
+
 /*
     structure of class definitions:
     - Base shape class - contains border + id
@@ -74,7 +77,7 @@ class Exceptions {
     */
 
     public:
-        struct RingNotClosed : public exception {
+        struct RingNotClosed : public std::exception {
             const char* what() const throw() {
                 return "Points of LinearRing do not make closed shape. Wait how is this even possible?";
             }
@@ -100,8 +103,8 @@ class LinearRing {
 
         virtual double get_area();            // area of shape using shoelace theorem
         virtual double get_perimeter();       // sum distance of segments
-        virtual coordinate get_center();     // average of all points in shape
-        virtual segments get_segments(); // return a segment list with shape's segments
+        virtual coordinate get_center();      // average of all points in shape
+        segments get_segments();              // return a segment list with shape's segments
 
         coordinate_set border;
 
@@ -167,7 +170,6 @@ class Shape {
         virtual double get_area();            // return (area of shape - area of holes)
         virtual double get_perimeter();       // total perimeter of holes + hull
         virtual coordinate get_center();      // average centers of holes + hull
-        virtual segments get_segments();      // return a segment list with shape's segments
 
         // add operator overloading for object equality
         friend bool operator== (Shape& p1, Shape& p2) {
