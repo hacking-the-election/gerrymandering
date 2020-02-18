@@ -21,6 +21,9 @@ from gerrymandering.utils import (get_equation, get_segments, clip, UNION,
                                   get_if_bordering, get_point_in_polygon)
 
 
+DATA_DIR = "../data/test/python"
+
+
 def print_time(func):
     def timed_func(*args, **kwargs):
         start_time = time.time()
@@ -47,17 +50,17 @@ class TestClipping(unittest.TestCase):
     # ================================
 
     # for small tests that shouldnt take long
-    vermont = load(dirname(__file__) + "/data/vermont.pickle")
+    vermont = load(DATA_DIR + "/vermont.pickle")
     # for small tests that need more than one district
-    connecticut = load(dirname(__file__) + "/data/connecticut.pickle")
+    connecticut = load(DATA_DIR + "/connecticut.pickle")
 
     # function-specific test data
     # ================================
     
-    difference_test_data = load(dirname(__file__) \
-                                + "/data/difference_test_data.pickle")
-    border_test_data = load(dirname(__file__) \
-                                + "/data/border_test_data.pickle")
+    difference_test_data = load(DATA_DIR \
+                                + "/difference_test_data.pickle")
+    border_test_data = load(DATA_DIR \
+                                + "/border_test_data.pickle")
 
 
     @classmethod
@@ -125,18 +128,18 @@ class TestGeometry(unittest.TestCase):
 
         # poly1 has a hole, poly2 does not
         self.poly1, self.poly2 = load(
-            dirname(__file__) + "/data/geometry_test_data.pickle")
+            DATA_DIR + "/geometry_test_data.pickle")
         # both polygons are precincts from arkansas
         # poly1 has geoid 05073008 and poly2 has geoid 05027020
 
     def test_get_compactness(self):
-        
+
         # later to be tested with cpp outputs
         print(f"{get_schwartsberg_compactness(self.poly1)=}")
         print(f"{get_schwartsberg_compactness(self.poly2)=}")
 
     def test_get_point_in_polygon(self):
-        
+
         # point is inside hole in polygon
         self.assertEquals(
             get_point_in_polygon(
@@ -164,14 +167,6 @@ class TestCommunities(unittest.TestCase):
     Tests for community algorithm-specfic functions
     """
 
-    # complete pickle state data files
-    # ================================
-
-    # for big tests to find problems
-    alabama = load(dirname(__file__) + "/data/alabama.pickle")
-    # for things with islands
-    hawaii = load(dirname(__file__) + "/data/hawaii.pickle")
-
     def test_get_addable_precincts(self):
         pass
 
@@ -183,7 +178,6 @@ if __name__ == "__main__":
 
     if "border_graph" in sys.argv:
         TestClipping.plot_get_border()
-
     else:
         clipping = TestClipping
         communities = TestCommunities
