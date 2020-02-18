@@ -30,11 +30,6 @@
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/serialization/vector.hpp>
 
-using namespace std;
-using namespace rapidjson;
-
-// =================================================================
-
 /*
     structure of class definitions:
     - Base shape class - contains border + id
@@ -168,10 +163,11 @@ class Shape {
         virtual void draw();             // prints to an SDL window
 
         // geometric methods, overwritten in Shape class
+
         virtual double get_area();            // return (area of shape - area of holes)
-        virtual double get_perimeter();  
-        virtual coordinate get_center();
-        virtual segments get_segments(); // return a segment list with shape's segments
+        virtual double get_perimeter();       // total perimeter of holes + hull
+        virtual coordinate get_center();      // average centers of holes + hull
+        virtual segments get_segments();      // return a segment list with shape's segments
 
         // add operator overloading for object equality
         friend bool operator== (Shape& p1, Shape& p2) {

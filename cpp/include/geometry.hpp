@@ -14,14 +14,6 @@
 #include <string>
 
 #include "shape.hpp"
-#include <geos.h>
-#include <geos/operation.h>
-#include <geos/operation/union/UnaryUnionOp.h>
-
-using namespace geos;
-using namespace geos::geom;
-using namespace geos::operation;
-using namespace std;
 
 // coordinate manipulation for gui draw methods
 bounding_box normalize_coordinates(Shape* shape);

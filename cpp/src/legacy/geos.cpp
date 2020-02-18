@@ -9,6 +9,14 @@
  faster unions, and other clipping.
 ========================================*/
 
+#include <geos.h>
+#include <geos/operation.h>
+#include <geos/operation/union/UnaryUnionOp.h>
+
+using namespace geos;
+using namespace geos::geom;
+using namespace geos::operation;
+
 #include "../../include/geometry.hpp"
 #include "../../include/shape.hpp"   // class definitions
 #include "../../include/gui.hpp"     // for the draw function

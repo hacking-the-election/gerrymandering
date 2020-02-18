@@ -12,6 +12,7 @@
 #include "../include/shape.hpp"   // class definitions
 #include "../include/gui.hpp"     // for the draw function
 
+// define geometric constants
 #define PI M_PI
 const int c = pow(10, 7);
 
@@ -25,7 +26,8 @@ using namespace GeoGerry;
 
 segment coords_to_seg(coordinate c1, coordinate c2) {
     // combines coordinates into a segment array
-    return {c1[0], c1[1], c2[0], c2[1]};
+    segment s = {{c1[0], c1[1], c2[0], c2[1]}};
+    return s;
 }
 
 double get_distance(segment s) {
@@ -114,7 +116,8 @@ coordinate GeoGerry::LinearRing::get_center() {
         coords[1] += border[i][1];
     }
 
-    return {coords[0] / border.size(), coords[1] / border.size()}; // return averages
+    coordinate center = {{(coords[0] / border.size()), (coords[1] / border.size())}};
+    return center; // return averages
 }
 
 double GeoGerry::LinearRing::get_area() {
@@ -166,6 +169,15 @@ coordinate GeoGerry::Shape::get_center() {
     int size = 1 + holes.size();
     return {center[0] / size, center[1] / size};
 }
+
+double GeoGerry::Shape::get_area() {
+
+}
+
+        virtual double get_area();            // return (area of shape - area of holes)
+        virtual double get_perimeter();       // total perimeter of holes + hull
+        virtual coordinate get_center();      // average centers of holes + hull
+        virtual segments get_segments();      // return a segment list with shape's segments
 
 bool are_bordering(Shape s0, Shape s1) {
     // returns whether or not two shapes touch each other
