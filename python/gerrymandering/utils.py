@@ -28,10 +28,10 @@ DIFFERENCE = 2
 def get_equation(segment):
     """
     Returns the function representing the equation of a line segment
-    containing 2 or more points
+    containing 2 points
     """
 
-    if not np.array_equal(np.unique(segment, axis=0), (segment)):
+    if segment[0][0] == segment[1][0] and segment[0][1] == segment[1][1]:
         raise ValueError("points of segment must be unique")
 
     m = ( (segment[0][1] - segment[1][1])
@@ -40,20 +40,31 @@ def get_equation(segment):
     return lambda x: m * x + b
 
 
-def get_segments(shape):
+def get_segments(polygon):
     """
-    Returns array of segments from array of vertices
+    Returns array of segments from polygon
+    (with or without holes)
 
     ex.
-    [[0, 0], [2, 0], [2, 2], [0, 2]] -> [
-        [[0, 0], [2, 0]],
-        [[2, 0], [2, 2]],
-        [[2, 2], [0, 2]],
-        [[0, 2], [0, 0]]
+    [
+        [[0, 0], [4, 0], [4, 4], [0, 4]],
+        [[1, 1], [1, 3], [3, 3], [3, 1]]
+    ]
+               |
+               v 
+    [
+        [[0, 0], [4, 0]],
+        [[4, 0], [4, 4]],
+        [[4, 4], [0, 4]],
+        [[1, 1], [1, 3]],
+        [[1, 3], [3, 3]],
+        [[3, 3], [3, 1]]
     ]
     """
-    segments = np.array([shape[i:i + 2] if i + 2 <= len(shape) else
-                        [shape[-1], shape[0]] for i in range(len(shape))])
+    segments = np.array(
+        [[shape[i], shape[i+1]] for shape in polygon
+         for i in range(len(shape) - 1)]
+        )
     return segments
 
 
@@ -69,11 +80,9 @@ def get_segments_collinear(segment_1, segment_2):
     return (f(0) == g(0)) and (f(1) == g(1))
 
 
-def get_if_bordering(shape_1, shape_2):
+def get_if_bordering(polygon_1, polygon_2):
     """
-    Returns whether or not two shapes are bordering
-
-    Both args are arrays of segs
+    Returns whether or not two polygons are bordering
 
     Returns bool
     """
@@ -81,8 +90,11 @@ def get_if_bordering(shape_1, shape_2):
     # based on fact that if two segments are collinear, and their
     # bounding boxes overlap, they are overlapping
 
-    for segment_1 in shape_1:
-        for segment_2 in shape_2:
+    segments_1 = get_segments(polygon_1)
+    segments_2 = get_segments(polygon_2)
+
+    for segment_1 in segments_1:
+        for segment_2 in segments_2:
             # check collinearity
             if get_segments_collinear(segment_1, segment_2):
                 # check bounding boxes
@@ -94,20 +106,18 @@ def get_if_bordering(shape_1, shape_2):
     return False
 
 
-def get_point_in_polygon(point, shape):
+def get_point_in_polygon(polygon, point):
     """
     Returns whether or not point is in polygon
-
-    Args:
-    `shape`: array of segments
-    `point`: point to find whether or not it is in `shape`
+    (with or without holes)
 
     Returns bool
     """
 
     crossings = 0
+    segments = get_segments(polygon)
 
-    for segment in shape:
+    for segment in segments:
         if (
                 # both endpoints are to the left
                 (segment[0][0] < point[0] and segment[1][0] < point[0]) or
@@ -129,7 +139,7 @@ def get_point_in_polygon(point, shape):
             y_c = get_equation(segment)(point[0])
             if y_c > point[1]:  # point is below segment
                 crossings += 1
-    
+
     return crossings % 2 == 1
 
 
@@ -140,16 +150,18 @@ def get_distance(p1, p2):
     return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
 
 
-def get_perimeter(shape):
+def get_perimeter(polygon):
     """
-    Returns the perimeter of array of segments `shape`
+    Returns the perimeter of polygon (with or without holes)
     """
-    return sum([get_distance(*seg) for seg in shape])
+    distances = np.array(
+        [get_distance(p1, p2) for p1, p2 in get_segments(polygon)])
+    return sum(distances)
 
 
-def get_area(shape):
+def get_simple_area(shape):
     """
-    Returns the area of array of points `shape`
+    Returns the area of polygon (with no holes)
     """
     area = 0
     v2 = shape[-1]
@@ -161,6 +173,17 @@ def get_area(shape):
     area = abs(area / 2)
 
     return area
+
+def get_area(polygon):
+    """
+    Returns the area of polygon (with or without holes)
+    """
+
+    outer_area = get_simple_area(polygon[0])
+    for shape in polygon[1:]:
+        outer_area -= get_simple_area(shape)
+
+    return outer_area
 
 
 def get_schwartsberg_compactness(shape):
