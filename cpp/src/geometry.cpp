@@ -17,6 +17,9 @@
 const int c = pow(10, 7);
 
 using namespace GeoGerry;
+using std::vector;
+using std::array;
+using std::string;
 
 /*
     Following methods utilize the segment of segments typedefs.
@@ -47,8 +50,8 @@ vector<double> calculate_line(segment s) {
         of a line segment
     */
 
-    float m = (s[3] - s[1]) / (s[2] - s[0]);
-    float b = -m * s[0] + s[1];
+    double m = (s[3] - s[1]) / (s[2] - s[0]);
+    double b = -m * s[0] + s[1];
 
     return {m, b};
 }
@@ -65,11 +68,17 @@ bool get_overlap(segment s0, segment s1) {
         within the range of the other's. One shared point does
         not count to overlap.
     */
-   
+    
     if (s0[0] > s0[2])
-        return (((s1[0] < s0[0]) && (s1[0] > s0[2])) || ((s1[2] < s0[0]) && (s1[2] > s0[2])) );
+        return (
+                ((s1[0] < s0[0]) && (s1[0] > s0[2]))
+                || ((s1[2] < s0[0]) && (s1[2] > s0[2])) 
+               );
     else
-        return (((s1[0] < s0[2]) && (s1[0] > s0[0])) || ((s1[2] < s0[2]) && (s1[2] > s0[0])) );
+        return (
+                ((s1[0] < s0[2]) && (s1[0] > s0[0]))
+                || ((s1[2] < s0[2]) && (s1[2] > s0[0]))
+               );
 }
 
 bool get_bordering(segment s0, segment s1) {
@@ -88,7 +97,7 @@ segments GeoGerry::LinearRing::get_segments() {
     for (int i = 0; i < border.size(); i++) {
         coordinate c1 = border[i];  // starting coord
         coordinate c2;              // ending coord
- 
+
         // find position of ending coordinate
         if (i == border.size() - 1)
             c2 = border[0];
@@ -199,7 +208,20 @@ double GeoGerry::Shape::get_perimeter() {
     return perimeter;
 }
 
-bool are_bordering(Shape s0, Shape s1) {
+segments GeoGerry::Shape::get_segments() {
+    // return a segment list with shape's segments, including holes
+    segments segs = hull.get_segments();
+    for (GeoGerry::LinearRing h : holes) {
+        segments hole_segs = h.get_segments;
+        for (segment s : hole_segs) {
+            segs.push_back(s);
+        }
+    }
+
+    return segs;
+}
+
+bool get_bordering(Shape s0, Shape s1) {
     // returns whether or not two shapes touch each other
 
     for (segment seg0 : s0.get_segments()) {
@@ -225,12 +247,12 @@ p_index_set get_inner_boundary_precincts(Precinct_Group shape) {
     
     int i = 0;
     
-    // for (Precinct p : shape.precincts) {
-    //     if (are_bordering(p, exterior_border)) {
-    //         boundary_precincts.push_back(i);
-    //     }
-    //     i++;
-    // }
+    for (Precinct p : shape.precincts) {
+        if (get_bordering(p, exterior_border)) {
+            boundary_precincts.push_back(i);
+        }
+        i++;
+    }
 
     return boundary_precincts;
 }
@@ -246,7 +268,7 @@ p_index_set get_bordering_shapes(vector<Shape> shapes, Shape shape) {
     p_index_set vec;
     
     for (p_index i = 0; i < shapes.size(); i++)
-        if ( ( shapes[i] != shape ) && are_bordering(shapes[i], shape)) vec.push_back(i);
+        if ( ( shapes[i] != shape ) && get_bordering(shapes[i], shape)) vec.push_back(i);
     
     return vec;
 }
@@ -261,7 +283,7 @@ p_index_set get_bordering_shapes(vector<Precinct_Group> shapes, Shape shape) {
     p_index_set vec;
     
     for (p_index i = 0; i < shapes.size(); i++)
-        if ( ( shapes[i] != shape ) && are_bordering(shapes[i], shape)) vec.push_back(i);
+        if ( ( shapes[i] != shape ) && get_bordering(shapes[i], shape)) vec.push_back(i);
     
     return vec;
 }
@@ -279,41 +301,41 @@ unit_interval compactness(Shape shape) {
         circumference of a circle with the same area as that shape.
     */
 
-    float circle_radius = sqrt(shape.area() / PI);
-    float circumference = 2 * circle_radius * PI;
+    double circle_radius = sqrt(shape.get_area() / PI);
+    double circumference = 2 * circle_radius * PI;
 
-    return 1 / (shape.perimeter() / circumference);
+    return (circumference / shape.get_perimeter());
 }
 
-float get_standard_deviation_partisanship(Precinct_Group pg) {
+double get_standard_deviation_partisanship(Precinct_Group pg) {
     /*
         Returns the standard deviation of the partisanship
         ratio for a given array of precincts
     */
 
     vector<Precinct> p = pg.precincts;
-    float mean = p[0].get_ratio();
+    double mean = p[0].get_ratio();
 
     for (int i = 1; i < pg.precincts.size(); i++)
         mean += p[i].get_ratio();
 
     mean /= p.size();
-    float dev_mean = pow(p[0].get_ratio() - mean, 2);
+    double dev_mean = pow(p[0].get_ratio() - mean, 2);
 
     for (int i = 1; i < p.size(); i++)
         dev_mean += pow(p[i].get_ratio() - mean, 2);
 
-    return ((float) sqrt(dev_mean));
+    return (sqrt(dev_mean));
 }
 
-float get_median_partisanship(Precinct_Group pg) {
+double get_median_partisanship(Precinct_Group pg) {
     /*
         Returns the median partisanship ratio
         for a given array of precincts
     */
 
-    float median;
-    vector<float> ratios;
+    double median;
+    vector<double> ratios;
     int s = pg.precincts.size();
     
     // get array of ratios
@@ -329,8 +351,6 @@ float get_median_partisanship(Precinct_Group pg) {
 
     return median;
 }
-
-GeometryFactory::Ptr global_factory; // for creating geometries
 
 Multi_Shape generate_exterior_border(Precinct_Group precinct_group) {
     /*

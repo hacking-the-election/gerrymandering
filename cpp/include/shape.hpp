@@ -30,9 +30,6 @@
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/serialization/vector.hpp>
 
-using std::vector;
-using std::array;
-
 /*
     structure of class definitions:
     - Base shape class - contains border + id
@@ -53,22 +50,22 @@ class Exceptions;       // for any error to be thrown
 
 // simplify the coordinate modification system
 
-typedef array<double, 2> coordinate;        // a list in form {x1, y1}
-typedef vector<coordinate> coordinate_set;  // list of coordiantes: {{x1, y1}, {x2, y2}}
-typedef array<double, 4> bounding_box;      // an array of 4 max/mins:
+typedef std::array<double, 2> coordinate;           // a list in form {x1, y1}
+typedef std::vector<coordinate> coordinate_set;     // list of coordiantes: {{x1, y1}, {x2, y2}}
+typedef std::array<double, 4> bounding_box;         // an array of 4 max/mins:
 
 // for values between 0-1:
 typedef double unit_interval;
 
 // a set of two coordinates:
-typedef array<double, 4> segment;
-typedef vector<segment> segments;
+typedef std::array<double, 4> segment;
+typedef std::vector<segment> segments;
 
 // for defining indices of arrays rather than referring to objects:
 
-typedef int p_index;                  // defines an index in an array   
-typedef vector<p_index> p_index_set;  // vector of indices in an array
-typedef array<int, 2> seg_index;      // {p_index, segment_index};
+typedef int p_index;                       // defines an index in an array   
+typedef std::vector<p_index> p_index_set;  // vector of indices in an array
+typedef std::array<int, 2> seg_index;      // {p_index, segment_index};
 
 class Exceptions {
     /*
@@ -79,7 +76,7 @@ class Exceptions {
     public:
         struct RingNotClosed : public std::exception {
             const char* what() const throw() {
-                return "Points of LinearRing do not make closed shape. Wait how is this even possible?";
+                return "Segments of LinearRing do not make closed shape. Wait how is this even possible?";
             }
         };
 };
@@ -104,7 +101,7 @@ class LinearRing {
         virtual double get_area();            // area of shape using shoelace theorem
         virtual double get_perimeter();       // sum distance of segments
         virtual coordinate get_center();      // average of all points in shape
-        segments get_segments();              // return a segment list with shape's segments
+        virtual segments get_segments();      // return a segment list with shape's segments
 
         coordinate_set border;
 
@@ -142,17 +139,17 @@ class Shape {
         }
 
         // overload constructor for adding id
-        Shape(LinearRing shape, string id) {
+        Shape(LinearRing shape, std::string id) {
             hull = shape;
             shape_id = id;
         }
 
-        Shape(LinearRing ext, vector<LinearRing> interior) {
+        Shape(LinearRing ext, std::vector<LinearRing> interior) {
             hull = ext;
             holes = interior;
         }
 
-        Shape(LinearRing ext, vector<LinearRing> interior, string id) {
+        Shape(LinearRing ext, std::vector<LinearRing> interior, std::string id) {
             hull = ext;
             holes = interior;
             shape_id = id;
@@ -160,8 +157,8 @@ class Shape {
 
 
         LinearRing hull;                 // array of coordinates - ext border
-        vector<LinearRing> holes;        // array of holes in shape
-        string shape_id;                 // the shape's ID, if applicable
+        std::vector<LinearRing> holes;        // array of holes in shape
+        std::string shape_id;                 // the shape's ID, if applicable
 
         virtual void draw();             // prints to an SDL window
 
@@ -170,15 +167,16 @@ class Shape {
         virtual double get_area();            // return (area of shape - area of holes)
         virtual double get_perimeter();       // total perimeter of holes + hull
         virtual coordinate get_center();      // average centers of holes + hull
+        virtual segments get_segments();      // return a segment list with shape's segments
 
         // add operator overloading for object equality
         friend bool operator== (Shape& p1, Shape& p2) {
-            return (p1.border == p2.border);
+            return (p1.hull == p2.hull && p1.holes == p2.holes);
         }
 
         // add operator overloading for object inequality
         friend bool operator!= (Shape& p1, Shape& p2) {
-            return (p1.border != p2.border);
+            return (p1.hull != p2.hull || p1.holes != p2.holes);
         }
 
         // for boost serialization
@@ -203,14 +201,14 @@ class Precinct : public Shape {
             rep = repV;
         }
 
-        Precinct(coordinate_set shapes, int demV, int repV, string id) : Shape(shapes, id) {
+        Precinct(coordinate_set shapes, int demV, int repV, std::string id) : Shape(shapes, id) {
             // overloaded constructor for adding shape id
             dem = demV;
             rep = repV;
         }
 
         double get_ratio();        // returns dem/total ratio
-        vector<int> voter_data();  // get data in {dem, rep} format
+        std::vector<int> voter_data();  // get data in {dem, rep} format
     
         // add operator overloading for object equality
         friend bool operator== (Precinct& p1, Precinct& p2) {
@@ -240,28 +238,28 @@ class Multi_Shape : public Shape {
 
         Multi_Shape(){}; // default constructor
 
-        Multi_Shape(vector<Shape> s) {
+        Multi_Shape(std::vector<Shape> s) {
             // constructor with assignment
             border = s;
         }
         
-        Multi_Shape(vector<Shape> s, string t_id) {
+        Multi_Shape(std::vector<Shape> s, std::string t_id) {
             // constructor with assignment
             border = s;
             shape_id = t_id;
         }
 
-        Multi_Shape(vector<Precinct> s) {
+        Multi_Shape(std::vector<Precinct> s) {
             // constructor with assignment
             for (Precinct p : s) {
-                border.push_back(Shape(p.border));
+                border.push_back(Shape(p.hull));
             }
         }
         // for boost serialization
         friend class boost::serialization::access;
         template<class Archive> void serialize(Archive & ar, const unsigned int version);
 
-        vector<Shape> border;
+        std::vector<Shape> border;
 
         // add operator overloading for object equality
         friend bool operator== (Multi_Shape& s1, Multi_Shape& s2) {
@@ -285,19 +283,19 @@ class Precinct_Group : public Multi_Shape {
     */
 
     public:
-        vector<Precinct> precincts;
+        std::vector<Precinct> precincts;
         void add_precinct(Precinct pre) {precincts.push_back(pre);};
 
         Precinct_Group(){}; // default constructor
-        Precinct_Group(vector<Shape> shapes)
+        Precinct_Group(std::vector<Shape> shapes)
             : Multi_Shape(shapes) {}; // call the superclass constructor
         
-        Precinct_Group(vector<Precinct> shapes)
+        Precinct_Group(std::vector<Precinct> shapes)
             : Multi_Shape(shapes) {}; // call the superclass constructor
 
         // serialize and read to and from binary
-        void write_binary(string path);
-        static Precinct_Group read_binary(string path);
+        void write_binary(std::string path);
+        static Precinct_Group read_binary(std::string path);
 
         int get_population();
         // for boost serialization
@@ -310,7 +308,7 @@ class Precinct_Group : public Multi_Shape {
 
 // for cleaner naming of types when writing community algorithm
 typedef Precinct_Group Community;
-typedef vector<Precinct_Group> Communities;
+typedef std::vector<Precinct_Group> Communities;
 
 
 class State : public Precinct_Group {
@@ -330,19 +328,19 @@ class State : public Precinct_Group {
 
         State(){}; // default constructor
 
-        State(vector<Multi_Shape> districts, vector<Precinct> state_precincts, vector<Shape> shapes) : Precinct_Group(shapes) {
+        State(std::vector<Multi_Shape> districts, std::vector<Precinct> state_precincts, std::vector<Shape> shapes) : Precinct_Group(shapes) {
             // simple assignment constructor
             state_districts = districts;
             precincts = state_precincts;
         };
 
         // generate a file from proper raw input
-        static State generate_from_file(string precinct_geoJSON, string voter_data, string district_geoJSON);
+        static State generate_from_file(std::string precinct_geoJSON, std::string voter_data, std::string district_geoJSON);
 
         // serialize and read to and from binary, json
-        void write_binary(string path);
-        static State read_binary(string path);
-        string to_json();
+        void write_binary(std::string path);
+        static State read_binary(std::string path);
+        std::string to_json();
 
         // for boost serialization
         friend class boost::serialization::access;
@@ -350,7 +348,7 @@ class State : public Precinct_Group {
 
         // for the community generation algorithm
         void generate_communities(int num_communities, double compactness_tolerance, double partisanship_tolerance, double population_tolerance);
-        void give_precinct(p_index precinct, p_index community, string t_type);
+        void give_precinct(p_index precinct, p_index community, std::string t_type);
 
         // initial random configuration of communities
         void generate_initial_communities(int num_communities);
@@ -364,13 +362,13 @@ class State : public Precinct_Group {
         // return precinct that can be added to the current precinct that won't create islands in the state
         p_index get_addable_precinct(p_index_set available_precincts, p_index current_precinct);
         // write out communities at a certain point in time
-        void save_communities(string write_path);
+        void save_communities(std::string write_path);
         virtual void draw();
         // name of state
-        string name = "no_name";
+        std::string name = "no_name";
 
         // arrays of shapes in state
-        vector<Multi_Shape> state_districts;
+        std::vector<Multi_Shape> state_districts;
         Communities state_communities;
 };
 }
