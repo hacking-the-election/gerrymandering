@@ -81,19 +81,18 @@ def tostring(string):
 
 
 def area(points):
-    coordinate_list = []
     area = 0
     left_area = 0
     right_area = 0
     index = 0
     for num, point in enumerate(points):
         if point == points[-1]:
-            left_area += int(point[0]*points[0][1])
-            right_area += int(point[1]*points[0][0])
+            left_area += point[0]*points[0][1]
+            right_area += point[1]*points[0][0]
         else:
-            left_area += int(point[0])*int(points[num+1][1])
-            right_area += int(point[1])*int(points[num+1][0])
-    area = abs(int(left_area - right_area))/2
+            left_area += point[0]*points[num+1][1]
+            right_area += point[1]*points[num+1][0]
+    area = abs(left_area - right_area)/2
     return area
 
 
@@ -314,14 +313,21 @@ class Precinct:
                      for key in rep_keys}
                 precinct_coords[precinct_id] = \
                     precinct['geometry']['coordinates']
-            
+
+        print(len(precinct_coords))    
         # Check for multi-polygons and split them into seperate precincts, by area
         multi_polygon_index = []
+        new_polygon_ids = {}
         for precinct in precinct_coords:
             total_pop = int(pop[precinct])
-            dem_votes = int(sum([int(dem_cols[precinct][x]) for x in dem_cols[precinct]]))
-            rep_votes = int(sum([int(rep_cols[precinct][x]) for x in rep_cols[precinct]]))
+            dem_votes = {dem_key: dem_cols[precinct][dem_key] for dem_key in dem_keys}
+            rep_votes = {rep_key: rep_cols[precinct][rep_key] for rep_key in rep_keys}
             if len(precinct_coords[precinct]) > 1:
+                try:
+                    _ = precinct_coords[precinct][0][0][0][0]
+                except TypeError:
+                    # In the future, if we want to do anything with polygons (but not multipolygons with holes)
+                    continue
                 multi_polygon_index.append(precinct)
                 total_area = 0
                 for num, precinct_polygon in enumerate(precinct_coords[precinct]):
@@ -336,11 +342,15 @@ class Precinct:
                     # on number of polygons in multipolygon
                     exec('polygon' + str(num) + '_area = polygon_area')
                 for num, precinct_polygon in enumerate(precinct_coords[precinct]):
+                    polygon_id = str(precinct) + str(num)
                     # Append new population, vote counts based on area
                     exec('polygon_ratio = (polygon' + str(num) + '_area)/total_area')
-                    exec('pop[precinct' + str(num) + '] = polygon_ratio * total_pop')
-                    exec('dem_cols[precinct' + str(num) + '] = polygon_ratio * dem_votes')
-                    exec('rep_cols[precinct' + str(num) + '] = polygon_ratio * rep_votes')
+                    exec('pop[polygon_id] = polygon_ratio * total_pop')
+                    for key in dem_votes:
+                        exec('dem_cols[polygon_id] = {key: polygon_ratio * dem_votes[key]}')
+                    for key in rep_votes:
+                        exec('rep_cols[polygon_id] = {key: polygon_ratio * rep_votes[key]}')
+                    exec('new_polygon_ids[polygon_id] = precinct_coords[precinct][num]')
                 # Delete originial multi-precinct from population, election_data
                 del pop[precinct]
                 del dem_cols[precinct]
@@ -348,7 +358,10 @@ class Precinct:
 
         for multi in reversed(multi_polygon_index):
             del precinct_coords[multi]
+        for id, geo in new_polygon_ids.items():
+            precinct_coords[id] = geo
 
+        print(len(precinct_coords))
         # get election and geo data (separate processes for whether or
         # not there is an individual election data file)
 
@@ -388,7 +401,8 @@ class Precinct:
         else:
             # append precinct objects to precinct_list
             for precinct_id in precinct_coords.keys():
-                print(precinct_id)
+                if precinct_id == '4900857':
+                    print('multi?')
                 precinct_list.append(Precinct(
                     precinct_coords[precinct_id],
                     state,
