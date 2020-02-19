@@ -166,6 +166,15 @@ class TestGeometry(unittest.TestCase):
                 True
             )
 
+        # edge case: point is on edge of polygon
+        self.assertEquals(
+            test_get_point_in_polygon_speed(
+                [[[0, 0], [2, 0], [2, 2], [0, 2]]],
+                (1, 2)
+            ),
+            True
+        )
+
     def test_get_if_bordering(self):
         
         @print_time

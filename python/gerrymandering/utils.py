@@ -137,7 +137,8 @@ def get_point_in_polygon(polygon, point):
 
             # y-value of segment at point 
             y_c = get_equation(segment)(point[0])
-            if y_c > point[1]:  # point is below segment
+            if y_c >= point[1]:
+                # point is below or at same height as segment
                 crossings += 1
 
     return crossings % 2 == 1
