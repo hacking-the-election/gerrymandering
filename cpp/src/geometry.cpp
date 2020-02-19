@@ -235,6 +235,49 @@ bool get_bordering(Shape s0, Shape s1) {
     return false;
 }
 
+bool point_in_ring(GeoGerry::coordinate coord, GeoGerry::LinearRing lr) {
+    /*
+        returns whether or not a point is in a ring using
+        the ray intersection method - counts number of times
+        a ray hits the polygon
+
+        Need to document htis fucntion later as I'm not
+        quite sure how it works - pulled this one from python
+    */
+
+    int intersections = 0;
+    segments segs = lr.get_segments();
+
+    for (segment s : segs) {
+        if ((s[0] < coord[0] && s[2] < coord[0]) ||
+            (s[0] > coord[0] && s[2] > coord[0]) ||
+            (s[1] < coord[1] && s[3] < coord[1]))
+            continue;
+
+        if (s[1] > coord[1] && s[3] > coord[1]) {
+            intersections += 1;
+            continue;
+        }
+        else {
+            vector<double> eq = calculate_line(s);
+            double y_c = eq[0] * coord[0] + eq[1];
+            if (y_c > coord[1]) intersections += 1;
+        }
+    }
+
+    return (intersections % 2 == 1); // odd intersection
+}
+
+bool get_inside(LinearRing s0, LinearRing s1) {
+    /*
+        returns whether or not s0 is inside of 
+        s1 using the intersection point method
+    */
+
+    return point_in_ring(s0.border[0], s1);
+}
+
+
 p_index_set get_inner_boundary_precincts(Precinct_Group shape) {
    
     /*
