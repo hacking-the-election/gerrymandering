@@ -400,8 +400,20 @@ Multi_Shape generate_exterior_border(Precinct_Group precinct_group) {
         Get the exterior border of a shape with interior components.
         Equivalent to 'dissolve' in mapshaper - remove bordering edges
     */ 
-    Multi_Shape border;
-    return border;
+
+	ClipperLib::Paths subj;
+
+    for (Precinct p : precinct_group.precincts)
+        subj.push_back(shape_to_path(p));
+    // Paths solutions
+    ClipperLib::Paths solutions;
+    ClipperLib::Clipper c;
+	
+    c.AddPaths(subj, ClipperLib::ptSubject, false);
+    c.Execute(ClipperLib::ctUnion, solutions, ClipperLib::pftNonZero);
+
+    return paths_to_shape(solutions);
+    // return clipper_mult_int_to_shape(solutions);
 }
 
 p_index State::get_addable_precinct(p_index_set available_precincts, p_index current_precinct) {
@@ -414,3 +426,79 @@ p_index State::get_addable_precinct(p_index_set available_precincts, p_index cur
     p_index ret;
     return ret;
 }
+
+ClipperLib::Path shape_to_path(Shape shape) {
+    /*
+        Creates a clipper Path object from a
+        given Shape object by looping through points
+    */
+
+    ClipperLib::Path p(shape.border.size());
+
+    for (coordinate point : shape.border ) {
+        p << ClipperLib::IntPoint(point[0] * c, point[1] * c);
+    }
+
+    return p;
+}
+
+Shape path_to_shape(ClipperLib::Path path) {
+    /*
+        Creates a shape object from a clipper Path
+        object by looping through points
+    */
+
+    Shape s;
+
+    for (ClipperLib::IntPoint point : path ) {
+        coordinate p = {(float)((float)point.X / (float)c), (float)((float)point.Y / (float) c)};
+        s.border.push_back(p);
+    }
+
+    return s;
+}
+
+Multi_Shape paths_to_shape(ClipperLib::Paths paths) {
+    /*
+        Create a Multi_Shape object from a clipper Paths
+        (multi path) object through nested iteration
+    */
+
+    //! ERROR: THIS DOES NOT WORK RIGHT NOW, 
+    // WHY IS CLIPPER RETURNING SO MANY POLYS?
+
+    Multi_Shape ms;
+    
+    for (ClipperLib::Path p : paths) {
+        coordinate_set border;
+
+        for (ClipperLib::IntPoint point : p) {
+            coordinate coord = {(float)((float)point.X / (float)c), (float)((float)point.Y / (float) c)};
+            if (!(coord[0] == 0 || coord[1] == 0)) border.push_back(coord);
+        }
+
+        Shape s(border);
+        ms.border.push_back(s);
+    }
+
+    return ms;
+}
+
+
+// Multi_Shape poly_tree_to_shape(PolyTree tree) {
+//     /*
+//         Loops through top-level children of a
+//         PolyTree to access outer-level polygons. Returns
+//         a multi_shape object containing these outer polys.
+//     */
+   
+//     Multi_Shape ms;
+    
+//     for (PolyNode* polynode : tree.Childs) {
+//         if (polynode->IsHole()) x++;
+//         Shape s = clipper_int_to_shape(polynode->Contour);
+//         ms.border.push_back(s);
+//     }
+
+//     return ms;
+// }
