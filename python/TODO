@@ -16,4 +16,3 @@
     - write communities algorithm
     - write get_exchangleable_precincts function
     - update get_addable_precincts to new function
-    - create __all__ variable for utils.py

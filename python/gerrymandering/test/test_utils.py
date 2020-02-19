@@ -16,9 +16,7 @@ sys.path.append(abspath(dirname(dirname(dirname(__file__)))))
 from utils import convert_to_json
 from serialization.load_precincts import load
 from serialization.save_precincts import Precinct
-from gerrymandering.utils import (get_equation, get_segments, clip, UNION,
-                                  DIFFERENCE, get_schwartsberg_compactness,
-                                  get_if_bordering, get_point_in_polygon)
+from gerrymandering.utils import *
 
 
 DATA_DIR = "../data/test/python"

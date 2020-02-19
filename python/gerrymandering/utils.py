@@ -9,6 +9,11 @@ point refers to array of two floats
 """
 
 
+__all__ = ["get_segments", "clip", "UNION", "DIFFERENCE",
+           "get_schwartsberg_compactness", "get_if_bordering",
+           "get_point_in_polygon"]
+
+
 import itertools
 import math
 import types
