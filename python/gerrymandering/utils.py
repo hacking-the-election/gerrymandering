@@ -9,8 +9,14 @@ point refers to array of two floats
 """
 
 
+__all__ = ["get_segments", "clip", "UNION", "DIFFERENCE",
+           "get_schwartsberg_compactness", "get_if_bordering",
+           "get_point_in_polygon"]
+
+
 import itertools
 import math
+import types
 
 import numpy as np
 from shapely.ops import unary_union
@@ -28,16 +34,25 @@ DIFFERENCE = 2
 def get_equation(segment):
     """
     Returns the function representing the equation of a line segment
-    containing 2 points
+    containing 2 points.
+
+    If the line segment is vertical
+    (y cannot be expressed in terms of x),
+    returns single float representing x = `value`
     """
 
     if segment[0][0] == segment[1][0] and segment[0][1] == segment[1][1]:
+        print(segment)
         raise ValueError("points of segment must be unique")
 
-    m = ( (segment[0][1] - segment[1][1])
-        / (segment[0][0] - segment[1][0]))
-    b = m * (- segment[1][0]) + segment[1][1]
-    return lambda x: m * x + b
+    try:
+        m = ( (segment[0][1] - segment[1][1])
+            / (segment[0][0] - segment[1][0]))
+        b = m * (- segment[1][0]) + segment[1][1]
+        return lambda x: m * x + b
+    except ZeroDivisionError:
+        # line is vertical
+        return float(segment[0][0])
 
 
 def get_segments(polygon):
@@ -60,12 +75,38 @@ def get_segments(polygon):
         [[1, 3], [3, 3]],
         [[3, 3], [3, 1]]
     ]
+
+    If there are more than 2 points on a single segment,
+    this function groups only the first and last into the segment list.
     """
-    segments = np.array(
-        [[shape[i], shape[i+1]] for shape in polygon
-         for i in range(len(shape) - 1)]
-        )
-    return segments
+    segments = []
+    for shape in polygon:  # `shape` is either hole or hull
+        if shape[-1] == shape[0]:
+            shape.pop(-1)
+        shape_segments = [[shape[-1], shape[0]]]
+        equation = get_equation([shape[-1], shape[0]])
+        for p in range(1, (len(shape))):
+            if isinstance(equation, float):
+                # vertical line
+                point_on_line = shape[p][0] == equation
+            elif isinstance(equation, types.FunctionType):
+                point_on_line = equation(shape[p][0]) == shape[p][1]
+            if point_on_line:
+                # shape[p] is on the same line as
+                # shape[p - 1] and shape[p - 2]
+                shape_segments[-1].append(shape[p])
+            else:
+                # Equations are different - time to start a new segment
+                shape_segments.append([shape[p - 1], shape[p]])
+                equation = get_equation(shape_segments[-1])
+        segments += shape_segments
+
+    # remove points in the middle of a segment
+    for segment in segments:
+        while len(segment) > 2:
+            segment.pop(1)
+    
+    return np.array(segments)
 
 
 def get_segments_collinear(segment_1, segment_2):
@@ -199,6 +240,52 @@ def get_schwartsberg_compactness(shape):
     return 1 - abs(1 - compactness)  # ensures less than one
 
 
+def get_centroid(polygon):
+    """
+    Returns centriod of polygon 
+    """
+
+    centroid = [0, 0]
+    area = 0
+
+    for i in range(-1, len(polygon[0]) - 1):
+        x0 = polygon[0][i][0]
+        y0 = polygon[0][i][1]
+        x1 = polygon[0][i + 1][0]
+        y1 = polygon[0][i + 1][1]
+        a = x0*y1 - x1*y0
+        area += a
+        centroid[0] += (x0 + x1) * a
+        centroid[1] += (y0 + y1) * a
+
+    area /= 2
+    centroid[0] /= (6 * area)
+    centroid[1] /= (6 * area)
+
+    return centroid
+
+
+def convert_to_shapely(shape):
+    """
+    Converts list-type polygon or multi-polygon `shape` to
+    shapely.geometry.MultiPolygon or shapely.geometry.Polygon
+    """
+    polygons = []
+    for polygon in shape:
+        try:
+            polygons.append(
+                Polygon([tuple(coord) for coord in polygon]))
+        except (ValueError, AssertionError):
+            # if there is a multipolygon precinct (which there
+            # shouldn't be, because those will be broken into
+            # separate precincts in the serialization process)
+            for p in polygon:
+                polygons.append(
+                    Polygon([tuple(coord) for coord in p]))
+        
+    return MultiPolygon(polygons)
+
+
 def clip(shapes, clip_type):
     """
     Finds external border of a group of shapes
@@ -215,25 +302,8 @@ def clip(shapes, clip_type):
 
     # find union of shapes
 
-    polygons = []
-    for multipolygon in shapes:
-        polygon_list = []
-        for polygon in multipolygon:
-            try:
-                polygon_list.append(
-                    Polygon([tuple(coord) for coord in polygon]))
-            except (ValueError, AssertionError):
-                # if there is a multipolygon precinct (which there
-                # shouldn't be, because those will be broken into
-                # separate precincts in the serialization process)
-                for p in polygon:
-                    polygon_list.append(
-                        Polygon([tuple(coord) for coord in p]))
-        polygons.append(polygon_list)
-        
-    multipolygons = []
-    for shape in polygons:
-        multipolygons.append(MultiPolygon(shape))
+    # list of Polygon and MultiPolygon objects
+    multipolygons = [convert_to_shapely(shape) for shape in shapes]
 
     if clip_type == 1:
         solution = unary_union(multipolygons)
@@ -242,7 +312,8 @@ def clip(shapes, clip_type):
             raise ValueError(
                 "polygon clip of type DIFFERENCE takes exactly 2 input shapes"
                 )
-        solution = multipolygons[0].buffer(0.0000001).difference(multipolygons[1].buffer(0.0000001))
+        solution = multipolygons[0].buffer(0.0000001).difference(
+            multipolygons[1].buffer(0.0000001))
     else:
         raise ValueError(
             "invalid clip type. use utils.UNION or utils.DIFFERENCE")
@@ -399,6 +470,9 @@ def get_if_addable(precinct, community, boundary):
     """
     Returns whether or not it will create an island if `precinct` is
     added to `community` with `boundary` already taken up.
+
+    Checks if the number of polygons in the output of boundary is the same after
+    precinct is added to community
 
     Args:
     `precinct`: segments of `precinct`

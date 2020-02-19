@@ -1,20 +1,18 @@
 # General:
    Now:
-    - NUMPY
+    - Remove unecessary blank lines
+    - Make all comments complete sentences with capitalization and periods
    Later:
     - Predict errors and create custom exceptions to throw in those cases
 
 # Serialization:
    Now:
     - serialize all data from raw directory in data repo
-    - create script to convert pickled precinct objects to json and see what they look like in mapshaper
    Later (Possible after project):
-    - update unit tests and add test data
+    - update unit tests
 
 # Communities:
    Now:
-    - write tests for utils.py
     - write communities algorithm
     - write get_exchangleable_precincts function
     - update get_addable_precincts to new function
-    - get c++ binary and use with get_border function
