@@ -137,7 +137,8 @@ def get_point_in_polygon(polygon, point):
 
             # y-value of segment at point 
             y_c = get_equation(segment)(point[0])
-            if y_c > point[1]:  # point is below segment
+            if y_c >= point[1]:
+                # point is below or at same height as segment
                 crossings += 1
 
     return crossings % 2 == 1
@@ -311,51 +312,87 @@ class Community:
     """
     A collection of precincts
     """
-    
-    def __init__(self, precincts, identifier):
-        self.precincts = precincts
-        self.id = identifier
 
-    @property
-    def border(self):
-        """
-        The outside edge of the community (in segments)
-        """
-        return get_segments(get_border([p.coords for p in self.precincts]))
-
-    @property
-    def partisanship(self):
-        """
-        The percent of this community that is republican
-        """
-        rep_sum = 0
-        total_sum = 0
-        for precinct in self.precincts:
-            if (r_sum := precinct.r_election_sum) != -1:
-                rep_sum += r_sum
-                total_sum += r_sum + precinct.d_election_data
-        return rep_sum / total_sum
-
-    def get_standard_deviation(self):
+    @staticmethod
+    def get_standard_deviation(precincts):
         """
         Standard deviation of republican percentage in precincts
         """
 
         rep_percentages = [
             p.r_election_sum / (p.r_election_sum + p.d_election_sum) * 100
-            for p in self.precincts]
+            for p in precincts]
 
         mean = sum(rep_percentages) / len(rep_percentages)
         
         return math.sqrt(sum([(p - mean) ** 2 for p in rep_percentages]))
 
-    def __add__(self, other):
+    @staticmethod
+    def get_partisanship(precincts):
         """
-        Adds a precinct to this community
+        Returns average percentabge of
+        republicans in a list of precincts
         """
-        if type(other) != type(self.precincts[0]):
-            raise TypeError
-        self.precincts.append(other)
+
+        rep_sum = 0
+        total_sum = 0
+        for precinct in precincts:
+            if (r_sum := precinct.r_election_sum) != -1:
+                rep_sum += r_sum
+                total_sum += r_sum + precinct.d_election_data
+        return rep_sum / total_sum
+    
+    def __init__(self, precincts, identifier):
+        self.precincts = {precinct.id: precinct for precinct in precincts}
+        self.id = identifier
+        self.border = clip([p.coords for p in self.precincts.values()], UNION)
+        self.partisanship = Community.get_partisanship(
+                                list(self.precincts.values()))
+        self.standard_deviation = Community.get_standard_deviation(self.precincts.values())
+        self.population = sum([precinct.population for precinct in self.precincts.values()])
+        self.compactness = get_schwartsberg_compactness(self.border)
+
+    def give_precinct(self, other, precinct_id, border=True,
+                      partisanship=True, standard_deviation=True,
+                      population=True, compactness=True):
+        """
+        Gives precinct from self to other community.
+
+        All parameters set as `True` for default indicate whether or
+        not to update that attribute after the community is given.
+        """
+
+        if not isinstance(other, Community):
+            raise TypeError("Can only give precinct to community.")
+        try:
+            precinct = self.precincts[precinct_id]
+        except KeyError:
+            raise ValueError(
+                f"No precinct in community with id '{precinct_id}.'")
+
+        del self.precincts[precinct_id]
+        other.precincts.append(precinct)
+        # Update borders
+        if border:
+            self.border = clip([self.border, precinct.coords], DIFFERENCE)
+            other.border = clip([other.border, precinct.coords], UNION)
+
+        # Update other attributes that are dependent on precincts attribute
+        for community in [self, other]:
+            if partisanship:
+                community.partisanship = get_partisanship(
+                    community.precincts.values())
+            if standard_deviation:
+                community.standard_deviation = \
+                    Community.get_standard_deviation(
+                        community.precincts.values)
+            if population:
+                community.population = sum(
+                    [precinct.population for precinct in
+                     community.precincts.values()])
+            if compactness:
+                community.compactness = get_schwartsberg_compactness(
+                    community.border)
 
 
 def get_if_addable(precinct, community, boundary):
