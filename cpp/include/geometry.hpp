@@ -1,47 +1,43 @@
 /*=======================================
  geometry.hpp                   k-vernooy
  last modified:               Mon, Feb 10
-
  Declarations of functions for geometrical
  manipulations and searching algorithms.
 ========================================*/
 
 #pragma once // avoid multiple includes
 
+#include "shape.hpp"
 #include <math.h>  // for rounding functions
 #include <cmath>
 #include <algorithm> // for reverse, unique
 #include <iostream>
 #include <string>
 
-#include "shape.hpp"
-#include "../lib/clipper/clipper.hpp"
-#include "../lib/clipper/gpc.h"
-
-using namespace std;
+#include "../lib/clipper/clipper.hpp";
 
 // coordinate manipulation for gui draw methods
-bounding_box normalize_coordinates(Shape* shape);
-coordinate_set resize_coordinates(bounding_box box, coordinate_set shape, int screenX, int screenY);
+GeoGerry::bounding_box normalize_coordinates(GeoGerry::Shape* shape);
+GeoGerry::coordinate_set resize_coordinates(GeoGerry::bounding_box box, GeoGerry::coordinate_set shape, int screenX, int screenY);
 
 // get outside border from a group of precincts
-Multi_Shape generate_exterior_border(Precinct_Group p);
+GeoGerry::Multi_Shape generate_exterior_border(GeoGerry::Precinct_Group p);
 
 // get precincts on the inside border of a precinct group
-p_index_set get_inner_boundary_precincts(Precinct_Group shape);
-p_index_set get_bordering_precincts(Precinct_Group shape, int p_index);
+GeoGerry::p_index_set get_inner_boundary_precincts(GeoGerry::Precinct_Group shape);
+GeoGerry::p_index_set get_bordering_precincts(GeoGerry::Precinct_Group shape, int p_index);
 
 // overload get_bordering_shapes for vector inheritance problem
-p_index_set get_bordering_shapes(vector<Shape> shapes, Shape shape);
-p_index_set get_bordering_shapes(vector<Precinct_Group> shapes, Shape shape);
+GeoGerry::p_index_set get_bordering_shapes(vector<GeoGerry::Shape> shapes, GeoGerry::Shape shape);
+GeoGerry::p_index_set get_bordering_shapes(vector<GeoGerry::Precinct_Group> shapes, GeoGerry::Shape shape);
 
-unit_interval compactness(Shape shape);
+GeoGerry::unit_interval compactness(GeoGerry::Shape shape);
 
-gpc_vertex_list shape_to_vertex_list(Shape shape);
-Shape vertex_list_to_shape(gpc_vertex_list v);
-gpc_polygon shape_to_poly(Multi_Shape shape);
-Multi_Shape poly_to_shape(gpc_polygon poly);
+ClipperLib::Path shape_to_path(GeoGerry::Shape shape);
+GeoGerry::Shape poly_to_shape(ClipperLib::Path path);
+ClipperLib::Paths multi_shape_to_paths(GeoGerry::Multi_Shape ms);
+GeoGerry::Multi_Shape paths_to_multi_shape(ClipperLib::Paths paths);
 
 // for algorithm helper methods
-float get_standard_deviation_partisanship(Precinct_Group pg);
-float get_median_partisanship(Precinct_Group pg);
+double get_standard_deviation_partisanship(GeoGerry::Precinct_Group pg);
+double get_median_partisanship(GeoGerry::Precinct_Group pg);

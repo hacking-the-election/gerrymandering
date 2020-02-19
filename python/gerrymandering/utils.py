@@ -16,6 +16,11 @@ import numpy as np
 from shapely.ops import unary_union
 from shapely.geometry import MultiPolygon, Polygon
 
+
+UNION = 1
+DIFFERENCE = 2
+
+
 # ===================================================
 # general geometry functions
 
@@ -23,10 +28,10 @@ from shapely.geometry import MultiPolygon, Polygon
 def get_equation(segment):
     """
     Returns the function representing the equation of a line segment
-    containing 2 or more points
+    containing 2 points
     """
 
-    if not np.array_equal(np.unique(segment, axis=0), (segment)):
+    if segment[0][0] == segment[1][0] and segment[0][1] == segment[1][1]:
         raise ValueError("points of segment must be unique")
 
     m = ( (segment[0][1] - segment[1][1])
@@ -35,20 +40,31 @@ def get_equation(segment):
     return lambda x: m * x + b
 
 
-def get_segments(shape):
+def get_segments(polygon):
     """
-    Returns array of segments from array of vertices
+    Returns array of segments from polygon
+    (with or without holes)
 
     ex.
-    [[0, 0], [2, 0], [2, 2], [0, 2]] -> [
-        [[0, 0], [2, 0]],
-        [[2, 0], [2, 2]],
-        [[2, 2], [0, 2]],
-        [[0, 2], [0, 0]]
+    [
+        [[0, 0], [4, 0], [4, 4], [0, 4]],
+        [[1, 1], [1, 3], [3, 3], [3, 1]]
+    ]
+               |
+               v 
+    [
+        [[0, 0], [4, 0]],
+        [[4, 0], [4, 4]],
+        [[4, 4], [0, 4]],
+        [[1, 1], [1, 3]],
+        [[1, 3], [3, 3]],
+        [[3, 3], [3, 1]]
     ]
     """
-    segments = np.array([shape[i:i + 2] if i + 2 <= len(shape) else
-                        [shape[-1], shape[0]] for i in range(len(shape))])
+    segments = np.array(
+        [[shape[i], shape[i+1]] for shape in polygon
+         for i in range(len(shape) - 1)]
+        )
     return segments
 
 
@@ -64,11 +80,9 @@ def get_segments_collinear(segment_1, segment_2):
     return (f(0) == g(0)) and (f(1) == g(1))
 
 
-def get_if_bordering(shape_1, shape_2):
+def get_if_bordering(polygon_1, polygon_2):
     """
-    Returns whether or not two shapes are bordering
-
-    Both args are arrays of segs
+    Returns whether or not two polygons are bordering
 
     Returns bool
     """
@@ -76,8 +90,11 @@ def get_if_bordering(shape_1, shape_2):
     # based on fact that if two segments are collinear, and their
     # bounding boxes overlap, they are overlapping
 
-    for segment_1 in shape_1:
-        for segment_2 in shape_2:
+    segments_1 = get_segments(polygon_1)
+    segments_2 = get_segments(polygon_2)
+
+    for segment_1 in segments_1:
+        for segment_2 in segments_2:
             # check collinearity
             if get_segments_collinear(segment_1, segment_2):
                 # check bounding boxes
@@ -89,12 +106,108 @@ def get_if_bordering(shape_1, shape_2):
     return False
 
 
-def get_border(shapes):
+def get_point_in_polygon(polygon, point):
+    """
+    Returns whether or not point is in polygon
+    (with or without holes)
+
+    Returns bool
+    """
+
+    crossings = 0
+    segments = get_segments(polygon)
+
+    for segment in segments:
+        if (
+                # both endpoints are to the left
+                (segment[0][0] < point[0] and segment[1][0] < point[0]) or
+                # both endpoints are to the right
+                (segment[0][0] > point[0] and segment[1][0] > point[0]) or
+                # both endpoints are below
+                (segment[0][1] < point[1] and segment[1][1] < point[1])):
+            continue
+
+        # point is between endpoints
+        if segment[0][1] > point[1] and segment[1][1] > point[1]:
+            # both endpoints are above point
+            crossings += 1
+            continue
+        else:
+            # one endpoint is above point, the other is below
+
+            # y-value of segment at point 
+            y_c = get_equation(segment)(point[0])
+            if y_c > point[1]:  # point is below segment
+                crossings += 1
+
+    return crossings % 2 == 1
+
+
+def get_distance(p1, p2):
+    """
+    Distance formula
+    """
+    return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
+
+
+def get_perimeter(polygon):
+    """
+    Returns the perimeter of polygon (with or without holes)
+    """
+    distances = np.array(
+        [get_distance(p1, p2) for p1, p2 in get_segments(polygon)])
+    return sum(distances)
+
+
+def get_simple_area(shape):
+    """
+    Returns the area of polygon (with no holes)
+    """
+    area = 0
+    v2 = shape[-1]
+
+    for v1 in shape:
+        area += (v1[0] + v2[0]) * (v1[1] - v2[1])
+        v2 = v1
+
+    area = abs(area / 2)
+
+    return area
+
+def get_area(polygon):
+    """
+    Returns the area of polygon (with or without holes)
+    """
+
+    outer_area = get_simple_area(polygon[0])
+    for shape in polygon[1:]:
+        outer_area -= get_simple_area(shape)
+
+    return outer_area
+
+
+def get_schwartsberg_compactness(shape):
+    """
+    Returns the schwartsberg compactness value of array of segments
+    `shape`
+    """
+    
+    # perimeter / circumference
+    compactness = (get_perimeter(shape)
+                   / (2 * math.pi * math.sqrt(get_area(shape) / math.pi)))
+    return 1 - abs(1 - compactness)  # ensures less than one
+
+
+def clip(shapes, clip_type):
     """
     Finds external border of a group of shapes
 
     Args:
     `shapes`: array of array of array of vertices
+    `clip_type`: either 1 (union) or 2 (difference)
+
+    if `clip_type` is difference, then there should only be 2 shapes in
+    `shapes`
 
     Returns array of vertices
     """
@@ -106,18 +219,32 @@ def get_border(shapes):
         polygon_list = []
         for polygon in multipolygon:
             try:
-                polygon_list.append(Polygon([tuple(coord) for coord in polygon]))
-            except ValueError:
-                polygon_list.append(Polygon([tuple(coord) for coord in polygon[0]]))
-            except AssertionError as ae:
-                polygon_list.append(Polygon([tuple(coord) for coord in polygon[0]]))
+                polygon_list.append(
+                    Polygon([tuple(coord) for coord in polygon]))
+            except (ValueError, AssertionError):
+                # if there is a multipolygon precinct (which there
+                # shouldn't be, because those will be broken into
+                # separate precincts in the serialization process)
+                for p in polygon:
+                    polygon_list.append(
+                        Polygon([tuple(coord) for coord in p]))
         polygons.append(polygon_list)
         
     multipolygons = []
     for shape in polygons:
         multipolygons.append(MultiPolygon(shape))
 
-    union = unary_union(multipolygons)
+    if clip_type == 1:
+        solution = unary_union(multipolygons)
+    elif clip_type == 2:
+        if len(multipolygons) != 2:
+            raise ValueError(
+                "polygon clip of type DIFFERENCE takes exactly 2 input shapes"
+                )
+        solution = multipolygons[0].buffer(0.0000001).difference(multipolygons[1].buffer(0.0000001))
+    else:
+        raise ValueError(
+            "invalid clip type. use utils.UNION or utils.DIFFERENCE")
 
     # display with matplotlib
 
@@ -144,7 +271,7 @@ def get_border(shapes):
     # patch2b = PolygonPatch(union, alpha=0.5, zorder=2)
     # ax1.add_patch(patch2b)
 
-    # border = [[list(coord) for coord in union.exterior.coords]]
+    # border = [[list(coord) for coord in solution.exterior.coords]]
     # border_xs = [coord[0] for coord in border[0]]
     # border_ys = [coord[1] for coord in border[0]]
 
@@ -161,102 +288,19 @@ def get_border(shapes):
     # pyplot.show()
 
     real_border = []
-    if isinstance(union, Polygon):
+    if isinstance(solution, Polygon):
         real_border.append(
             np.concatenate([np.concatenate(
                 [np.asarray(t.exterior)[:, :2]] + [np.asarray(r)[:, :2] 
-                for r in t.interiors]) for t in [union]]).tolist())
-    elif isinstance(union, MultiPolygon):
-        for polygon in union.geoms:
+                for r in t.interiors]) for t in [solution]]).tolist())
+    elif isinstance(solution, MultiPolygon):
+        for polygon in solution.geoms:
             real_border.append(
             np.concatenate([np.concatenate(
                 [np.asarray(t.exterior)[:, :2]] + [np.asarray(r)[:, :2] 
                 for r in t.interiors]) for t in [polygon]]).tolist())
 
     return [real_border]
-
-
-def get_point_in_polygon(point, shape):
-    """
-    Returns whether or not point is in polygon
-
-    Args:
-    `shape`: array of segments
-    `point`: point to find whether or not it is in `shape`
-
-    Returns bool
-    """
-
-    crossings = 0
-
-    for segment in shape:
-        if (
-                # both endpoints are to the left
-                (segment[0][0] < point[0] and segment[1][0] < point[0]) or
-                # both endpoints are to the right
-                (segment[0][0] > point[0] and segment[1][0] > point[0]) or
-                # both endpoints are below
-                (segment[0][1] < point[1] and segment[1][1] < point[1])):
-            continue
-
-        # point is between endpoints
-        if segment[0][1] > point[1] and segment[1][1] > point[1]:
-            # both endpoints are above point
-            crossings += 1
-            continue
-        else:
-            # one endpoint is above point, the other is below
-
-            # y-value of segment at point 
-            y_c = get_equation(segment)(point[0])
-            if y_c > point[1]:  # point is below segment
-                crossings += 1
-    
-    return crossings % 2 == 1
-
-
-def get_distance(p1, p2):
-    """
-    Distance formula
-    """
-    return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
-
-
-def get_perimeter(shape):
-    """
-    Returns the perimeter of array of segments `shape`
-    """
-    return sum([get_distance(*seg) for seg in shape])
-
-
-def get_area(shape):
-    """
-    Returns the area of array of points `shape`
-    """
-    area = 0
-    v2 = shape[-1]
-
-    for v1 in shape:
-        area += (v1[0] + v2[0]) * (v1[1] - v2[1])
-        v2 = v1
-
-    area = abs(area / 2)
-
-    return area
-
-
-def get_schwartsberg_compactness(shape):
-    """
-    Returns the schwartsberg compactness value of array of segments
-    `shape`
-    """
-    
-    compactness = (get_perimeter(shape)
-                   / (2 * math.pi * math.sqrt(get_area(shape) / math.pi)))
-    if compactness < 1:
-        return 1 / compactness
-    else:
-        return compactness
 
 
 # ===================================================
