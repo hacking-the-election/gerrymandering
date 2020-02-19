@@ -13,6 +13,9 @@
 #include "../../include/shape.hpp"
 #include "../../include/util.hpp"
 
+using namespace std;
+using namespace GeoGerry;
+
 int main(int argc, char* argv[]) {
     /* parsing data into a binary state object
        takes 3 arguments:

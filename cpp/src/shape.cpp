@@ -9,10 +9,9 @@
 ========================================*/
 
 #include "../include/shape.hpp"   // class definitions
-
 #define REP true
 
-double Precinct::get_ratio() {
+double GeoGerry::Precinct::get_ratio() {
     // retrieve ratio from precinct
     #ifdef REP
         return rep / (dem + rep);
@@ -22,16 +21,16 @@ double Precinct::get_ratio() {
     #endif
 }
 
-vector<int> Precinct::voter_data() {
+std::vector<int> GeoGerry::Precinct::get_voter_data() {
     // get vector of voting data
     return {dem, rep};
 }
 
-int Precinct_Group::get_population() {
+int GeoGerry::Precinct_Group::get_population() {
     // Returns total population in a Precinct_Group
 
     int total = 0;
-    for (Precinct p : precincts)
+    for (GeoGerry::Precinct p : precincts)
         total += p.pop;
 
     return total;
