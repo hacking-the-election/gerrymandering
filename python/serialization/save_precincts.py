@@ -343,7 +343,9 @@ class Precinct:
                     exec('polygon' + str(num) + '_area = polygon_area')
                 for num, precinct_polygon in enumerate(precinct_coords[precinct]):
                     polygon_id = str(precinct) + str(num)
-                    # Append new population, vote counts based on area
+                    # Append new population, vote counts based on area, 
+                    # To do this, take the precinct_id of the orginial multipolygon
+                    # then add 0, 1,... as needed depending on number of seperate polygons
                     exec('polygon_ratio = (polygon' + str(num) + '_area)/total_area')
                     exec('pop[polygon_id] = polygon_ratio * total_pop')
                     for key in dem_votes:
