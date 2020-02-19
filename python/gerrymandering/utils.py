@@ -96,8 +96,6 @@ def get_segments(polygon):
                 equation = get_equation(shape_segments[-1])
         segments += shape_segments
 
-    # print(np.array(segments))
-
     # remove points in the middle of a segment
     for segment in segments:
         while len(segment) > 2:
@@ -237,6 +235,52 @@ def get_schwartsberg_compactness(shape):
     return 1 - abs(1 - compactness)  # ensures less than one
 
 
+def get_centroid(polygon):
+    """
+    Returns centriod of polygon 
+    """
+
+    centroid = [0, 0]
+    area = 0
+
+    for i in range(-1, len(polygon[0]) - 1):
+        x0 = polygon[0][i][0]
+        y0 = polygon[0][i][1]
+        x1 = polygon[0][i + 1][0]
+        y1 = polygon[0][i + 1][1]
+        a = x0*y1 - x1*y0
+        area += a
+        centroid[0] += (x0 + x1) * a
+        centroid[1] += (y0 + y1) * a
+
+    area /= 2
+    centroid[0] /= (6 * area)
+    centroid[1] /= (6 * area)
+
+    return centroid
+
+
+def convert_to_shapely(shape):
+    """
+    Converts list-type polygon or multi-polygon `shape` to
+    shapely.geometry.MultiPolygon or shapely.geometry.Polygon
+    """
+    polygons = []
+    for polygon in shape:
+        try:
+            polygons.append(
+                Polygon([tuple(coord) for coord in polygon]))
+        except (ValueError, AssertionError):
+            # if there is a multipolygon precinct (which there
+            # shouldn't be, because those will be broken into
+            # separate precincts in the serialization process)
+            for p in polygon:
+                polygons.append(
+                    Polygon([tuple(coord) for coord in p]))
+        
+    return MultiPolygon(polygons)
+
+
 def clip(shapes, clip_type):
     """
     Finds external border of a group of shapes
@@ -253,25 +297,8 @@ def clip(shapes, clip_type):
 
     # find union of shapes
 
-    polygons = []
-    for multipolygon in shapes:
-        polygon_list = []
-        for polygon in multipolygon:
-            try:
-                polygon_list.append(
-                    Polygon([tuple(coord) for coord in polygon]))
-            except (ValueError, AssertionError):
-                # if there is a multipolygon precinct (which there
-                # shouldn't be, because those will be broken into
-                # separate precincts in the serialization process)
-                for p in polygon:
-                    polygon_list.append(
-                        Polygon([tuple(coord) for coord in p]))
-        polygons.append(polygon_list)
-        
-    multipolygons = []
-    for shape in polygons:
-        multipolygons.append(MultiPolygon(shape))
+    # list of Polygon and MultiPolygon objects
+    multipolygons = [convert_to_shapely(shape) for shape in shapes]
 
     if clip_type == 1:
         solution = unary_union(multipolygons)
@@ -280,7 +307,8 @@ def clip(shapes, clip_type):
             raise ValueError(
                 "polygon clip of type DIFFERENCE takes exactly 2 input shapes"
                 )
-        solution = multipolygons[0].buffer(0.0000001).difference(multipolygons[1].buffer(0.0000001))
+        solution = multipolygons[0].buffer(0.0000001).difference(
+            multipolygons[1].buffer(0.0000001))
     else:
         raise ValueError(
             "invalid clip type. use utils.UNION or utils.DIFFERENCE")
@@ -437,6 +465,9 @@ def get_if_addable(precinct, community, boundary):
     """
     Returns whether or not it will create an island if `precinct` is
     added to `community` with `boundary` already taken up.
+
+    Checks if the number of polygons in the output of boundary is the same after
+    precinct is added to community
 
     Args:
     `precinct`: segments of `precinct`

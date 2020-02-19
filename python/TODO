@@ -16,4 +16,4 @@
     - write communities algorithm
     - write get_exchangleable_precincts function
     - update get_addable_precincts to new function
-    - CHANGE CLIPPER FUNCTIONS TO REMOVE POINTS ON SEGMENTS WITH MORE THAN TWO POINTS
+    - create __all__ variable for utils.py
