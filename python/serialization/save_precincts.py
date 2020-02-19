@@ -80,6 +80,23 @@ def tostring(string):
         return str(string)
 
 
+def area(points):
+    coordinate_list = []
+    area = 0
+    left_area = 0
+    right_area = 0
+    index = 0
+    for num, point in enumerate(points):
+        if point == points[-1]:
+            left_area += int(point[0]*points[0][1])
+            right_area += int(point[1]*points[0][0])
+        else:
+            left_area += int(point[0])*int(points[num+1][1])
+            right_area += int(point[1])*int(points[num+1][0])
+    area = abs(int(left_area - right_area))/2
+    return area
+
+
 class Precinct:
     """
     Represents a voting precinct
@@ -162,7 +179,6 @@ class Precinct:
         rep_keys = STATE_METADATA[state]["rep_keys"]
         json_id = STATE_METADATA[state]["geo_id"]
         json_pop = STATE_METADATA[state]["pop_key"]
-
 
         # Create list of precinct ids in geodata
         precinct_geo_ids = []
@@ -299,11 +315,44 @@ class Precinct:
                 precinct_coords[precinct_id] = \
                     precinct['geometry']['coordinates']
             
+        # Check for multi-polygons and split them into seperate precincts, by area
+        multi_polygon_index = []
+        for precinct in precinct_coords:
+            total_pop = int(pop[precinct])
+            dem_votes = int(sum([int(dem_cols[precinct][x]) for x in dem_cols[precinct]]))
+            rep_votes = int(sum([int(rep_cols[precinct][x]) for x in rep_cols[precinct]]))
+            if len(precinct_coords[precinct]) > 1:
+                multi_polygon_index.append(precinct)
+                total_area = 0
+                for num, precinct_polygon in enumerate(precinct_coords[precinct]):
+                    outer_area = area(precinct_polygon[0])
+                    inner_area = 0
+                    if len(precinct_polygon) > 1:
+                        for linear_ring in precinct_polygon[1:]:
+                            inner_area += area(linear_ring)
+                    polygon_area = outer_area - inner_area
+                    total_area += polygon_area
+                    # Creates variables polygon0_area, polygon1_area, ... depending 
+                    # on number of polygons in multipolygon
+                    exec('polygon' + str(num) + '_area = polygon_area')
+                for num, precinct_polygon in enumerate(precinct_coords[precinct]):
+                    # Append new population, vote counts based on area
+                    exec('polygon_ratio = (polygon' + str(num) + '_area)/total_area')
+                    exec('pop[precinct' + str(num) + '] = polygon_ratio * total_pop')
+                    exec('dem_cols[precinct' + str(num) + '] = polygon_ratio * dem_votes')
+                    exec('rep_cols[precinct' + str(num) + '] = polygon_ratio * rep_votes')
+                # Delete originial multi-precinct from population, election_data
+                del pop[precinct]
+                del dem_cols[precinct]
+                del rep_cols[precinct]
+
+        for multi in reversed(multi_polygon_index):
+            del precinct_coords[multi]
+
         # get election and geo data (separate processes for whether or
         # not there is an individual election data file)
 
         if is_election_data:
-
             # append precinct objects to precinct_list
             for precinct_id in precinct_geo_ids:
                 # if precinct id corresponds to any json obejcts
