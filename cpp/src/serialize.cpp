@@ -11,14 +11,14 @@
 #include "../include/term_disp.hpp"
 #include <boost/filesystem.hpp>
 
-string State::to_json() {
+std::string GeoGerry::State::to_json() {
     /*
         dumps a state object as json
         just uses string manipulation, no json parsing
     */
    
     // begin json string
-    string str = "{" + N; 
+    std::string str = "{" + N; 
 
     // str += T + OQ + "state" + CQC + "{" + N
     //     + TAB(2) + OQ + "name" + CQC + OQ + name + CQ + C + N
@@ -106,39 +106,43 @@ string State::to_json() {
     (see boost documentation for more information)
 */
 
-void State::write_binary(string path) {
-    ofstream ofs(path); // open output stream
+void GeoGerry::State::write_binary(std::string path) {
+    std::ofstream ofs(path); // open output stream
     boost::archive::binary_oarchive oa(ofs); // open archive stream
     oa << *this; // put this pointer into stream
     ofs.close(); // close stream
 }
 
-State State::read_binary(string path) {
-    State state = State(); // blank state object
+GeoGerry::State GeoGerry::State::read_binary(std::string path) {
+    GeoGerry::State state = GeoGerry::State(); // blank state object
 
-    ifstream ifs(path); // open input stream
+    std::ifstream ifs(path); // open input stream
     boost::archive::binary_iarchive ia(ifs); // open archive stream
     ia >> state; // read into state object
 
     return state; // return state object
 }
 
-void Precinct_Group::write_binary(string path) {
-    ofstream ofs(path); // open output stream
+void GeoGerry::Precinct_Group::write_binary(std::string path) {
+    std::ofstream ofs(path); // open output stream
     boost::archive::binary_oarchive oa(ofs); // open archive stream
     oa << *this; // put this pointer into stream
     ofs.close(); // close stream
 }
 
-Precinct_Group Precinct_Group::read_binary(string path) {
-    Precinct_Group pg = Precinct_Group(); // blank object
-    ifstream ifs(path); // open input stream
+GeoGerry::Precinct_Group GeoGerry::Precinct_Group::read_binary(std::string path) {
+    GeoGerry::Precinct_Group pg = GeoGerry::Precinct_Group(); // blank object
+    std::ifstream ifs(path); // open input stream
     boost::archive::binary_iarchive ia(ifs); // open archive stream
     ia >> pg;
     return pg; // return precinct group object
 }
 
-template<class Archive> void State::serialize(Archive & ar, const unsigned int version) {
+template<class Archive> void GeoGerry::LinearRing::serialize(Archive & ar, const unsigned int version) {
+    ar & border;
+}
+
+template<class Archive> void GeoGerry::State::serialize(Archive & ar, const unsigned int version) {
     // write districts, precincts, name, and border
     ar & state_districts;
     ar & precincts;
@@ -147,7 +151,7 @@ template<class Archive> void State::serialize(Archive & ar, const unsigned int v
     ar & pop;
 }
 
-template<class Archive> void Multi_Shape::serialize(Archive & ar, const unsigned int version) {
+template<class Archive> void GeoGerry::Multi_Shape::serialize(Archive & ar, const unsigned int version) {
     ar & border;
     ar & shape_id;
     ar & pop;
@@ -162,7 +166,7 @@ template<class Archive> void Multi_Shape::serialize(Archive & ar, const unsigned
     TODO: Make sure that this actually is necessary
 */
 
-template<class Archive> void Precinct_Group::serialize(Archive & ar, const unsigned int version) {
+template<class Archive> void GeoGerry::Precinct_Group::serialize(Archive & ar, const unsigned int version) {
     // push id and border into the archive stream
     ar & id;
     ar & border;
@@ -170,24 +174,26 @@ template<class Archive> void Precinct_Group::serialize(Archive & ar, const unsig
     // ar & precincts;
 }
 
- template<class Archive> void Precinct::serialize(Archive & ar, const unsigned int version) {
+ template<class Archive> void GeoGerry::Precinct::serialize(Archive & ar, const unsigned int version) {
     // push shape, border and vote data
     ar & shape_id;
-    ar & border;
+    ar & hull;
+    ar & holes;
     ar & dem;            
     ar & rep;
     ar & pop;
 }
 
-template<class Archive> void Shape::serialize(Archive & ar, const unsigned int version) {
+template<class Archive> void GeoGerry::Shape::serialize(Archive & ar, const unsigned int version) {
     // push shape id and border to archive streamm
     ar & shape_id;
-    ar & border;
+    ar & hull;
+    ar & holes;
     ar & pop;
 }
 
 
-void State::save_communities(string write_path) {
+void GeoGerry::State::save_communities(std::string write_path) {
     /*
         Saves a community to a file at a specific point in the
         pipeline. Useful for visualization and checks.
@@ -203,7 +209,7 @@ void State::save_communities(string write_path) {
    boost::filesystem::create_directory(write_path);
 
    for (Community c : state_communities) {
-       c.write_binary(write_path + "/community_" + to_string(c_index));
+       c.write_binary(write_path + "/community_" + std::to_string(c_index));
        c_index++;
    }
 }

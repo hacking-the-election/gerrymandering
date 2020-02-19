@@ -9,7 +9,7 @@
 #include "../include/gui.hpp"
 #include "../include/geometry.hpp"
 
-bounding_box normalize_coordinates(Shape* shape) {
+GeoGerry::bounding_box normalize_coordinates(GeoGerry::Shape* shape) {
 
     /*
         returns a normalized bounding box, and modifies 
@@ -17,13 +17,13 @@ bounding_box normalize_coordinates(Shape* shape) {
     */
 
     // set dummy extremes
-    float top = shape->border[0][1], 
-        bottom = shape->border[0][1], 
-        left = shape->border[0][0], 
-        right = shape->border[0][0];
+    float top = shape->hull.border[0][1], 
+        bottom = shape->hull.border[0][1], 
+        left = shape->hull.border[0][0], 
+        right = shape->hull.border[0][0];
 
     // loop through and find actual corner using ternary assignment
-    for (vector<float> coord : shape->border) {
+    for (GeoGerry::coordinate coord : shape->hull.border) {
         top = (coord[1] > top)? coord[1] : top;
         bottom = (coord[1] < bottom)? coord[1] : bottom;
         left = (coord[0] < left)? coord[0] : left;
@@ -31,9 +31,9 @@ bounding_box normalize_coordinates(Shape* shape) {
     }
 
     // add to each coordinate to move it to quadrant 1
-    for (float i = 0; i < shape->border.size(); i++) {
-        shape->border[i][0] += (0 - left);
-        shape->border[i][1] += (0 - bottom);
+    for (float i = 0; i < shape->hull.border.size(); i++) {
+        shape->hull.border[i][0] += (0 - left);
+        shape->hull.border[i][1] += (0 - bottom);
     }
 
     // normalize the bounding box too
@@ -45,15 +45,15 @@ bounding_box normalize_coordinates(Shape* shape) {
     return {top, bottom, left, right}; // return bounding box
 }
 
-coordinate_set resize_coordinates(bounding_box box, coordinate_set shape, int screenX, int screenY) {
+GeoGerry::coordinate_set resize_coordinates(GeoGerry::bounding_box box, GeoGerry::coordinate_set shape, int screenX, int screenY) {
     // scales an array of coordinates to fit 
     // on a screen of dimensions {screenX, screenY}
     
-    float ratioTop = ceil((float) box[0]) / (float) (screenX);   // the rounded ratio of top:top
-    float ratioRight = ceil((float) box[3]) / (float) (screenY); // the rounded ratio of side:side
+    double ratioTop = ceil((float) box[0]) / (float) (screenX);   // the rounded ratio of top:top
+    double ratioRight = ceil((float) box[3]) / (float) (screenY); // the rounded ratio of side:side
     
     // find out which is larger and assign it's reciporical to the scale factor
-    float scaleFactor = floor(1 / ((ratioTop > ratioRight) ? ratioTop : ratioRight)); 
+    double scaleFactor = floor(1 / ((ratioTop > ratioRight) ? ratioTop : ratioRight)); 
 
     // dilate each coordinate in the shape
     for ( int i = 0; i < shape.size(); i++ ) {
@@ -65,7 +65,7 @@ coordinate_set resize_coordinates(bounding_box box, coordinate_set shape, int sc
     return shape;
 }
 
-Uint32* pix_array(coordinate_set shape, int x, int y) {
+Uint32* pix_array(GeoGerry::coordinate_set shape, int x, int y) {
 
     /* 
         creates and returns a pixel array 
@@ -76,7 +76,7 @@ Uint32* pix_array(coordinate_set shape, int x, int y) {
     memset(pixels, 255, x * y * sizeof(Uint32));   // fill pixel array with white
     int total = (x * y) - 1;                       // last index in pixel array;
 
-    for (coordinate coords : shape) {
+    for (GeoGerry::coordinate coords : shape) {
         // locate the coordinate, set it to black
         int start = (int)((int)coords[1] * x - (int)coords[0]);
         pixels[total - start] = 0;
@@ -86,8 +86,8 @@ Uint32* pix_array(coordinate_set shape, int x, int y) {
     return pixels;
 }
 
-coordinate_set connect_dots(coordinate_set shape) {
-    coordinate_set newShape;
+GeoGerry::coordinate_set connect_dots(GeoGerry::coordinate_set shape) {
+    GeoGerry::coordinate_set newShape;
 
     int dx, dy, p, x, y, x0, x1, y0, y1;
 
@@ -110,14 +110,14 @@ coordinate_set connect_dots(coordinate_set shape) {
 
         int steps = abs(dx) > abs(dy) ? abs(dx) : abs(dy);
 
-        float xinc = dx / (float) steps;
-        float yinc = dy / (float) steps;
+        double xinc = dx / (double) steps;
+        double yinc = dy / (double) steps;
 
-        float x = x0;
-        float y = y0;
+        double x = x0;
+        double y = y0;
 
         for (int i = 0; i <= steps; i++) {
-            newShape.push_back({(float)x, (float)y});
+            newShape.push_back({(double)x, (double)y});
             x += xinc;
             y += yinc;
         }
@@ -134,17 +134,17 @@ void destroy_window(SDL_Window* window) {
     SDL_Quit();
 }
 
-void Shape::draw() {
-    
+void GeoGerry::Shape::draw() {
     /*
         open an SDL window, create a pixel array 
         with the shape's geometry, and print it to the window
     */
+
     int dim[2] = {900, 900}; // the size of the SDL window
 
     // prepare array of coordinates to be drawn
     bounding_box box = normalize_coordinates(this);
-    coordinate_set shape = resize_coordinates(box, this->border, dim[0], dim[1]);
+    coordinate_set shape = resize_coordinates(box, this->hull.border, dim[0], dim[1]);
     shape = connect_dots(shape);
 
     // write coordinates to pixel array
@@ -182,28 +182,35 @@ void Shape::draw() {
     destroy_window(window);
 }
 
-bounding_box normalize_coordinates(Multi_Shape* multi_shape) {
+GeoGerry::bounding_box normalize_coordinates(GeoGerry::Multi_Shape* multi_shape) {
     // set dummy extremes
-    float top = multi_shape->border[0].border[0][1], 
-        bottom = multi_shape->border[0].border[0][1], 
-        left = multi_shape->border[0].border[0][0], 
-        right = multi_shape->border[0].border[0][0];
+    double top = multi_shape->border[0].hull.border[0][1], 
+        bottom = multi_shape->border[0].hull.border[0][1], 
+        left = multi_shape->border[0].hull.border[0][0], 
+        right = multi_shape->border[0].hull.border[0][0];
 
     // loop through and find actual corner using ternary assignment
     for (int i = 0; i < multi_shape->border.size(); i++) {
-        for (int x = 0; x < multi_shape->border[i].border.size(); x++) {
-            top = (multi_shape->border[i].border[x][1] > top) ? multi_shape->border[i].border[x][1] : top;
-            bottom = (multi_shape->border[i].border[x][1] < bottom)? multi_shape->border[i].border[x][1] : bottom;
-            left = (multi_shape->border[i].border[x][0] < left)? multi_shape->border[i].border[x][0] : left;
-            right = (multi_shape->border[i].border[x][0] > right)? multi_shape->border[i].border[x][0] : right;
+        for (int x = 0; x < multi_shape->border[i].hull.border.size(); x++) {
+            top = (multi_shape->border[i].hull.border[x][1] > top) ? multi_shape->border[i].hull.border[x][1] : top;
+            bottom = (multi_shape->border[i].hull.border[x][1] < bottom)? multi_shape->border[i].hull.border[x][1] : bottom;
+            left = (multi_shape->border[i].hull.border[x][0] < left)? multi_shape->border[i].hull.border[x][0] : left;
+            right = (multi_shape->border[i].hull.border[x][0] > right)? multi_shape->border[i].hull.border[x][0] : right;
         }
     }
 
     for (int i = 0; i < multi_shape->border.size(); i++) {
         // add to each coordinate to move it to quadrant 1
-        for (int x = 0; x < multi_shape->border[i].border.size(); x++) {
-            multi_shape->border[i].border[x][0] += (0 - left);
-            multi_shape->border[i].border[x][1] += (0 - bottom);
+        for (int x = 0; x < multi_shape->border[i].hull.border.size(); x++) {
+            multi_shape->border[i].hull.border[x][0] += (0 - left);
+            multi_shape->border[i].hull.border[x][1] += (0 - bottom);
+        }
+
+        for (int j = 0; j < multi_shape->border[i].holes.size(); j++) {
+            for (int k = 0; j < multi_shape->border[i].holes[j].border.size(); j++) {
+                multi_shape->border[i].holes[j].border[k][0] += (0 - left);
+                multi_shape->border[i].holes[j].border[k][1] += (0 - bottom);
+            }
         }
     }
 
@@ -216,21 +223,27 @@ bounding_box normalize_coordinates(Multi_Shape* multi_shape) {
     return {top, bottom, left, right}; // return bounding box
 }
 
-vector<Shape> resize_coordinates(bounding_box box, vector<Shape> shapes, int screenX, int screenY) {
+std::vector<GeoGerry::Shape> resize_coordinates(GeoGerry::bounding_box box, std::vector<GeoGerry::Shape> shapes, int screenX, int screenY) {
     // scales an array of coordinates to fit 
     // on a screen of dimensions {screenX, screenY}
     
-    float ratioTop = ceil((float) box[0]) / (float) (screenX);   // the rounded ratio of top:top
-    float ratioRight = ceil((float) box[3]) / (float) (screenY); // the rounded ratio of side:side
+    double ratioTop = ceil((float) box[0]) / (float) (screenX);   // the rounded ratio of top:top
+    double ratioRight = ceil((float) box[3]) / (float) (screenY); // the rounded ratio of side:side
     
     // find out which is larger and assign it's reciporical to the scale factor
-    float scaleFactor = floor(1 / ((ratioTop > ratioRight) ? ratioTop : ratioRight)); 
+    double scaleFactor = floor(1 / ((ratioTop > ratioRight) ? ratioTop : ratioRight)); 
 
     // dilate each coordinate in the shape
     for (int i = 0; i < shapes.size(); i++) {
-        for ( int x = 0; x < shapes[i].border.size(); x++ ) {
-            shapes[i].border[x][0] *= scaleFactor;
-            shapes[i].border[x][1] *= scaleFactor;        
+        for ( int x = 0; x < shapes[i].hull.border.size(); x++ ) {
+            shapes[i].hull.border[x][0] *= scaleFactor;
+            shapes[i].hull.border[x][1] *= scaleFactor;        
+        }
+        for (int j = 0; j < shapes[i].holes.size(); j++) {
+            for (int k = 0; k < shapes[i].holes[j].border.size(); k++) {
+                shapes[i].holes[j].border[k][0] *= scaleFactor;
+                shapes[i].holes[j].border[k][1] *= scaleFactor;
+            }
         }
     }
 
@@ -238,31 +251,31 @@ vector<Shape> resize_coordinates(bounding_box box, vector<Shape> shapes, int scr
     return shapes;
 }
 
-coordinate_set connect_dots(vector<Shape> shapes) {
+GeoGerry::coordinate_set connect_dots(std::vector<GeoGerry::Shape> shapes) {
     /*
         Given an array of shapes, calculates the
         pixels in a sized matrix that connect the 
         vertices of the shape
     */
 
-    coordinate_set newShape;
+    GeoGerry::coordinate_set newShape;
 
     // loop through shapes
     for (int j = 0; j < shapes.size(); j++) {
         int dx, dy, p, x, y, x0, x1, y0, y1;
 
-        for (int i = 0; i < shapes[j].border.size() - 1; i++) {
+        for (int i = 0; i < shapes[j].hull.border.size() - 1; i++) {
 
-            x0 = (int) shapes[j].border[i][0];
-            y0 = (int) shapes[j].border[i][1];
+            x0 = (int) shapes[j].hull.border[i][0];
+            y0 = (int) shapes[j].hull.border[i][1];
 
-            if ( i != shapes[j].border.size() - 1) {
-                x1 = (int) shapes[j].border[i + 1][0];
-                y1 = (int) shapes[j].border[i + 1][1];
+            if ( i != shapes[j].hull.border.size() - 1) {
+                x1 = (int) shapes[j].hull.border[i + 1][0];
+                y1 = (int) shapes[j].hull.border[i + 1][1];
             }
             else {
-                x1 = (int) shapes[j].border[0][0];
-                y1 = (int) shapes[j].border[0][1];
+                x1 = (int) shapes[j].hull.border[0][0];
+                y1 = (int) shapes[j].hull.border[0][1];
             }
 
             dx = x1 - x0;
@@ -287,16 +300,16 @@ coordinate_set connect_dots(vector<Shape> shapes) {
     return newShape;
 }
 
-void Multi_Shape::draw() {
+void GeoGerry::Multi_Shape::draw() {
     // combine precincts into single array, draw array
 
     int dim[2] = {900, 900}; // the size of the SDL window
 
     // prepare array of coordinates to be drawn
-    bounding_box box = normalize_coordinates(this);
-    vector<Shape> shapes = resize_coordinates(box, this->border, dim[0], dim[1]);
+    GeoGerry::bounding_box box = normalize_coordinates(this);
+    std::vector<GeoGerry::Shape> shapes = resize_coordinates(box, this->border, dim[0], dim[1]);
 
-    coordinate_set shape = connect_dots(shapes);
+    GeoGerry::coordinate_set shape = connect_dots(shapes);
     // write coordinates to pixel array
     Uint32 * pixels = pix_array(shape, dim[0], dim[1]);
 
@@ -330,33 +343,39 @@ void Multi_Shape::draw() {
     destroy_window(window);
 }
 
-bounding_box normalize_coordinates(State* state) {
+GeoGerry::bounding_box normalize_coordinates(GeoGerry::State* state) {
     /*
         returns a normalized bounding box, and modifies 
         shape object's coordinates to move it to Quadrant I
     */
    
     // set dummy extremes
-    float top = state->precincts[0].border[0][1], 
-        bottom = state->precincts[0].border[0][1], 
-        left = state->precincts[0].border[0][0], 
-        right = state->precincts[0].border[0][0];
+    float top = state->precincts[0].hull.border[0][1], 
+        bottom = state->precincts[0].hull.border[0][1], 
+        left = state->precincts[0].hull.border[0][0], 
+        right = state->precincts[0].hull.border[0][0];
 
     // loop through and find actual corner using ternary assignment
     for (int i = 0; i < state->precincts.size(); i++) {
-        for (int x = 0; x < state->precincts[i].border.size(); x++) {
-            top = (state->precincts[i].border[x][1] > top) ? state->precincts[i].border[x][1] : top;
-            bottom = (state->precincts[i].border[x][1] < bottom)? state->precincts[i].border[x][1] : bottom;
-            left = (state->precincts[i].border[x][0] < left)? state->precincts[i].border[x][0] : left;
-            right = (state->precincts[i].border[x][0] > right)? state->precincts[i].border[x][0] : right;
+        for (int x = 0; x < state->precincts[i].hull.border.size(); x++) {
+            top = (state->precincts[i].hull.border[x][1] > top) ? state->precincts[i].hull.border[x][1] : top;
+            bottom = (state->precincts[i].hull.border[x][1] < bottom)? state->precincts[i].hull.border[x][1] : bottom;
+            left = (state->precincts[i].hull.border[x][0] < left)? state->precincts[i].hull.border[x][0] : left;
+            right = (state->precincts[i].hull.border[x][0] > right)? state->precincts[i].hull.border[x][0] : right;
         }
     }
 
     for (int i = 0; i < state->precincts.size(); i++) {
         // add to each coordinate to move it to quadrant 1
-        for (int x = 0; x < state->precincts[i].border.size(); x++) {
-            state->precincts[i].border[x][0] += (0 - left);
-            state->precincts[i].border[x][1] += (0 - bottom);
+        for (int x = 0; x < state->precincts[i].hull.border.size(); x++) {
+            state->precincts[i].hull.border[x][0] += (0 - left);
+            state->precincts[i].hull.border[x][1] += (0 - bottom);
+        }
+        for (int j = 0; j < state->precincts[i].holes.size(); j++) {
+            for (int k = 0; k < state->precincts[i].holes[j].border.size(); k++) {
+                state->precincts[i].holes[j].border[k][0] += (0 - left);
+                state->precincts[i].holes[j].border[k][1] += (0 - bottom);
+            }
         }
     }
 
@@ -369,7 +388,7 @@ bounding_box normalize_coordinates(State* state) {
     return {top, bottom, left, right}; // return bounding box
 }
 
-vector<Precinct> resize_coordinates(bounding_box box, vector<Precinct> shapes, int screenX, int screenY) {
+std::vector<GeoGerry::Precinct> resize_coordinates(GeoGerry::bounding_box box, std::vector<GeoGerry::Precinct> shapes, int screenX, int screenY) {
     // scales an array of coordinates to fit 
     // on a screen of dimensions {screenX, screenY}
     
@@ -381,9 +400,15 @@ vector<Precinct> resize_coordinates(bounding_box box, vector<Precinct> shapes, i
 
     // dilate each coordinate in the shape
     for (int i = 0; i < shapes.size(); i++) {
-        for ( int x = 0; x < shapes[i].border.size(); x++ ) {
-            shapes[i].border[x][0] *= scaleFactor;
-            shapes[i].border[x][1] *= scaleFactor;        
+        for ( int x = 0; x < shapes[i].hull.border.size(); x++ ) {
+            shapes[i].hull.border[x][0] *= scaleFactor;
+            shapes[i].hull.border[x][1] *= scaleFactor;        
+        }
+        for (int j = 0; j < shapes[i].holes.size(); j++) {
+            for (int k = 0; k < shapes[i].holes[j].border.size(); k++) {
+                shapes[i].holes[j].border[k][0] *= scaleFactor;
+                shapes[i].holes[j].border[k][1] *= scaleFactor;
+            }
         }
     }
 
@@ -391,31 +416,31 @@ vector<Precinct> resize_coordinates(bounding_box box, vector<Precinct> shapes, i
     return shapes;
 }
 
-coordinate_set connect_dots(vector<Precinct> shapes) {
+GeoGerry::coordinate_set connect_dots(std::vector<GeoGerry::Precinct> shapes) {
     /*
         Given an array of shapes, calculates the
         pixels in a sized matrix that connect the 
         vertices of the shape
     */
 
-    coordinate_set newShape;
+    GeoGerry::coordinate_set newShape;
 
     // loop through shapes
     for (int j = 0; j < shapes.size(); j++) {
         int dx, dy, p, x, y, x0, x1, y0, y1;
 
-        for (int i = 0; i < shapes[j].border.size() - 1; i++) {
+        for (int i = 0; i < shapes[j].hull.border.size() - 1; i++) {
 
-            x0 = (int) shapes[j].border[i][0];
-            y0 = (int) shapes[j].border[i][1];
+            x0 = (int) shapes[j].hull.border[i][0];
+            y0 = (int) shapes[j].hull.border[i][1];
 
-            if ( i != shapes[j].border.size() - 1) {
-                x1 = (int) shapes[j].border[i + 1][0];
-                y1 = (int) shapes[j].border[i + 1][1];
+            if ( i != shapes[j].hull.border.size() - 1) {
+                x1 = (int) shapes[j].hull.border[i + 1][0];
+                y1 = (int) shapes[j].hull.border[i + 1][1];
             }
             else {
-                x1 = (int) shapes[j].border[0][0];
-                y1 = (int) shapes[j].border[0][1];
+                x1 = (int) shapes[j].hull.border[0][0];
+                y1 = (int) shapes[j].hull.border[0][1];
             }
 
             dx = x1 - x0;
@@ -440,13 +465,13 @@ coordinate_set connect_dots(vector<Precinct> shapes) {
     return newShape;
 }
 
-void State::draw() {
+void GeoGerry::State::draw() {
     // combine precincts into single array, draw array
     int dim[2] = {900, 900}; // the size of the SDL window
     // prepare array of coordinates to be drawn
-    bounding_box box = normalize_coordinates(this);
-    vector<Precinct> shapes = resize_coordinates(box, this->precincts, dim[0], dim[1]);
-    coordinate_set shape = connect_dots(shapes);
+    GeoGerry::bounding_box box = normalize_coordinates(this);
+    std::vector<GeoGerry::Precinct> shapes = resize_coordinates(box, this->precincts, dim[0], dim[1]);
+    GeoGerry::coordinate_set shape = connect_dots(shapes);
 
     // write coordinates to pixel array
     Uint32 * pixels = pix_array(shape, dim[0], dim[1]);

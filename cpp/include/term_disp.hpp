@@ -1,24 +1,23 @@
 #include <string>
 
-using String = std::string;
+const std::string 
 
-const String RED = "\e[31m";
-const String GREEN = "\e[32m";
-const String YELLOW = "\e[33m";
-const String BLUE = "\e[34m";
-const String PURPLE = "\e[35m";
-const String RESET = "\e[0m";
+RED = "\e[31m",
+GREEN = "\e[32m",
+YELLOW = "\e[33m",
+BLUE = "\e[34m",
+PURPLE = "\e[35m",
+RESET = "\e[0m",
+C = ",",
+N = "\n",
+OQ = "\"",
+CQ = "\"",
+CQC = "\": ",
+T = "    ";
 
-const String C = ",";
-const String N = "\n";
-const String OQ = "\"";
-const String CQ = "\"";
-const String CQC = "\": ";
-const String T = "    ";
-
-String TAB(int num) {
+std::string TAB(int num) {
     
-    string str;
+    std::string str;
     for ( int i = 0; i < num; i++ )
         str += T;
     
