@@ -3,8 +3,6 @@
 #include <fstream>
 #include <vector>
 
-using namespace std;
-
 string readf(string path);
 void writef(string contents, string path);
 
