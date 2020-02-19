@@ -268,7 +268,7 @@ bool point_in_ring(GeoGerry::coordinate coord, GeoGerry::LinearRing lr) {
     return (intersections % 2 == 1); // odd intersection
 }
 
-bool get_inside(LinearRing s0, LinearRing s1) {
+bool get_inside(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1) {
     /*
         returns whether or not s0 is inside of 
         s1 using the intersection point method
@@ -402,8 +402,6 @@ Multi_Shape generate_exterior_border(Precinct_Group precinct_group) {
     */ 
     Multi_Shape border;
     return border;
-    // return poly_to_shape(u);
-    // return clipper_mult_int_to_shape(solutions);
 }
 
 p_index State::get_addable_precinct(p_index_set available_precincts, p_index current_precinct) {

@@ -410,8 +410,8 @@ GeoGerry::Precinct_Group combine_holes(GeoGerry::Precinct_Group pg) {
             pop = p.pop;
         }
 
-        GeoGerry::Precinct p = GeoGerry::Precinct(precinct_border, demv, repv, pop, id);
-        precincts.push_back(p);
+        GeoGerry::Precinct np = GeoGerry::Precinct(precinct_border, demv, repv, pop, id);
+        precincts.push_back(np);
 
         x++;
     }

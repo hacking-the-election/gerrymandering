@@ -41,3 +41,6 @@ GeoGerry::Multi_Shape paths_to_multi_shape(ClipperLib::Paths paths);
 // for algorithm helper methods
 double get_standard_deviation_partisanship(GeoGerry::Precinct_Group pg);
 double get_median_partisanship(GeoGerry::Precinct_Group pg);
+
+bool point_in_ring(GeoGerry::coordinate coord, GeoGerry::LinearRing lr);
+bool get_inside(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1);
