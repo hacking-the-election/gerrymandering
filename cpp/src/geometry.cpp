@@ -212,7 +212,7 @@ segments GeoGerry::Shape::get_segments() {
     // return a segment list with shape's segments, including holes
     segments segs = hull.get_segments();
     for (GeoGerry::LinearRing h : holes) {
-        segments hole_segs = h.get_segments;
+        segments hole_segs = h.get_segments();
         for (segment s : hole_segs) {
             segs.push_back(s);
         }

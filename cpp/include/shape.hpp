@@ -106,12 +106,12 @@ class LinearRing {
         coordinate_set border;
 
         // add operator overloading for object equality
-        friend bool operator== (LinearRing& l1, LinearRing& l2) {
+        friend bool operator== (LinearRing l1, LinearRing l2) {
             return (l1.border == l2.border);
         }
 
         // add operator overloading for object inequality
-        friend bool operator!= (LinearRing& l1, LinearRing& l2) {
+        friend bool operator!= (LinearRing l1, LinearRing l2) {
             return (l1.border != l2.border);
         }
 
@@ -170,12 +170,12 @@ class Shape {
         virtual segments get_segments();      // return a segment list with shape's segments
 
         // add operator overloading for object equality
-        friend bool operator== (Shape& p1, Shape& p2) {
+        friend bool operator== (Shape p1, Shape p2) {
             return (p1.hull == p2.hull && p1.holes == p2.holes);
         }
 
         // add operator overloading for object inequality
-        friend bool operator!= (Shape& p1, Shape& p2) {
+        friend bool operator!= (Shape p1, Shape p2) {
             return (p1.hull != p2.hull || p1.holes != p2.holes);
         }
 
@@ -193,31 +193,45 @@ class Precinct : public Shape {
 
     public:
 
-        Precinct(){}; // default constructor
+        Precinct(){} // default constructor
 
-        Precinct(coordinate_set shapes, int demV, int repV) : Shape(shapes) {
+        Precinct(LinearRing ext, int demV, int repV) : Shape(ext) {
             // assigning vote data
             dem = demV;
             rep = repV;
         }
 
-        Precinct(coordinate_set shapes, int demV, int repV, std::string id) : Shape(shapes, id) {
+        Precinct(LinearRing ext, std::vector<LinearRing> interior, int demV, int repV) : Shape(ext, interior) {
+            // assigning vote data
+            dem = demV;
+            rep = repV;
+        }
+
+
+        Precinct(LinearRing ext, int demV, int repV, std::string id) : Shape(ext, id) {
             // overloaded constructor for adding shape id
             dem = demV;
             rep = repV;
         }
 
-        double get_ratio();        // returns dem/total ratio
-        std::vector<int> voter_data();  // get data in {dem, rep} format
+
+        Precinct(LinearRing ext, std::vector<LinearRing> interior, int demV, int repV, std::string id) : Shape(ext, interior, id) {
+            // overloaded constructor for adding shape id
+            dem = demV;
+            rep = repV;
+        }
+
+        double get_ratio();                 // returns dem/total ratio
+        std::vector<int> get_voter_data();  // get data in {dem, rep} format
     
         // add operator overloading for object equality
-        friend bool operator== (Precinct& p1, Precinct& p2) {
-            return (p1.border == p2.border && p1.dem == p2.dem && p1.rep == p2.rep && p1.pop == p2.pop);
+        friend bool operator== (Precinct p1, Precinct p2) {
+            return (p1.hull == p2.hull && p1.holes == p2.holes && p1.dem == p2.dem && p1.rep == p2.rep && p1.pop == p2.pop);
         }
 
         // add operator overloading for object inequality
-        friend bool operator!= (Precinct& p1, Precinct& p2) {
-            return (p1.border != p2.border || p1.dem != p2.dem || p1.rep != p2.rep || p1.pop != p2.pop);
+        friend bool operator!= (Precinct p1, Precinct p2) {
+            return (p1.hull != p2.hull || p1.holes != p2.holes || p1.dem != p2.dem || p1.rep != p2.rep || p1.pop != p2.pop);
         }
 
         // for boost serialization
@@ -252,9 +266,11 @@ class Multi_Shape : public Shape {
         Multi_Shape(std::vector<Precinct> s) {
             // constructor with assignment
             for (Precinct p : s) {
-                border.push_back(Shape(p.hull));
+                // copy precinct data to shape object
+                border.push_back(Shape(p.hull, p.holes, p.shape_id));
             }
         }
+
         // for boost serialization
         friend class boost::serialization::access;
         template<class Archive> void serialize(Archive & ar, const unsigned int version);
@@ -283,10 +299,10 @@ class Precinct_Group : public Multi_Shape {
     */
 
     public:
-        std::vector<Precinct> precincts;
-        void add_precinct(Precinct pre) {precincts.push_back(pre);};
+        std::vector<Precinct> precincts;  // array of precinct objects
+        void add_precinct(Precinct pre) {precincts.push_back(pre);};  // adds precinct to list of precincts
 
-        Precinct_Group(){}; // default constructor
+        Precinct_Group(){};
         Precinct_Group(std::vector<Shape> shapes)
             : Multi_Shape(shapes) {}; // call the superclass constructor
         

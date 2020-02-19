@@ -14,7 +14,7 @@
 #include <iostream>
 #include <string>
 
-#include "../lib/clipper/clipper.hpp";
+#include "../lib/clipper/clipper.hpp"
 
 // coordinate manipulation for gui draw methods
 GeoGerry::bounding_box normalize_coordinates(GeoGerry::Shape* shape);
@@ -28,8 +28,8 @@ GeoGerry::p_index_set get_inner_boundary_precincts(GeoGerry::Precinct_Group shap
 GeoGerry::p_index_set get_bordering_precincts(GeoGerry::Precinct_Group shape, int p_index);
 
 // overload get_bordering_shapes for vector inheritance problem
-GeoGerry::p_index_set get_bordering_shapes(vector<GeoGerry::Shape> shapes, GeoGerry::Shape shape);
-GeoGerry::p_index_set get_bordering_shapes(vector<GeoGerry::Precinct_Group> shapes, GeoGerry::Shape shape);
+GeoGerry::p_index_set get_bordering_shapes(std::vector<GeoGerry::Shape> shapes, GeoGerry::Shape shape);
+GeoGerry::p_index_set get_bordering_shapes(std::vector<GeoGerry::Precinct_Group> shapes, GeoGerry::Shape shape);
 
 GeoGerry::unit_interval compactness(GeoGerry::Shape shape);
 
