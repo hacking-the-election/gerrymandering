@@ -343,14 +343,14 @@ vector<GeoGerry::Precinct> merge_data( vector<GeoGerry::Shape> precinct_shapes, 
             int ratio = precinct_shape.get_area() / total_area;
             
             GeoGerry::Precinct precinct =
-                GeoGerry::Precinct(precinct_shape.border, p_data[0] * ratio, p_data[1] * ratio, p_id);
+                GeoGerry::Precinct(precinct_shape.hull, precinct_shape.holes, p_data[0] * ratio, p_data[1] * ratio, p_id);
             
             precinct.pop = precinct_shape.pop;
             precincts.push_back(precinct);
         }
         else {
             GeoGerry::Precinct precinct = 
-                GeoGerry::Precinct(precinct_shape.border, p_data[0], p_data[1], p_id);
+                GeoGerry::Precinct(precinct_shape.hull, precinct_shape.holes, p_data[0], p_data[1], p_id);
             
             precinct.pop = precinct_shape.pop;
             precincts.push_back(precinct);
@@ -390,8 +390,8 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
     if (VERBOSE) cout << "generating state with shape arrays..." << endl;
     State state = State(district_shapes, precincts, state_shape_v);
 
-    // state.draw();
-    state.precincts[121].draw();
+    state.draw();
+    // state.precincts[121].draw();
 
     Multi_Shape border = generate_exterior_border(state);
     cout << border.border.size() << endl;
