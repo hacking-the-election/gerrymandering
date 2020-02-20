@@ -7,10 +7,10 @@
  specs in root directory for information)
 ========================================*/
 
-#include "../include/shape.hpp"    // class definitions
-#include "../include/util.hpp"     // array modification functions
-#include "../include/geometry.hpp" // exterior border generation
-#include <algorithm>             // for std::find and std::distance
+#include "../include/shape.hpp"       // class definitions
+#include "../include/util.hpp"        // array modification functions
+#include "../include/geometry.hpp"    // exterior border generation
+#include <algorithm>                  // for std::find and std::distance
 
 #define VERBOSE 1  // print progress messages
 using namespace rapidjson;
@@ -134,18 +134,18 @@ std::map<std::string, std::vector<int> > parse_voter_data(std::string voter_data
     return parsed_data; // return the filled map
 }
 
-std::vector<GeoGerry::LinearRing> string_to_vector(std::string str) {
+GeoGerry::Shape string_to_vector(std::string str) {
     // takes a json array string and returns a parsed vector
 
-    std::vector<GeoGerry::LinearRing> v;
+    GeoGerry::Shape v;
     Document mp;
     mp.Parse(str.c_str());
 
     GeoGerry::LinearRing hull;
     for (int i = 0; i < mp[0].Size(); i++)
-        hull.border.push_back({mp[0][i][0].GetDouble(), mp[0][i][1].GetDouble()};
+        hull.border.push_back({mp[0][i][0].GetDouble(), mp[0][i][1].GetDouble()});
 
-    v.push_back(hull);
+    v.hull = hull;
 
     for (int i = 1; i < mp.Size(); i++) {
         std::cout << "hole" << std::endl;
@@ -153,16 +153,16 @@ std::vector<GeoGerry::LinearRing> string_to_vector(std::string str) {
         for (int j = 0; j < mp[i].Size(); j++)
             hole.border.push_back({mp[i][j][0].GetDouble(), mp[i][j][0].GetDouble()});
 
-        v.push_back(hole);
+        v.holes.push_back(hole);
     }
 
     return v;
 }
 
-std::vector<std::vector<GeoGerry::LinearRing> > multi_string_to_vector(std::string str) {
+GeoGerry::Multi_Shape multi_string_to_vector(std::string str) {
     // takes a json array string and returns a parsed vector
     
-    std::vector<std::vector<GeoGerry::LinearRing> > v;
+    GeoGerry::Multi_Shape v;
 
     Document mp;
     mp.Parse(str.c_str());
@@ -174,8 +174,8 @@ std::vector<std::vector<GeoGerry::LinearRing> > multi_string_to_vector(std::stri
         Writer<rapidjson::StringBuffer> writer(buffer);
         mp[i].Accept(writer);
 
-        std::vector<GeoGerry::LinearRing> polygon = string_to_vector(buffer.GetString());
-        v.push_back(polygon);
+        GeoGerry::Shape polygon = string_to_vector(buffer.GetString());
+        v.border.push_back(polygon);
     }
 
     return v;
@@ -225,30 +225,27 @@ std::vector<GeoGerry::Shape> parse_precinct_coordinates(std::string geoJSON) {
 
         if (shapes["features"][i]["geometry"]["type"] == "Polygon") {
             // vector parsed from coordinate string
-            std::vector<GeoGerry::LinearRing> borders = string_to_vector(coords);
-            GeoGerry::LinearRing border = borders[0];
+            GeoGerry::Shape geo = string_to_vector(coords);
+            GeoGerry::LinearRing border = geo.hull;
+
             GeoGerry::Shape shape(border, id);
             shape.pop = pop;
 
-            for (int i = 1; i < borders.size(); i++) {
-                shape.holes.push_back(borders[i]);
+            for (int i = 0; i < geo.holes.size(); i++) {
+                shape.holes.push_back(geo.holes[i]);
             }
 
             shapes_vector.push_back(shape);
         }
         else {
-            std::vector<GeoGerry::coordinate_set> borders = multi_string_to_vector(coords);
+            GeoGerry::Multi_Shape geo = multi_string_to_vector(coords);
 
             // calculate area of multipolygon
-            float total_area = 0;
-            for (GeoGerry::coordinate_set cs : borders) {
-                GeoGerry::Shape s(cs);
-                total_area += s.get_area();
-            }
+            float total_area = geo.get_area();
 
             // create many shapes with the same ID, add them to the array
-            for (GeoGerry::coordinate_set cs : borders) {
-                GeoGerry::Shape shape(cs, id);
+            for (GeoGerry::Shape s : geo.border) {
+                GeoGerry::Shape shape(s.hull, s.holes, id);
                 shape.is_part_of_multi_polygon = true;
                 float fract = shape.get_area() / total_area;
                 shape.pop = (int) round(pop * fract);
@@ -288,23 +285,13 @@ std::vector<GeoGerry::Multi_Shape> parse_district_coordinates(std::string geoJSO
 
         if (shapes["features"][i]["geometry"]["type"] == "Polygon") {
             // vector parsed from coordinate string
-            GeoGerry::coordinate_set border = string_to_vector(coords);
-            GeoGerry::Shape shape(border);
-            std::vector<GeoGerry::Shape> s = {shape};
-            
-            GeoGerry::Multi_Shape ms(s);
+            GeoGerry::Shape border = string_to_vector(coords);
+            GeoGerry::Multi_Shape ms({border});
             shapes_vector.push_back(ms);
         }
         else {
-            GeoGerry::Multi_Shape ms;
-            std::vector<GeoGerry::coordinate_set> borders = multi_string_to_vector(coords);
-
-            for (GeoGerry::coordinate_set cs : borders) {
-                GeoGerry::Shape shape(cs);
-                ms.border.push_back(shape);
-            }
-
-            shapes_vector.push_back(ms);
+            GeoGerry::Multi_Shape borders = multi_string_to_vector(coords);
+            shapes_vector.push_back(borders);
         }
     }
 
@@ -378,6 +365,7 @@ GeoGerry::Precinct_Group combine_holes(GeoGerry::Precinct_Group pg) {
     */
 
     std::vector<GeoGerry::Precinct> precincts;
+    
     int x = 0;
 
     while (x < pg.precincts.size()) {
@@ -450,19 +438,20 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
 
     if (VERBOSE) std::cout << "merging parsed geodata with parsed voter data into precinct array..." << std::endl;
     std::vector<Precinct> precincts = merge_data(precinct_shapes, precinct_voter_data);
+    
     Precinct_Group pre_group(precincts);
+    std::cout << pre_group.precincts.size() << std::endl;
     pre_group = combine_holes(pre_group);
-    std::vector<Shape> state_shape_v; // dummy exterior border
 
+    std::vector<Shape> state_shape_v; // dummy exterior border
+    std::cout << pre_group.precincts.size() << std::endl;
     // generate state data from files
     if (VERBOSE) std::cout << "generating state with shape arrays..." << std::endl;
-    State state = State(district_shapes, precincts, state_shape_v);
-    std::cout << state.precincts.size() << std::endl;
-    // state.draw();
-    // state.precincts[121].draw();
+    State state = State(district_shapes, pre_group.precincts, state_shape_v);
+    
+    state.draw();
 
     Multi_Shape border = generate_exterior_border(state);
-    std::cout << border.border.size() << std::endl;
     border.draw();
 
     return state; // return the state object

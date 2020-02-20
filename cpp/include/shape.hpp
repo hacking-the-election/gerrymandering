@@ -275,7 +275,8 @@ class Multi_Shape : public Shape {
             // constructor with assignment
             for (Precinct p : s) {
                 // copy precinct data to shape object
-                border.push_back(Shape(p.hull, p.holes, p.shape_id));
+                Shape s = Shape(p.hull, p.holes, p.shape_id);
+                border.push_back(s);
             }
         }
 
@@ -314,8 +315,9 @@ class Precinct_Group : public Multi_Shape {
         Precinct_Group(std::vector<Shape> shapes)
             : Multi_Shape(shapes) {}; // call the superclass constructor
         
-        Precinct_Group(std::vector<Precinct> shapes)
-            : Multi_Shape(shapes) {}; // call the superclass constructor
+        Precinct_Group(std::vector<Precinct> shapes) : Multi_Shape(shapes) {
+            precincts = shapes;
+        };
 
         // serialize and read to and from binary
         void write_binary(std::string path);
