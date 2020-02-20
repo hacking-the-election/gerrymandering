@@ -31,13 +31,19 @@ GeoGerry::p_index_set get_bordering_precincts(GeoGerry::Precinct_Group shape, in
 GeoGerry::p_index_set get_bordering_shapes(std::vector<GeoGerry::Shape> shapes, GeoGerry::Shape shape);
 GeoGerry::p_index_set get_bordering_shapes(std::vector<GeoGerry::Precinct_Group> shapes, GeoGerry::Shape shape);
 
+// implementation of the Schwartzberg compactness score
 GeoGerry::unit_interval compactness(GeoGerry::Shape shape);
 
-ClipperLib::Path shape_to_path(GeoGerry::Shape shape);
-GeoGerry::Shape poly_to_shape(ClipperLib::Path path);
-ClipperLib::Paths multi_shape_to_paths(GeoGerry::Multi_Shape ms);
+// for clipper conversions
+ClipperLib::Path ring_to_path(GeoGerry::LinearRing ring);
+GeoGerry::LinearRing path_to_ring(ClipperLib::Path path);
+ClipperLib::Paths shape_to_paths(GeoGerry::Shape shape);
+GeoGerry::Shape paths_to_shape(ClipperLib::Paths paths);
 GeoGerry::Multi_Shape paths_to_multi_shape(ClipperLib::Paths paths);
 
 // for algorithm helper methods
 double get_standard_deviation_partisanship(GeoGerry::Precinct_Group pg);
 double get_median_partisanship(GeoGerry::Precinct_Group pg);
+
+bool point_in_ring(GeoGerry::coordinate coord, GeoGerry::LinearRing lr);
+bool get_inside(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1);

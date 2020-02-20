@@ -3,13 +3,11 @@
 #include <fstream>
 #include <vector>
 
-using namespace std;
+std::string readf(std::string path);
+void writef(std::string contents, std::string path);
 
-string readf(string path);
-void writef(string contents, string path);
+std::vector<std::string> split(std::string str, std::string del);
+std::string join(std::vector<std::string> str, std::string del);
+std::string join(std::vector<int> str, std::string del);
 
-vector<string> split(string str, string del);
-string join(vector<string> str, string del);
-string join(vector<int> str, string del);
-
-bool is_number(string token);
+bool is_number(std::string token);

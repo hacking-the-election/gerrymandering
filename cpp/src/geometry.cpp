@@ -235,6 +235,49 @@ bool get_bordering(Shape s0, Shape s1) {
     return false;
 }
 
+bool point_in_ring(GeoGerry::coordinate coord, GeoGerry::LinearRing lr) {
+    /*
+        returns whether or not a point is in a ring using
+        the ray intersection method - counts number of times
+        a ray hits the polygon
+
+        Need to document htis fucntion later as I'm not
+        quite sure how it works - pulled this one from python
+    */
+
+    int intersections = 0;
+    segments segs = lr.get_segments();
+
+    for (segment s : segs) {
+        if ((s[0] < coord[0] && s[2] < coord[0]) ||
+            (s[0] > coord[0] && s[2] > coord[0]) ||
+            (s[1] < coord[1] && s[3] < coord[1]))
+            continue;
+
+        if (s[1] > coord[1] && s[3] > coord[1]) {
+            intersections += 1;
+            continue;
+        }
+        else {
+            vector<double> eq = calculate_line(s);
+            double y_c = eq[0] * coord[0] + eq[1];
+            if (y_c > coord[1]) intersections += 1;
+        }
+    }
+
+    return (intersections % 2 == 1); // odd intersection
+}
+
+bool get_inside(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1) {
+    /*
+        returns whether or not s0 is inside of 
+        s1 using the intersection point method
+    */
+
+    return point_in_ring(s0.border[0], s1);
+}
+
+
 p_index_set get_inner_boundary_precincts(Precinct_Group shape) {
    
     /*
@@ -357,9 +400,23 @@ Multi_Shape generate_exterior_border(Precinct_Group precinct_group) {
         Get the exterior border of a shape with interior components.
         Equivalent to 'dissolve' in mapshaper - remove bordering edges
     */ 
-    Multi_Shape border;
-    return border;
-    // return poly_to_shape(u);
+
+	ClipperLib::Paths subj;
+
+    for (Precinct p : precinct_group.precincts) {
+        for (ClipperLib::Path path : shape_to_paths(p)) {
+            subj.push_back(path);
+        }
+    }
+
+    // Paths solutions
+    ClipperLib::Paths solutions;
+    ClipperLib::Clipper c;
+
+    c.AddPaths(subj, ClipperLib::ptSubject, true);
+    c.Execute(ClipperLib::ctUnion, solutions, ClipperLib::pftNonZero);
+
+    return paths_to_multi_shape(solutions);
     // return clipper_mult_int_to_shape(solutions);
 }
 
@@ -373,3 +430,103 @@ p_index State::get_addable_precinct(p_index_set available_precincts, p_index cur
     p_index ret;
     return ret;
 }
+
+ClipperLib::Path ring_to_path(GeoGerry::LinearRing ring) {
+    /*
+        Creates a clipper Path object from a
+        given Shape object by looping through points
+    */
+
+    ClipperLib::Path p(ring.border.size());
+
+    for (coordinate point : ring.border ) {
+        p << ClipperLib::IntPoint(point[0] * c, point[1] * c);
+    }
+
+    return p;
+}
+
+GeoGerry::LinearRing path_to_ring(ClipperLib::Path path) {
+    /*
+        Creates a shape object from a clipper Path
+        object by looping through points
+    */
+
+    GeoGerry::LinearRing s;
+
+    for (ClipperLib::IntPoint point : path ) {
+        coordinate p = {(float)((float)point.X / (float)c), (float)((float)point.Y / (float) c)};
+        if (p[0] != 0 && p[1] != 0) s.border.push_back(p);
+    }
+
+    return s;
+}
+
+ClipperLib::Paths shape_to_paths(GeoGerry::Shape shape) {
+    ClipperLib::Paths p;
+    p.push_back(ring_to_path(shape.hull));
+    
+    for (GeoGerry::LinearRing ring : shape.holes) {
+        ClipperLib::Path path = ring_to_path(ring);
+        ReversePath(path);
+        p.push_back(path);
+    }
+
+    return p;
+}
+
+GeoGerry::Shape paths_to_shape(ClipperLib::Paths paths) {
+    // for ()
+}
+
+GeoGerry::Multi_Shape paths_to_multi_shape(ClipperLib::Paths paths) {
+    /*
+        Create a Multi_Shape object from a clipper Paths
+        (multi path) object through nested iteration
+    */
+
+    //! ERROR: THIS DOES NOT WORK RIGHT NOW, 
+    // WHY IS CLIPPER RETURNING SO MANY POLYS?
+
+    Multi_Shape ms;
+    
+    for (ClipperLib::Path path : paths) {
+        if (ClipperLib::Orientation(path)) {
+            GeoGerry::LinearRing border = path_to_ring(path);
+            GeoGerry::Shape s(border);
+            ms.border.push_back(s);
+        }
+        // else {
+        //     std::cout << "hole" << std::endl;
+        //     ReversePath(path);
+        //     GeoGerry::LinearRing hole = path_to_ring(path);
+        //     ms.border[ms.border.size() - 1].holes.push_back(hole);
+        // }
+    }
+
+    // for each path
+    // if orientation
+        // it's outer poly
+    // else its inner, find out where it goes
+
+    return ms;
+}
+
+
+// Multi_Shape poly_tree_to_shape(PolyTree tree) {
+//     /*
+//         Loops through top-level children of a
+//         PolyTree to access outer-level polygons. Returns
+//         a multi_shape object containing these outer polys.
+//     */
+   
+//     Multi_Shape ms;
+    
+//     for (PolyNode* polynode : tree.Childs) {
+//         if (polynode->IsHole()) x++;
+//         Shape s = clipper_int_to_shape(polynode->Contour);
+//         ms.border.push_back(s);
+//     }
+
+//     return ms;
+// }

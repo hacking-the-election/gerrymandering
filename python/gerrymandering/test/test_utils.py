@@ -16,9 +16,7 @@ sys.path.append(abspath(dirname(dirname(dirname(__file__)))))
 from utils import convert_to_json
 from serialization.load_precincts import load
 from serialization.save_precincts import Precinct
-from gerrymandering.utils import (get_equation, get_segments, clip, UNION,
-                                  DIFFERENCE, get_schwartsberg_compactness,
-                                  get_if_bordering, get_point_in_polygon)
+from gerrymandering.utils import *
 
 
 DATA_DIR = "../data/test/python"
@@ -165,6 +163,15 @@ class TestGeometry(unittest.TestCase):
                 ),
                 True
             )
+
+        # edge case: point is on edge of polygon
+        self.assertEquals(
+            test_get_point_in_polygon_speed(
+                [[[0, 0], [2, 0], [2, 2], [0, 2]]],
+                (1, 2)
+            ),
+            True
+        )
 
     def test_get_if_bordering(self):
         
