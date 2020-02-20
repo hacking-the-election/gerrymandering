@@ -29,8 +29,12 @@ import json
 import logging
 import pickle
 import sys
+from os.path import dirname, abspath
 import warnings
 from collections import Counter
+
+sys.path.insert(-1, dirname(dirname(abspath(__file__))))
+from gerrymandering.utils import get_point_in_polygon as gpip
 
 
 logging.basicConfig(level=logging.INFO, filename="precincts.log")
@@ -95,6 +99,37 @@ def area(points):
     area = abs(left_area - right_area)/2
     return area
 
+def hole_remover(precinct, precinct_list, pop, dem_keys, rep_keys, dem_cols, rep_cols):
+    hole_pop = 0
+    hole_dem = {key : 0 for key in dem_keys}
+    hole_rep = {key : 0 for key in rep_keys}
+    hole_precinct_ids = []
+    for check_precinct in sorted(precinct_list, key=lambda precinct_id: area(precinct_list[precinct_id][0])):
+        if check_precinct == precinct:
+            continue
+        for hole in precinct_list[precinct][1:]:
+            if gpip(precinct_list[precinct], check_precinct[0][0][0]):
+                hole_precinct_ids.append(check_precinct)
+                hole_pop += pop[check_precinct]
+                for key in dem_keys:
+                    hole_dem[key] += dem_cols[check_precinct][key]
+                for key in rep_keys:
+                    hole_rep[key] += rep_cols[check_precinct][key]
+                
+    total_pop = hole_pop + pop[precinct]
+    total_dem = {key: (dem_cols[precinct][key] + hole_dem[key]) for key in dem_keys}
+    total_rep = {key: (rep_cols[precinct][key] + hole_rep[key]) for key in rep_keys}
+
+    for hole_precinct in hole_precinct_ids:
+        del pop[hole_precinct]
+        del dem_cols[hole_precinct]
+        del rep_cols[hole_precinct]
+        del precinct_list[hole_precinct]
+    pop[precinct] = total_pop
+    dem_cols[precinct] = total_dem
+    rep_cols[precinct] = total_rep
+    # Keep only the outer shell of the holy precinct
+    precinct_list[precinct] = precinct_list[precinct][0]
 
 class Precinct:
     """
@@ -112,34 +147,8 @@ class Precinct:
         `r_election_data` - above but for republicans.
     """
 
-    def __init__(self, coords, state, vote_id, population,
-                 d_election_data, r_election_data):
-        
-        # coordinate data
-        self.coords = coords
-        
-        # meta info
-        self.vote_id = vote_id
-        self.state = state
-        self.population = population
-
-        # election data
-        self.d_election_data = d_election_data
-        self.r_election_data = r_election_data
-
-        self.d_election_sum = sum(self.d_election_data.values())
-        self.r_election_sum = sum(self.r_election_data.values())
-        
-        try:
-            self.dem_rep_ratio = self.d_election_sum / self.r_election_sum
-        except ZeroDivisionError:
-            # it won't get a ratio as an attribute so we can
-            # decide what to do with the dem and rep sums later.
-            pass
-
-
-    @classmethod
-    def generate_from_files(cls, election_data_file, geo_data_file,
+    @staticmethod
+    def generate_from_files(election_data_file, geo_data_file,
                             district_file, state, objects_dir,
                             state_metadata_file, population_file):
         """
@@ -151,6 +160,8 @@ class Precinct:
 
             `geo_data_file` - path to file containing geodata
                               for precinct. (.json or .geojson)
+
+            `district_file` - path to file containing district geojson
 
             `state` - name of state containing precinct
 
@@ -353,16 +364,31 @@ class Precinct:
                     for key in rep_votes:
                         exec('rep_cols[polygon_id] = {key: polygon_ratio * rep_votes[key]}')
                     exec('new_polygon_ids[polygon_id] = precinct_coords[precinct][num]')
+                    exec('precinct_geo_ids.append(polygon_id)')
                 # Delete originial multi-precinct from population, election_data
                 del pop[precinct]
                 del dem_cols[precinct]
                 del rep_cols[precinct]
+                precinct_geo_ids.remove(precinct)
 
         for multi in reversed(multi_polygon_index):
             del precinct_coords[multi]
         for id, geo in new_polygon_ids.items():
             precinct_coords[id] = geo
 
+        print(len(precinct_coords))
+        # Then check for holy precincts (precincts with a hole in them.) 
+        # Consider them (and the hole precincts) inside one precinct,
+        # adding together vote and population counts.
+
+        # Holy precincts: precinct with hole(s) inside. Hole precincts: precinct in hole
+        hole_recursion_index = {id : 0 for id in precinct_coords}
+        holy_precinct_ids = []
+        hole_precinct_ids = []
+        for precinct in precinct_coords:
+            # if precinct has a hole (or more than one hole):
+            if len(precinct_coords[precinct]) > 1:
+                _ = hole_remover(precinct, precinct_coords, pop, dem_keys, rep_keys, dem_cols, rep_cols)
         print(len(precinct_coords))
         # get election and geo data (separate processes for whether or
         # not there is an individual election data file)
@@ -403,8 +429,6 @@ class Precinct:
         else:
             # append precinct objects to precinct_list
             for precinct_id in precinct_coords.keys():
-                if precinct_id == '4900857':
-                    print('multi?')
                 precinct_list.append(Precinct(
                     precinct_coords[precinct_id],
                     state,
@@ -425,6 +449,34 @@ class Precinct:
         except IndexError:
             raise Exception("No precincts saved to precinct list.")
 
+
+    def __init__(self, coords, state, vote_id, population,
+                 d_election_data, r_election_data):
+        
+        # coordinate data
+        self.coords = coords
+        
+        # meta info
+        self.vote_id = vote_id
+        self.state = state
+        self.population = population
+
+        # election data
+        self.d_election_data = d_election_data
+        self.r_election_data = r_election_data
+
+        self.d_election_sum = sum(self.d_election_data.values())
+        self.r_election_sum = sum(self.r_election_data.values())
+        
+        try:
+            self.dem_rep_ratio = self.d_election_sum / self.r_election_sum
+        except ZeroDivisionError:
+            # it won't get a ratio as an attribute so we can
+            # decide what to do with the dem and rep sums later.
+            pass
+
+
+    
 
 if __name__ == "__main__":
 
