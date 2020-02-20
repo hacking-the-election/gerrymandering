@@ -6,7 +6,6 @@ import sys
 from os.path import abspath, dirname
 import unittest
 import time
-import pickle
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -134,7 +133,7 @@ class TestGeometry(unittest.TestCase):
 
         @print_time
         def test_get_compactness_speed(polygon):
-            return get_schwartsberg_compactness(polygon)
+            return get_schwartzberg_compactness(polygon)
 
         # later to be tested with cpp outputs
         print("compactness:")

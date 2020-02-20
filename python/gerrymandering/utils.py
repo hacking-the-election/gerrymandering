@@ -2,16 +2,21 @@
 Useful computational geometry functions and classes
 for communities algorithm
 
-Note for docstrings:
-array refers to numpy.array or numpy.ndarray
-segment or "seg" refers to array of points
-point refers to array of two floats
+For interpreting docstrings:
+"list" refers to either `list` or `numpy.array`.
+"point" refers to a list of two floats that represent a
+point in 2-d space.
+"segment" refers to a list of two points.
+"polygon" refers to a list of segments of which the first represents
+the hull of the polygon, and the rest represent any holes in the
+polygon.
+"shape" refers to an object that can be either a polygon or a
+multipolygon (list of polygons).
 """
 
 
-__all__ = ["get_segments", "clip", "UNION", "DIFFERENCE",
-           "get_schwartsberg_compactness", "get_if_bordering",
-           "get_point_in_polygon"]
+__all__ = ["clip", "UNION", "DIFFERENCE", "get_schwartzberg_compactness",
+           "get_if_bordering", "get_point_in_polygon"]
 
 
 import itertools
@@ -31,16 +36,14 @@ DIFFERENCE = 2
 # general geometry functions
 
 
-def get_equation(segment):
+def _get_equation(segment):
     """
-    Returns the function representing the equation of a line segment
-    containing 2 points.
+    Returns the function representing the equation of segment.
 
     If the line segment is vertical
     (y cannot be expressed in terms of x),
     returns single float representing x = `value`
     """
-
     if segment[0][0] == segment[1][0] and segment[0][1] == segment[1][1]:
         print(segment)
         raise ValueError("points of segment must be unique")
@@ -49,13 +52,14 @@ def get_equation(segment):
         m = ( (segment[0][1] - segment[1][1])
             / (segment[0][0] - segment[1][0]))
         b = m * (- segment[1][0]) + segment[1][1]
-        return lambda x: m * x + b
+        def f(x): return m * x + b
+        return f
     except ZeroDivisionError:
-        # line is vertical
+        # Lines is vertical.
         return float(segment[0][0])
 
 
-def get_segments(polygon):
+def _get_segments(polygon):
     """
     Returns array of segments from polygon
     (with or without holes)
@@ -80,14 +84,14 @@ def get_segments(polygon):
     this function groups only the first and last into the segment list.
     """
     segments = []
-    for shape in polygon:  # `shape` is either hole or hull
+    for shape in polygon:
         if shape[-1] == shape[0]:
             shape.pop(-1)
         shape_segments = [[shape[-1], shape[0]]]
-        equation = get_equation([shape[-1], shape[0]])
+        equation = _get_equation([shape[-1], shape[0]])
         for p in range(1, (len(shape))):
             if isinstance(equation, float):
-                # vertical line
+                # Line is vertical.
                 point_on_line = shape[p][0] == equation
             elif isinstance(equation, types.FunctionType):
                 point_on_line = equation(shape[p][0]) == shape[p][1]
@@ -98,10 +102,10 @@ def get_segments(polygon):
             else:
                 # Equations are different - time to start a new segment
                 shape_segments.append([shape[p - 1], shape[p]])
-                equation = get_equation(shape_segments[-1])
+                equation = _get_equation(shape_segments[-1])
         segments += shape_segments
 
-    # remove points in the middle of a segment
+    # Remove redundant points in the middle of a segment.
     for segment in segments:
         while len(segment) > 2:
             segment.pop(1)
@@ -109,15 +113,14 @@ def get_segments(polygon):
     return np.array(segments)
 
 
-def get_segments_collinear(segment_1, segment_2):
+def _get_segments_collinear(segment_1, segment_2):
     """
-    Returns whether or not two segments are collinear
+    Returns whether or not two segments are collinear.
     """
-
-    f = get_equation(segment_1)
-    g = get_equation(segment_2)
-    # if two lines have more than one shared point,
-    # they are the same line
+    f = _get_equation(segment_1)
+    g = _get_equation(segment_2)
+    # If two lines have more than one shared point,
+    # they are the same line.
     return (f(0) == g(0)) and (f(1) == g(1))
 
 
@@ -125,19 +128,20 @@ def get_if_bordering(polygon_1, polygon_2):
     """
     Returns whether or not two polygons are bordering
 
+    Checks all combinations of segments between the two polygons to see
+    if they are both collinear and their bounding boxes (only x
+    dimension) overlap. If this is the case, those segments overlap and
+    that means the polygons border each other.
+
     Returns bool
     """
-
-    # based on fact that if two segments are collinear, and their
-    # bounding boxes overlap, they are overlapping
-
-    segments_1 = get_segments(polygon_1)
-    segments_2 = get_segments(polygon_2)
+    segments_1 = _get_segments(polygon_1)
+    segments_2 = _get_segments(polygon_2)
 
     for segment_1 in segments_1:
         for segment_2 in segments_2:
             # check collinearity
-            if get_segments_collinear(segment_1, segment_2):
+            if _get_segments_collinear(segment_1, segment_2):
                 # check bounding boxes
                 xs_1 = [p[0] for p in segment_1]
                 xs_2 = [p[0] for p in segment_2]
@@ -152,58 +156,65 @@ def get_point_in_polygon(polygon, point):
     Returns whether or not point is in polygon
     (with or without holes)
 
+    Draws vertical ray from point and checks numbder of intersections
+    with segments. If odd, returns True; if even, returns False.
+
     Returns bool
     """
-
     crossings = 0
-    segments = get_segments(polygon)
+    segments = _get_segments(polygon)
 
     for segment in segments:
         if (
-                # both endpoints are to the left
+                # Both endpoints are to the left.
                 (segment[0][0] < point[0] and segment[1][0] < point[0]) or
-                # both endpoints are to the right
+                # Both endpoints are to the right.
                 (segment[0][0] > point[0] and segment[1][0] > point[0]) or
-                # both endpoints are below
+                # Both endpoints are below.
                 (segment[0][1] < point[1] and segment[1][1] < point[1])):
             continue
 
-        # point is between endpoints
+        # Point is between endpoints.
         if segment[0][1] > point[1] and segment[1][1] > point[1]:
-            # both endpoints are above point
+            # Both endpoints are above point.
             crossings += 1
             continue
         else:
-            # one endpoint is above point, the other is below
+            # One endpoint is above point, the other is below.
 
-            # y-value of segment at point 
-            y_c = get_equation(segment)(point[0])
+            # y-value of segment at point.
+            y_c = _get_equation(segment)(point[0])
             if y_c >= point[1]:
-                # point is below or at same height as segment
+                # Point is below or at same height as segment.
                 crossings += 1
 
     return crossings % 2 == 1
 
 
-def get_distance(p1, p2):
+def _get_distance(p1, p2):
     """
-    Distance formula
+    Returns distance between `p1` and `p2`
     """
     return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
 
 
-def get_perimeter(polygon):
+def _get_perimeter(polygon):
     """
     Returns the perimeter of polygon (with or without holes)
+
+    Adds perimeter of holes to total perimeter.
     """
     distances = np.array(
-        [get_distance(p1, p2) for p1, p2 in get_segments(polygon)])
+        [_get_distance(p1, p2) for p1, p2 in _get_segments(polygon)])
     return sum(distances)
 
 
-def get_simple_area(shape):
+def _get_simple_area(shape):
     """
     Returns the area of polygon (with no holes)
+
+    Implementation of this algorithm:
+    https://www.mathopenref.com/coordpolygonarea2.html
     """
     area = 0
     v2 = shape[-1]
@@ -221,21 +232,24 @@ def get_area(polygon):
     Returns the area of polygon (with or without holes)
     """
 
-    outer_area = get_simple_area(polygon[0])
+    outer_area = _get_simple_area(polygon[0])
     for shape in polygon[1:]:
-        outer_area -= get_simple_area(shape)
+        outer_area -= _get_simple_area(shape)
 
     return outer_area
 
 
-def get_schwartsberg_compactness(shape):
+def get_schwartzberg_compactness(shape):
     """
-    Returns the schwartsberg compactness value of array of segments
+    Returns the schwartzberg compactness value of array of segments
     `shape`
+
+    Implemenatation of this algorithm (schwartzberg):
+    https://fisherzachary.github.io/public/r-output.html
     """
     
     # perimeter / circumference
-    compactness = (get_perimeter(shape)
+    compactness = (_get_perimeter(shape)
                    / (2 * math.pi * math.sqrt(get_area(shape) / math.pi)))
     return 1 - abs(1 - compactness)  # ensures less than one
 
@@ -300,9 +314,8 @@ def clip(shapes, clip_type):
     Returns array of vertices
     """
 
-    # find union of shapes
+    # Find union of shapes.
 
-    # list of Polygon and MultiPolygon objects
     multipolygons = [convert_to_shapely(shape) for shape in shapes]
 
     if clip_type == 1:
@@ -310,54 +323,16 @@ def clip(shapes, clip_type):
     elif clip_type == 2:
         if len(multipolygons) != 2:
             raise ValueError(
-                "polygon clip of type DIFFERENCE takes exactly 2 input shapes"
+                "Polygon clip of type DIFFERENCE takes exactly 2 input shapes"
                 )
+        # Buffer is used below because in certain cases (such as using
+        # both precinct-level data and district-level data in the input
+        # to this function), the data will be slightly different.
         solution = multipolygons[0].buffer(0.0000001).difference(
             multipolygons[1].buffer(0.0000001))
     else:
         raise ValueError(
-            "invalid clip type. use utils.UNION or utils.DIFFERENCE")
-
-    # display with matplotlib
-
-    # from matplotlib import pyplot
-    # from descartes import PolygonPatch
-
-    # SIZE = (8.0, 8.0*(math.sqrt(5)-1.0/2.0))
-
-    # fig = pyplot.figure(1, figsize=SIZE, dpi=90)
-    # ax = fig.add_subplot(121)
-    # for ob in multipolygons:
-    #     p = PolygonPatch(ob, alpha=0.5, zorder=1)
-    #     ax.add_patch(p)
-
-    # og_xs = []
-    # og_ys = []
-    # for multipolygon in multipolygons:
-    #     for polygon in multipolygon.geoms:
-    #         for coord in list(polygon.exterior.coords):
-    #             og_xs.append(coord[0])
-    #             og_ys.append(coord[1])
-
-    # ax1 = fig.add_subplot(122)
-    # patch2b = PolygonPatch(union, alpha=0.5, zorder=2)
-    # ax1.add_patch(patch2b)
-
-    # border = [[list(coord) for coord in solution.exterior.coords]]
-    # border_xs = [coord[0] for coord in border[0]]
-    # border_ys = [coord[1] for coord in border[0]]
-
-    # ax.set_autoscaley_on(False)
-    # ax.set_autoscalex_on(False)
-    # ax.set_ylim([min(og_ys), max(og_ys)])
-    # ax.set_xlim([min(og_xs), max(og_xs)])
-
-    # ax1.set_autoscaley_on(False)
-    # ax1.set_autoscalex_on(False)
-    # ax1.set_ylim([min(border_ys), max(border_ys)])
-    # ax1.set_xlim([min(border_xs), max(border_xs)])
-
-    # pyplot.show()
+            "Invalid clip type. Use utils.UNION or utils.DIFFERENCE")
 
     real_border = []
     if isinstance(solution, Polygon):
@@ -376,7 +351,7 @@ def clip(shapes, clip_type):
 
 
 # ===================================================
-# community algorithm-specifc functions and classes:
+# Community algorithm-specifc functions and classes:
 
 
 class Community:
@@ -387,7 +362,8 @@ class Community:
     @staticmethod
     def get_standard_deviation(precincts):
         """
-        Standard deviation of republican percentage in precincts
+        Returns standard deviation of republican percentage in
+        `precincts`
         """
 
         rep_percentages = [
@@ -401,8 +377,7 @@ class Community:
     @staticmethod
     def get_partisanship(precincts):
         """
-        Returns average percentabge of
-        republicans in a list of precincts
+        Returns average percentage of republicans in `precincts`
         """
 
         rep_sum = 0
@@ -419,9 +394,11 @@ class Community:
         self.border = clip([p.coords for p in self.precincts.values()], UNION)
         self.partisanship = Community.get_partisanship(
                                 list(self.precincts.values()))
-        self.standard_deviation = Community.get_standard_deviation(self.precincts.values())
-        self.population = sum([precinct.population for precinct in self.precincts.values()])
-        self.compactness = get_schwartsberg_compactness(self.border)
+        self.standard_deviation = Community.get_standard_deviation(
+                                      self.precincts.values())
+        self.population = sum([precinct.population for precinct
+                               in self.precincts.values()])
+        self.compactness = get_schwartzberg_compactness(self.border)
 
     def give_precinct(self, other, precinct_id, border=True,
                       partisanship=True, standard_deviation=True,
@@ -429,7 +406,7 @@ class Community:
         """
         Gives precinct from self to other community.
 
-        All parameters set as `True` for default indicate whether or
+        All parameters with default value of `True` indicate whether or
         not to update that attribute after the community is given.
         """
 
@@ -462,8 +439,12 @@ class Community:
                     [precinct.population for precinct in
                      community.precincts.values()])
             if compactness:
-                community.compactness = get_schwartsberg_compactness(
+                community.compactness = get_schwartzberg_compactness(
                     community.border)
+
+
+# Below functions likely to be removed because they are specific to
+# scenario in algorithm and will be implemented there.
 
 
 def get_if_addable(precinct, community, boundary):
