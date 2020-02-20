@@ -117,16 +117,23 @@ coordinate GeoGerry::LinearRing::get_center() {
         center - may be a better measure of center
     */
 
-    coordinate coords = { border[0][0], border[0][1] };  // initialize with first values
-    
-    // loop and add x and y to respective sums
-    for ( int i = 1; i < border.size(); i++ ) {
-        coords[0] += border[i][0];
-        coords[1] += border[i][1];
+    coordinate centroid = {0, 0};
+
+    for (int i = 0; i < border.size() - 1; i++) {
+        double x0 = border[i][0];
+        double y0 = border[i][1];
+        double x1 = border[i + 1][0];
+        double y1 = border[i + 1][1];
+
+        double factor = ((x0 * y1) - (x1 * y0));
+        centroid[0] += (x0 + x1) * factor;
+        centroid[1] += (y0 + y1) * factor;
     }
 
-    coordinate center = {{(coords[0] / border.size()), (coords[1] / border.size())}};
-    return center; // return averages
+    centroid[0] /= (6 * this->get_area());
+    centroid[1] /= (6 * this->get_area());
+
+    return centroid;
 }
 
 double GeoGerry::LinearRing::get_area() {
