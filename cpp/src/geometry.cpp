@@ -261,18 +261,17 @@ bool point_in_ring(GeoGerry::coordinate coord, GeoGerry::LinearRing lr) {
             (s[1] < coord[1] && s[3] < coord[1]))
             continue;
 
-        if (s[1] > coord[1] && s[3] > coord[1]) {
-            intersections += 1;
+        if (s[1] >= coord[1] && s[3] >= coord[1]) {
+            intersections++;
             continue;
         }
         else {
             vector<double> eq = calculate_line(s);
             double y_c = eq[0] * coord[0] + eq[1];
-            if (y_c > coord[1]) intersections += 1;
+            if (y_c >= coord[1]) intersections++;
         }
     }
 
-    // std::cout << intersections << std::endl;
     return (intersections % 2 == 1); // odd intersection
 }
 
@@ -282,9 +281,20 @@ bool get_inside(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1) {
         s1 using the intersection point method
     */
 
-    return point_in_ring(s0.border[0], s1);
+    for (coordinate c : s0.border)
+        if (point_in_ring(c, s1)) return true;
+
+    return false;
 }
 
+bool get_inside_first(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1) {
+    /*
+        returns whether or not s0 is inside of 
+        s1 using the intersection point method
+    */
+
+    return (point_in_ring(s0.border[0], s1));
+}
 
 p_index_set get_inner_boundary_precincts(Precinct_Group shape) {
    
