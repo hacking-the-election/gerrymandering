@@ -9,8 +9,8 @@ V = 11
 CLIPPER = lib/clipper/clipper.cpp#`geos-config --ldflags` -lgeos
 OPT = #-Wall -pedantic -Wextra
 
-all: community
-#all: state_serializer
+#all: community
+all: state_serializer
 
 state_serializer:
 	@echo "compiling state serializer..."

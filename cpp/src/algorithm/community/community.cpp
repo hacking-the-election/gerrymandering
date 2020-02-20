@@ -76,14 +76,14 @@ void State::generate_initial_communities(int num_communities) {
     p_index_set available_pre(num_precincts);
     std::iota(available_pre.begin(), available_pre.end(), 0);
     
-    for (Shape island : generate_exterior_border(*this).border) {
-        // determine whether or not the current island contains fractional communities
-        for (int x = 0; x < large_sizes.size(); x++) {
-            for (int y = 0; y < base_sizes.size(); y++) {
-                if ((base * y) + ((base + 1) * x) == )
-            }
-        }
-    }
+    // for (Shape island : generate_exterior_border(*this).border) {
+    //     // determine whether or not the current island contains fractional communities
+    //     for (int x = 0; x < large_sizes.size(); x++) {
+    //         for (int y = 0; y < base_sizes.size(); y++) {
+    //             if ((base * y) + ((base + 1) * x) == )
+    //         }
+    //     }
+    // }
 
     // int index = 0;
     // for (int i = 0; i < num_communities - 1; i++) {
@@ -390,23 +390,23 @@ void State::generate_communities(int num_communities, double compactness_toleran
            while (changed_precincts > precinct_change_tolerance)
     */
    
-    while (i < 30) {
-        cout << "On iteration " << i << endl;
-        old_communities = this->state_communities;
+    // while (i < 30) {
+    //     cout << "On iteration " << i << endl;
+    //     old_communities = this->state_communities;
 
-        if (VERBOSE) cout << "refining compacntess..." << endl;
-        refine_compactness(compactness_tolerance);
+    //     if (VERBOSE) cout << "refining compacntess..." << endl;
+    //     refine_compactness(compactness_tolerance);
         
-        if (VERBOSE) cout << "refining partisanship..." << endl;
-        refine_partisan(partisanship_tolerance);
+    //     if (VERBOSE) cout << "refining partisanship..." << endl;
+    //     refine_partisan(partisanship_tolerance);
         
-        if (VERBOSE) cout << "refining population..." << endl;
-        refine_population(population_tolerance);
+    //     if (VERBOSE) cout << "refining population..." << endl;
+    //     refine_population(population_tolerance);
   
-        if (VERBOSE) cout << "measuring precincts changed..." << endl;      
-        changed_precincts = measure_difference(old_communities, this->state_communities);
-        if (VERBOSE) cout << changed_precincts << " precincts changed." << endl;
+    //     if (VERBOSE) cout << "measuring precincts changed..." << endl;      
+    //     changed_precincts = measure_difference(old_communities, this->state_communities);
+    //     if (VERBOSE) cout << changed_precincts << " precincts changed." << endl;
         
-        i++;
-    }
+    //     i++;
+    // }
 }

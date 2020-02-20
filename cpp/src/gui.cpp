@@ -296,6 +296,42 @@ GeoGerry::coordinate_set connect_dots(std::vector<GeoGerry::Shape> shapes) {
                 y += yinc;
             }
         }
+
+        for (int k = 0; k < shapes[j].holes.size(); k++) {
+            int dx, dy, p, x, y, x0, x1, y0, y1;
+
+            for (int i = 0; i < shapes[j].holes[k].border.size() - 1; i++) {
+
+                x0 = (int) shapes[j].holes[k].border[i][0];
+                y0 = (int) shapes[j].holes[k].border[i][1];
+
+                if ( i != shapes[j].holes[k].border.size() - 1) {
+                    x1 = (int) shapes[j].holes[k].border[i + 1][0];
+                    y1 = (int) shapes[j].holes[k].border[i + 1][1];
+                }
+                else {
+                    x1 = (int) shapes[j].holes[k].border[0][0];
+                    y1 = (int) shapes[j].holes[k].border[0][1];
+                }
+
+                dx = x1 - x0;
+                dy = y1 - y0;
+
+                int steps = abs(dx) > abs(dy) ? abs(dx) : abs(dy);
+
+                float xinc = dx / (float) steps;
+                float yinc = dy / (float) steps;
+
+                float x = x0;
+                float y = y0;
+
+                for (int i = 0; i <= steps; i++) {
+                    newShape.push_back({(float)x, (float)y});
+                    x += xinc;
+                    y += yinc;
+                }
+            }
+        }
     }
 
     return newShape;

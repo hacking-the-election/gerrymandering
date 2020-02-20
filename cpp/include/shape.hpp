@@ -337,7 +337,7 @@ typedef Precinct_Group Community;
 typedef std::vector<Precinct_Group> Communities;
 
 
-class State : public Multi_Shape {
+class State : public Precinct_Group {
     /*
         Derived shape class for defining a state.
         Includes arrays of precincts, and districts.
@@ -390,11 +390,10 @@ class State : public Multi_Shape {
         // write out communities at a certain point in time
         void save_communities(std::string write_path);
         virtual void draw();
-
-        std::vector<Precinct_Group> islands;
-
         // name of state
         std::string name = "no_name";
+
+        std::vector<p_index_set> islands; // defines which precincts align to which islands
 
         // arrays of shapes in state
         std::vector<Multi_Shape> state_districts;
