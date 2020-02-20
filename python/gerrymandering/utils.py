@@ -165,18 +165,21 @@ def get_point_in_polygon(polygon, point):
     segments = _get_segments(polygon)
 
     for segment in segments:
+        # Continue if point is not between endpoints.
+        # (ray cannot intersect)
         if (
                 # Both endpoints are to the left.
-                (segment[0][0] < point[0] and segment[1][0] < point[0]) or
+                (segment[0][0] < point[0] and segment[1][0] < point[0])
                 # Both endpoints are to the right.
-                (segment[0][0] > point[0] and segment[1][0] > point[0]) or
-                # Both endpoints are below.
-                (segment[0][1] < point[1] and segment[1][1] < point[1])):
+                or (segment[0][0] > point[0] and segment[1][0] > point[0])):
             continue
 
-        # Point is between endpoints.
-        if segment[0][1] > point[1] and segment[1][1] > point[1]:
-            # Both endpoints are above point.
+        # Continue if both endpoints are below point.
+        # (ray cannot intersect)
+        if segment[0][1] < point[1] and segment[1][1] < point[1]: continue
+        if segment[0][1] >= point[1] and segment[1][1] >= point[1]:
+            # Both endpoints are above or at same y as point.
+            # (ray must intersect)
             crossings += 1
             continue
         else:
