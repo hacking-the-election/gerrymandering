@@ -12,4 +12,6 @@
 int main() {
     // run the main test
     Geometry_Test::main();
+
+    std::cout << "All tests passed!" << std::endl;
 }

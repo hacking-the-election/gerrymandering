@@ -15,6 +15,7 @@ class Geometry_Test {
     public:
         static void main(); // run main tests
         void assert_equal(); //! Prime case for templating
+        // void test_point_in_poly();
 };
 
 void Geometry_Test::main() {

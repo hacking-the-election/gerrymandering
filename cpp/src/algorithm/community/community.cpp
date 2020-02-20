@@ -33,8 +33,12 @@
 #include <numeric>   // include std::iota
 #include <algorithm> // sorting, seeking algorithms
 
+using namespace std;
+using namespace GeoGerry;
+
 #define VERBOSE 1
- 
+#define WRITE 0
+
 /*================================================
  Define constants to be used in the algorithm.    
  These will not be passed to the algorithm
@@ -58,44 +62,54 @@ void State::generate_initial_communities(int num_communities) {
 
     int num_precincts = precincts.size();
     // determine amount of precincts to be added to each community
-    vector<int> sizes;
+    vector<int> large_sizes;
+    vector<int> base_sizes;
     int base = floor(num_precincts / num_communities); // the base num
     int rem = num_precincts % num_communities; // how many need to be increased by 1
 
     for (int i = 0; i < num_communities - rem; i++)
-        sizes.push_back(base);
+        base_sizes.push_back(base);
     for (int i = 0; i < rem; i++)
-        sizes.push_back(base + 1);
+        large_sizes.push_back(base + 1);
 
     // create array of indices of precincts available to be added
     p_index_set available_pre(num_precincts);
     std::iota(available_pre.begin(), available_pre.end(), 0);
     
-    int index = 0;
-    for (int i = 0; i < num_communities - 1; i++) {
-        Community community;
-        p_index p = get_inner_boundary_precincts(*this)[0];
-
-        for (int x = 0; x < sizes[index] - 1; x++) {
-            p = get_addable_precinct(available_pre, p);
-            community.add_precinct(this->precincts[p]);
-            available_pre.erase(remove(available_pre.begin(), available_pre.end(), p), available_pre.end());
+    for (Shape island : generate_exterior_border(*this).border) {
+        // determine whether or not the current island contains fractional communities
+        for (int x = 0; x < large_sizes.size(); x++) {
+            for (int y = 0; y < base_sizes.size(); y++) {
+                if ((base * y) + ((base + 1) * x) == )
+            }
         }
-
-        this->state_communities.push_back(community);
-        index++;
     }
 
-    // add the last community that has no precincts yet
-    Community community;
-    for (p_index precinct : available_pre) {
-        community.add_precinct(this->precincts[precinct]);
-    }
+    // int index = 0;
+    // for (int i = 0; i < num_communities - 1; i++) {
+    //     Community community;
+    //     p_index p = get_inner_boundary_precincts(*this)[0];
+
+    //     for (int x = 0; x < sizes[index] - 1; x++) {
+    //         p = get_addable_precinct(available_pre, p);
+    //         community.add_precinct(this->precincts[p]);
+    //         available_pre.erase(remove(available_pre.begin(), available_pre.end(), p), available_pre.end());
+    //     }
+
+    //     this->state_communities.push_back(community);
+    //     index++;
+    // }
+
+    // // add the last community that has no precincts yet
+    // Community community;
+    // for (p_index precinct : available_pre) {
+    //     community.add_precinct(this->precincts[precinct]);
+    // }
     
-    this->state_communities.push_back(community); // add last community
+    // this->state_communities.push_back(community); // add last community
 }
 
-p_index State::get_next_community(float tolerance, int process) {
+p_index State::get_next_community(double tolerance, int process) {
     /*
         Returns next candidate community depending on which process
         the algorithm is currently running. Used in algorithm to determine
@@ -109,11 +123,11 @@ p_index State::get_next_community(float tolerance, int process) {
             Find community with standard deviation of partisanship
             ratios that are most outside range of tolerance
         */
-        float max = 0;
+        double max = 0;
         p_index x = 0;
 
         for (Community c : state_communities) {
-            float stdev = get_standard_deviation_partisanship(c);
+            double stdev = get_standard_deviation_partisanship(c);
             if (stdev > tolerance && stdev > max) {
                 i = x;
                 max = stdev;
@@ -185,14 +199,14 @@ void State::give_precinct(p_index precinct, p_index community, string t_type) {
 
     if (t_type == "partisan") {
         // get closest average to precinct
-        float min = abs(get_median_partisanship(exchangeable_communities[0]) - precinct_shape.get_ratio());
+        double min = abs(get_median_partisanship(exchangeable_communities[0]) - precinct_shape.get_ratio());
         p_index choice = 0;
         p_index index = 0;
 
         for (int i = 1; i < exchangeable_communities.size(); i++) {
             index++;
             Community c = exchangeable_communities[i];
-            float diff = abs(get_median_partisanship(c) - precinct_shape.get_ratio());
+            double diff = abs(get_median_partisanship(c) - precinct_shape.get_ratio());
             if (diff < min) {
                 min = diff;
                 choice = index;
@@ -216,7 +230,7 @@ void State::give_precinct(p_index precinct, p_index community, string t_type) {
     return;
 }
 
-void State::refine_compactness(float compactness_tolerance) {
+void State::refine_compactness(double compactness_tolerance) {
     /* 
         Optimize the state's communities for population. Attempts
         to minimize difference in population across the state
@@ -235,7 +249,7 @@ void State::refine_compactness(float compactness_tolerance) {
     }
 }
 
-void State::refine_partisan(float partisanship_tolerance) {
+void State::refine_partisan(double partisanship_tolerance) {
     /*
         A function to optimize the partisanship of a community -
         attempts to minimize the stdev of partisanship of precincts
@@ -249,12 +263,12 @@ void State::refine_partisan(float partisanship_tolerance) {
     while (!is_done) {
         Community c = state_communities[worst_community];
         
-        float median = get_median_partisanship(c);
+        double median = get_median_partisanship(c);
         p_index worst_precinct = 0, x = 0;
-        float diff = 0;
+        double diff = 0;
 
         for (Precinct p : c.precincts) {
-            float t_diff = abs(median - p.get_ratio());
+            double t_diff = abs(median - p.get_ratio());
             if (t_diff > diff) diff = t_diff;
             worst_precinct = x;
             x++;
@@ -269,7 +283,7 @@ void State::refine_partisan(float partisanship_tolerance) {
     }
 }
 
-void State::refine_population(float population_tolerance) {
+void State::refine_population(double population_tolerance) {
     /* 
         Optimize the state's communities for population. Attempts
         to minimize difference in population across the state
@@ -337,7 +351,7 @@ int measure_difference(Communities communities, Communities new_communities) {
     return changed_precincts;
 }
 
-void State::generate_communities(int num_communities, float compactness_tolerance, float partisanship_tolerance, float population_tolerance) {
+void State::generate_communities(int num_communities, double compactness_tolerance, double partisanship_tolerance, double population_tolerance) {
 
     /*
         The driver method for the communities algorithm. This method does
@@ -351,6 +365,10 @@ void State::generate_communities(int num_communities, float compactness_toleranc
 
         This State method returns nothing - to access results, check
         the state.state_communities property.
+
+        The #defined WRITE determines whether or not to write binary
+        community objects to a predefined directory. These can then be loaded
+        in order to visualize algorithms. See the `community_playback` function
     */
 
     generate_initial_communities(num_communities);
@@ -376,30 +394,18 @@ void State::generate_communities(int num_communities, float compactness_toleranc
         cout << "On iteration " << i << endl;
         old_communities = this->state_communities;
 
-        #ifdef VERBOSE
-            cout << "refining compacntess..." << endl;
-        #endif
+        if (VERBOSE) cout << "refining compacntess..." << endl;
         refine_compactness(compactness_tolerance);
         
-        #ifdef VERBOSE
-            cout << "refining partisanship..." << endl;
-        #endif
+        if (VERBOSE) cout << "refining partisanship..." << endl;
         refine_partisan(partisanship_tolerance);
         
-        #ifdef VERBOSE
-            cout << "refining population..." << endl;
-        #endif
+        if (VERBOSE) cout << "refining population..." << endl;
         refine_population(population_tolerance);
-        
-        #ifdef VERBOSE
-            cout << "measuring precincts changed..." << endl;
-        #endif
-        
+  
+        if (VERBOSE) cout << "measuring precincts changed..." << endl;      
         changed_precincts = measure_difference(old_communities, this->state_communities);
-        
-        #ifdef VERBOSE
-            cout << changed_precincts << " precincts changed." << endl;
-        #endif
+        if (VERBOSE) cout << changed_precincts << " precincts changed." << endl;
         
         i++;
     }

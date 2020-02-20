@@ -1,6 +1,6 @@
 /*=======================================
  geometry.cpp:                  k-vernooy
- last modified:               Sun, Jan 19
+ last modified:               Wed, Feb 19
  
  Definition of useful functions for
  computational geometry. Basic 
@@ -117,16 +117,23 @@ coordinate GeoGerry::LinearRing::get_center() {
         center - may be a better measure of center
     */
 
-    coordinate coords = { border[0][0], border[0][1] };  // initialize with first values
-    
-    // loop and add x and y to respective sums
-    for ( int i = 1; i < border.size(); i++ ) {
-        coords[0] += border[i][0];
-        coords[1] += border[i][1];
+    coordinate centroid = {0, 0};
+
+    for (int i = 0; i < border.size() - 1; i++) {
+        double x0 = border[i][0];
+        double y0 = border[i][1];
+        double x1 = border[i + 1][0];
+        double y1 = border[i + 1][1];
+
+        double factor = ((x0 * y1) - (x1 * y0));
+        centroid[0] += (x0 + x1) * factor;
+        centroid[1] += (y0 + y1) * factor;
     }
 
-    coordinate center = {{(coords[0] / border.size()), (coords[1] / border.size())}};
-    return center; // return averages
+    centroid[0] /= (6 * this->get_area());
+    centroid[1] /= (6 * this->get_area());
+
+    return centroid;
 }
 
 double GeoGerry::LinearRing::get_area() {
@@ -265,6 +272,7 @@ bool point_in_ring(GeoGerry::coordinate coord, GeoGerry::LinearRing lr) {
         }
     }
 
+    // std::cout << intersections << std::endl;
     return (intersections % 2 == 1); // odd intersection
 }
 
@@ -403,16 +411,20 @@ Multi_Shape generate_exterior_border(Precinct_Group precinct_group) {
 
 	ClipperLib::Paths subj;
 
-    for (Precinct p : precinct_group.precincts)
-        subj.push_back(shape_to_path(p));
+    for (Precinct p : precinct_group.precincts) {
+        for (ClipperLib::Path path : shape_to_paths(p)) {
+            subj.push_back(path);
+        }
+    }
+
     // Paths solutions
     ClipperLib::Paths solutions;
     ClipperLib::Clipper c;
-	
-    c.AddPaths(subj, ClipperLib::ptSubject, false);
+
+    c.AddPaths(subj, ClipperLib::ptSubject, true);
     c.Execute(ClipperLib::ctUnion, solutions, ClipperLib::pftNonZero);
 
-    return paths_to_shape(solutions);
+    return paths_to_multi_shape(solutions);
     // return clipper_mult_int_to_shape(solutions);
 }
 
@@ -427,38 +439,55 @@ p_index State::get_addable_precinct(p_index_set available_precincts, p_index cur
     return ret;
 }
 
-ClipperLib::Path shape_to_path(Shape shape) {
+ClipperLib::Path ring_to_path(GeoGerry::LinearRing ring) {
     /*
         Creates a clipper Path object from a
         given Shape object by looping through points
     */
 
-    ClipperLib::Path p(shape.border.size());
+    ClipperLib::Path p(ring.border.size());
 
-    for (coordinate point : shape.border ) {
+    for (coordinate point : ring.border ) {
         p << ClipperLib::IntPoint(point[0] * c, point[1] * c);
     }
 
     return p;
 }
 
-Shape path_to_shape(ClipperLib::Path path) {
+GeoGerry::LinearRing path_to_ring(ClipperLib::Path path) {
     /*
         Creates a shape object from a clipper Path
         object by looping through points
     */
 
-    Shape s;
+    GeoGerry::LinearRing s;
 
     for (ClipperLib::IntPoint point : path ) {
         coordinate p = {(float)((float)point.X / (float)c), (float)((float)point.Y / (float) c)};
-        s.border.push_back(p);
+        if (p[0] != 0 && p[1] != 0) s.border.push_back(p);
     }
 
     return s;
 }
 
-Multi_Shape paths_to_shape(ClipperLib::Paths paths) {
+ClipperLib::Paths shape_to_paths(GeoGerry::Shape shape) {
+    ClipperLib::Paths p;
+    p.push_back(ring_to_path(shape.hull));
+    
+    for (GeoGerry::LinearRing ring : shape.holes) {
+        ClipperLib::Path path = ring_to_path(ring);
+        ReversePath(path);
+        p.push_back(path);
+    }
+
+    return p;
+}
+
+GeoGerry::Shape paths_to_shape(ClipperLib::Paths paths) {
+    // for ()
+}
+
+GeoGerry::Multi_Shape paths_to_multi_shape(ClipperLib::Paths paths) {
     /*
         Create a Multi_Shape object from a clipper Paths
         (multi path) object through nested iteration
@@ -469,17 +498,24 @@ Multi_Shape paths_to_shape(ClipperLib::Paths paths) {
 
     Multi_Shape ms;
     
-    for (ClipperLib::Path p : paths) {
-        coordinate_set border;
-
-        for (ClipperLib::IntPoint point : p) {
-            coordinate coord = {(float)((float)point.X / (float)c), (float)((float)point.Y / (float) c)};
-            if (!(coord[0] == 0 || coord[1] == 0)) border.push_back(coord);
+    for (ClipperLib::Path path : paths) {
+        if (ClipperLib::Orientation(path)) {
+            GeoGerry::LinearRing border = path_to_ring(path);
+            GeoGerry::Shape s(border);
+            ms.border.push_back(s);
         }
-
-        Shape s(border);
-        ms.border.push_back(s);
+        // else {
+        //     std::cout << "hole" << std::endl;
+        //     ReversePath(path);
+        //     GeoGerry::LinearRing hole = path_to_ring(path);
+        //     ms.border[ms.border.size() - 1].holes.push_back(hole);
+        // }
     }
+
+    // for each path
+    // if orientation
+        // it's outer poly
+    // else its inner, find out where it goes
 
     return ms;
 }
