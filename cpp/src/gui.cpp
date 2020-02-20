@@ -1,9 +1,10 @@
 /*=======================================
- gui.cpp:                  k-vernooy
- last modified:                Sun, Feb 9
+ gui.cpp:                       k-vernooy
+ last modified:               Tue, Feb 18
  
  A file for all the sdl functions for
- various gui apps, functions and tests
+ various gui apps, tests, functions and
+ visualizations.
 ========================================*/
 
 #include "../include/gui.hpp"

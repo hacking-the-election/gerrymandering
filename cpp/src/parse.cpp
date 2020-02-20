@@ -1,6 +1,6 @@
 /*=======================================
  parse.cpp:                     k-vernooy
- last modified:               Sun, Jan 20
+ last modified:               Web, Feb 19
 
  Definitions of state methods for parsing
  from geodata and election data (see data
@@ -365,7 +365,7 @@ GeoGerry::Precinct_Group combine_holes(GeoGerry::Precinct_Group pg) {
     */
 
     std::vector<GeoGerry::Precinct> precincts;
-    
+
     int x = 0;
 
     while (x < pg.precincts.size()) {
@@ -378,7 +378,6 @@ GeoGerry::Precinct_Group combine_holes(GeoGerry::Precinct_Group pg) {
 
         if (p.holes.size() > 0) {
             std::vector<GeoGerry::p_index> precincts_to_combine;
-            std::cout << "combining holes..." << std::endl;
 
             int i = 0; // index of precinct to check
 
@@ -386,6 +385,7 @@ GeoGerry::Precinct_Group combine_holes(GeoGerry::Precinct_Group pg) {
                 if (p_c != p) { // avoid checking same precinct
                     for (GeoGerry::LinearRing hole : p.holes){
                         if (get_inside(p_c.hull, hole)) {
+                            std::cout << "precinct inside" << std::endl;
                             precincts_to_combine.push_back(i);
                         }
                     }
@@ -449,10 +449,10 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
     if (VERBOSE) std::cout << "generating state with shape arrays..." << std::endl;
     State state = State(district_shapes, pre_group.precincts, state_shape_v);
     
-    state.draw();
+    // state.draw();
 
     Multi_Shape border = generate_exterior_border(state);
-    border.draw();
+    // border.draw();
 
     return state; // return the state object
 }

@@ -1,6 +1,6 @@
 /*=======================================
  geometry.cpp:                  k-vernooy
- last modified:               Sun, Jan 19
+ last modified:               Wed, Feb 19
  
  Definition of useful functions for
  computational geometry. Basic 
@@ -265,6 +265,7 @@ bool point_in_ring(GeoGerry::coordinate coord, GeoGerry::LinearRing lr) {
         }
     }
 
+    // std::cout << intersections << std::endl;
     return (intersections % 2 == 1); // odd intersection
 }
 

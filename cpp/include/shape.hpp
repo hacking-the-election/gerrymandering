@@ -1,6 +1,6 @@
 /*=======================================
  shape.hpp:                     k-vernooy
- last modified:               Mon, Feb 17
+ last modified:               Wed, Feb 19
  
  Class definitions and method declarations
  for shapes, precincts, states, and 
@@ -337,7 +337,7 @@ typedef Precinct_Group Community;
 typedef std::vector<Precinct_Group> Communities;
 
 
-class State : public Precinct_Group {
+class State : public Multi_Shape {
     /*
         Derived shape class for defining a state.
         Includes arrays of precincts, and districts.
@@ -390,6 +390,9 @@ class State : public Precinct_Group {
         // write out communities at a certain point in time
         void save_communities(std::string write_path);
         virtual void draw();
+
+        std::vector<Precinct_Group> islands;
+
         // name of state
         std::string name = "no_name";
 
