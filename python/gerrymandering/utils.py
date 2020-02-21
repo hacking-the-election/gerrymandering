@@ -16,7 +16,7 @@ multipolygon (list of polygons).
 
 
 __all__ = ["clip", "UNION", "DIFFERENCE", "get_schwartzberg_compactness",
-           "get_if_bordering", "get_point_in_polygon"]
+           "get_if_bordering", "get_point_in_polygon", "get_if_multipolygon"]
 
 
 import itertools
@@ -122,6 +122,13 @@ def _get_segments_collinear(segment_1, segment_2):
     # If two lines have more than one shared point,
     # they are the same line.
     return (f(0) == g(0)) and (f(1) == g(1))
+
+
+def get_if_multipolygon(shape):
+    """
+    Returns whether or not a shape is a multipolygon
+    """
+    return isinstance(shape[0][0][0], list)
 
 
 def get_if_bordering(polygon_1, polygon_2):
