@@ -208,7 +208,7 @@ GeoGerry::bounding_box normalize_coordinates(GeoGerry::Multi_Shape* multi_shape)
         }
 
         for (int j = 0; j < multi_shape->border[i].holes.size(); j++) {
-            for (int k = 0; j < multi_shape->border[i].holes[j].border.size(); j++) {
+            for (int k = 0; k < multi_shape->border[i].holes[j].border.size(); k++) {
                 multi_shape->border[i].holes[j].border[k][0] += (0 - left);
                 multi_shape->border[i].holes[j].border[k][1] += (0 - bottom);
             }
@@ -290,46 +290,15 @@ GeoGerry::coordinate_set connect_dots(std::vector<GeoGerry::Shape> shapes) {
             float x = x0;
             float y = y0;
 
-            for (int i = 0; i <= steps; i++) {
+            for (int n = 0; n <= steps; n++) {
+                if (j == 0) {
+                    newShape.push_back({(float)x + 1, (float)y});
+                    newShape.push_back({(float)x, (float)y + 1});
+                    newShape.push_back({(float)x + 1, (float)y + 1});
+                }
                 newShape.push_back({(float)x, (float)y});
                 x += xinc;
                 y += yinc;
-            }
-        }
-
-        for (int k = 0; k < shapes[j].holes.size(); k++) {
-            int dx, dy, p, x, y, x0, x1, y0, y1;
-
-            for (int i = 0; i < shapes[j].holes[k].border.size() - 1; i++) {
-
-                x0 = (int) shapes[j].holes[k].border[i][0];
-                y0 = (int) shapes[j].holes[k].border[i][1];
-
-                if ( i != shapes[j].holes[k].border.size() - 1) {
-                    x1 = (int) shapes[j].holes[k].border[i + 1][0];
-                    y1 = (int) shapes[j].holes[k].border[i + 1][1];
-                }
-                else {
-                    x1 = (int) shapes[j].holes[k].border[0][0];
-                    y1 = (int) shapes[j].holes[k].border[0][1];
-                }
-
-                dx = x1 - x0;
-                dy = y1 - y0;
-
-                int steps = abs(dx) > abs(dy) ? abs(dx) : abs(dy);
-
-                float xinc = dx / (float) steps;
-                float yinc = dy / (float) steps;
-
-                float x = x0;
-                float y = y0;
-
-                for (int i = 0; i <= steps; i++) {
-                    newShape.push_back({(float)x, (float)y});
-                    x += xinc;
-                    y += yinc;
-                }
             }
         }
     }
@@ -341,7 +310,6 @@ void GeoGerry::Multi_Shape::draw() {
     // combine precincts into single array, draw array
 
     int dim[2] = {900, 900}; // the size of the SDL window
-
     // prepare array of coordinates to be drawn
     GeoGerry::bounding_box box = normalize_coordinates(this);
     std::vector<GeoGerry::Shape> shapes = resize_coordinates(box, this->border, dim[0], dim[1]);

@@ -282,9 +282,9 @@ bool get_inside(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1) {
     */
 
     for (coordinate c : s0.border)
-        if (point_in_ring(c, s1)) return true;
+        if (!point_in_ring(c, s1)) return false;
 
-    return false;
+    return true;
 }
 
 bool get_inside_first(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1) {

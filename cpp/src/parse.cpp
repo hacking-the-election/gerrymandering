@@ -381,35 +381,34 @@ GeoGerry::Precinct_Group combine_holes(GeoGerry::Precinct_Group pg) {
             std::vector<GeoGerry::p_index> precincts_to_combine;
             int i = 0; // index of precinct to check
 
-            for (GeoGerry::Precinct p_c : pg.precincts) {
+            for (GeoGerry::Precinct p_c : old_precincts) {
                 if (p_c != p) { // avoid checking same precinct
-                    for (GeoGerry::LinearRing hole : p.holes){
-                        if (get_inside_first(p_c.hull, hole)) {
-                            std::cout << "need to combine precinct " << x << " and precinct " << i << std::endl;
-                            precincts_to_combine.push_back(i);
-                        }
+                    if (get_inside(p_c.hull, p.hull)) {
+                        std::cout << "need to combine precinct " << x << " and precinct " << i << std::endl;
+                        precincts_to_combine.push_back(i);
                     }
                 }
                 i++;
             }
 
             for (GeoGerry::p_index pi : precincts_to_combine) {
-                demv += pg.precincts[pi].dem;
-                repv += pg.precincts[pi].rep;
-                pop += pg.precincts[pi].pop;
-                pg.precincts.erase(pg.precincts.begin() + pi);
+                demv += old_precincts[pi].dem;
+                repv += old_precincts[pi].rep;
+                pop += old_precincts[pi].pop;
+                std::cout << "removing precinct " << pi << std::endl;
+                old_precincts.erase(old_precincts.begin() + pi);
+                if (pi < x) x--;
             }
-            std::cout << demv << ", " << repv << std::endl;
         }
         else {
             demv = p.dem;
             repv = p.rep;
             pop = p.pop;
         }
+        x++;
 
         GeoGerry::Precinct np = GeoGerry::Precinct(precinct_border, demv, repv, pop, id);
         precincts.push_back(np);
-        x++;
     }
 
     return GeoGerry::Precinct_Group(precincts);
@@ -438,6 +437,13 @@ std::vector<GeoGerry::p_index_set>  sort_precincts(GeoGerry::Multi_Shape shape, 
     return islands;
 }
 
+int hole_count(GeoGerry::Precinct_Group pg) {
+    int sum = 0;
+    for (GeoGerry::Precinct p : pg.precincts )
+        sum += p.holes.size();
+    sum++;
+}
+
 GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON, std::string voter_data, std::string district_geoJSON) {
     /*
         Parse precinct and district geojson, along with
@@ -462,10 +468,17 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
     std::vector<Precinct> precincts = merge_data(precinct_shapes, precinct_voter_data);
     Precinct_Group pre_group(precincts);
 
+    
+    
     std::cout << "Before hole combination: " << pre_group.precincts.size() << std::endl;
     pre_group = combine_holes(pre_group);
+    int f = 43;
+    std::vector<Precinct> hole_test = {pre_group.precincts[f]};
+    for (int i = 0; i < pre_group.precincts.size(); i++) if (i != f ) hole_test.push_back(pre_group.precincts[i]);
+    Precinct_Group holy(hole_test);
+    holy.draw();
     std::cout << "After hole combination: " << pre_group.precincts.size() << std::endl;
-
+    std::cout << "There are still " << hole_count(pre_group) << std::endl;
     std::vector<Shape> state_shape_v; // dummy exterior border
 
     // generate state data from files
@@ -473,7 +486,6 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
     State state = State(district_shapes, pre_group.precincts, state_shape_v);
     state.draw();
     Multi_Shape border = generate_exterior_border(state);
-    border.draw();
     state.islands = sort_precincts(border, state);
 
     return state; // return the state object
