@@ -46,13 +46,13 @@ def customwarn(message, category, filename, lineno, file=None, line=None):
 warnings.showwarning = customwarn
 
 
-def save(state, precinct_list, district_dict, objects_dir):
+def save(state, precinct_dict, district_dict, objects_dir):
     """
     Save the list of precincts for a state to a file
     """
     file = f'{objects_dir}/{state}.pickle'
     with open(file, 'wb+') as f:
-        pickle.dump([precinct_list, district_dict], f)
+        pickle.dump([precinct_dict, district_dict], f)
 
 
 def convert_to_int(string):
@@ -85,6 +85,11 @@ def tostring(string):
 
 
 def area(points):
+    """
+    Uses shoelace theorem to calculate area,
+    accepts polygon but uses first linear pair just in case the polygon 
+    actually is the linear pair
+    """
     area = 0
     left_area = 0
     right_area = 0
@@ -99,37 +104,54 @@ def area(points):
     area = abs(left_area - right_area)/2
     return area
 
-def hole_remover(precinct, precinct_list, pop, dem_keys, rep_keys, dem_cols, rep_cols):
-    hole_pop = 0
-    hole_dem = {key : 0 for key in dem_keys}
-    hole_rep = {key : 0 for key in rep_keys}
-    hole_precinct_ids = []
-    for check_precinct in sorted(precinct_list, key=lambda precinct_id: area(precinct_list[precinct_id][0])):
-        if check_precinct == precinct:
+def hole_remover(precinct_dict, pop, dem_keys, rep_keys, dem_cols, rep_cols):
+    num_of_holes = 0
+    unaccounted_holes = 0
+    already_checked_holes = []
+    for num, precinct in enumerate(precinct_dict):
+        if precinct in already_checked_holes:
             continue
-        for hole in precinct_list[precinct][1:]:
-            if gpip(precinct_list[precinct], check_precinct[0][0][0]):
-                hole_precinct_ids.append(check_precinct)
-                hole_pop += pop[check_precinct]
-                for key in dem_keys:
-                    hole_dem[key] += dem_cols[check_precinct][key]
-                for key in rep_keys:
-                    hole_rep[key] += rep_cols[check_precinct][key]
-                
-    total_pop = hole_pop + pop[precinct]
-    total_dem = {key: (dem_cols[precinct][key] + hole_dem[key]) for key in dem_keys}
-    total_rep = {key: (rep_cols[precinct][key] + hole_rep[key]) for key in rep_keys}
-
-    for hole_precinct in hole_precinct_ids:
-        del pop[hole_precinct]
-        del dem_cols[hole_precinct]
-        del rep_cols[hole_precinct]
-        del precinct_list[hole_precinct]
-    pop[precinct] = total_pop
-    dem_cols[precinct] = total_dem
-    rep_cols[precinct] = total_rep
-    # Keep only the outer shell of the holy precinct
-    precinct_list[precinct] = precinct_list[precinct][0]
+        if len(precinct_dict[precinct]) > 1:
+            num_of_holes += 1
+            hole_pop = 0
+            hole_dem = {key : 0 for key in dem_keys}
+            hole_rep = {key : 0 for key in rep_keys}
+            hole_precinct_ids = []
+            for check_precinct in precinct_dict:
+                if (check_precinct == precinct) or (check_precinct in already_checked_holes):
+                    continue
+                for hole in precinct_dict[precinct][1:]:
+                    if gpip([hole], precinct_dict[check_precinct][0][0]):
+                        if check_precinct in hole_precinct_ids:
+                            continue
+                        print(precinct, check_precinct)
+                        hole_precinct_ids.append(check_precinct)
+                        hole_pop += pop[check_precinct]
+                        for key in dem_keys:
+                            hole_dem[key] += dem_cols[check_precinct][key]
+                        for key in rep_keys:
+                            hole_rep[key] += rep_cols[check_precinct][key]
+                        
+            total_pop = hole_pop + pop[precinct]
+            total_dem = {key: (dem_cols[precinct][key] + hole_dem[key]) for key in dem_keys}
+            total_rep = {key: (rep_cols[precinct][key] + hole_rep[key]) for key in rep_keys}
+            # print(hole_precinct_ids)
+            if len(hole_precinct_ids) == 0:
+                print(precinct)
+                unaccounted_holes += 1
+            for hole_precinct in hole_precinct_ids:
+                already_checked_holes.append(hole_precinct)
+                del pop[hole_precinct]
+                del dem_cols[hole_precinct]
+                del rep_cols[hole_precinct]
+            pop[precinct] = total_pop
+            dem_cols[precinct] = total_dem
+            rep_cols[precinct] = total_rep
+            # Keep only the outer shell of the holy precinct
+            precinct_dict[precinct] = [precinct_dict[precinct][0]]
+    for hole in already_checked_holes:
+        del precinct_dict[hole]
+    return (already_checked_holes, num_of_holes, unaccounted_holes)
 
 class Precinct:
     """
@@ -176,7 +198,7 @@ class Precinct:
               data will be saved with voter counts of -1
         """
 
-        precinct_list = []  # where the final precincts will be stored
+        precinct_dict = []  # where the final precincts will be stored
 
         with open(state_metadata_file, 'r') as f:
             STATE_METADATA = json.load(f)
@@ -337,7 +359,7 @@ class Precinct:
                 try:
                     _ = precinct_coords[precinct][0][0][0][0]
                 except TypeError:
-                    # In the future, if we want to do anything with polygons (but not multipolygons with holes)
+                    # In the future, if we want to do anything with polygons with holes (but this doesn't include multipolygons with holes)
                     continue
                 multi_polygon_index.append(precinct)
                 total_area = 0
@@ -380,21 +402,24 @@ class Precinct:
         # Then check for holy precincts (precincts with a hole in them.) 
         # Consider them (and the hole precincts) inside one precinct,
         # adding together vote and population counts.
+        number_of_holes = 0
+        for precinct in precinct_coords:
+            if len(precinct_coords[precinct]) > 1:
+                number_of_holes += 1
+        print('number of holes at start, ', number_of_holes)
 
         # Holy precincts: precinct with hole(s) inside. Hole precincts: precinct in hole
-        hole_recursion_index = {id : 0 for id in precinct_coords}
-        holy_precinct_ids = []
-        hole_precinct_ids = []
-        for precinct in precinct_coords:
-            # if precinct has a hole (or more than one hole):
-            if len(precinct_coords[precinct]) > 1:
-                _ = hole_remover(precinct, precinct_coords, pop, dem_keys, rep_keys, dem_cols, rep_cols)
-        print(len(precinct_coords))
+        hole_precincts = hole_remover(precinct_coords, pop, dem_keys, rep_keys, dem_cols, rep_cols)
+        for hole in hole_precincts[0]:
+            precinct_geo_ids.remove(hole)
+        print('number of holes removed, ', hole_precincts[1])
+        print('number of precincts removed, ', len(hole_precincts[0]))
+        print('total # of precincts, ',  len(precinct_coords))
+        print('holes without precincts, ', hole_precincts[2])
         # get election and geo data (separate processes for whether or
         # not there is an individual election data file)
-
         if is_election_data:
-            # append precinct objects to precinct_list
+            # append precinct objects to precinct_dict
             for precinct_id in precinct_geo_ids:
                 # if precinct id corresponds to any json obejcts
                 if precinct_id in (
@@ -404,7 +429,7 @@ class Precinct:
                     precinct_row = precinct_ele_ids[
                         precinct_ids_only.index(precinct_id)][1]
 
-                    precinct_list.append(Precinct(
+                    precinct_dict.append(Precinct(
                         precinct_coords[precinct_id],
                         state,
                         precinct_id,
@@ -417,7 +442,7 @@ class Precinct:
                         f"Precinct from {state} with id {precinct_id} was " \
                         + "not found in election data."
                     )
-                    precinct_list.append(Precinct(
+                    precinct_dict.append(Precinct(
                         precinct_coords[precinct_id],
                         state,
                         precinct_id,
@@ -427,9 +452,9 @@ class Precinct:
                     ))
 
         else:
-            # append precinct objects to precinct_list
+            # append precinct objects to precinct_dict
             for precinct_id in precinct_coords.keys():
-                precinct_list.append(Precinct(
+                precinct_dict.append(Precinct(
                     precinct_coords[precinct_id],
                     state,
                     precinct_id,
@@ -444,7 +469,7 @@ class Precinct:
 
         # save precinct list to state file
         try:
-            save(precinct_list[0].state, precinct_list,
+            save(precinct_dict[0].state, precinct_dict,
                  district_dict, objects_dir)
         except IndexError:
             raise Exception("No precincts saved to precinct list.")
