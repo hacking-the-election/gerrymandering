@@ -1,6 +1,6 @@
 /*=======================================
  shape.cpp:                     k-vernooy
- last modified:                Sun, Feb 9
+ last modified:               Wed, Feb 19
  
  Definition of generic methods for shapes, 
  precincts, districts and states that do
@@ -9,7 +9,7 @@
 ========================================*/
 
 #include "../include/shape.hpp"   // class definitions
-#define REP true
+#define REP true                  // use rep / (dem + rep) as ratio
 
 double GeoGerry::Precinct::get_ratio() {
     // retrieve ratio from precinct

@@ -1,6 +1,7 @@
 /*=======================================
  geometry.hpp                   k-vernooy
- last modified:               Mon, Feb 10
+ last modified:               Wed, Feb 19
+ 
  Declarations of functions for geometrical
  manipulations and searching algorithms.
 ========================================*/
@@ -47,3 +48,4 @@ double get_median_partisanship(GeoGerry::Precinct_Group pg);
 
 bool point_in_ring(GeoGerry::coordinate coord, GeoGerry::LinearRing lr);
 bool get_inside(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1);
+bool get_inside_first(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1);

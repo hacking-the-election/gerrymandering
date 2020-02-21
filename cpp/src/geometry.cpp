@@ -1,6 +1,6 @@
 /*=======================================
  geometry.cpp:                  k-vernooy
- last modified:               Sun, Jan 19
+ last modified:               Wed, Feb 19
  
  Definition of useful functions for
  computational geometry. Basic 
@@ -117,16 +117,23 @@ coordinate GeoGerry::LinearRing::get_center() {
         center - may be a better measure of center
     */
 
-    coordinate coords = { border[0][0], border[0][1] };  // initialize with first values
-    
-    // loop and add x and y to respective sums
-    for ( int i = 1; i < border.size(); i++ ) {
-        coords[0] += border[i][0];
-        coords[1] += border[i][1];
+    coordinate centroid = {0, 0};
+
+    for (int i = 0; i < border.size() - 1; i++) {
+        double x0 = border[i][0];
+        double y0 = border[i][1];
+        double x1 = border[i + 1][0];
+        double y1 = border[i + 1][1];
+
+        double factor = ((x0 * y1) - (x1 * y0));
+        centroid[0] += (x0 + x1) * factor;
+        centroid[1] += (y0 + y1) * factor;
     }
 
-    coordinate center = {{(coords[0] / border.size()), (coords[1] / border.size())}};
-    return center; // return averages
+    centroid[0] /= (6 * this->get_area());
+    centroid[1] /= (6 * this->get_area());
+
+    return centroid;
 }
 
 double GeoGerry::LinearRing::get_area() {
@@ -254,14 +261,14 @@ bool point_in_ring(GeoGerry::coordinate coord, GeoGerry::LinearRing lr) {
             (s[1] < coord[1] && s[3] < coord[1]))
             continue;
 
-        if (s[1] > coord[1] && s[3] > coord[1]) {
-            intersections += 1;
+        if (s[1] >= coord[1] && s[3] >= coord[1]) {
+            intersections++;
             continue;
         }
         else {
             vector<double> eq = calculate_line(s);
             double y_c = eq[0] * coord[0] + eq[1];
-            if (y_c > coord[1]) intersections += 1;
+            if (y_c >= coord[1]) intersections++;
         }
     }
 
@@ -274,9 +281,20 @@ bool get_inside(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1) {
         s1 using the intersection point method
     */
 
-    return point_in_ring(s0.border[0], s1);
+    for (coordinate c : s0.border)
+        if (!point_in_ring(c, s1)) return false;
+
+    return true;
 }
 
+bool get_inside_first(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1) {
+    /*
+        returns whether or not s0 is inside of 
+        s1 using the intersection point method
+    */
+
+    return (point_in_ring(s0.border[0], s1));
+}
 
 p_index_set get_inner_boundary_precincts(Precinct_Group shape) {
    

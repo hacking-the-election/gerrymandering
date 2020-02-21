@@ -1,7 +1,4 @@
 # General:
-   Now:
-    - Remove unecessary blank lines
-    - Make all comments complete sentences with capitalization and periods
    Later:
     - Predict errors and create custom exceptions to throw in those cases
 
@@ -14,5 +11,3 @@
 # Communities:
    Now:
     - write communities algorithm
-    - write get_exchangleable_precincts function
-    - update get_addable_precincts to new function

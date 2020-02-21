@@ -1,6 +1,6 @@
 /*=======================================
  shape.hpp:                     k-vernooy
- last modified:               Mon, Feb 17
+ last modified:               Wed, Feb 19
  
  Class definitions and method declarations
  for shapes, precincts, states, and 
@@ -392,6 +392,8 @@ class State : public Precinct_Group {
         virtual void draw();
         // name of state
         std::string name = "no_name";
+
+        std::vector<p_index_set> islands; // defines which precincts align to which islands
 
         // arrays of shapes in state
         std::vector<Multi_Shape> state_districts;
