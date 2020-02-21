@@ -16,7 +16,8 @@ multipolygon (list of polygons).
 
 
 __all__ = ["clip", "UNION", "DIFFERENCE", "get_schwartzberg_compactness",
-           "get_if_bordering", "get_point_in_polygon", "get_if_multipolygon"]
+           "get_if_bordering", "get_point_in_polygon", "get_if_multipolygon",
+           "Community"]
 
 
 import itertools
@@ -357,7 +358,7 @@ def clip(shapes, clip_type):
                 [np.asarray(t.exterior)[:, :2]] + [np.asarray(r)[:, :2] 
                 for r in t.interiors]) for t in [polygon]]).tolist())
 
-    return [real_border]
+    return real_border
 
 
 # ===================================================
@@ -376,13 +377,15 @@ class Community:
         `precincts`
         """
 
-        rep_percentages = [
-            p.r_election_sum / (p.r_election_sum + p.d_election_sum) * 100
-            for p in precincts]
-
-        mean = sum(rep_percentages) / len(rep_percentages)
-        
-        return math.sqrt(sum([(p - mean) ** 2 for p in rep_percentages]))
+        try:
+            rep_percentages = [
+                p.r_election_sum / (p.r_election_sum + p.d_election_sum) * 100
+                for p in precincts]
+            mean = sum(rep_percentages) / len(rep_percentages)
+            
+            return math.sqrt(sum([(p - mean) ** 2 for p in rep_percentages]))
+        except ZeroDivisionError:
+            return 0.0
 
     @staticmethod
     def get_partisanship(precincts):
@@ -395,20 +398,24 @@ class Community:
         for precinct in precincts:
             if (r_sum := precinct.r_election_sum) != -1:
                 rep_sum += r_sum
-                total_sum += r_sum + precinct.d_election_data
+                total_sum += r_sum + precinct.d_election_sum
         return rep_sum / total_sum
     
     def __init__(self, precincts, identifier):
-        self.precincts = {precinct.id: precinct for precinct in precincts}
+        self.precincts = {precinct.vote_id: precinct for precinct in precincts}
         self.id = identifier
         self.border = clip([p.coords for p in self.precincts.values()], UNION)
-        self.partisanship = Community.get_partisanship(
-                                list(self.precincts.values()))
-        self.standard_deviation = Community.get_standard_deviation(
-                                      self.precincts.values())
-        self.population = sum([precinct.population for precinct
-                               in self.precincts.values()])
-        self.compactness = get_schwartzberg_compactness(self.border)
+        # self.partisanship = Community.get_partisanship(
+        #                         list(self.precincts.values()))
+        # self.standard_deviation = Community.get_standard_deviation(
+        #                               self.precincts.values())
+        # self.population = sum([precinct.population for precinct
+        #                        in self.precincts.values()])
+        # self.compactness = get_schwartzberg_compactness(self.border)
+        self.partisanship = None
+        self.standard_deviation = None
+        self.population = None
+        self.compactness = None
 
     def give_precinct(self, other, precinct_id, border=True,
                       partisanship=True, standard_deviation=True,
@@ -421,7 +428,8 @@ class Community:
         """
 
         if not isinstance(other, Community):
-            raise TypeError("Can only give precinct to community.")
+            raise TypeError(f"Invalid type {type(other)}.\n"
+                            "Can only give precinct to community.")
         try:
             precinct = self.precincts[precinct_id]
         except KeyError:
@@ -429,7 +437,7 @@ class Community:
                 f"No precinct in community with id '{precinct_id}.'")
 
         del self.precincts[precinct_id]
-        other.precincts.append(precinct)
+        other.precincts[precinct_id] = precinct
         # Update borders
         if border:
             self.border = clip([self.border, precinct.coords], DIFFERENCE)
