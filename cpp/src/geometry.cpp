@@ -272,6 +272,7 @@ bool point_in_ring(GeoGerry::coordinate coord, GeoGerry::LinearRing lr) {
         }
     }
 
+    std::cout << intersections << std::endl;
     return (intersections % 2 == 1); // odd intersection
 }
 
@@ -294,6 +295,20 @@ bool get_inside_first(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1) {
     */
 
     return (point_in_ring(s0.border[0], s1));
+}
+
+bool get_inside_d(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1) {
+    int index = 0;
+    for (coordinate c : s0.border) {
+        if (!point_in_ring(c, s1)) {
+            std::cout << c[0] << ", " << c[1] << " failed at index " << index << std::endl;
+            std::cout << s1.to_json() << std::endl;
+            return false;
+        }
+        index++;
+    }
+
+    return true;
 }
 
 p_index_set get_inner_boundary_precincts(Precinct_Group shape) {

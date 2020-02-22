@@ -382,15 +382,24 @@ GeoGerry::Precinct_Group combine_holes(GeoGerry::Precinct_Group pg) {
             std::cout << "Precinct " << p.shape_id << " (" << x << ") has " << p.holes.size() << " holes" << std::endl;
             int interior_pre = 0;
             std::vector<GeoGerry::p_index> precincts_to_combine;
-            int i = 0; // index of precinct to check
 
-            for (GeoGerry::Precinct p_c : old_precincts) {
-                if (p_c != p && get_inside(p_c.hull, p.hull)) {
-                    precincts_to_combine.push_back(i);
+            if (p.shape_id == "3808936-11")
+                std::cout << "++++++++++++++++++++++++" << std::endl;
+
+            for (int j = 0; j < old_precincts.size(); j++) {
+                GeoGerry::Precinct p_c = old_precincts[j];
+                if (j != x && get_inside(p_c.hull, p.hull)) {
+                    precincts_to_combine.push_back(j);
                     interior_pre++;
                 }
-                i++;
+                else if ((p_c.shape_id == "3808937-04" || p_c.shape_id == "3808937-05") && p.shape_id == "3808936-11") {
+                    std::cout << "FAIL FAIL FAIL" << std::endl;
+                    get_inside_d(p_c.hull, p.hull);
+                }
             }
+
+            if (p.shape_id == "3808936-11")
+                std::cout << "++++++++++++++++++++++++" << std::endl;
 
             for (GeoGerry::p_index pi : precincts_to_combine) {
                 std::cout << "merging precinct " << old_precincts[pi].shape_id << std::endl;
@@ -484,13 +493,8 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
     
     std::cout << "Before hole combination: " << pre_group.precincts.size() << std::endl;
     pre_group = combine_holes(pre_group);
-    writef(pre_group.to_json(), "path.json");
-    std::cout << "Wrote to json" << std::endl;
-    // int f = 43;
-    // std::vector<Precinct> hole_test = {pre_group.precincts[f]};
-    // for (int i = 0; i < pre_group.precincts.size(); i++) if (i != f ) hole_test.push_back(pre_group.precincts[i]);
-    // Precinct_Group holy(hole_test);
-    // holy.draw();
+    pre_group.draw();
+    
     std::cout << "After hole combination: " << pre_group.precincts.size() << std::endl;
     std::cout << "There are still " << hole_count(pre_group) << std::endl;
     std::vector<Shape> state_shape_v; // dummy exterior border
