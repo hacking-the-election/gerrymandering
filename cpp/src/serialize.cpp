@@ -174,6 +174,7 @@ template<class Archive> void GeoGerry::State::serialize(Archive & ar, const unsi
     // write districts, precincts, name, and border
     ar & state_districts;
     ar & precincts;
+    ar & islands;
     ar & name;
     ar & border;
     ar & pop;

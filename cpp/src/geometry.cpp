@@ -94,6 +94,9 @@ segments GeoGerry::LinearRing::get_segments() {
     segments segs;
     
     // loop through segments
+    if (border[border.size() - 1] == border[0])
+        border.pop_back();
+
     for (int i = 0; i < border.size(); i++) {
         coordinate c1 = border[i];  // starting coord
         coordinate c2;              // ending coord
@@ -248,31 +251,24 @@ bool point_in_ring(GeoGerry::coordinate coord, GeoGerry::LinearRing lr) {
         the ray intersection method - counts number of times
         a ray hits the polygon
 
-        Need to document htis fucntion later as I'm not
-        quite sure how it works - pulled this one from python
+        see the documentation for this implementation at
+        http://geomalgorithms.com/a03-_inclusion.html.
     */
 
-    int intersections = 0;
-    segments segs = lr.get_segments();
+   int cn = 0;
 
-    for (segment s : segs) {
-        if ((s[0] < coord[0] && s[2] < coord[0]) ||
-            (s[0] > coord[0] && s[2] > coord[0]) ||
-            (s[1] < coord[1] && s[3] < coord[1]))
-            continue;
+    // loop through all edges of the polygon
+    for (segment seg : lr.get_segments()) {
 
-        if (s[1] >= coord[1] && s[3] >= coord[1]) {
-            intersections++;
-            continue;
-        }
-        else {
-            vector<double> eq = calculate_line(s);
-            double y_c = eq[0] * coord[0] + eq[1];
-            if (y_c >= coord[1]) intersections++;
+       if (((seg[1] <= coord[1]) && (seg[3] > coord[1])) ||  // an upward crossing
+           ((seg[1] > coord[1]) && (seg[3] <= coord[1]))) {  // a downward crossing
+            double vt = (double)(coord[1]  - seg[1]) / (seg[3] - seg[1]);
+            if (coord[0] < seg[0] + vt * (seg[2] - seg[0])) // coord[0] < intersect
+                ++cn;   // a valid crossing of y = coord[1] right of coord[0]
         }
     }
 
-    return (intersections % 2 == 1); // odd intersection
+    return (cn & 1);    // 0 if even (out), and 1 if  odd (in)
 }
 
 bool get_inside(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1) {
@@ -294,6 +290,17 @@ bool get_inside_first(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1) {
     */
 
     return (point_in_ring(s0.border[0], s1));
+}
+
+bool get_inside_d(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1) {
+    for (int i = 0; i < s0.border.size(); i++) {
+        if (!point_in_ring(s0.border[i], s1)) {
+            std::cout << s0.border[i][0] << ", " << s0.border[i][1] << " failed at index " << i << std::endl;
+            return false;
+        }
+    }
+
+    return true;
 }
 
 p_index_set get_inner_boundary_precincts(Precinct_Group shape) {

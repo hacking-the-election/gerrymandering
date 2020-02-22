@@ -39,20 +39,20 @@ using namespace GeoGerry;
 #define VERBOSE 1
 #define WRITE 0
 
-/*================================================
- Define constants to be used in the algorithm.    
- These will not be passed to the algorithm
- as arguments, as they define things like stop
- conditions.
-=================================================*/
+/*
+    Define constants to be used in the algorithm.    
+    These will not be passed to the algorithm
+    as arguments, as they define things like stop
+    conditions.
+*/
+
 const int CHANGED_PRECINT_TOLERANCE = 10; // percent of precincts that can change from iteration
 const int MAX_ITERATIONS = 3; // max number of times we can change a community
 
-// id's for processes:
+// ids for processes:
 const int PARTISANSHIP = 0;
 const int COMPACTNESS = 1;
 const int POPULATION = 2;
-
 
 void State::generate_initial_communities(int num_communities) {
     /*
@@ -60,10 +60,11 @@ void State::generate_initial_communities(int num_communities) {
         Returns config as a Precinct Group object.
     */
 
-    int num_precincts = precincts.size();
-    // determine amount of precincts to be added to each community
-    vector<int> large_sizes;
+    int num_precincts = precincts.size(); // total precinct amount
+
+    vector<int> large_sizes; // number of communities of greater amount
     vector<int> base_sizes;
+
     int base = floor(num_precincts / num_communities); // the base num
     int rem = num_precincts % num_communities; // how many need to be increased by 1
 
@@ -76,14 +77,25 @@ void State::generate_initial_communities(int num_communities) {
     p_index_set available_pre(num_precincts);
     std::iota(available_pre.begin(), available_pre.end(), 0);
     
-    // for (Shape island : generate_exterior_border(*this).border) {
-    //     // determine whether or not the current island contains fractional communities
-    //     for (int x = 0; x < large_sizes.size(); x++) {
-    //         for (int y = 0; y < base_sizes.size(); y++) {
-    //             if ((base * y) + ((base + 1) * x) == )
-    //         }
-    //     }
-    // }
+    for (p_index_set island : islands) {
+        // determine whether or not the current island contains fractional communities
+
+        vector<array<int, 2> > vals;    // generate a list to hole possible combinations
+        vector<int> totals;             // a list of sums from the vals array
+
+        for (int x = 0; x < large_sizes.size(); x++) {
+            for (int y = 0; y < base_sizes.size(); y++) {
+                vals.push_back({x * base + 1, y * base});
+                totals.push_back((x * base + 1) + (y * base));
+            }
+        }
+
+        int x = 0; // number of base communities on island
+        int y = 0; // number of
+        if (std::find(totals.begin(), totals.end(), island.size()) != totals.end()) {
+
+        }
+    }
 
     // int index = 0;
     // for (int i = 0; i < num_communities - 1; i++) {
@@ -352,11 +364,10 @@ int measure_difference(Communities communities, Communities new_communities) {
 }
 
 void State::generate_communities(int num_communities, double compactness_tolerance, double partisanship_tolerance, double population_tolerance) {
-
     /*
-        The driver method for the communities algorithm. This method does
-        a lot, but the general process for running the political-community 
-        generation algorithm is calling void state methods that modify state variables. 
+        The driver method for the communities algorithm. The general process for
+        running the political-community generation algorithm is calling void state
+        methods that modify state variables, so not much passing around is done. 
         
         At the start, `generate_initial_communities` generates
         a random configuration. Then, it uses the iterative method to
