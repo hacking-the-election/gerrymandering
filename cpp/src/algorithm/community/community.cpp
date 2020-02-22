@@ -73,6 +73,14 @@ void State::generate_initial_communities(int num_communities) {
     for (int i = 0; i < rem; i++)
         large_sizes.push_back(base + 1);
 
+    for (int x : large_sizes)
+        std::cout << base + 1 << ", ";
+
+    for (int k : base_sizes)
+        std::cout << base << ", ";
+    
+    std::cout << std::endl;
+
     // create array of indices of precincts available to be added
     p_index_set available_pre(num_precincts);
     std::iota(available_pre.begin(), available_pre.end(), 0);
@@ -80,21 +88,45 @@ void State::generate_initial_communities(int num_communities) {
     for (p_index_set island : islands) {
         // determine whether or not the current island contains fractional communities
 
-        vector<array<int, 2> > vals;    // generate a list to hole possible combinations
-        vector<int> totals;             // a list of sums from the vals array
+        map<int, array<int, 2> > vals;    // generate a list to hole possible combinations
 
-        for (int x = 0; x < large_sizes.size(); x++) {
-            for (int y = 0; y < base_sizes.size(); y++) {
-                vals.push_back({x * base + 1, y * base});
-                totals.push_back((x * base + 1) + (y * base));
+        // ERROR_POS: remove " + 1" from for loop :
+        for (int x = 0; x < large_sizes.size() + 1; x++) {
+            for (int y = 0; y < base_sizes.size() + 1; y++) {
+                std::cout << "total: " << (x * (base + 1)) + (y * base) << std::endl;
+                vals[(x * (base + 1)) + (y * base)] = {x * (base + 1), y * base};
             }
         }
 
         int x = 0; // number of base communities on island
-        int y = 0; // number of
-        if (std::find(totals.begin(), totals.end(), island.size()) != totals.end()) {
+        int y = 0; // number of base + 1 communities on island
 
+        auto it = vals.find(island.size());
+        
+        if (it != vals.end()) {
+            std::cout << "no fractional community" << std::endl;
+            // there is no fractional community
+            vals[island.size()][1] = x;
+            vals[island.size()][0] = y;
         }
+        else {
+            std::cout << "fractional community" << std::endl;
+            int round;
+            for (int i = 0; i < vals.size(); i++) {
+                round = vals[i][0] + vals[i][1];
+                if (round > island.size()) {
+                    round = vals[i - 1][0] + vals[i - 1][1]; // should never cause stack overflow, due to 0 being contant first val
+                    break;
+                }
+            }
+            std::cout << "round vs real: " << round << ", " << island.size() << std::endl;
+            // NEED TO LINK LEFTOVER
+        }
+
+        for (int i = 0; i < x; i++)
+            base_sizes.pop_back();
+        for (int j = 0; j < y; j++)
+            large_sizes.pop_back();
     }
 
     // int index = 0;
