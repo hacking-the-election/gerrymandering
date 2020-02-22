@@ -486,9 +486,10 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
     pre_group = combine_holes(pre_group);
     int removed = before - pre_group.precincts.size();
     if (VERBOSE) std::cout << "removed " << removed << " hole precincts" << std::endl;
-
+    writef(pre_group.to_json(), "json.json");
+    
     std::vector<Shape> state_shape_v; // dummy exterior border
-
+    std::cout << pre_group.precincts.size() << std::endl;
     // generate state data from files
     if (VERBOSE) std::cout << "generating state with precinct and district arrays..." << std::endl;
     State state = State(district_shapes, pre_group.precincts, state_shape_v);
