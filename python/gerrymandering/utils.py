@@ -27,6 +27,13 @@ import types
 import numpy as np
 from shapely.ops import unary_union
 from shapely.geometry import MultiPolygon, Polygon
+from shapely.errors import TopologicalError
+from .test.utils import print_time
+
+
+import logging
+
+logging.basicConfig(filename="precincts.log", level=logging.DEBUG)
 
 
 UNION = 1
@@ -185,9 +192,9 @@ def get_point_in_polygon(polygon, point):
         # Continue if both endpoints are below point.
         # (ray cannot intersect)
         if segment[0][1] < point[1] and segment[1][1] < point[1]: continue
+        # Mark as crossed if both endpoints are above or at same y as
+        # point.
         if segment[0][1] >= point[1] and segment[1][1] >= point[1]:
-            # Both endpoints are above or at same y as point.
-            # (ray must intersect)
             crossings += 1
             continue
         else:
@@ -199,7 +206,7 @@ def get_point_in_polygon(polygon, point):
                 # Point is below or at same height as segment.
                 crossings += 1
 
-    return crossings % 2 == 1
+    return crossings % 2 == 1  # odd number of crossings
 
 
 def _get_distance(p1, p2):
@@ -290,25 +297,42 @@ def get_centroid(polygon):
     return centroid
 
 
-def convert_to_shapely(shape):
+def multipolygon_to_shapely(multipolygon):
     """
-    Converts list-type polygon or multi-polygon `shape` to
-    shapely.geometry.MultiPolygon or shapely.geometry.Polygon
+    Converts list-type multi-polygon `shape` to
+    `shapely.geometry.MultiPolygon`
     """
     polygons = []
-    for polygon in shape:
-        try:
-            polygons.append(
-                Polygon([tuple(coord) for coord in polygon]))
-        except (ValueError, AssertionError):
-            # if there is a multipolygon precinct (which there
-            # shouldn't be, because those will be broken into
-            # separate precincts in the serialization process)
-            for p in polygon:
-                polygons.append(
-                    Polygon([tuple(coord) for coord in p]))
+    for polygon in multipolygon:
+        polygons.append(polygon_to_shapely(polygon))
         
     return MultiPolygon(polygons)
+
+
+def polygon_to_shapely(polygon):
+    """
+    Converts list-type polygon `shape` to
+    `shapely.geometry.Polygon`
+    """
+    tuple_polygon = [[tuple(coord) for coord in linear_ring]
+                     for linear_ring in polygon]
+    return Polygon(polygon[0], polygon[1:])
+
+@print_time
+def union(multipolygons):
+    """
+    TEMPORARY FOR DEBUG PURPOSES ONLY
+    """
+    return unary_union(multipolygons)
+
+
+@print_time
+def difference(multipolygons):
+    """
+    TEMPORARY FOR DEBUG PURPOSES ONLY
+    """
+    return multipolygons[0].buffer(0.0000001).difference(
+               multipolygons[1].buffer(0.0000001))
 
 
 def clip(shapes, clip_type):
@@ -330,7 +354,7 @@ def clip(shapes, clip_type):
     multipolygons = [convert_to_shapely(shape) for shape in shapes]
 
     if clip_type == 1:
-        solution = unary_union(multipolygons)
+        solution = union(multipolygons)
     elif clip_type == 2:
         if len(multipolygons) != 2:
             raise ValueError(
@@ -339,18 +363,23 @@ def clip(shapes, clip_type):
         # Buffer is used below because in certain cases (such as using
         # both precinct-level data and district-level data in the input
         # to this function), the data will be slightly different.
-        solution = multipolygons[0].buffer(0.0000001).difference(
-            multipolygons[1].buffer(0.0000001))
+        try:
+            solution = difference(multipolygons)
+        except TopologicalError as te:
+            logging.debug(f"ERROR THROWN FROM DIFFERENCE BETWEEN:\n"
+                          f"shape 1: {multipolygon[0]}\nshape 2: {multipolygon[1]}")
+            raise te
     else:
         raise ValueError(
             "Invalid clip type. Use utils.UNION or utils.DIFFERENCE")
 
     real_border = []
     if isinstance(solution, Polygon):
-        real_border.append(
-            np.concatenate([np.concatenate(
-                [np.asarray(t.exterior)[:, :2]] + [np.asarray(r)[:, :2] 
-                for r in t.interiors]) for t in [solution]]).tolist())
+        # real_border.append(
+        #     np.concatenate([np.concatenate(
+        #         [np.asarray(t.exterior)[:, :2]] + [np.asarray(r)[:, :2] 
+        #         for r in t.interiors]) for t in [solution]]).tolist())
+        pass
     elif isinstance(solution, MultiPolygon):
         for polygon in solution.geoms:
             real_border.append(
@@ -404,19 +433,16 @@ class Community:
     def __init__(self, precincts, identifier):
         self.precincts = {precinct.vote_id: precinct for precinct in precincts}
         self.id = identifier
-        self.border = clip([p.coords for p in self.precincts.values()], UNION)
-        # self.partisanship = Community.get_partisanship(
-        #                         list(self.precincts.values()))
-        # self.standard_deviation = Community.get_standard_deviation(
-        #                               self.precincts.values())
-        # self.population = sum([precinct.population for precinct
-        #                        in self.precincts.values()])
-        # self.compactness = get_schwartzberg_compactness(self.border)
+        if precincts != []:
+            self.border = clip([p.coords for p in self.precincts.values()], UNION)
+        else:
+            self.border = []
         self.partisanship = None
         self.standard_deviation = None
         self.population = None
         self.compactness = None
 
+    @print_time
     def give_precinct(self, other, precinct_id, border=True,
                       partisanship=True, standard_deviation=True,
                       population=True, compactness=True):
@@ -440,8 +466,10 @@ class Community:
         other.precincts[precinct_id] = precinct
         # Update borders
         if border:
-            self.border = clip([self.border, precinct.coords], DIFFERENCE)
-            other.border = clip([other.border, precinct.coords], UNION)
+            # self.border = clip([self.border, precinct.coords], DIFFERENCE)
+            # other.border = clip([other.border, precinct.coords], UNION)
+            self.border = clip([p.coords for p in self.precincts.values()], UNION)
+            other.border = clip([p.coords for p in other.precincts.values()], UNION)
 
         # Update other attributes that are dependent on precincts attribute
         for community in [self, other]:
@@ -459,6 +487,25 @@ class Community:
             if compactness:
                 community.compactness = get_schwartzberg_compactness(
                     community.border)
+
+    @print_time
+    def get_bordering_precincts(self, unchosen_precincts):
+        """
+        Returns list of precincts bordering `self`
+
+        `unchosen_precincts` is a Community object that contains all
+        the precincts in the state that haven't already been added to
+        a community
+        """
+        bordering_precincts = []
+        if self.precincts != {}:
+            for vote_id, precinct in unchosen_precincts.precincts.items():
+                if get_if_bordering(precinct.coords, self.border):
+                    bordering_precincts.append(bordering_precincts)
+            print(f"bordering precincts are: {bordering_precincts}")
+        else:
+            bordering_precincts = list(unchosen_precincts.precincts.keys())
+        return bordering_precincts
 
 
 # Below functions likely to be removed because they are specific to

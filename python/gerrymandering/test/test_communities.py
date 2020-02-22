@@ -5,7 +5,6 @@ Unit tests for communities.py
 import sys
 from os.path import abspath, dirname
 import unittest
-import unittest
 
 sys.path.append(abspath(dirname(dirname(dirname(__file__)))))
 
@@ -30,6 +29,8 @@ class TestInitialConfiguration(unittest.TestCase):
             return communities.create_initial_configuration(precincts, n_districts)
 
         vermont_output = test_initial_configuration_speed(VERMONT[0], 2)
+
+        print([community.border for community in vermont_output])
 
         convert_to_json([community.border for community in vermont_output], "test_communities.json")
 
