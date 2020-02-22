@@ -251,8 +251,8 @@ bool point_in_ring(GeoGerry::coordinate coord, GeoGerry::LinearRing lr) {
         the ray intersection method - counts number of times
         a ray hits the polygon
 
-        Need to document htis fucntion later as I'm not
-        quite sure how it works - pulled this one from python
+        see the documentation for this implementation at
+        http://geomalgorithms.com/a03-_inclusion.html.
     */
 
    int cn = 0;
@@ -269,28 +269,6 @@ bool point_in_ring(GeoGerry::coordinate coord, GeoGerry::LinearRing lr) {
     }
 
     return (cn & 1);    // 0 if even (out), and 1 if  odd (in)
-
-    // int intersections = 0;
-    // segments segs = lr.get_segments();
-
-    // for (segment s : segs) {
-    //     if ((s[0] < coord[0] && s[2] < coord[0]) ||
-    //         (s[0] > coord[0] && s[2] > coord[0]) ||
-    //         (s[1] < coord[1] && s[3] < coord[1]))
-    //         continue;
-
-    //     if (s[1] >= coord[1] && s[3] >= coord[1]) {
-    //         intersections++;
-    //         continue;
-    //     }
-    //     else {
-    //         vector<double> eq = calculate_line(s);
-    //         double y_c = eq[0] * coord[0] + eq[1];
-    //         if (y_c >= coord[1]) intersections++;
-    //     }
-    // }
-
-    // return (intersections % 2 == 1); // odd intersection
 }
 
 bool get_inside(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1) {
