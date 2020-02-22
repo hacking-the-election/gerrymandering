@@ -8,6 +8,7 @@ python/test-data
 precincts.log
 test*.json
 test*.pickle
+test*.txt
 
 # vscode
 settings.json

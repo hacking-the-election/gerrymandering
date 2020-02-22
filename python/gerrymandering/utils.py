@@ -26,7 +26,14 @@ import types
 
 import numpy as np
 from shapely.ops import unary_union
-from shapely.geometry import MultiPolygon, Polygon
+from shapely.geometry import MultiPolygon, Polygon, Point
+from shapely.errors import TopologicalError
+from .test.utils import print_time
+
+
+import logging
+
+logging.basicConfig(filename="precincts.log", level=logging.DEBUG)
 
 
 UNION = 1
@@ -164,42 +171,21 @@ def get_point_in_polygon(polygon, point):
     Returns whether or not point is in polygon
     (with or without holes)
 
-    Draws vertical ray from point and checks numbder of intersections
-    with segments. If odd, returns True; if even, returns False.
+    Polygon can either be list or shapely.geometry.Polygon object
+    Point can either be list or shapely.geomtry.Point object
 
     Returns bool
     """
-    crossings = 0
-    segments = _get_segments(polygon)
-
-    for segment in segments:
-        # Continue if point is not between endpoints.
-        # (ray cannot intersect)
-        if (
-                # Both endpoints are to the left.
-                (segment[0][0] < point[0] and segment[1][0] < point[0])
-                # Both endpoints are to the right.
-                or (segment[0][0] > point[0] and segment[1][0] > point[0])):
-            continue
-
-        # Continue if both endpoints are below point.
-        # (ray cannot intersect)
-        if segment[0][1] < point[1] and segment[1][1] < point[1]: continue
-        if segment[0][1] >= point[1] and segment[1][1] >= point[1]:
-            # Both endpoints are above or at same y as point.
-            # (ray must intersect)
-            crossings += 1
-            continue
-        else:
-            # One endpoint is above point, the other is below.
-
-            # y-value of segment at point.
-            y_c = _get_equation(segment)(point[0])
-            if y_c >= point[1]:
-                # Point is below or at same height as segment.
-                crossings += 1
-
-    return crossings % 2 == 1
+    if isinstance(polygon, list):
+        tuple_polygon = [[tuple(coord) for coord in ring] for ring in polygon]
+        shapely_polygon = Polygon(tuple_polygon[0], tuple_polygon[1:])
+    elif isinstance(polygon, Polygon):
+        shapely_polygon = polygon
+    if isinstance(point, list):
+        coord = Point(*point)
+    elif isinstance(point, Point):
+        coord = point
+    return shapely_polygon.contains(coord) or shapely_polygon.touches(coord)
 
 
 def _get_distance(p1, p2):
@@ -290,27 +276,6 @@ def get_centroid(polygon):
     return centroid
 
 
-def convert_to_shapely(shape):
-    """
-    Converts list-type polygon or multi-polygon `shape` to
-    shapely.geometry.MultiPolygon or shapely.geometry.Polygon
-    """
-    polygons = []
-    for polygon in shape:
-        try:
-            polygons.append(
-                Polygon([tuple(coord) for coord in polygon]))
-        except (ValueError, AssertionError):
-            # if there is a multipolygon precinct (which there
-            # shouldn't be, because those will be broken into
-            # separate precincts in the serialization process)
-            for p in polygon:
-                polygons.append(
-                    Polygon([tuple(coord) for coord in p]))
-        
-    return MultiPolygon(polygons)
-
-
 def clip(shapes, clip_type):
     """
     Finds external border of a group of shapes
@@ -339,26 +304,18 @@ def clip(shapes, clip_type):
         # Buffer is used below because in certain cases (such as using
         # both precinct-level data and district-level data in the input
         # to this function), the data will be slightly different.
-        solution = multipolygons[0].buffer(0.0000001).difference(
-            multipolygons[1].buffer(0.0000001))
+        try:
+            solution = multipolygons[0].buffer(0.0000001).difference(
+               multipolygons[1].buffer(0.0000001))
+        except TopologicalError as te:
+            logging.debug(f"ERROR THROWN FROM DIFFERENCE BETWEEN:\n"
+                          f"shape 1: {multipolygon[0]}\nshape 2: {multipolygon[1]}")
+            raise te
     else:
         raise ValueError(
             "Invalid clip type. Use utils.UNION or utils.DIFFERENCE")
 
-    real_border = []
-    if isinstance(solution, Polygon):
-        real_border.append(
-            np.concatenate([np.concatenate(
-                [np.asarray(t.exterior)[:, :2]] + [np.asarray(r)[:, :2] 
-                for r in t.interiors]) for t in [solution]]).tolist())
-    elif isinstance(solution, MultiPolygon):
-        for polygon in solution.geoms:
-            real_border.append(
-            np.concatenate([np.concatenate(
-                [np.asarray(t.exterior)[:, :2]] + [np.asarray(r)[:, :2] 
-                for r in t.interiors]) for t in [polygon]]).tolist())
-
-    return real_border
+    return solution
 
 
 # ===================================================
@@ -404,19 +361,16 @@ class Community:
     def __init__(self, precincts, identifier):
         self.precincts = {precinct.vote_id: precinct for precinct in precincts}
         self.id = identifier
-        self.border = clip([p.coords for p in self.precincts.values()], UNION)
-        # self.partisanship = Community.get_partisanship(
-        #                         list(self.precincts.values()))
-        # self.standard_deviation = Community.get_standard_deviation(
-        #                               self.precincts.values())
-        # self.population = sum([precinct.population for precinct
-        #                        in self.precincts.values()])
-        # self.compactness = get_schwartzberg_compactness(self.border)
+        if precincts != []:
+            self.border = clip([p.coords for p in self.precincts.values()], UNION)
+        else:
+            self.border = []
         self.partisanship = None
         self.standard_deviation = None
         self.population = None
         self.compactness = None
 
+    @print_time
     def give_precinct(self, other, precinct_id, border=True,
                       partisanship=True, standard_deviation=True,
                       population=True, compactness=True):
@@ -440,8 +394,10 @@ class Community:
         other.precincts[precinct_id] = precinct
         # Update borders
         if border:
-            self.border = clip([self.border, precinct.coords], DIFFERENCE)
-            other.border = clip([other.border, precinct.coords], UNION)
+            # self.border = clip([self.border, precinct.coords], DIFFERENCE)
+            # other.border = clip([other.border, precinct.coords], UNION)
+            self.border = clip([p.coords for p in self.precincts.values()], UNION)
+            other.border = clip([p.coords for p in other.precincts.values()], UNION)
 
         # Update other attributes that are dependent on precincts attribute
         for community in [self, other]:
@@ -459,6 +415,25 @@ class Community:
             if compactness:
                 community.compactness = get_schwartzberg_compactness(
                     community.border)
+
+    @print_time
+    def get_bordering_precincts(self, unchosen_precincts):
+        """
+        Returns list of precincts bordering `self`
+
+        `unchosen_precincts` is a Community object that contains all
+        the precincts in the state that haven't already been added to
+        a community
+        """
+        bordering_precincts = []
+        if self.precincts != {}:
+            for vote_id, precinct in unchosen_precincts.precincts.items():
+                if get_if_bordering(precinct.coords, self.border):
+                    bordering_precincts.append(bordering_precincts)
+            print(f"bordering precincts are: {bordering_precincts}")
+        else:
+            bordering_precincts = list(unchosen_precincts.precincts.keys())
+        return bordering_precincts
 
 
 # Below functions likely to be removed because they are specific to

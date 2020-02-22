@@ -46,6 +46,16 @@ def customwarn(message, category, filename, lineno, file=None, line=None):
 warnings.showwarning = customwarn
 
 
+def polygon_to_shapely(polygon):
+    """
+    Converts list-type polygon `shape` to
+    `shapely.geometry.Polygon`
+    """
+    tuple_polygon = [[tuple(coord) for coord in linear_ring]
+                     for linear_ring in polygon]
+    return Polygon(tuple_polygon[0], tuple_polygon[1:])
+
+
 def save(state, precinct_dict, district_dict, objects_dir):
     """
     Save the list of precincts for a state to a file

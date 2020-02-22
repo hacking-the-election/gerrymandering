@@ -13,6 +13,11 @@ from gerrymandering.utils import *
 from .test.utils import convert_to_json
 
 
+import logging
+
+logging.basicConfig(filename="precincts.log", level=logging.DEBUG)
+
+
 def create_initial_configuration(precincts, n_districts):
     """
     Takes `precincts` as a list of precincts and returns a list of
@@ -28,38 +33,52 @@ def create_initial_configuration(precincts, n_districts):
 
     # Find which islands are capable of containing a whole number of
     # communities to start with.
-    state_border = clip([p.coords for p in precincts], UNION)
     unchosen_precincts = Community(precincts[:], 0)
     communities = []  # Will contain Community objects.
-    if get_if_multipolygon(state_border):
+    if get_if_multipolygon(unchosen_precincts.border):
         # State is multipolygon, which means it has islands.
         pass
     else:
         for i, community_size in enumerate(community_sizes, 1):
             community = Community([], i)
-            for _ in range(community_size):
+            random_precincts = set()  # precincts that have been tried (whether or not they were added)
+            for s in range(community_size):
                 # Give random precinct to `community`
-                random_precincts = set()
-                while True:
-                    # Random precint that hasn't already been tried.
-                    random_precinct = random.choice(
-                        list(set(unchosen_precincts.precincts.keys()) \
-                            - random_precincts))
+                try:
+                    random_precinct = random.sample(
+                        set(community.get_bordering_precincts(
+                            unchosen_precincts)) \
+                        - random_precincts, 1)[0]
+                except IndexError as ie:
+                    print(f"community {i} has these precincts: {list(community.precincts.keys())}")
+                    logging.debug(unchosen_precincts.border)
+                    print(f"precinct {s} from community {i} threw this:")
+                    raise ie
+                while get_if_multipolygon(unchosen_precincts.border):
+                    # Adding that precinct created an island
+                    community.give_precinct(unchosen_precincts,
+                        random_precinct, partisanship=False,
+                        standard_deviation=False, population=False,
+                        compactness=False)  # give it back
+                    print(f"precinct {random_precinct} added to and removed from community {i} because it created an island")
+                    # Random precint that hasn't already been tried and also borders community.
+                    random_precinct = random.sample(
+                        set(community.get_bordering_precincts(
+                            unchosen_precincts)) \
+                        - random_precincts, 1)[0]
                     unchosen_precincts.give_precinct(
                         community, random_precinct, partisanship=False,
                         standard_deviation=False, population=False,
                         compactness=False)
                     random_precincts.add(random_precinct)
-                    if (get_if_multipolygon(unchosen_precincts.border)):
-                        # Adding that precinct created an island
-                        community.give_precinct(unchosen_precincts,
-                            random_precinct, partisanship=False,
-                            standard_deviation=False, population=False,
-                            compactness=False)  # give it back
-                        print(f"precinct {random_precinct} added to and removed from community {i} because it created an island")
-                    else:
-                        print(f"precinct {random_precinct} added to community {i}")
-                        break
+
+                # Add the one that worked
+                unchosen_precincts.give_precinct(
+                    community, random_precinct, partisanship=False,
+                    standard_deviation=False, population=False,
+                    compactness=False)
+                random_precincts.add(random_precinct)
+                print(f"precinct {random_precinct} added to community {i}")
             communities.append(community)
 
     return communities

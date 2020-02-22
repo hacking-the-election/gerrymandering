@@ -129,31 +129,34 @@ class TestGeometry(unittest.TestCase):
         def test_get_point_in_polygon_speed(polygon, point):
             return get_point_in_polygon(polygon, point)
 
-        # point is inside hole in polygon
-        self.assertEquals(
-            test_get_point_in_polygon_speed(
-                    self.poly1,
-                    (456625, 3662331)
-                ),
-            False
-            )
         # point is inside polygon
-        self.assertEquals(
+        self.assertEqual(
             test_get_point_in_polygon_speed(
                     self.poly2,
-                    (451937, 3666268)
+                    [451937, 3666268]
                 ),
-                True
+            True
             )
 
         # edge case: point is on edge of polygon
-        self.assertEquals(
+        self.assertEqual(
             test_get_point_in_polygon_speed(
                 [[[0, 0], [2, 0], [2, 2], [0, 2]]],
-                (1, 2)
+                [1, 2]
             ),
             True
-        )
+            )
+
+        with open("python/gerrymandering/test/test_point_in_polygon.txt", "r") as f:
+            string_coords = f.read()
+        poly3 = [eval(string_coords)]
+        self.assertEqual(
+            test_get_point_in_polygon_speed(
+                poly3,
+                [-102.770884, 46.887414]
+            ),
+            True
+            )
 
     def test_get_if_bordering(self):
         
