@@ -9,6 +9,7 @@ import time
 
 import numpy as np
 import matplotlib.pyplot as plt
+from shapely.geometry import Polygon, MultiPolygon
 
 sys.path.append(abspath(dirname(dirname(dirname(__file__)))))
 
@@ -71,10 +72,22 @@ class TestClipping(unittest.TestCase):
         """
 
         @print_time
-        def test_get_border_speed():
-            return clip([p.coords for p in self.vermont[0]], UNION)
+        def test_get_border_speed(shapes):
+            return clip(shapes, UNION)
 
-        self.assertEqual(test_get_border_speed(), self.border_test_data)
+        shapely_vermont = []
+        for p in self.vermont[0]:
+            try:
+                shapely_vermont.append(
+                    polygon_to_shapely(p.coords)
+                )
+            except ValueError:
+                shapely_vermont.append(
+                    multipolygon_to_shapely(p.coords)
+                )
+        union = test_get_border_speed(shapely_vermont)
+        
+        convert_to_json([polygon_to_list(union)], "test_polys.json")
 
     def test_get_difference(self):
         """
@@ -82,19 +95,25 @@ class TestClipping(unittest.TestCase):
         its 5th congressional district
         """
 
+        connecticut_district_coords = [
+            d["geometry"]["coordinates"]
+            for d in self.connecticut[1]["features"]]
+        district_multipolygons = []
+        for district in connecticut_district_coords:
+            polygons = []
+            for polygon in district:
+                polygons.append(polygon_to_shapely(polygon))
+            district_multipolygons.append(MultiPolygon(polygons))
+        outer_border = clip(district_multipolygons, UNION)
+
         @print_time
-        def test_get_difference_speed():
-            connecticut_district_coords = [
-                d["geometry"]["coordinates"]
-                for d in self.connecticut[1]["features"]]
+        def test_get_difference_speed(shapes):
+            return clip(shapes, DIFFERENCE)
 
-            outer_border = clip(connecticut_district_coords, UNION)
-            difference = clip([outer_border, connecticut_district_coords[4]],
-                              DIFFERENCE)
+        difference = test_get_difference_speed([outer_border, district_multipolygons[4]])
 
-            return difference
-
-        self.assertEqual(test_get_difference_speed(), self.difference_test_data)
+        # print(multipolygon_to_list(difference))
+        convert_to_json(multipolygon_to_list(difference), "test_poly.json")
 
 
 class TestGeometry(unittest.TestCase):
@@ -107,8 +126,8 @@ class TestGeometry(unittest.TestCase):
         unittest.TestCase.__init__(self, *args, **kwargs)
 
         # poly1 has a hole, poly2 does not
-        self.poly1, self.poly2 = load(
-            DATA_DIR + "/geometry_test_data.pickle")
+        self.poly1, self.poly2 = [polygon_to_shapely(i) for i in load(
+            DATA_DIR + "/geometry_test_data.pickle")]
         # both polygons are precincts from arkansas
         # poly1 has geoid 05073008 and poly2 has geoid 05027020
 

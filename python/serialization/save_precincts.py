@@ -33,6 +33,8 @@ from os.path import dirname, abspath
 import warnings
 from collections import Counter
 
+from shapely.geometry import Polygon
+
 sys.path.insert(-1, dirname(dirname(abspath(__file__))))
 from gerrymandering.utils import get_point_in_polygon as gpip
 
