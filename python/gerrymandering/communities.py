@@ -9,64 +9,73 @@ import sys
 
 sys.path.append(abspath(dirname(dirname(__file__))))
 
-from gerrymandering.utils import Community, get_if_addable, get_segments
+from gerrymandering.utils import *
+from .test.utils import convert_to_json
 
 
-def refine_for_partisanship(state, communities, max_standard_deviation):
+def create_initial_configuration(precincts, n_districts):
     """
-    Moves precincts around in state to create communities that have
-    standard deviation of republican percentage in precincts below a
-    given maximum standard deviation.
-
-    Args:
-    `state`: list of lists of coords, each representing a precinct
-    `communities`: Community objects that take up the entire state
-    `max_standard_deviation`: Maximum standard deviation for any
-                              community in the output
-
-    Returns:
-    List of Community objects
+    Takes `precincts` as a list of precincts and returns a list of
+    communities that consist of random groups of communities.
     """
 
-    # max(communities, key=Community.standard_deviation)
+    # Calculate `community_sizes`, a list of numbers corresponding to
+    # the number of precincts each community should have.
+    n_precincts = len(precincts)
+    community_sizes = [n_precincts // n_districts for _ in range(n_districts)]
+    for i in range(n_districts % n_precincts):
+        community_sizes[i] += 1
+
+    # Find which islands are capable of containing a whole number of
+    # communities to start with.
+    state_border = clip([p.coords for p in precincts], UNION)
+    unchosen_precincts = Community(precincts[:], 0)
+    communities = []  # Will contain Community objects.
+    if get_if_multipolygon(state_border):
+        # State is multipolygon, which means it has islands.
+        pass
+    else:
+        for i, community_size in enumerate(community_sizes, 1):
+            community = Community([], i)
+            for _ in range(community_size):
+                # Give random precinct to `community`
+                random_precincts = set()
+                while True:
+                    # Random precint that hasn't already been tried.
+                    random_precinct = random.choice(
+                        list(set(unchosen_precincts.precincts.keys()) \
+                            - random_precincts))
+                    unchosen_precincts.give_precinct(
+                        community, random_precinct, partisanship=False,
+                        standard_deviation=False, population=False,
+                        compactness=False)
+                    random_precincts.add(random_precinct)
+                    if (get_if_multipolygon(unchosen_precincts.border)):
+                        # Adding that precinct created an island
+                        community.give_precinct(unchosen_precincts,
+                            random_precinct, partisanship=False,
+                            standard_deviation=False, population=False,
+                            compactness=False)  # give it back
+                        print(f"precinct {random_precinct} added to and removed from community {i} because it created an island")
+                    else:
+                        print(f"precinct {random_precinct} added to community {i}")
+                        break
+            communities.append(community)
+
+    return communities
     
 
 
-def make_communities(state_file, number_of_communities,
-                     compactness_tolerance, partisanship_tolerance,
-                     population_tolerance):
+def make_communities(state_file):
     """
     `state_file` - path to state that is to be divided into communities
     """
 
     with open(state_file, 'rb') as f:
-        precincts, districts = pickle.load(f)
+        state_data = pickle.load(f)
+    precincts = state_data[0]
 
-    # STEP 1:
-
-    community_sizes = []  # number of precincts in each community
-
-    n_districts = len(districts["features"])
-    n_precincts = len(precincts)
-    community_size = [n_precincts // n_districts for _ in range(n_districts)]
-    for i in range(n_districts % n_precincts):
-        community_size[i] += 1
-    
-    # create random communities of similar size (in precincts)
-    communities = []
-
-    border = Community(precincts, 1)
-    for i, s in enumerate(community_sizes):
-        community = Community([], i + 2)
-        for p in range(s):
-            eligible_precincts = border.precincts[:]
-            precinct = random.choice(eligible_precincts)
-            while not get_if_addable(
-                    get_segments((precinct.coords)), community, border):
-                eligible_precincts.remove(precinct)
-                precinct = random.choice(border.precincts)
-            community.precincts.append(precinct)
+    # Step 1
+    communities = create_initial_configuration(precincts, len(districts))
 
     return communities
-
-    

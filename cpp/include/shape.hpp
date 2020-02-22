@@ -104,6 +104,8 @@ class LinearRing {
         virtual coordinate get_center();      // average of all points in shape
         virtual segments get_segments();      // return a segment list with shape's segments
 
+        std::string to_json();
+
         coordinate_set border;
 
         // add operator overloading for object equality
@@ -322,6 +324,7 @@ class Precinct_Group : public Multi_Shape {
         // serialize and read to and from binary
         void write_binary(std::string path);
         static Precinct_Group read_binary(std::string path);
+        std::string to_json();
 
         int get_population();
         // for boost serialization

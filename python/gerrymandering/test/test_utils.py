@@ -12,30 +12,13 @@ import matplotlib.pyplot as plt
 
 sys.path.append(abspath(dirname(dirname(dirname(__file__)))))
 
-from utils import convert_to_json
+from utils import *
 from serialization.load_precincts import load
 from serialization.save_precincts import Precinct
 from gerrymandering.utils import *
 
 
 DATA_DIR = "../data/test/python"
-
-
-def print_time(func):
-    def timed_func(*args, **kwargs):
-        start_time = time.time()
-        output = func(*args, **kwargs)
-        print(f"{func.__name__} took {time.time() - start_time} seconds")
-        return output
-    return timed_func
-
-
-def return_time(func):
-    def timed_func(*args, **kwargs):
-        start_time = time.time()
-        func(*args, **kwargs)
-        return time.time() - start_time
-    return timed_func
 
 
 class TestClipping(unittest.TestCase):
