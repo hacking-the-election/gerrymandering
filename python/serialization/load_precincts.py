@@ -10,8 +10,6 @@ import sys
 
 sys.path.append(abspath(dirname(__file__)))
 
-from save_precincts import Precinct
-
 
 def load(state_file):
     """

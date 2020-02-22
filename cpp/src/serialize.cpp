@@ -9,7 +9,35 @@
 
 #include "../include/shape.hpp"
 #include "../include/term_disp.hpp"
-#include <boost/filesystem.hpp>
+// #include <boost/filesystem.hpp>
+
+std::string GeoGerry::LinearRing::to_json() {
+    std::string str = "[";
+    for (GeoGerry::coordinate c : border)
+        str += "[" + std::to_string(c[0]) + ", " + std::to_string(c[1]) + "],";
+
+    str = str.substr(0, str.size() - 1);
+    str += "]";
+
+    return str;
+}
+
+std::string GeoGerry::Precinct_Group::to_json() {
+    std::string str = "{\"type\": \"FeatureCollection\", \"features\":[";
+    
+    for (GeoGerry::Precinct p : precincts) {
+        str += "{\"type\":\"Feature\",\"geometry\":{\"type\":\"Polygon\",\"coordinates\":[";
+        str += p.hull.to_json();
+        for (GeoGerry::LinearRing hole : p.holes)
+            str += "," + hole.to_json();
+
+        str += "]}},";
+    }
+
+    str = str.substr(0, str.size() - 1); // remove comma
+    str += "]}";
+    return str;
+}
 
 std::string GeoGerry::State::to_json() {
     /*
@@ -205,11 +233,11 @@ void GeoGerry::State::save_communities(std::string write_path) {
                 community_n
     */
 
-   int c_index = 0;
-   boost::filesystem::create_directory(write_path);
+//    int c_index = 0;
+//    boost::filesystem::create_directory(write_path);
 
-   for (Community c : state_communities) {
-       c.write_binary(write_path + "/community_" + std::to_string(c_index));
-       c_index++;
-   }
+//    for (Community c : state_communities) {
+//        c.write_binary(write_path + "/community_" + std::to_string(c_index));
+//        c_index++;
+//    }
 }
