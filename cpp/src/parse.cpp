@@ -11,6 +11,7 @@
 #include "../include/util.hpp"        // array modification functions
 #include "../include/geometry.hpp"    // exterior border generation
 #include <algorithm>                  // for std::find and std::distance
+#include <numeric>                    // include std::iota
 
 #define VERBOSE 1  // print progress messages
 using namespace rapidjson;
@@ -383,23 +384,13 @@ GeoGerry::Precinct_Group combine_holes(GeoGerry::Precinct_Group pg) {
             int interior_pre = 0;
             std::vector<GeoGerry::p_index> precincts_to_combine;
 
-            if (p.shape_id == "3808936-11")
-                std::cout << "++++++++++++++++++++++++" << std::endl;
-
             for (int j = 0; j < old_precincts.size(); j++) {
                 GeoGerry::Precinct p_c = old_precincts[j];
                 if (j != x && get_inside(p_c.hull, p.hull)) {
                     precincts_to_combine.push_back(j);
                     interior_pre++;
                 }
-                else if ((p_c.shape_id == "3808937-04" || p_c.shape_id == "3808937-05") && p.shape_id == "3808936-11") {
-                    std::cout << "FAIL FAIL FAIL" << std::endl;
-                    get_inside_d(p_c.hull, p.hull);
-                }
             }
-
-            if (p.shape_id == "3808936-11")
-                std::cout << "++++++++++++++++++++++++" << std::endl;
 
             for (GeoGerry::p_index pi : precincts_to_combine) {
                 std::cout << "merging precinct " << old_precincts[pi].shape_id << std::endl;
@@ -437,22 +428,31 @@ GeoGerry::Precinct_Group combine_holes(GeoGerry::Precinct_Group pg) {
 
 std::vector<GeoGerry::p_index_set>  sort_precincts(GeoGerry::Multi_Shape shape, GeoGerry::Precinct_Group pg) {
     std::vector<GeoGerry::p_index_set> islands;
-    std::vector<GeoGerry::Precinct> tmp_precincts = pg.precincts;
-    
-    for (GeoGerry::Shape s : shape.border) {
-        GeoGerry::p_index_set precincts; 
+
+    if (shape.border.size() > 1) {
+        GeoGerry::p_index_set ignore;
+        std::vector<GeoGerry::Precinct> tmp_precincts = pg.precincts;
         
-        for (int i = 0; i < tmp_precincts.size(); i++) {
-            if (get_inside(tmp_precincts[i].hull, s.hull)) {
-                precincts.push_back(i);
-                tmp_precincts.erase(tmp_precincts.begin() + i);
-            }        
+        for (int i = 0; i < shape.border.size(); i++) {
+            GeoGerry::p_index_set island;
+            std::cout << "sorting island " << i << std::endl;
+            for (int j = 0; j < tmp_precincts.size(); j++) {
+                if (!(std::find(ignore.begin(), ignore.end(), j) != ignore.end())) {
+                    // not in the ignore list, must check;
+                    if (get_inside_first(tmp_precincts[j].hull, shape.border[i].hull)) {
+                        island.push_back(j);
+                        ignore.push_back(j);
+                    }
+                }
+            }
+            islands.push_back(island);
         }
-
-        std::cout << precincts.size() << std::endl;
-        islands.push_back(precincts);
     }
-
+    else {
+        GeoGerry::p_index_set p(pg.precincts.size());
+        std::iota(p.begin(), p.end(), 0);
+        islands.push_back(p);
+    }
     // std::cout << pg.precincts.size() << std::endl;
     // std::cout << tmp_precincts.size() << std::endl;
     return islands;
