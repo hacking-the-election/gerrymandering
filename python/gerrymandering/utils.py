@@ -16,22 +16,17 @@ multipolygon (list of polygons).
 
 
 __all__ = ["clip", "UNION", "DIFFERENCE", "get_schwartzberg_compactness",
-           "get_if_bordering", "get_point_in_polygon", "get_if_multipolygon",
-           "Community"]
+           "get_if_bordering", "get_point_in_polygon", "Community"]
 
 
-import itertools
 import math
-import types
+import logging
 
-import numpy as np
 from shapely.ops import unary_union
 from shapely.geometry import MultiPolygon, Polygon, Point
-from shapely.errors import TopologicalError
+
 from .test.utils import print_time
 
-
-import logging
 
 logging.basicConfig(filename="precincts.log", level=logging.DEBUG)
 
@@ -44,126 +39,11 @@ DIFFERENCE = 2
 # general geometry functions
 
 
-def _get_equation(segment):
+def get_if_bordering(shape1, shape2):
     """
-    Returns the function representing the equation of segment.
-
-    If the line segment is vertical
-    (y cannot be expressed in terms of x),
-    returns single float representing x = `value`
+    Returns whether or not two shapes are bordering
     """
-    if segment[0][0] == segment[1][0] and segment[0][1] == segment[1][1]:
-        print(segment)
-        raise ValueError("points of segment must be unique")
-
-    try:
-        m = ( (segment[0][1] - segment[1][1])
-            / (segment[0][0] - segment[1][0]))
-        b = m * (- segment[1][0]) + segment[1][1]
-        def f(x): return m * x + b
-        return f
-    except ZeroDivisionError:
-        # Lines is vertical.
-        return float(segment[0][0])
-
-
-def _get_segments(polygon):
-    """
-    Returns array of segments from polygon
-    (with or without holes)
-
-    ex.
-    [
-        [[0, 0], [4, 0], [4, 4], [0, 4]],
-        [[1, 1], [1, 3], [3, 3], [3, 1]]
-    ]
-               |
-               v 
-    [
-        [[0, 0], [4, 0]],
-        [[4, 0], [4, 4]],
-        [[4, 4], [0, 4]],
-        [[1, 1], [1, 3]],
-        [[1, 3], [3, 3]],
-        [[3, 3], [3, 1]]
-    ]
-
-    If there are more than 2 points on a single segment,
-    this function groups only the first and last into the segment list.
-    """
-    segments = []
-    for shape in polygon:
-        if shape[-1] == shape[0]:
-            shape.pop(-1)
-        shape_segments = [[shape[-1], shape[0]]]
-        equation = _get_equation([shape[-1], shape[0]])
-        for p in range(1, (len(shape))):
-            if isinstance(equation, float):
-                # Line is vertical.
-                point_on_line = shape[p][0] == equation
-            elif isinstance(equation, types.FunctionType):
-                point_on_line = equation(shape[p][0]) == shape[p][1]
-            if point_on_line:
-                # shape[p] is on the same line as
-                # shape[p - 1] and shape[p - 2]
-                shape_segments[-1].append(shape[p])
-            else:
-                # Equations are different - time to start a new segment
-                shape_segments.append([shape[p - 1], shape[p]])
-                equation = _get_equation(shape_segments[-1])
-        segments += shape_segments
-
-    # Remove redundant points in the middle of a segment.
-    for segment in segments:
-        while len(segment) > 2:
-            segment.pop(1)
-    
-    return np.array(segments)
-
-
-def _get_segments_collinear(segment_1, segment_2):
-    """
-    Returns whether or not two segments are collinear.
-    """
-    f = _get_equation(segment_1)
-    g = _get_equation(segment_2)
-    # If two lines have more than one shared point,
-    # they are the same line.
-    return (f(0) == g(0)) and (f(1) == g(1))
-
-
-def get_if_multipolygon(shape):
-    """
-    Returns whether or not a shape is a multipolygon
-    """
-    return isinstance(shape[0][0][0], list)
-
-
-def get_if_bordering(polygon_1, polygon_2):
-    """
-    Returns whether or not two polygons are bordering
-
-    Checks all combinations of segments between the two polygons to see
-    if they are both collinear and their bounding boxes (only x
-    dimension) overlap. If this is the case, those segments overlap and
-    that means the polygons border each other.
-
-    Returns bool
-    """
-    segments_1 = _get_segments(polygon_1)
-    segments_2 = _get_segments(polygon_2)
-
-    for segment_1 in segments_1:
-        for segment_2 in segments_2:
-            # check collinearity
-            if _get_segments_collinear(segment_1, segment_2):
-                # check bounding boxes
-                xs_1 = [p[0] for p in segment_1]
-                xs_2 = [p[0] for p in segment_2]
-                if min(xs_1) < max(xs_2) and min(xs_2) < max(xs_1):
-                    return True
-
-    return False
+    return shape1.touches(shape2)
 
 
 def get_point_in_polygon(polygon, point):
@@ -188,92 +68,33 @@ def get_point_in_polygon(polygon, point):
     return shapely_polygon.contains(coord) or shapely_polygon.touches(coord)
 
 
-def _get_distance(p1, p2):
+def get_schwartzberg_compactness(polygon):
     """
-    Returns distance between `p1` and `p2`
-    """
-    return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
-
-
-def _get_perimeter(polygon):
-    """
-    Returns the perimeter of polygon (with or without holes)
-
-    Adds perimeter of holes to total perimeter.
-    """
-    distances = np.array(
-        [_get_distance(p1, p2) for p1, p2 in _get_segments(polygon)])
-    return sum(distances)
-
-
-def _get_simple_area(shape):
-    """
-    Returns the area of polygon (with no holes)
-
-    Implementation of this algorithm:
-    https://www.mathopenref.com/coordpolygonarea2.html
-    """
-    area = 0
-    v2 = shape[-1]
-
-    for v1 in shape:
-        area += (v1[0] + v2[0]) * (v1[1] - v2[1])
-        v2 = v1
-
-    area = abs(area / 2)
-
-    return area
-
-def get_area(polygon):
-    """
-    Returns the area of polygon (with or without holes)
-    """
-
-    outer_area = _get_simple_area(polygon[0])
-    for shape in polygon[1:]:
-        outer_area -= _get_simple_area(shape)
-
-    return outer_area
-
-
-def get_schwartzberg_compactness(shape):
-    """
-    Returns the schwartzberg compactness value of array of segments
-    `shape`
+    Returns the schwartzberg compactness value of `polygon`
 
     Implemenatation of this algorithm (schwartzberg):
     https://fisherzachary.github.io/public/r-output.html
     """
-    
-    # perimeter / circumference
-    compactness = (_get_perimeter(shape)
-                   / (2 * math.pi * math.sqrt(get_area(shape) / math.pi)))
-    return 1 - abs(1 - compactness)  # ensures less than one
+    area = polygon.area
+    circumference = 2 * math.pi * math.sqrt(area / math.pi)
+    perimeter = polygon.length
+    return circumference / perimeter
 
 
-def get_centroid(polygon):
+@print_time
+def _union(shapes):
     """
-    Returns centriod of polygon 
+    Exists so that speed of union operations can be tracked
     """
+    return unary_union(shapes)
 
-    centroid = [0, 0]
-    area = 0
 
-    for i in range(-1, len(polygon[0]) - 1):
-        x0 = polygon[0][i][0]
-        y0 = polygon[0][i][1]
-        x1 = polygon[0][i + 1][0]
-        y1 = polygon[0][i + 1][1]
-        a = x0*y1 - x1*y0
-        area += a
-        centroid[0] += (x0 + x1) * a
-        centroid[1] += (y0 + y1) * a
-
-    area /= 2
-    centroid[0] /= (6 * area)
-    centroid[1] /= (6 * area)
-
-    return centroid
+@print_time
+def _difference(shapes):
+    """
+    Exists so that speed of difference operations can be tracked
+    """
+    return shapes[0].difference(shapes[1])
 
 
 def clip(shapes, clip_type):
@@ -289,32 +110,17 @@ def clip(shapes, clip_type):
 
     Returns array of vertices
     """
-
-    # Find union of shapes.
-
-    multipolygons = [convert_to_shapely(shape) for shape in shapes]
-
     if clip_type == 1:
-        solution = unary_union(multipolygons)
+        solution = _union(shapes)
     elif clip_type == 2:
-        if len(multipolygons) != 2:
+        if len(shapes) != 2:
             raise ValueError(
                 "Polygon clip of type DIFFERENCE takes exactly 2 input shapes"
                 )
-        # Buffer is used below because in certain cases (such as using
-        # both precinct-level data and district-level data in the input
-        # to this function), the data will be slightly different.
-        try:
-            solution = multipolygons[0].buffer(0.0000001).difference(
-               multipolygons[1].buffer(0.0000001))
-        except TopologicalError as te:
-            logging.debug(f"ERROR THROWN FROM DIFFERENCE BETWEEN:\n"
-                          f"shape 1: {multipolygon[0]}\nshape 2: {multipolygon[1]}")
-            raise te
+        solution = _difference(shapes)
     else:
         raise ValueError(
             "Invalid clip type. Use utils.UNION or utils.DIFFERENCE")
-
     return solution
 
 
@@ -362,16 +168,15 @@ class Community:
         self.precincts = {precinct.vote_id: precinct for precinct in precincts}
         self.id = identifier
         if precincts != []:
-            self.border = clip([p.coords for p in self.precincts.values()], UNION)
+            self.coords = clip([p.coords for p in self.precincts.values()], UNION)
         else:
-            self.border = []
+            self.coords = Polygon()
         self.partisanship = None
         self.standard_deviation = None
         self.population = None
         self.compactness = None
 
-    @print_time
-    def give_precinct(self, other, precinct_id, border=True,
+    def give_precinct(self, other, precinct_id, coords=True,
                       partisanship=True, standard_deviation=True,
                       population=True, compactness=True):
         """
@@ -393,11 +198,11 @@ class Community:
         del self.precincts[precinct_id]
         other.precincts[precinct_id] = precinct
         # Update borders
-        if border:
-            # self.border = clip([self.border, precinct.coords], DIFFERENCE)
-            # other.border = clip([other.border, precinct.coords], UNION)
-            self.border = clip([p.coords for p in self.precincts.values()], UNION)
-            other.border = clip([p.coords for p in other.precincts.values()], UNION)
+        if coords:
+            self.coords = clip([p.coords for p in self.precincts.values()],
+                               UNION)
+            other.coords = clip([other.coords, precinct.coords],
+                                DIFFERENCE)
 
         # Update other attributes that are dependent on precincts attribute
         for community in [self, other]:
@@ -416,7 +221,6 @@ class Community:
                 community.compactness = get_schwartzberg_compactness(
                     community.border)
 
-    @print_time
     def get_bordering_precincts(self, unchosen_precincts):
         """
         Returns list of precincts bordering `self`
@@ -425,64 +229,11 @@ class Community:
         the precincts in the state that haven't already been added to
         a community
         """
-        bordering_precincts = []
+        bordering_precincts = set()
         if self.precincts != {}:
             for vote_id, precinct in unchosen_precincts.precincts.items():
-                if get_if_bordering(precinct.coords, self.border):
-                    bordering_precincts.append(bordering_precincts)
-            print(f"bordering precincts are: {bordering_precincts}")
+                if get_if_bordering(precinct.coords, self.coords):
+                    bordering_precincts.add(precinct.vote_id)
         else:
-            bordering_precincts = list(unchosen_precincts.precincts.keys())
+            bordering_precincts = set(unchosen_precincts.precincts.keys())
         return bordering_precincts
-
-
-# Below functions likely to be removed because they are specific to
-# scenario in algorithm and will be implemented there.
-
-
-def get_if_addable(precinct, community, boundary):
-    """
-    Returns whether or not it will create an island if `precinct` is
-    added to `community` with `boundary` already taken up.
-
-    Checks if the number of polygons in the output of boundary is the same after
-    precinct is added to community
-
-    Args:
-    `precinct`: segments of `precinct`
-    `community`: segements of community object that `precinct` may be
-                 added to
-    `boundary`: segments of area in state not yet taken up by
-                communities
-    """
-
-    return True
-
-
-def get_exchangeable_precincts(community, communities):
-    """
-    Finds exchangeable precincts between a community and its neighbors.
-
-    Args:
-    `community`: id for community to find precincts of
-    `communities`: list of all communities in state
-
-    Returns:
-    Dict with keys as precinct ids and values as lists of ids of
-    neighboring communities.
-    """
-
-    outside_precincts = {}
-
-    borders = {c.id: c.border for c in communities}
-    for precinct in community.precincts:
-        if get_if_bordering(precinct.coords, borders[community]):
-            # precinct is on outside border of community
-            bordering_communities = [
-                c.id for c in communities
-                if get_if_bordering(precinct.coords, borders[c.id])
-                ]
-            if bordering_communities != []:
-                outside_precincts[precinct.vote_id] = bordering_communities
-
-    return outside_precincts
