@@ -132,122 +132,152 @@ void State::generate_initial_communities(int num_communities) {
             base_sizes.pop_back();
             Community community;
             community.size.push_back(x);
-            community.location = island_index;
+            community.location.push_back(island_index);
             c.push_back(community);
         }
         for (int j = 0; j < y; j++) {
             large_sizes.pop_back();
             Community community;
             community.size.push_back(y);
-            community.location = island_index;
+            community.location.push_back(island_index);
             c.push_back(community);
         }
 
         island_index++;
     }
 
+    vector<p_index> ignore_fractionals; // fractional islands to be ignored, not removed
+
     for (p_index fractional_island_i = 0; fractional_island_i < fractional_islands.size(); fractional_island_i++) {
-        // if island is still fractional (can be modified during this loop)
-        p_index island_i = fractional_islands[fractional_island_i];
-        p_index_set island = islands[island_i];
+        /*
+            Loop through all ƒractional islands - those that need precincts
+            from other islands to create communities - and create community
+            objects with links
+        */
 
-        // get average center of island from precinct centers
-        coordinate island_center = {0,0};
-        for (p_index p : island) {
-            coordinate p_center = precincts[p].get_center();
-            island_center[0] += p_center[0];
-            island_center[1] += p_center[1];
-        }
+        if (!(std::find(ignore_fractionals.begin(), ignore_fractionals.end(), fractional_islands[fractional_island_i]) != ignore_fractionals.end())) {
+            cout << "ON ISLAND " << fractional_island_i << " OF " << fractional_islands.size() << endl;
 
-        island_center[0] /= island.size();
-        island_center[1] /= island.size();
+            p_index island_i = fractional_islands[fractional_island_i];
+            p_index_set island = islands[island_i];
 
-        // create community with location information
-        Community community;
-        community.location = fractional_islands[fractional_island_i];
-
-        int island_leftover = islands[fractional_islands[fractional_island_i]].size();
-        for (Community community_c : c) {
-            if (community_c.location == fractional_islands[fractional_island_i]) {
-                island_leftover -= community_c.size[0]; // subtract whole communitites that are already added
-            }
-        }
-
-        int total_community_size; // the ultimate amount of precincts in the community
-
-        // size the current community correctly
-        if (large_sizes.size() > 0) {
-            // there are still large sizes available
-            total_community_size = base + 1;
-            large_sizes.pop_back();
-        }
-        else {
-            // there are still large sizes available
-            total_community_size = base;
-            base_sizes.pop_back();
-        }
-
-        int total_leftover = total_community_size - island_leftover;
-
-        while (total_leftover > 0) {
-            // find the closest fractional island that can be linked
-            double min_distance = pow(10, 10);
-            p_index min_index = 0;
-
-            for (int compare_island = 0; compare_island < fractional_islands.size(); compare_island++) {
-                // find closest fractional community to link
-                if (compare_island != fractional_island_i) {
-                    // get average center of island from precinct centers
-                    p_index_set island_c = islands[fractional_islands[compare_island]];
-                    coordinate island_center_c = {0,0};
-
-                    for (p_index p : island_c) {
-                        coordinate p_center = precincts[p].get_center();
-                        island_center_c[0] += p_center[0];
-                        island_center_c[1] += p_center[1];
-                    }
-
-                    // average coordinates
-                    island_center_c[0] /= island_c.size();
-                    island_center_c[1] /= island_c.size();
-
-                    // get distance to current island
-                    double dist = get_distance(island_center, island_center_c);
-
-                    // if this is the lowest distance, then
-                    if (dist < min_distance) {
-                        min_distance = dist;
-                        min_index = compare_island;
-                    }
-                }
+            // get average center of island from precinct centers
+            coordinate island_center = {0,0};
+            for (p_index p : island) {
+                coordinate p_center = precincts[p].get_center();
+                island_center[0] += p_center[0];
+                island_center[1] += p_center[1];
             }
 
-            int island_leftover_c = islands[fractional_islands[min_index]].size(); // size of island
+            island_center[0] /= island.size();
+            island_center[1] /= island.size();
+
+            // create community with location information
+            Community community;
+            community.location.push_back(fractional_islands[fractional_island_i]);
+
+            int island_leftover = islands[fractional_islands[fractional_island_i]].size();
+            cout << "New base island " << fractional_islands[fractional_island_i] << endl << "total size of island: " << island_leftover << endl;
             for (Community community_c : c) {
-                if (community_c.location == fractional_islands[min_index] ) {
-                    island_leftover -= community_c.size[0]; // subtract sizes of communities on island
+                auto it = find(community_c.location.begin(), community_c.location.end(), fractional_islands[fractional_island_i]);
+                if (it != community_c.location.end()) {
+                    island_leftover -= community_c.size[std::distance(community_c.location.begin(), it)]; // subtract whole communitites that are already added
+                    cout << "already has community sized " << community_c.size[std::distance(community_c.location.begin(), it)] << endl;
                 }
             }
 
-            total_leftover -= island_leftover_c;
-            if (total_leftover >= 0) {
-                cout << "Time to remove an island because it's no longer fractional";
-            
+            int total_community_size; // the ultimate amount of precincts in the community
+
+            // size the current community correctly
+            if (large_sizes.size() > 0) {
+                // there are still large sizes available
+                total_community_size = base + 1;
+                large_sizes.pop_back();
             }
-            else if ()
-            // must now link compare_island and island
-            std::cout << "linking " << fractional_islands[fractional_island_i] << " and " << fractional_islands[min_index] << std::endl;
-            // p_index link;
-            // for (p_index p : islands[fractional_islands[min_index]]) {
+            else {
+                // there are only base sizes available
+                total_community_size = base;
+                base_sizes.pop_back();
+            }
+
+            int total_leftover = total_community_size - island_leftover;
+            cout << "island leftover: " << island_leftover << endl;
+
+            while (total_leftover > 0) {
+                // find the closest fractional island that can be linked
+                double min_distance = pow(10, 10); // arbitrarily high number (easy min)
+                p_index min_index = 0;
+                for (int compare_island = 0; compare_island < fractional_islands.size(); compare_island++) {
+                    // find closest fractional community to link
+                    if (compare_island != fractional_island_i && 
+                        !(std::find(ignore_fractionals.begin(), ignore_fractionals.end(), fractional_islands[compare_island]) != ignore_fractionals.end())) {
+                        // get average center of island from precinct centers
+                        p_index_set island_c = islands[fractional_islands[compare_island]];
+                        coordinate island_center_c = {0,0};
+
+                        for (p_index p : island_c) {
+                            coordinate p_center = precincts[p].get_center();
+                            island_center_c[0] += p_center[0];
+                            island_center_c[1] += p_center[1];
+                        }
+
+                        // average coordinates
+                        island_center_c[0] /= island_c.size();
+                        island_center_c[1] /= island_c.size();
+
+                        // get distance to current island
+                        double dist = get_distance(island_center, island_center_c);
+
+                        // if this is the lowest distance, then
+                        if (dist < min_distance) {
+                            min_distance = dist;
+                            min_index = compare_island;
+                        }
+                    }
+                }
+
+                int island_leftover_c = islands[fractional_islands[min_index]].size(); // size of island
+                for (Community community_c : c) {
+                    auto it = find(community_c.location.begin(), community_c.location.end(), fractional_islands[min_index]);
+                    if (it != community_c.location.end()) {
+                        island_leftover -= community_c.size[std::distance(community_c.location.begin(), it)]; // subtract sizes of communities on island
+                    }
+                }
+
+                std::cout << "linking " << fractional_islands[fractional_island_i] << " and " << fractional_islands[min_index] << std::endl;
                 
-            // }
+                community.is_linked = true;
+                community.location.push_back(min_index);
+                if (total_leftover - island_leftover_c < 0)
+                    community.size.push_back(total_leftover);
+                else
+                    community.size.push_back(island_leftover);
+
+                total_leftover -= island_leftover_c;
+
+                if (total_leftover >= 0) {
+                    cout << "remove island " << fractional_islands[min_index] << endl;
+                    cout << "leftover: " << total_leftover << endl << endl;
+                    ignore_fractionals.push_back(fractional_islands[min_index] );
+                }
+                else {
+                    cout << "Finished linking! " << fractional_islands.size() << endl << endl;
+                    ignore_fractionals.push_back(fractional_islands[fractional_island_i]);
+                }
+
+                // must now link compare_island and island
+                // p_index link;
+                // for (p_index p : islands[fractional_islands[min_index]]) {
+                    
+                // }
+            }
+
+
+            c.push_back(community);
+
+            // remove from fractional island list after completion
+            fractional_islands.erase(fractional_islands.begin() + fractional_island_i);
         }
-
-
-        c.push_back(community);
-
-        // remove from fractional island list after completion
-        fractional_islands.erase(fractional_islands.begin() + fractional_island_i);
     }
 
     // // add the last community that has no precincts yet
