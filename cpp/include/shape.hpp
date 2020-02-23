@@ -349,9 +349,9 @@ class Community : public Precinct_Group {
 
     public:
         bool is_linked = false;             // whether or not this community has a linked counterpart
-        std::array<int, 2> link_position;   // gives island and precinct link location: { 0, 1 } - first island, second precinct
-        int location;                       // index of island it's located on
-        int size;                           // number of precincts initially in community
+        std::vector<int> link_position;     // gives island and precinct link location: { 0, 1 } - first island, second precinct
+        vector<int> location;               // indexes of island it's located on
+        vector<int> size;                   // number of precincts initially in community -  if this is on multiple islands it has multiple elements
 
         Community(std::vector<Precinct> shapes) : Precinct_Group(shapes) {
             precincts = shapes;
