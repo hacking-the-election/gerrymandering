@@ -203,16 +203,16 @@ std::vector<GeoGerry::Shape> parse_precinct_coordinates(std::string geoJSON) {
         if (shapes["features"][i]["properties"].HasMember(geodata_id.c_str())) {
             id = shapes["features"][i]["properties"][geodata_id.c_str()].GetString();
         }
-        // else {
-        //     std::cout << "\e[31merror: \e[0mYou have no precinct id." << std::endl;
-        //     std::cout << "If future k-vernooy runs into this error, it means that GEOID10 in your geoJSON in your voter data is missing. To fix... maybe try a loose comparison of the names?" << std::endl;
-        // }
+        else {
+            std::cout << "\e[31merror: \e[0mYou have no precinct id." << std::endl;
+            std::cout << "If future k-vernooy runs into this error, it means that GEOID10 in your geoJSON in your voter data is missing. To fix... maybe try a loose comparison of the names?" << std::endl;
+        }
 
         // get the population from geodata
         if (shapes["features"][i]["properties"].HasMember(population_id.c_str()))
             pop = shapes["features"][i]["properties"][population_id.c_str()].GetInt();
-        // else
-        //     std::cout << "\e[31merror: \e[0mNo population data" << std::endl;
+        else
+            std::cout << "\e[31merror: \e[0mNo population data" << std::endl;
         
         // create empty string buffer
         StringBuffer buffer;
@@ -486,7 +486,6 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
     pre_group = combine_holes(pre_group);
     int removed = before - pre_group.precincts.size();
     if (VERBOSE) std::cout << "removed " << removed << " hole precincts" << std::endl;
-    writef(pre_group.to_json(), "json.json");
     
     std::vector<Shape> state_shape_v; // dummy exterior border
     std::cout << pre_group.precincts.size() << std::endl;

@@ -144,7 +144,8 @@ void State::generate_initial_communities(int num_communities) {
 
     for (p_index fractional_island_i = 0; fractional_island_i < fractional_islands.size(); fractional_island_i++) {
         // if island is still fractional (can be modified during this loop)
-        p_index_set island = islands[fractional_island_i];
+        p_index island_i = fractional_islands[fractional_island_i];
+        p_index_set island = islands[island_i];
 
         // get average center of island from precinct centers
         coordinate island_center = {0,0};
@@ -162,23 +163,24 @@ void State::generate_initial_communities(int num_communities) {
 
         for (int compare_island = 0; compare_island < fractional_islands.size(); compare_island++) {
             // find closest fractional community to link
-            if (compare_island != fractional_island_i && 
-                std::find(fractional_islands.begin(), fractional_islands.end(), compare_island)
-                    != fractional_islands.end()
-               ) {
+            if (compare_island != fractional_island_i) {
                 // get average center of island from precinct centers
+                p_index_set island_c = islands[fractional_islands[compare_island]];
                 coordinate island_center_c = {0,0};
-                for (p_index p : islands[compare_island]) {
+
+                for (p_index p : island_c) {
                     coordinate p_center = precincts[p].get_center();
                     island_center_c[0] += p_center[0];
                     island_center_c[1] += p_center[1];
                 }
 
                 // average coordinates
-                island_center_c[0] /= islands[compare_island].size();
-                island_center_c[1] /= islands[compare_island].size();
+                island_center_c[0] /= island_c.size();
+                island_center_c[1] /= island_c.size();
+
                 // get distance to current island
                 double dist = get_distance(island_center, island_center_c);
+
                 // if this is the lowest distance, then
                 if (dist < min_distance) {
                     min_distance = dist;
@@ -188,13 +190,10 @@ void State::generate_initial_communities(int num_communities) {
         }
 
         // must now link compare_island and island
+        std::cout << "linking " << fractional_islands[fractional_island_i] << " and " << fractional_islands[min_index] << std::endl;
 
         // remove from fractional island list after completion
-        // fractional_islands.erase(fractional_islands.remove(),);
-        fractional_islands.erase(
-                                    std::remove(fractional_islands.begin(), fractional_islands.end(), fractional_island_i),
-                                    fractional_islands.end()
-                                );
+        fractional_islands.erase(fractional_islands.begin() + fractional_island_i);
     }
 
     // // add the last community that has no precincts yet

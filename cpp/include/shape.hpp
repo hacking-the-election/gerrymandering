@@ -171,6 +171,7 @@ class Shape {
         virtual double get_perimeter();       // total perimeter of holes + hull
         virtual coordinate get_center();      // average centers of holes + hull
         virtual segments get_segments();      // return a segment list with shape's segments
+        virtual double get_compactness();
 
         // add operator overloading for object equality
         friend bool operator== (Shape p1, Shape p2) {
@@ -282,6 +283,9 @@ class Multi_Shape : public Shape {
             }
         }
 
+        double get_perimeter();
+        double get_compactness();
+        double get_area();
         // for boost serialization
         friend class boost::serialization::access;
         template<class Archive> void serialize(Archive & ar, const unsigned int version);
@@ -377,7 +381,7 @@ class State : public Precinct_Group {
 
         // for the community generation algorithm
         void generate_communities(int num_communities, double compactness_tolerance, double partisanship_tolerance, double population_tolerance);
-        void give_precinct(p_index precinct, p_index community, std::string t_type);
+        void give_precinct(p_index precinct, p_index community, int t_type);
 
         // initial random configuration of communities
         void generate_initial_communities(int num_communities);
