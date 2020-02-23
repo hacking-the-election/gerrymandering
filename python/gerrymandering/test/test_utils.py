@@ -131,6 +131,15 @@ class TestGeometry(unittest.TestCase):
         # both polygons are precincts from arkansas
         # poly1 has geoid 05073008 and poly2 has geoid 05027020
 
+        self.north_dakota = load(DATA_DIR + "/nd_test.pickle")
+        self.north_dakota[0] = multipolygon_to_shapely(self.north_dakota[0])
+        for i in range(1, 3):
+            self.north_dakota[i] = polygon_to_shapely(self.north_dakota[i])
+        # precincts:
+        # 1 | 3810138-05 | non-contiguous
+        # 2 | 3801139-02 | hole
+        # 3 | 3800139-01 | normal
+
     def test_get_compactness(self):
 
         @print_time
@@ -138,9 +147,9 @@ class TestGeometry(unittest.TestCase):
             return get_schwartzberg_compactness(polygon)
 
         # later to be tested with cpp outputs
-        print("compactness:")
-        print(f"poly1: {test_get_compactness_speed(self.poly1)}")
-        print(f"poly2: {test_get_compactness_speed(self.poly2)}")
+        print(f"3810138-05: {test_get_compactness_speed(self.north_dakota[0])}")
+        print(f"3801139-02: {test_get_compactness_speed(self.north_dakota[1])}")
+        print(f"3800139-01: {test_get_compactness_speed(self.north_dakota[2])}")
 
     def test_get_point_in_polygon(self):
 

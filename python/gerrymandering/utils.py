@@ -86,11 +86,8 @@ def get_schwartzberg_compactness(polygon):
     Implemenatation of this algorithm (schwartzberg):
     https://fisherzachary.github.io/public/r-output.html
     """
-    
-    # perimeter / circumference
-    compactness = (polygon.length
-                   / (2 * math.pi * math.sqrt(polygon.area / math.pi)))
-    return 1 - abs(1 - compactness)  # ensures less than one
+    return ((2 * math.pi * math.sqrt(polygon.area / math.pi))
+            / polygon.length)
 
 
 def clip(shapes, clip_type):
