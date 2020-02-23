@@ -340,8 +340,28 @@ class Precinct_Group : public Multi_Shape {
 };
 
 // for cleaner naming of types when writing community algorithm
-typedef Precinct_Group Community;
-typedef std::vector<Precinct_Group> Communities;
+
+class Community : public Precinct_Group {
+    /*
+        Contains a list of precincts, as well as information about
+        linking and where is it on an island list.
+    */
+
+    public:
+        bool is_linked = false;             // whether or not this community has a linked counterpart
+        std::array<int, 2> link_position;   // gives island and precinct link location: { 0, 1 } - first island, second precinct
+        int location;                       // index of island it's located on
+        int size;                           // number of precincts initially in community
+
+        Community(std::vector<Precinct> shapes) : Precinct_Group(shapes) {
+            precincts = shapes;
+        }
+
+        Community(){}
+};
+
+// typedef Precinct_Group Community;
+typedef std::vector<Community> Communities;
 
 
 class State : public Precinct_Group {

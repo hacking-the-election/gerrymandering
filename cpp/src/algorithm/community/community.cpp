@@ -79,9 +79,9 @@ void State::generate_initial_communities(int num_communities) {
     for (int i = 0; i < rem; i++)
         large_sizes.push_back(base + 1);
     
-    vector<p_index_set> available_precincts = islands;   // precincts that have yet to be used up
-    vector<vector<int> > island_sizes;                   // vector of islands and the sizes of communities they contain
-    p_index_set fractional_islands;                      // 
+    vector<p_index_set> available_precincts = islands;      // precincts that have yet to be used up
+    p_index_set fractional_islands;                         // indices of islands that can't be made of base and large
+    Communities c;                                          // Set of communities
 
     int island_index = 0;
 
@@ -92,8 +92,7 @@ void State::generate_initial_communities(int num_communities) {
             communities, add it to
         */
 
-        vector<int> sizes; // sizes of communities in island
-        map<int, array<int, 2> > vals;  // to hold possible size combinations
+        map<int, array<int, 2> > vals; // to hold possible size combinations
 
         for (int x = 0; x < large_sizes.size() + 1; x++) {
             for (int y = 0; y < base_sizes.size() + 1; y++) {
@@ -131,14 +130,19 @@ void State::generate_initial_communities(int num_communities) {
 
         for (int i = 0; i < x; i++) {
             base_sizes.pop_back();
-            sizes.push_back(base);
+            Community community;
+            community.size = x;
+            community.location = island_index;
+            c.push_back(community);
         }
         for (int j = 0; j < y; j++) {
             large_sizes.pop_back();
-            sizes.push_back(base);
+            Community community;
+            community.size = y;
+            community.location = island_index;
+            c.push_back(community);
         }
 
-        island_sizes.push_back(sizes);
         island_index++;
     }
 
@@ -189,8 +193,16 @@ void State::generate_initial_communities(int num_communities) {
             }
         }
 
+        Community community;
+        c.push_back(community);
+        
         // must now link compare_island and island
         std::cout << "linking " << fractional_islands[fractional_island_i] << " and " << fractional_islands[min_index] << std::endl;
+
+        p_index link;
+        for (p_index p : islands[fractional_islands[min_index]]) {
+            
+        }
 
         // remove from fractional island list after completion
         fractional_islands.erase(fractional_islands.begin() + fractional_island_i);
@@ -474,7 +486,6 @@ void State::generate_communities(int num_communities, double compactness_toleran
 
     Communities old_communities; // to store communities at the beginning of the iteration
 
-    
     /*
         Do 30 iterations, and see how many precincts change each iteration
         !! This is only until we have a good idea for a stop condition. We

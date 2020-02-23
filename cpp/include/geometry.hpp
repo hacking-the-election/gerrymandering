@@ -31,6 +31,7 @@ GeoGerry::p_index_set get_bordering_precincts(GeoGerry::Precinct_Group shape, in
 // overload get_bordering_shapes for vector inheritance problem
 GeoGerry::p_index_set get_bordering_shapes(std::vector<GeoGerry::Shape> shapes, GeoGerry::Shape shape);
 GeoGerry::p_index_set get_bordering_shapes(std::vector<GeoGerry::Precinct_Group> shapes, GeoGerry::Shape shape);
+GeoGerry::p_index_set get_bordering_shapes(std::vector<GeoGerry::Community> shapes, GeoGerry::Shape shape);
 
 // for clipper conversions
 ClipperLib::Path ring_to_path(GeoGerry::LinearRing ring);
