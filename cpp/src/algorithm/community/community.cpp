@@ -56,8 +56,14 @@ const int POPULATION = 2;
 
 void State::generate_initial_communities(int num_communities) {
     /*
-        Creates an initial random community configuration for a given state
-        Returns config as a Precinct Group object.
+        Creates an initial random community configuration for a given state.
+        Reserves precincts on islands to prevent bad island linking.
+        
+        Fractional islands are defined here as those that do not fit
+        an even combination of communities, and have leftover precincts that
+        must be added to a separate community.
+
+        Modifys the state's internal communities array so as to return void.
     */
 
     int num_precincts = precincts.size(); // total precinct amount
@@ -72,45 +78,84 @@ void State::generate_initial_communities(int num_communities) {
         base_sizes.push_back(base);
     for (int i = 0; i < rem; i++)
         large_sizes.push_back(base + 1);
-
-    // create array of indices of precincts available to be added
-    p_index_set available_pre(num_precincts);
-    std::iota(available_pre.begin(), available_pre.end(), 0);
     
+    vector<p_index_set> available_precincts = islands;   // precincts that have yet to be used up
+    vector<vector<int> > island_sizes;                   // vector of islands and the sizes of communities they contain
+    p_index_set fractional_islands;                      // 
+
+    int island_index = 0;
+
     for (p_index_set island : islands) {
-        // determine whether or not the current island contains fractional communities
+        /*
+            Determine the amount of whole communities can
+            be fit on each island. If an island contains fractional
+            communities, add it to
+        */
 
-        vector<array<int, 2> > vals;    // generate a list to hole possible combinations
-        vector<int> totals;             // a list of sums from the vals array
+        vector<int> sizes; // sizes of communities in island
+        map<int, array<int, 2> > vals;  // to hold possible size combinations
 
-        for (int x = 0; x < large_sizes.size(); x++) {
-            for (int y = 0; y < base_sizes.size(); y++) {
-                vals.push_back({x * base + 1, y * base});
-                totals.push_back((x * base + 1) + (y * base));
+        for (int x = 0; x < large_sizes.size() + 1; x++) {
+            for (int y = 0; y < base_sizes.size() + 1; y++) {
+                vals[(x * (base + 1)) + (y * base)] = {x * (base + 1), y * base};
             }
         }
 
         int x = 0; // number of base communities on island
-        int y = 0; // number of
-        if (std::find(totals.begin(), totals.end(), island.size()) != totals.end()) {
+        int y = 0; // number of base + 1 communities on island
 
+        auto it = vals.find(island.size());
+        
+        if (it != vals.end()) {
+            // this island can be made from whole communities
+            vals[island.size()][1] = x;
+            vals[island.size()][0] = y;
         }
+        else {
+            // this island must contain a fractional community
+            fractional_islands.push_back(island_index);
+
+            // Find the number of whole communities it can contain
+            // regardless, by rounding down to the nearest array element
+            int round;
+            
+            for (auto it = vals.begin(); it != vals.end(); ++it) {
+                if (it->first > island.size())
+                    break;
+                round = it->first;
+            }
+            
+            vals[round][1] = x;
+            vals[round][0] = y;
+        }
+
+        for (int i = 0; i < x; i++) {
+            base_sizes.pop_back();
+            sizes.push_back(base);
+        }
+        for (int j = 0; j < y; j++) {
+            large_sizes.pop_back();
+            sizes.push_back(base);
+        }
+
+        island_sizes.push_back(sizes);
+        island_index++;
     }
 
-    // int index = 0;
-    // for (int i = 0; i < num_communities - 1; i++) {
-    //     Community community;
-    //     p_index p = get_inner_boundary_precincts(*this)[0];
+    for (p_index fractional_island_i : fractional_islands) {
+        // if island is still fractional (can be modified during this loop)
+        p_index_set island = islands[fractional_island_i];
 
-    //     for (int x = 0; x < sizes[index] - 1; x++) {
-    //         p = get_addable_precinct(available_pre, p);
-    //         community.add_precinct(this->precincts[p]);
-    //         available_pre.erase(remove(available_pre.begin(), available_pre.end(), p), available_pre.end());
-    //     }
+        for (p_index p_id : island) {
+            Precinct p = precincts[p_id];
+            p.get_center();
+        }
 
-    //     this->state_communities.push_back(community);
-    //     index++;
-    // }
+        // find closest island that is also fractional, link
+
+        // remove from fractional island list after completion
+        // fractional_islands.erase(fractional_islands.remove(),);
+    }
 
     // // add the last community that has no precincts yet
     // Community community;
