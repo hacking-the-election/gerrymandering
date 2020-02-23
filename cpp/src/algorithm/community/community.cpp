@@ -142,19 +142,59 @@ void State::generate_initial_communities(int num_communities) {
         island_index++;
     }
 
-    for (p_index fractional_island_i : fractional_islands) {
+    for (p_index fractional_island_i = 0; fractional_island_i < fractional_islands.size(); fractional_island_i++) {
         // if island is still fractional (can be modified during this loop)
         p_index_set island = islands[fractional_island_i];
 
-        for (p_index p_id : island) {
-            Precinct p = precincts[p_id];
-            p.get_center();
+        // get average center of island from precinct centers
+        coordinate island_center = {0,0};
+        for (p_index p : island) {
+            coordinate p_center = precincts[p].get_center();
+            island_center[0] += p_center[0];
+            island_center[1] += p_center[1];
         }
 
-        // find closest island that is also fractional, link
+        island_center[0] /= island.size();
+        island_center[1] /= island.size();
+
+        double min_distance = pow(10, 10);
+        p_index min_index = 0;
+
+        for (int compare_island = 0; compare_island < fractional_islands.size(); compare_island++) {
+            // find closest fractional community to link
+            if (compare_island != fractional_island_i && 
+                std::find(fractional_islands.begin(), fractional_islands.end(), compare_island)
+                    != fractional_islands.end()
+               ) {
+                // get average center of island from precinct centers
+                coordinate island_center_c = {0,0};
+                for (p_index p : islands[compare_island]) {
+                    coordinate p_center = precincts[p].get_center();
+                    island_center_c[0] += p_center[0];
+                    island_center_c[1] += p_center[1];
+                }
+
+                // average coordinates
+                island_center_c[0] /= islands[compare_island].size();
+                island_center_c[1] /= islands[compare_island].size();
+                // get distance to current island
+                double dist = get_distance(island_center, island_center_c);
+                // if this is the lowest distance, then
+                if (dist < min_distance) {
+                    min_distance = dist;
+                    min_index = compare_island;
+                }
+            }
+        }
+
+        // must now link compare_island and island
 
         // remove from fractional island list after completion
         // fractional_islands.erase(fractional_islands.remove(),);
+        fractional_islands.erase(
+                                    std::remove(fractional_islands.begin(), fractional_islands.end(), fractional_island_i),
+                                    fractional_islands.end()
+                                );
     }
 
     // // add the last community that has no precincts yet
@@ -197,7 +237,7 @@ p_index State::get_next_community(double tolerance, int process) {
         p_index x = 0;
 
         for (Community c : state_communities) {
-            unit_interval t_compactness = compactness(c);
+            unit_interval t_compactness = c.get_compactness();
             if (t_compactness < min && t_compactness < tolerance) {
                 min = t_compactness;
                 i = x;
@@ -229,7 +269,7 @@ p_index State::get_next_community(double tolerance, int process) {
     return i;
 }
 
-void State::give_precinct(p_index precinct, p_index community, string t_type) {
+void State::give_precinct(p_index precinct, p_index community, int t_type) {
     /*
         Performs a precinct transaction by giving `precinct` from `community` to
         a possible other community (dependent on which function it's being used for).
@@ -254,7 +294,7 @@ void State::give_precinct(p_index precinct, p_index community, string t_type) {
 
     p_index exchange_choice;
 
-    if (t_type == "partisan") {
+    if (t_type == PARTISANSHIP) {
         // get closest average to precinct
         double min = abs(get_median_partisanship(exchangeable_communities[0]) - precinct_shape.get_ratio());
         p_index choice = 0;
@@ -331,7 +371,7 @@ void State::refine_partisan(double partisanship_tolerance) {
             x++;
         }
 
-        give_precinct(worst_precinct, worst_community, "partisan");
+        give_precinct(worst_precinct, worst_community, PARTISANSHIP);
         num_changes[worst_community] += 1; // update the changelist
         // update worst_community, check stop condition
         worst_community = get_next_community(partisanship_tolerance, PARTISANSHIP);
