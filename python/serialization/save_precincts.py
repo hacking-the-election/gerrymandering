@@ -53,7 +53,7 @@ def polygon_to_shapely(polygon):
     """
     tuple_polygon = [[tuple(coord) for coord in linear_ring]
                      for linear_ring in polygon]
-    return Polygon(tuple_polygon[0], tuple_polygon[1:])
+    return polygon(tuple_polygon[0], tuple_polygon[1:])
 
 
 def save(state, precinct_dict, district_dict, objects_dir):
@@ -134,7 +134,6 @@ def hole_remover(precinct_dict, pop, dem_keys, rep_keys, dem_cols, rep_cols):
                     if gpip([hole], precinct_dict[check_precinct][0][0]):
                         if check_precinct in hole_precinct_ids:
                             continue
-                        print(precinct, check_precinct)
                         hole_precinct_ids.append(check_precinct)
                         hole_pop += pop[check_precinct]
                         for key in dem_keys:
@@ -145,9 +144,7 @@ def hole_remover(precinct_dict, pop, dem_keys, rep_keys, dem_cols, rep_cols):
             total_pop = hole_pop + pop[precinct]
             total_dem = {key: (dem_cols[precinct][key] + hole_dem[key]) for key in dem_keys}
             total_rep = {key: (rep_cols[precinct][key] + hole_rep[key]) for key in rep_keys}
-            # print(hole_precinct_ids)
             if len(hole_precinct_ids) == 0:
-                print(precinct)
                 unaccounted_holes += 1
             for hole_precinct in hole_precinct_ids:
                 already_checked_holes.append(hole_precinct)
@@ -357,7 +354,7 @@ class Precinct:
                 precinct_coords[precinct_id] = \
                     precinct['geometry']['coordinates']
 
-        print(len(precinct_coords))    
+        print('number of precincts before multipolygon splitting:', len(precinct_coords))    
         # Check for multi-polygons and split them into seperate precincts, by area
         multi_polygon_index = []
         new_polygon_ids = {}
@@ -408,7 +405,7 @@ class Precinct:
         for id, geo in new_polygon_ids.items():
             precinct_coords[id] = geo
 
-        print(len(precinct_coords))
+        print('number of precincts after multipolygons, before holes:', len(precinct_coords))
         # Then check for holy precincts (precincts with a hole in them.) 
         # Consider them (and the hole precincts) inside one precinct,
         # adding together vote and population counts.
@@ -422,10 +419,10 @@ class Precinct:
         hole_precincts = hole_remover(precinct_coords, pop, dem_keys, rep_keys, dem_cols, rep_cols)
         for hole in hole_precincts[0]:
             precinct_geo_ids.remove(hole)
-        print('number of holes removed, ', hole_precincts[1])
-        print('number of precincts removed, ', len(hole_precincts[0]))
-        print('total # of precincts, ',  len(precinct_coords))
-        print('holes without precincts, ', hole_precincts[2])
+        print('number of holes removed:', hole_precincts[1])
+        print('number of precincts removed:', len(hole_precincts[0]))
+        print('total # of precincts after holes:',  len(precinct_coords))
+        print('holes without precincts:', hole_precincts[2])
         # get election and geo data (separate processes for whether or
         # not there is an individual election data file)
         if is_election_data:
