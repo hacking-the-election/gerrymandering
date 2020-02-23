@@ -147,9 +147,18 @@ class TestGeometry(unittest.TestCase):
             return get_schwartzberg_compactness(polygon)
 
         # later to be tested with cpp outputs
-        print(f"3810138-05: {test_get_compactness_speed(self.north_dakota[0])}")
-        print(f"3801139-02: {test_get_compactness_speed(self.north_dakota[1])}")
-        print(f"3800139-01: {test_get_compactness_speed(self.north_dakota[2])}")
+        self.assertEqual(
+            test_get_compactness_speed(self.north_dakota[0]),
+            0.6140866384724538
+        )
+        self.assertEqual(
+            test_get_compactness_speed(self.north_dakota[1]),
+            0.7997295546826071
+        )
+        self.assertEqual(
+            test_get_compactness_speed(self.north_dakota[2]),
+            0.8197172000202778
+        )
 
     def test_get_point_in_polygon(self):
 

@@ -27,7 +27,6 @@ import numpy as np
 from shapely.ops import unary_union
 from shapely.geometry import MultiPolygon, Polygon, Point
 from shapely.errors import TopologicalError
-from .test.utils import print_time
 
 
 import logging
@@ -72,13 +71,6 @@ def get_point_in_polygon(polygon, point):
     return shapely_polygon.contains(coord) or shapely_polygon.touches(coord)
 
 
-def get_area(polygon):
-    """
-    Returns the area of polygon (with or without holes)
-    """
-    return polygon.area
-
-
 def get_schwartzberg_compactness(polygon):
     """
     Returns the schwartzberg compactness value of `polygon`
@@ -86,8 +78,10 @@ def get_schwartzberg_compactness(polygon):
     Implemenatation of this algorithm (schwartzberg):
     https://fisherzachary.github.io/public/r-output.html
     """
-    return ((2 * math.pi * math.sqrt(polygon.area / math.pi))
-            / polygon.length)
+    area = polygon.area
+    circumference = 2 * math.pi * math.sqrt(area / math.pi)
+    perimeter = polygon.length
+    return circumference / perimeter
 
 
 def clip(shapes, clip_type):
@@ -169,8 +163,7 @@ class Community:
         self.population = None
         self.compactness = None
 
-    @print_time
-    def give_precinct(self, other, precinct_id, border=True,
+    def give_precinct(self, other, precinct_id, coords=True,
                       partisanship=True, standard_deviation=True,
                       population=True, compactness=True):
         """
@@ -192,7 +185,7 @@ class Community:
         del self.precincts[precinct_id]
         other.precincts[precinct_id] = precinct
         # Update borders
-        if border:
+        if coords:
             self.coords = clip([p.coords for p in self.precincts.values()],
                                UNION)
             other.coords = clip([p.coords for p in other.precincts.values()],
@@ -215,7 +208,6 @@ class Community:
                 community.compactness = get_schwartzberg_compactness(
                     community.border)
 
-    @print_time
     def get_bordering_precincts(self, unchosen_precincts):
         """
         Returns list of precincts bordering `self`
@@ -224,11 +216,11 @@ class Community:
         the precincts in the state that haven't already been added to
         a community
         """
-        bordering_precincts = []
+        bordering_precincts = set()
         if self.precincts != {}:
             for vote_id, precinct in unchosen_precincts.precincts.items():
                 if get_if_bordering(precinct.coords, self.coords):
-                    bordering_precincts.append(bordering_precincts)
+                    bordering_precincts.add(precinct.vote_id)
         else:
-            bordering_precincts = list(unchosen_precincts.precincts.keys())
+            bordering_precincts = set(unchosen_precincts.precincts.keys())
         return bordering_precincts
