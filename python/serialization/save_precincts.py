@@ -491,7 +491,7 @@ class Precinct:
                  d_election_data, r_election_data):
         
         # coordinate data
-        self.coords = coords
+        self.coords = polygon_to_shapely(coords)
         
         # meta info
         self.vote_id = vote_id
