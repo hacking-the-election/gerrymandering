@@ -164,7 +164,7 @@ double GeoGerry::LinearRing::get_perimeter() {
         formula distances for all segments
     */
 
-    float t = 0;
+    double t = 0;
     for (segment s : get_segments())
         t += get_distance(s);    
 
@@ -216,6 +216,33 @@ double GeoGerry::Shape::get_perimeter() {
     }
 
     return perimeter;
+}
+
+double GeoGerry::Multi_Shape::get_perimeter() {
+    /*
+        Returns sum perimeter of a multi shape object
+        by looping through each shape and calling method
+    */
+
+    double p = 0;
+    for (Shape shape : border) {
+        p += shape.get_perimeter();
+    }
+
+    return p;
+}
+
+double Multi_Shape::get_area() {
+    /*
+        Returns sum area of all Shape objects within
+        border data member as double type.
+    */
+
+    double total = 0;
+    for (Shape s : border)
+        total += s.get_area();
+
+    return total;
 }
 
 segments GeoGerry::Shape::get_segments() {
@@ -361,18 +388,30 @@ p_index_set get_bordering_precincts(Precinct_Group shape, int p_index) {
     return {1};
 }
 
-unit_interval compactness(Shape shape) {
-
+unit_interval Shape::get_compactness() {
     /*
         An implementation of the Schwartzberg compactness score.
         Returns the ratio of the perimeter of a shape to the
         circumference of a circle with the same area as that shape.
     */
 
-    double circle_radius = sqrt(shape.get_area() / PI);
+    double circle_radius = sqrt(this->get_area() / PI);
     double circumference = 2 * circle_radius * PI;
+    std::cout << this->get_area() << ", " << circumference << ", " << this->get_perimeter();
+    return (circumference / this->get_perimeter());
+}
 
-    return (circumference / shape.get_perimeter());
+unit_interval Multi_Shape::get_compactness() {
+    /*
+        An implementation of the Schwartzberg compactness score.
+        Returns the ratio of the perimeter of a shape to the
+        circumference of a circle with the same area as that shape.
+    */
+
+    double circle_radius = sqrt(this->get_area() / PI);
+    double circumference = 2 * circle_radius * PI;
+    std::cout << this->get_area() << ", " << circumference << ", " << this->get_perimeter() << std::endl;
+    return (circumference / this->get_perimeter());
 }
 
 double get_standard_deviation_partisanship(Precinct_Group pg) {
@@ -500,18 +539,11 @@ ClipperLib::Paths shape_to_paths(GeoGerry::Shape shape) {
     return p;
 }
 
-GeoGerry::Shape paths_to_shape(ClipperLib::Paths paths) {
-    // for ()
-}
-
 GeoGerry::Multi_Shape paths_to_multi_shape(ClipperLib::Paths paths) {
     /*
         Create a Multi_Shape object from a clipper Paths
         (multi path) object through nested iteration
     */
-
-    //! ERROR: THIS DOES NOT WORK RIGHT NOW, 
-    // WHY IS CLIPPER RETURNING SO MANY POLYS?
 
     Multi_Shape ms;
     
@@ -529,29 +561,24 @@ GeoGerry::Multi_Shape paths_to_multi_shape(ClipperLib::Paths paths) {
         // }
     }
 
-    // for each path
-    // if orientation
-        // it's outer poly
-    // else its inner, find out where it goes
-
     return ms;
 }
 
-
-// Multi_Shape poly_tree_to_shape(PolyTree tree) {
-//     /*
-//         Loops through top-level children of a
-//         PolyTree to access outer-level polygons. Returns
-//         a multi_shape object containing these outer polys.
-//     */
+Multi_Shape poly_tree_to_shape(ClipperLib::PolyTree tree) {
+    /*
+        Loops through top-level children of a
+        PolyTree to access outer-level polygons. Returns
+        a multi_shape object containing these outer polys.
+    */
    
-//     Multi_Shape ms;
+    Multi_Shape ms;
     
-//     for (PolyNode* polynode : tree.Childs) {
-//         if (polynode->IsHole()) x++;
-//         Shape s = clipper_int_to_shape(polynode->Contour);
-//         ms.border.push_back(s);
-//     }
+    for (ClipperLib::PolyNode* polynode : tree.Childs) {
+        // if (polynode->IsHole()) x++;
+        LinearRing s = path_to_ring(polynode->Contour);
+        Shape shape(s);
+        ms.border.push_back(shape);
+    }
 
-//     return ms;
-// }
+    return ms;
+}
