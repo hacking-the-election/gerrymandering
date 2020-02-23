@@ -130,17 +130,17 @@ void State::generate_initial_communities(int num_communities) {
 
         for (int i = 0; i < x; i++) {
             base_sizes.pop_back();
-            Community community;
-            community.size.push_back(x);
-            community.location.push_back(island_index);
-            c.push_back(community);
+            Community com;
+            com.size.push_back(base);
+            com.location.push_back(island_index);
+            c.push_back(com);
         }
         for (int j = 0; j < y; j++) {
             large_sizes.pop_back();
-            Community community;
-            community.size.push_back(y);
-            community.location.push_back(island_index);
-            c.push_back(community);
+            Community com;
+            com.size.push_back(base + 1);
+            com.location.push_back(island_index);
+            c.push_back(com);
         }
 
         island_index++;
@@ -156,7 +156,9 @@ void State::generate_initial_communities(int num_communities) {
         */
 
         if (!(std::find(ignore_fractionals.begin(), ignore_fractionals.end(), fractional_islands[fractional_island_i]) != ignore_fractionals.end())) {
-            cout << "ON ISLAND " << fractional_island_i << " OF " << fractional_islands.size() << endl;
+            // create community with location information
+            Community community;
+            community.location.push_back(fractional_islands[fractional_island_i]);
 
             p_index island_i = fractional_islands[fractional_island_i];
             p_index_set island = islands[island_i];
@@ -172,17 +174,14 @@ void State::generate_initial_communities(int num_communities) {
             island_center[0] /= island.size();
             island_center[1] /= island.size();
 
-            // create community with location information
-            Community community;
-            community.location.push_back(fractional_islands[fractional_island_i]);
-
             int island_leftover = islands[fractional_islands[fractional_island_i]].size();
-            cout << "New base island " << fractional_islands[fractional_island_i] << endl << "total size of island: " << island_leftover << endl;
+            cout << "New base island " << fractional_islands[fractional_island_i] << endl;
             for (Community community_c : c) {
                 auto it = find(community_c.location.begin(), community_c.location.end(), fractional_islands[fractional_island_i]);
                 if (it != community_c.location.end()) {
+                    cout << community_c.size.size() << ", " << community_c.location.size() << endl;
                     island_leftover -= community_c.size[std::distance(community_c.location.begin(), it)]; // subtract whole communitites that are already added
-                    cout << "already has community sized " << community_c.size[std::distance(community_c.location.begin(), it)] << endl;
+                    cout << "already has community sized " << community_c.size[std::distance(community_c.location.begin(), it)] << " at index " << std::distance(community_c.location.begin(), it) << endl;
                 }
             }
 
@@ -201,7 +200,6 @@ void State::generate_initial_communities(int num_communities) {
             }
 
             int total_leftover = total_community_size - island_leftover;
-            cout << "island leftover: " << island_leftover << endl;
 
             while (total_leftover > 0) {
                 // find the closest fractional island that can be linked
@@ -240,18 +238,22 @@ void State::generate_initial_communities(int num_communities) {
                 for (Community community_c : c) {
                     auto it = find(community_c.location.begin(), community_c.location.end(), fractional_islands[min_index]);
                     if (it != community_c.location.end()) {
-                        island_leftover -= community_c.size[std::distance(community_c.location.begin(), it)]; // subtract sizes of communities on island
+                        island_leftover_c -= community_c.size[std::distance(community_c.location.begin(), it)]; // subtract sizes of communities on island
                     }
                 }
 
                 std::cout << "linking " << fractional_islands[fractional_island_i] << " and " << fractional_islands[min_index] << std::endl;
                 
                 community.is_linked = true;
-                community.location.push_back(min_index);
-                if (total_leftover - island_leftover_c < 0)
+                community.location.push_back(fractional_islands[min_index]);
+                if (total_leftover - island_leftover_c < 0) {
+                    cout << "community size is now " << total_leftover << endl;
                     community.size.push_back(total_leftover);
-                else
+                }
+                else {
+                    cout << "community size is now " << island_leftover << endl;
                     community.size.push_back(island_leftover);
+                }
 
                 total_leftover -= island_leftover_c;
 
@@ -261,8 +263,7 @@ void State::generate_initial_communities(int num_communities) {
                     ignore_fractionals.push_back(fractional_islands[min_index] );
                 }
                 else {
-                    cout << "Finished linking! " << fractional_islands.size() << endl << endl;
-                    ignore_fractionals.push_back(fractional_islands[fractional_island_i]);
+                    cout << "Finished linking" << endl << endl;
                 }
 
                 // must now link compare_island and island
@@ -272,13 +273,21 @@ void State::generate_initial_communities(int num_communities) {
                 // }
             }
 
-
             c.push_back(community);
-
-            // remove from fractional island list after completion
-            fractional_islands.erase(fractional_islands.begin() + fractional_island_i);
+            ignore_fractionals.push_back(fractional_islands[fractional_island_i]);
         }
     }
+
+    // for (Community community : c) {
+    //     if (community.is_linked) {
+    //         // fill community with generation method
+    //     }
+    // }
+    // for (Community community : c) {
+    //     if (!community.is_linked) {
+    //         // fill community
+    //     }
+    // }
 
     // // add the last community that has no precincts yet
     // Community community;
@@ -286,7 +295,7 @@ void State::generate_initial_communities(int num_communities) {
     //     community.add_precinct(this->precincts[precinct]);
     // }
     
-    // this->state_communities.push_back(community); // add last community
+    this->state_communities = c; // add last community
 }
 
 p_index State::get_next_community(double tolerance, int process) {
