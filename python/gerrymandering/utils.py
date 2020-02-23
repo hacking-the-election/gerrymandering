@@ -19,17 +19,14 @@ __all__ = ["clip", "UNION", "DIFFERENCE", "get_schwartzberg_compactness",
            "get_if_bordering", "get_point_in_polygon", "Community"]
 
 
-import itertools
 import math
-import types
+import logging
 
-import numpy as np
 from shapely.ops import unary_union
 from shapely.geometry import MultiPolygon, Polygon, Point
-from shapely.errors import TopologicalError
 
+from .test.utils import print_time
 
-import logging
 
 logging.basicConfig(filename="precincts.log", level=logging.DEBUG)
 
@@ -84,6 +81,22 @@ def get_schwartzberg_compactness(polygon):
     return circumference / perimeter
 
 
+@print_time
+def _union(shapes):
+    """
+    Exists so that speed of union operations can be tracked
+    """
+    return unary_union(shapes)
+
+
+@print_time
+def _difference(shapes):
+    """
+    Exists so that speed of difference operations can be tracked
+    """
+    return shapes[0].difference(shapes[1])
+
+
 def clip(shapes, clip_type):
     """
     Finds external border of a group of shapes
@@ -98,13 +111,13 @@ def clip(shapes, clip_type):
     Returns array of vertices
     """
     if clip_type == 1:
-        solution = unary_union(shapes)
+        solution = _union(shapes)
     elif clip_type == 2:
         if len(shapes) != 2:
             raise ValueError(
                 "Polygon clip of type DIFFERENCE takes exactly 2 input shapes"
                 )
-        solution = shapes[0].difference(shapes[1])
+        solution = _difference(shapes)
     else:
         raise ValueError(
             "Invalid clip type. Use utils.UNION or utils.DIFFERENCE")
@@ -157,7 +170,7 @@ class Community:
         if precincts != []:
             self.coords = clip([p.coords for p in self.precincts.values()], UNION)
         else:
-            self.coords = []
+            self.coords = Polygon()
         self.partisanship = None
         self.standard_deviation = None
         self.population = None
@@ -188,8 +201,8 @@ class Community:
         if coords:
             self.coords = clip([p.coords for p in self.precincts.values()],
                                UNION)
-            other.coords = clip([p.coords for p in other.precincts.values()],
-                                UNION)
+            other.coords = clip([other.coords, precinct.coords],
+                                DIFFERENCE)
 
         # Update other attributes that are dependent on precincts attribute
         for community in [self, other]:
