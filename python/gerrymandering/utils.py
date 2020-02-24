@@ -23,7 +23,7 @@ import math
 import logging
 
 from shapely.ops import unary_union
-from shapely.geometry import MultiPolygon, Polygon, Point
+from shapely.geometry import MultiLineString, MultiPolygon, Polygon, Point
 
 from .test.utils import print_time
 
@@ -33,6 +33,7 @@ logging.basicConfig(filename="precincts.log", level=logging.DEBUG)
 
 UNION = 1
 DIFFERENCE = 2
+INTERSECTION = 3
 
 
 # ===================================================
@@ -43,7 +44,7 @@ def get_if_bordering(shape1, shape2):
     """
     Returns whether or not two shapes are bordering
     """
-    return shape1.touches(shape2)
+    return isinstance(clip([shape1, shape2], INTERSECTION), MultiLineString)
 
 
 def get_point_in_polygon(polygon, point):
@@ -81,22 +82,6 @@ def get_schwartzberg_compactness(polygon):
     return circumference / perimeter
 
 
-@print_time
-def _union(shapes):
-    """
-    Exists so that speed of union operations can be tracked
-    """
-    return unary_union(shapes)
-
-
-@print_time
-def _difference(shapes):
-    """
-    Exists so that speed of difference operations can be tracked
-    """
-    return shapes[0].difference(shapes[1])
-
-
 def clip(shapes, clip_type):
     """
     Finds external border of a group of shapes
@@ -111,16 +96,19 @@ def clip(shapes, clip_type):
     Returns array of vertices
     """
     if clip_type == 1:
-        solution = _union(shapes)
-    elif clip_type == 2:
+        solution = unary_union(shapes)
+    else:
         if len(shapes) != 2:
             raise ValueError(
                 "Polygon clip of type DIFFERENCE takes exactly 2 input shapes"
                 )
-        solution = _difference(shapes)
-    else:
-        raise ValueError(
-            "Invalid clip type. Use utils.UNION or utils.DIFFERENCE")
+        if clip_type == 2:    
+            solution = shapes[0].difference(shapes[1])
+        elif clip_type == 3:
+            solution = shapes[0].intersection(shapes[1])
+        else:
+            raise ValueError(
+                "Invalid clip type. Use utils.UNION or utils.DIFFERENCE")
     return solution
 
 

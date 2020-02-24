@@ -186,39 +186,6 @@ class TestGeometry(unittest.TestCase):
             True
         )
 
-    def test_get_if_bordering(self):
-        
-        @print_time
-        def test_get_if_bordering_speed(polygon1, polygon2):
-            return get_if_bordering(polygon1, polygon2)
-
-        self.assertEqual(
-            test_get_if_bordering_speed(self.poly1, self.poly2),
-            True
-        )
-
-        prec1 = None
-        prec2 = None
-        bordering_precincts = []
-        for precinct in self.vermont[0]:
-            if precinct.vote_id == "50011VD101":
-                prec1 = precinct
-            if precinct.vote_id == "50011VD94":
-                prec2 = precinct
-            if precinct.vote_id in ["50013VD102", "50013VD105", "50011VD95",
-                                    "50011VD100", "50011VD91", "50011VD99"]:
-                bordering_precincts.append(precinct)
-        for precinct in bordering_precincts:
-            self.assertEqual(
-                get_if_bordering(prec1.coords, precinct.coords),
-                True
-            )
-
-        self.assertEqual(
-            get_if_bordering(prec1.coords, prec2.coords),
-            False
-        )
-
 
 class TestCommunities(unittest.TestCase):
     """
@@ -232,11 +199,25 @@ class TestCommunities(unittest.TestCase):
 
     def test_get_bordering_precincts(self):
         
+        @print_time
+        def test_get_bordering_precincts_speed(community, unchosen_precincts):
+            return Community.get_bordering_precincts(community,
+                       unchosen_precincts)
+
         big_community = Community(self.vermont[0], 0)
         small_community = Community([], 1)
+        # Precinct with id 50005VD42 touches another precinct at one vertex. Checks to make sure that precicnt is not included in bordering precincts
+        big_community.give_precinct(small_community, "50005VD42",
+            compactness=False)
 
-        big_community.give_precinct(small_community, "50011VD101", compactness=False)
-        print(small_community.get_bordering_precincts(big_community))
+        self.assertEqual(
+            test_get_bordering_precincts_speed(
+                small_community,
+                big_community
+            ),
+            {"50005VD56", "50005VD52", "50005VD54", "50023VD184", "50005VD48",
+             "50005VD40", "50005VD50"}
+        )
 
 
 
