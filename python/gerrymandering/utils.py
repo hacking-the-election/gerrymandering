@@ -16,7 +16,8 @@ multipolygon (list of polygons).
 
 
 __all__ = ["clip", "UNION", "DIFFERENCE", "get_schwartzberg_compactness",
-           "get_if_bordering", "get_point_in_polygon", "Community"]
+           "get_if_bordering", "get_point_in_polygon", "Community",
+           "group_by_islands"]
 
 
 import math
@@ -225,3 +226,28 @@ class Community:
         else:
             bordering_precincts = set(unchosen_precincts.precincts.keys())
         return bordering_precincts
+
+
+def group_by_islands(precincts):
+    """
+    Returns list of precincts sorted into
+    lists by what island they are on.
+    """
+    state_border = clip([p.coords for p in precincts], UNION)
+
+    if isinstance(state_border, MultiPolygon):
+        # There are islands in the state.
+
+        island_polygons = state_border.geoms
+        islands = [[] for _ in range(len(island_polygons))]
+
+        for precinct in precincts:
+            for i, island in enumerate(island_polygons):
+                # If the first point of the precinct is in this island,
+                # all of them must be.
+                if get_point_in_polygon(
+                        island, list(precinct.coords.exterior.coords[1])):
+                    islands[i].append(precinct.vote_id)
+        return islands
+    else:
+        return [[p.vote_id for p in precincts]]

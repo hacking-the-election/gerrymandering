@@ -196,6 +196,7 @@ class TestCommunities(unittest.TestCase):
         unittest.TestCase.__init__(self, *args, **kwargs)
 
         self.vermont = load(DATA_DIR + "/vermont.pickle")
+        self.alaska = load(DATA_DIR + "/alaska.pickle")
 
     def test_get_bordering_precincts(self):
         
@@ -206,7 +207,9 @@ class TestCommunities(unittest.TestCase):
 
         big_community = Community(self.vermont[0], 0)
         small_community = Community([], 1)
-        # Precinct with id 50005VD42 touches another precinct at one vertex. Checks to make sure that precicnt is not included in bordering precincts
+        # Precinct with id 50005VD42 touches another precinct at one
+        # vertex. Checks to make sure that precinct is not included in
+        # bordering precincts.
         big_community.give_precinct(small_community, "50005VD42",
             compactness=False)
 
@@ -219,6 +222,14 @@ class TestCommunities(unittest.TestCase):
              "50005VD40", "50005VD50"}
         )
 
+    def test_group_by_islands(self):
+        
+        @print_time
+        def test_group_by_islands_speed(precincts):
+            return group_by_islands(precincts)
+
+        with open("test_sort_islands.txt", "w+") as f:
+            f.write(str([len(island) for island in test_group_by_islands_speed(self.alaska[0])]))
 
 
 if __name__ == "__main__":
