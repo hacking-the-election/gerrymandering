@@ -45,6 +45,7 @@ double get_median_partisanship(GeoGerry::Precinct_Group pg);
 
 bool point_in_ring(GeoGerry::coordinate coord, GeoGerry::LinearRing lr);
 bool get_inside(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1);
+bool get_inside_or(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1);
 bool get_inside_first(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1);
 bool get_inside_d(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1);
 
