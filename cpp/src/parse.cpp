@@ -19,10 +19,10 @@ using namespace rapidjson;
 // constant id strings
 //ndv	nrv	geoid10	GEOID10	POP100
 const std::string election_id_header = "geoid10";
-const std::vector<std::string> d_head = {"ndv"};
-const std::vector<std::string> r_head = {"nrv"};
+const std::vector<std::string> d_head = {"PRS08DEM"};
+const std::vector<std::string> r_head = {"PRS08REP"};
 const std::string geodata_id = "GEOID10";
-const std::string population_id = "POP100";
+const std::string population_id = "TOTPOP";
 
 std::vector<std::vector<std::string > > parse_sv(std::string, std::string);
 bool check_column(std::vector<std::vector<std::string> >, int);
@@ -419,24 +419,21 @@ GeoGerry::Precinct_Group combine_holes(GeoGerry::Precinct_Group pg) {
     return GeoGerry::Precinct_Group(new_pre);
 }
 
-std::vector<GeoGerry::p_index_set>  sort_precincts(GeoGerry::Multi_Shape shape, GeoGerry::Precinct_Group pg) {
+std::vector<GeoGerry::p_index_set> sort_precincts(GeoGerry::Multi_Shape shape, GeoGerry::Precinct_Group pg) {
     std::vector<GeoGerry::p_index_set> islands;
 
     if (shape.border.size() > 1) {
-        GeoGerry::p_index_set ignore;
         std::vector<GeoGerry::Precinct> tmp_precincts = pg.precincts;
         
         for (int i = 0; i < shape.border.size(); i++) {
             GeoGerry::p_index_set island;
             for (int j = 0; j < tmp_precincts.size(); j++) {
-                if (!(std::find(ignore.begin(), ignore.end(), j) != ignore.end())) {
-                    // not in the ignore list, must check;
-                    if (get_inside_first(tmp_precincts[j].hull, shape.border[i].hull)) {
-                        island.push_back(j);
-                        ignore.push_back(j);
-                    }
+                if (get_inside_first(tmp_precincts[j].hull, shape.border[i].hull)) {
+                    island.push_back(j);
                 }
             }
+            
+            std::cout << island.size() << std::endl;
             islands.push_back(island);
         }
     }

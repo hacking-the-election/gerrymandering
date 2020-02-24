@@ -282,20 +282,24 @@ bool point_in_ring(GeoGerry::coordinate coord, GeoGerry::LinearRing lr) {
         http://geomalgorithms.com/a03-_inclusion.html.
     */
 
-   int cn = 0;
+    // int cn = 0;
+    ClipperLib::Path path = ring_to_path(lr);
+    ClipperLib::IntPoint p(coord[0] * c, coord[1] * c);
+    int ret = ClipperLib::PointInPolygon(p, path);
 
+    return (ret != 0);
     // loop through all edges of the polygon
-    for (segment seg : lr.get_segments()) {
+    // for (segment seg : lr.get_segments()) {
 
-       if (((seg[1] <= coord[1]) && (seg[3] > coord[1])) ||  // an upward crossing
-           ((seg[1] > coord[1]) && (seg[3] <= coord[1]))) {  // a downward crossing
-            double vt = (double)(coord[1]  - seg[1]) / (seg[3] - seg[1]);
-            if (coord[0] < seg[0] + vt * (seg[2] - seg[0])) // coord[0] < intersect
-                ++cn;   // a valid crossing of y = coord[1] right of coord[0]
-        }
-    }
+    //    if (((seg[1] <= coord[1]) && (seg[3] > coord[1])) ||  // an upward crossing
+    //        ((seg[1] > coord[1]) && (seg[3] <= coord[1]))) {  // a downward crossing
+    //         double vt = (double)(coord[1]  - seg[1]) / (seg[3] - seg[1]);
+    //         if (coord[0] < seg[0] + vt * (seg[2] - seg[0])) // coord[0] < intersect
+    //             ++cn;   // a valid crossing of y = coord[1] right of coord[0]
+    //     }
+    // }
 
-    return (cn & 1);    // 0 if even (out), and 1 if  odd (in)
+    // return (cn & 1);    // 0 if even (out), and 1 if  odd (in)
 }
 
 bool get_inside(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1) {
