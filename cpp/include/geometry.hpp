@@ -31,15 +31,12 @@ GeoGerry::p_index_set get_bordering_precincts(GeoGerry::Precinct_Group shape, in
 // overload get_bordering_shapes for vector inheritance problem
 GeoGerry::p_index_set get_bordering_shapes(std::vector<GeoGerry::Shape> shapes, GeoGerry::Shape shape);
 GeoGerry::p_index_set get_bordering_shapes(std::vector<GeoGerry::Precinct_Group> shapes, GeoGerry::Shape shape);
-
-// implementation of the Schwartzberg compactness score
-GeoGerry::unit_interval compactness(GeoGerry::Shape shape);
+GeoGerry::p_index_set get_bordering_shapes(std::vector<GeoGerry::Community> shapes, GeoGerry::Shape shape);
 
 // for clipper conversions
 ClipperLib::Path ring_to_path(GeoGerry::LinearRing ring);
 GeoGerry::LinearRing path_to_ring(ClipperLib::Path path);
 ClipperLib::Paths shape_to_paths(GeoGerry::Shape shape);
-GeoGerry::Shape paths_to_shape(ClipperLib::Paths paths);
 GeoGerry::Multi_Shape paths_to_multi_shape(ClipperLib::Paths paths);
 
 // for algorithm helper methods
@@ -50,3 +47,5 @@ bool point_in_ring(GeoGerry::coordinate coord, GeoGerry::LinearRing lr);
 bool get_inside(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1);
 bool get_inside_first(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1);
 bool get_inside_d(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1);
+
+double get_distance(GeoGerry::coordinate c1, GeoGerry::coordinate c2);

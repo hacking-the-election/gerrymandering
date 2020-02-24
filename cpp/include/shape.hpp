@@ -171,6 +171,7 @@ class Shape {
         virtual double get_perimeter();       // total perimeter of holes + hull
         virtual coordinate get_center();      // average centers of holes + hull
         virtual segments get_segments();      // return a segment list with shape's segments
+        virtual double get_compactness();
 
         // add operator overloading for object equality
         friend bool operator== (Shape p1, Shape p2) {
@@ -282,6 +283,9 @@ class Multi_Shape : public Shape {
             }
         }
 
+        double get_perimeter();
+        double get_compactness();
+        double get_area();
         // for boost serialization
         friend class boost::serialization::access;
         template<class Archive> void serialize(Archive & ar, const unsigned int version);
@@ -336,8 +340,28 @@ class Precinct_Group : public Multi_Shape {
 };
 
 // for cleaner naming of types when writing community algorithm
-typedef Precinct_Group Community;
-typedef std::vector<Precinct_Group> Communities;
+
+class Community : public Precinct_Group {
+    /*
+        Contains a list of precincts, as well as information about
+        linking and where is it on an island list.
+    */
+
+    public:
+        bool is_linked = false;                            // whether or not this community has a linked counterpart
+        std::vector<std::vector<int> > link_position;      // gives island and precinct link location: { 0, 1 } - first island, second precinct
+        std::vector<int> location;                         // indexes of island it's located on
+        std::vector<int> size;                             // number of precincts initially in community -  if this is on multiple islands it has multiple elements
+
+        Community(std::vector<Precinct> shapes) : Precinct_Group(shapes) {
+            precincts = shapes;
+        }
+
+        Community(){}
+};
+
+// typedef Precinct_Group Community;
+typedef std::vector<Community> Communities;
 
 
 class State : public Precinct_Group {
@@ -377,7 +401,7 @@ class State : public Precinct_Group {
 
         // for the community generation algorithm
         void generate_communities(int num_communities, double compactness_tolerance, double partisanship_tolerance, double population_tolerance);
-        void give_precinct(p_index precinct, p_index community, std::string t_type);
+        void give_precinct(p_index precinct, p_index community, int t_type);
 
         // initial random configuration of communities
         void generate_initial_communities(int num_communities);

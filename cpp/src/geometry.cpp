@@ -368,7 +368,6 @@ p_index_set get_bordering_shapes(vector<Shape> shapes, Shape shape) {
     return vec;
 }
 
-
 p_index_set get_bordering_shapes(vector<Precinct_Group> shapes, Shape shape) {
     /*
         returns set of indices corresponding to the Precinct_Groups that
@@ -383,6 +382,19 @@ p_index_set get_bordering_shapes(vector<Precinct_Group> shapes, Shape shape) {
     return vec;
 }
 
+p_index_set get_bordering_shapes(vector<Community> shapes, Shape shape) {
+    /*
+        returns set of indices corresponding to the Precinct_Groups that
+        border with the Precinct_Group[index] shape.
+    */
+
+    p_index_set vec;
+    
+    for (p_index i = 0; i < shapes.size(); i++)
+        if ( ( shapes[i] != shape ) && get_bordering(shapes[i], shape)) vec.push_back(i);
+    
+    return vec;
+}
 
 p_index_set get_bordering_precincts(Precinct_Group shape, int p_index) {
     return {1};
