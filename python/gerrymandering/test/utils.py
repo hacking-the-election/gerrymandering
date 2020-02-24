@@ -32,7 +32,8 @@ def convert_to_json(coords, output_file):
         features.append({
             "type": "Feature",
             "geometry": {
-                "type": "Polygon",
+                "type": ("Polygon" if not isinstance(feature[0][0][0], list)
+                         else "MultiPolygon"),
                 "coordinates": feature
             }
         })

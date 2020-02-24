@@ -1,6 +1,8 @@
 # General:
    Later:
     - Predict errors and create custom exceptions to throw in those cases
+    - Fill __init__.pys with __version__s and make pypi package
+    - speed up with cython and c++ extensions
 
 # Serialization:
    Now:

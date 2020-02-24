@@ -55,7 +55,7 @@ def polygon_to_shapely(polygon):
     """
     tuple_polygon = [[tuple(coord) for coord in linear_ring]
                      for linear_ring in polygon]
-    return polygon(tuple_polygon[0], tuple_polygon[1:])
+    return Polygon(tuple_polygon[0], tuple_polygon[1:])
 
 
 def save(state, precinct_dict, district_dict, objects_dir):

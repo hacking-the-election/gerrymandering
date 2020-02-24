@@ -199,27 +199,27 @@ class Community:
         other.precincts[precinct_id] = precinct
         # Update borders
         if coords:
-            self.coords = clip([p.coords for p in self.precincts.values()],
-                               UNION)
-            other.coords = clip([other.coords, precinct.coords],
-                                DIFFERENCE)
+            self.coords = clip([self.coords, precinct.coords],
+                               DIFFERENCE)
+            other.coords = clip([p.coords for p in other.precincts.values()],
+                                UNION)
 
         # Update other attributes that are dependent on precincts attribute
         for community in [self, other]:
             if partisanship:
-                community.partisanship = get_partisanship(
+                community.partisanship = Community.get_partisanship(
                     community.precincts.values())
             if standard_deviation:
                 community.standard_deviation = \
                     Community.get_standard_deviation(
-                        community.precincts.values)
+                        community.precincts.values())
             if population:
                 community.population = sum(
                     [precinct.population for precinct in
                      community.precincts.values()])
             if compactness:
                 community.compactness = get_schwartzberg_compactness(
-                    community.border)
+                    community.coords)
 
     def get_bordering_precincts(self, unchosen_precincts):
         """

@@ -140,6 +140,8 @@ class TestGeometry(unittest.TestCase):
         # 2 | 3801139-02 | hole
         # 3 | 3800139-01 | normal
 
+        self.vermont = load(DATA_DIR + "/vermont.pickle")
+
     def test_get_compactness(self):
 
         @print_time
@@ -171,9 +173,9 @@ class TestGeometry(unittest.TestCase):
             test_get_point_in_polygon_speed(
                     self.poly2,
                     [451937, 3666268]
-                ),
+            ),
             True
-            )
+        )
 
         # edge case: point is on edge of polygon
         self.assertEqual(
@@ -182,26 +184,40 @@ class TestGeometry(unittest.TestCase):
                 [1, 2]
             ),
             True
-            )
-
-        with open("python/gerrymandering/test/test_point_in_polygon.txt", "r") as f:
-            string_coords = f.read()
-        poly3 = [eval(string_coords)]
-        self.assertEqual(
-            test_get_point_in_polygon_speed(
-                poly3,
-                [-102.770884, 46.887414]
-            ),
-            True
-            )
+        )
 
     def test_get_if_bordering(self):
         
         @print_time
-        def test_get_if_bordering(polygon1, polygon2):
+        def test_get_if_bordering_speed(polygon1, polygon2):
             return get_if_bordering(polygon1, polygon2)
 
-        self.assertEqual(test_get_if_bordering(self.poly1, self.poly2), True)
+        self.assertEqual(
+            test_get_if_bordering_speed(self.poly1, self.poly2),
+            True
+        )
+
+        prec1 = None
+        prec2 = None
+        bordering_precincts = []
+        for precinct in self.vermont[0]:
+            if precinct.vote_id == "50011VD101":
+                prec1 = precinct
+            if precinct.vote_id == "50011VD94":
+                prec2 = precinct
+            if precinct.vote_id in ["50013VD102", "50013VD105", "50011VD95",
+                                    "50011VD100", "50011VD91", "50011VD99"]:
+                bordering_precincts.append(precinct)
+        for precinct in bordering_precincts:
+            self.assertEqual(
+                get_if_bordering(prec1.coords, precinct.coords),
+                True
+            )
+
+        self.assertEqual(
+            get_if_bordering(prec1.coords, prec2.coords),
+            False
+        )
 
 
 class TestCommunities(unittest.TestCase):
@@ -209,11 +225,19 @@ class TestCommunities(unittest.TestCase):
     Tests for community algorithm-specfic functions
     """
 
-    def test_get_addable_precincts(self):
-        pass
+    def __init__(self, *args, **kwargs):
+        unittest.TestCase.__init__(self, *args, **kwargs)
 
-    def test_get_exchangeable_precincts(self):
-        pass
+        self.vermont = load(DATA_DIR + "/vermont.pickle")
+
+    def test_get_bordering_precincts(self):
+        
+        big_community = Community(self.vermont[0], 0)
+        small_community = Community([], 1)
+
+        big_community.give_precinct(small_community, "50011VD101", compactness=False)
+        print(small_community.get_bordering_precincts(big_community))
+
 
 
 if __name__ == "__main__":

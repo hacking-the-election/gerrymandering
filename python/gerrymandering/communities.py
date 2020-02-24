@@ -49,48 +49,53 @@ def create_initial_configuration(precincts, n_districts):
         # State is multipolygon, which means it has islands.
         pass
     else:
-        for i, community_size in enumerate(community_sizes, 1):
+        # Create all communities except last
+        # (which will be unchosen precincts)
+        for i, community_size in enumerate(community_sizes[:-1], 1):
             community = Community([], i)
-            for s in range(community_size):
+            for _ in range(community_size):
                 try:
                     # Set of precincts that have been tried
-                    random_precincts = set()
+                    tried_precincts = set()
 
                     # Give random precinct to `community`
                     random_precinct = random.sample(
                         community.get_bordering_precincts(unchosen_precincts) \
-                        - random_precincts, 1)[0]
+                        - tried_precincts, 1)[0]
 
                     unchosen_precincts.give_precinct(
                         community, random_precinct, **kwargs)
-                    random_precincts.add(random_precinct)
+                    tried_precincts.add(random_precinct)
 
-                    # Keep trying other precincts until one of them doesn't
-                    # make an island
+                    # Keep trying other precincts until one of them
+                    # doesn't make an island.
                     while isinstance(unchosen_precincts.coords, MultiPolygon):
                         # Give it back
                         community.give_precinct(
                             unchosen_precincts, random_precinct, **kwargs)
                         print(f"precinct {random_precinct} added to and removed"
-                            f" from community {i} because it created an island")
-                        # Random precinct that hasn't already been tried and also borders community.
+                              f" from community {i} because it created an island")
+                        # Random precinct that hasn't already been
+                        # tried and also borders community.
                         random_precinct = random.sample(
                             community.get_bordering_precincts(unchosen_precincts) \
-                            - random_precincts, 1)[0]
+                            - tried_precincts, 1)[0]
                         unchosen_precincts.give_precinct(
                             community, random_precinct, **kwargs)
-                        random_precincts.add(random_precinct)
+                        tried_precincts.add(random_precinct)
 
                     print(f"precinct {random_precinct} added to community {i}")
 
                 except Exception as e:
-                    print(unchosen_precincts.precincts)
-                    # to save progress
+                    # Save your progress!
+                    logging.info(unchosen_precincts.precincts)
                     with open("test_communities.pickle", "wb+") as f:
-                        pickle.dump([communities, community], f)
+                        pickle.dump(communities + [community], f)
                     raise e
 
             communities.append(community)
+
+    communities.append(unchosen_precincts)
 
     return communities
     
