@@ -323,15 +323,11 @@ bool get_inside_first(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1) {
     return (point_in_ring(s0.border[0], s1));
 }
 
-bool get_inside_d(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1) {
-    for (int i = 0; i < s0.border.size(); i++) {
-        if (!point_in_ring(s0.border[i], s1)) {
-            std::cout << s0.border[i][0] << ", " << s0.border[i][1] << " failed at index " << i << std::endl;
-            return false;
-        }
-    }
+bool get_inside_or(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1) {
+    for (coordinate c : s0.border)
+        if (point_in_ring(c, s1)) return true;
 
-    return true;
+    return false;
 }
 
 p_index_set get_inner_boundary_precincts(Precinct_Group shape) {

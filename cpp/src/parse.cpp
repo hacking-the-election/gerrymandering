@@ -420,27 +420,30 @@ GeoGerry::Precinct_Group combine_holes(GeoGerry::Precinct_Group pg) {
 }
 
 std::vector<GeoGerry::p_index_set> sort_precincts(GeoGerry::Multi_Shape shape, GeoGerry::Precinct_Group pg) {
-    std::vector<GeoGerry::p_index_set> islands;
 
+    std::vector<GeoGerry::p_index_set> islands(shape.border.size());
+    
     if (shape.border.size() > 1) {
-        std::vector<GeoGerry::Precinct> tmp_precincts = pg.precincts;
-        
-        for (int i = 0; i < shape.border.size(); i++) {
-            GeoGerry::p_index_set island;
-            for (int j = 0; j < tmp_precincts.size(); j++) {
-                if (get_inside_first(tmp_precincts[j].hull, shape.border[i].hull)) {
-                    island.push_back(j);
+        GeoGerry::p_index pid = 0;
+        for (GeoGerry::Precinct p : pg.precincts) {
+            int shape_i = 0;
+            for (GeoGerry::Shape s : shape.border) {
+                if (get_inside_first(p.hull, s.hull)) {
+                    islands[shape_i].push_back(pid);
+                    break;
                 }
+                shape_i++;
             }
-            
-            std::cout << island.size() << std::endl;
-            islands.push_back(island);
         }
     }
     else {
         GeoGerry::p_index_set p(pg.precincts.size());
         std::iota(p.begin(), p.end(), 0);
         islands.push_back(p);
+    }
+
+    for (GeoGerry::p_index_set p : islands) {
+        std::cout << p.size() << std::endl;
     }
     // std::cout << pg.precincts.size() << std::endl;
     // std::cout << tmp_precincts.size() << std::endl;
@@ -483,7 +486,7 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
     pre_group = combine_holes(pre_group);
     int removed = before - pre_group.precincts.size();
     if (VERBOSE) std::cout << "removed " << removed << " hole precincts" << std::endl;
-    
+
     std::vector<Shape> state_shape_v; // dummy exterior border
     std::cout << pre_group.precincts.size() << std::endl;
     // generate state data from files
@@ -491,7 +494,7 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
     State state = State(district_shapes, pre_group.precincts, state_shape_v);
     Multi_Shape border = generate_exterior_border(state);
     state.border = border.border;
-    state.islands = sort_precincts(border, state);
+    state.islands = sort_precincts(border.border, pre_group);
 
     return state; // return the state object
 }
