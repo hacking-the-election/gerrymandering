@@ -15,9 +15,8 @@ multipolygon (list of polygons).
 """
 
 
-__all__ = ["clip", "UNION", "DIFFERENCE", "get_schwartzberg_compactness",
-           "get_if_bordering", "get_point_in_polygon", "Community",
-           "group_by_islands"]
+__all__ = ["clip", "UNION", "DIFFERENCE", "get_if_bordering",
+           "get_point_in_polygon", "Community", "group_by_islands"]
 
 
 import math
@@ -26,7 +25,7 @@ import logging
 from shapely.ops import unary_union
 from shapely.geometry import MultiLineString, MultiPolygon, Polygon, Point
 
-from test.utils import print_time
+from .test.utils import print_time
 
 
 logging.basicConfig(filename="precincts.log", level=logging.DEBUG)
@@ -77,19 +76,6 @@ def get_point_in_polygon(polygon, point):
     return shapely_polygon.contains(coord) or shapely_polygon.touches(coord)
 
 
-def get_schwartzberg_compactness(polygon):
-    """
-    Returns the schwartzberg compactness value of `polygon`
-
-    Implemenatation of this algorithm (schwartzberg):
-    https://fisherzachary.github.io/public/r-output.html
-    """
-    area = polygon.area
-    circumference = 2 * math.pi * math.sqrt(area / math.pi)
-    perimeter = polygon.length
-    return circumference / perimeter
-
-
 def clip(shapes, clip_type):
     """
     Finds external border of a group of shapes
@@ -128,37 +114,6 @@ class Community:
     """
     A collection of precincts
     """
-
-    @staticmethod
-    def get_standard_deviation(precincts):
-        """
-        Returns standard deviation of republican percentage in
-        `precincts`
-        """
-
-        try:
-            rep_percentages = [
-                p.r_election_sum / (p.r_election_sum + p.d_election_sum) * 100
-                for p in precincts]
-            mean = sum(rep_percentages) / len(rep_percentages)
-            
-            return math.sqrt(sum([(p - mean) ** 2 for p in rep_percentages]))
-        except ZeroDivisionError:
-            return 0.0
-
-    @staticmethod
-    def get_partisanship(precincts):
-        """
-        Returns average percentage of republicans in `precincts`
-        """
-
-        rep_sum = 0
-        total_sum = 0
-        for precinct in precincts:
-            if (r_sum := precinct.r_election_sum) != -1:
-                rep_sum += r_sum
-                total_sum += r_sum + precinct.d_election_sum
-        return rep_sum / total_sum
     
     def __init__(self, precincts, identifier):
         self.precincts = {precinct.vote_id: precinct for precinct in precincts}
@@ -171,6 +126,46 @@ class Community:
         self.standard_deviation = None
         self.population = None
         self.compactness = None
+
+    def update_compactness(self):
+        """
+        Updates the `compactness` attribute.
+
+        Implemenatation of this algorithm (schwartzberg):
+        https://fisherzachary.github.io/public/r-output.html
+        """
+        area = self.coords.area
+        circumference = 2 * math.pi * math.sqrt(area / math.pi)
+        perimeter = self.coords.length
+        self.compactness = circumference / perimeter
+
+    def update_standard_deviation(self):
+        """
+        Updates the `standard_deviation` attribute.
+        """
+
+        try:
+            rep_percentages = [
+                p.r_election_sum / (p.r_election_sum + p.d_election_sum) * 100
+                for p in self.precincts]
+            mean = sum(rep_percentages) / len(rep_percentages)
+            
+            self.standard_deviation = math.sqrt(sum([(p - mean) ** 2 for p in rep_percentages]))
+        except ZeroDivisionError:
+            self.standard_deviation = 0.0
+
+    def update_partisanship(self):
+        """
+        Updates the `partisanship` attribute
+        """
+
+        rep_sum = 0
+        total_sum = 0
+        for precinct in self.precincts:
+            if (r_sum := precinct.r_election_sum) != -1:
+                rep_sum += r_sum
+                total_sum += r_sum + precinct.d_election_sum
+        self.partisanship = rep_sum / total_sum
 
     def give_precinct(self, other, precinct_id, coords=True,
                       partisanship=True, standard_deviation=True,
