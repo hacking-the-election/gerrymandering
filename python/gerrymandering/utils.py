@@ -16,8 +16,8 @@ multipolygon (list of polygons).
 
 
 __all__ = ["clip", "UNION", "DIFFERENCE", "get_schwartzberg_compactness",
-           "get_if_bordering", "get_point_in_polygon", "Community",
-           "group_by_islands"]
+           "get_if_bordering", "get_point_in_polygon", "get_area_intersection", 
+           "Community", "group_by_islands"]
 
 
 import math
@@ -82,6 +82,24 @@ def get_schwartzberg_compactness(polygon):
     perimeter = polygon.length
     return circumference / perimeter
 
+def get_area_intersection(polygon1, polygon2):
+    """
+    Finds the area intersecting between the two polygons passed as arguments
+    Both polygons should be shapely polygons
+    Returns float (area of intersection.)
+    """
+    # find area of both polygons
+    area1 = polygon1.area
+    area2 = polygon2.area
+    # find area of union
+    union_coords = clip([polygon1, polygon2], 1)
+    union_area = union_coords.area
+    # The area of the intersection is the sum of the two areas minus the area of the union
+    intersect_area = area1 + area2 - union_area
+    # if the intersection area is negative, raise exception
+    if abs(intersect_area) != intersect_area:
+        raise Exception("Negative area found, check inputs")
+    return intersect_area
 
 def clip(shapes, clip_type):
     """
