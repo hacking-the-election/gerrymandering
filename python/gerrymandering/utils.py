@@ -26,7 +26,7 @@ import logging
 from shapely.ops import unary_union
 from shapely.geometry import MultiLineString, MultiPolygon, Polygon, Point
 
-from .test.utils import print_time
+from test.utils import print_time
 
 
 logging.basicConfig(filename="precincts.log", level=logging.DEBUG)
