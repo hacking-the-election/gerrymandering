@@ -197,6 +197,7 @@ class TestCommunities(unittest.TestCase):
 
         self.vermont = load(DATA_DIR + "/vermont.pickle")
         self.alaska = load(DATA_DIR + "/alaska.pickle")
+        self.alaska_islands = load(DATA_DIR + "/alaska_islands.pickle")
 
     def test_get_bordering_precincts(self):
         
@@ -228,8 +229,10 @@ class TestCommunities(unittest.TestCase):
         def test_group_by_islands_speed(precincts):
             return group_by_islands(precincts)
 
-        with open("test_sort_islands.txt", "w+") as f:
-            f.write(str([len(island) for island in test_group_by_islands_speed(self.alaska[0])]))
+        self.assertEqual(
+            test_group_by_islands_speed(self.alaska[0]),
+            self.alaska_islands
+        )
 
 
 if __name__ == "__main__":

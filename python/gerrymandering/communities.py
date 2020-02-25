@@ -47,7 +47,21 @@ def create_initial_configuration(precincts, n_districts):
     communities = []  # Will contain Community objects.
     if isinstance(unchosen_precincts.coords, MultiPolygon):
         # State is multipolygon, which means it has islands.
-        pass
+
+        # There should be communities of two sizes
+        small_community = min(community_sizes)
+        large_community = max(community_sizes)
+        
+        island_precinct_groups = group_by_islands(precincts)
+        # Dictionary mapping island index in above list to number of
+        # communities it can hold.
+        island_community_counts = {}
+        for i, island in enumerate(island_precinct_groups):
+            for x in range(community_sizes.count(small_community)):
+                for y in range(community_sizes.count(large_community)):
+                    if (x * small_community + y * large_community
+                            == len(island)):
+                        island_community_counts[i] = x + y
     else:
         # Create all communities except last
         # (which will be unchosen precincts)
