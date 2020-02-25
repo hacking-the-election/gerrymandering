@@ -62,6 +62,13 @@ def create_initial_configuration(precincts, n_districts):
                     if (x * small_community + y * large_community
                             == len(island)):
                         island_community_counts[i] = x + y
+
+        linked_precinct_pairs = []
+        for island, n_communities in island_precinct_groups.items():
+            # TODO: fill out above list
+            pass
+        all_linked_precincts = set([precinct for pair in linked_precinct_pairs
+                                    for precinct in pair])
     else:
         # Create all communities except last
         # (which will be unchosen precincts)
