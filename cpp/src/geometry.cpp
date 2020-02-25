@@ -282,20 +282,24 @@ bool point_in_ring(GeoGerry::coordinate coord, GeoGerry::LinearRing lr) {
         http://geomalgorithms.com/a03-_inclusion.html.
     */
 
-   int cn = 0;
+    // int cn = 0;
+    ClipperLib::Path path = ring_to_path(lr);
+    ClipperLib::IntPoint p(coord[0] * c, coord[1] * c);
+    int ret = ClipperLib::PointInPolygon(p, path);
 
+    return (ret != 0);
     // loop through all edges of the polygon
-    for (segment seg : lr.get_segments()) {
+    // for (segment seg : lr.get_segments()) {
 
-       if (((seg[1] <= coord[1]) && (seg[3] > coord[1])) ||  // an upward crossing
-           ((seg[1] > coord[1]) && (seg[3] <= coord[1]))) {  // a downward crossing
-            double vt = (double)(coord[1]  - seg[1]) / (seg[3] - seg[1]);
-            if (coord[0] < seg[0] + vt * (seg[2] - seg[0])) // coord[0] < intersect
-                ++cn;   // a valid crossing of y = coord[1] right of coord[0]
-        }
-    }
+    //    if (((seg[1] <= coord[1]) && (seg[3] > coord[1])) ||  // an upward crossing
+    //        ((seg[1] > coord[1]) && (seg[3] <= coord[1]))) {  // a downward crossing
+    //         double vt = (double)(coord[1]  - seg[1]) / (seg[3] - seg[1]);
+    //         if (coord[0] < seg[0] + vt * (seg[2] - seg[0])) // coord[0] < intersect
+    //             ++cn;   // a valid crossing of y = coord[1] right of coord[0]
+    //     }
+    // }
 
-    return (cn & 1);    // 0 if even (out), and 1 if  odd (in)
+    // return (cn & 1);    // 0 if even (out), and 1 if  odd (in)
 }
 
 bool get_inside(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1) {
@@ -319,15 +323,11 @@ bool get_inside_first(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1) {
     return (point_in_ring(s0.border[0], s1));
 }
 
-bool get_inside_d(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1) {
-    for (int i = 0; i < s0.border.size(); i++) {
-        if (!point_in_ring(s0.border[i], s1)) {
-            std::cout << s0.border[i][0] << ", " << s0.border[i][1] << " failed at index " << i << std::endl;
-            return false;
-        }
-    }
+bool get_inside_or(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1) {
+    for (coordinate c : s0.border)
+        if (point_in_ring(c, s1)) return true;
 
-    return true;
+    return false;
 }
 
 p_index_set get_inner_boundary_precincts(Precinct_Group shape) {
@@ -368,7 +368,6 @@ p_index_set get_bordering_shapes(vector<Shape> shapes, Shape shape) {
     return vec;
 }
 
-
 p_index_set get_bordering_shapes(vector<Precinct_Group> shapes, Shape shape) {
     /*
         returns set of indices corresponding to the Precinct_Groups that
@@ -383,6 +382,19 @@ p_index_set get_bordering_shapes(vector<Precinct_Group> shapes, Shape shape) {
     return vec;
 }
 
+p_index_set get_bordering_shapes(vector<Community> shapes, Shape shape) {
+    /*
+        returns set of indices corresponding to the Precinct_Groups that
+        border with the Precinct_Group[index] shape.
+    */
+
+    p_index_set vec;
+    
+    for (p_index i = 0; i < shapes.size(); i++)
+        if ( ( shapes[i] != shape ) && get_bordering(shapes[i], shape)) vec.push_back(i);
+    
+    return vec;
+}
 
 p_index_set get_bordering_precincts(Precinct_Group shape, int p_index) {
     return {1};

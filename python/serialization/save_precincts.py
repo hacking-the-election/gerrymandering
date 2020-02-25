@@ -32,6 +32,8 @@ import sys
 from os.path import dirname, abspath
 import warnings
 
+from shapely.geometry import Polygon
+
 sys.path.insert(-1, dirname(dirname(abspath(__file__))))
 from gerrymandering.utils import get_point_in_polygon as gpip
 
@@ -52,7 +54,7 @@ def polygon_to_shapely(polygon):
     """
     tuple_polygon = [[tuple(coord) for coord in linear_ring]
                      for linear_ring in polygon]
-    return polygon(tuple_polygon[0], tuple_polygon[1:])
+    return Polygon(tuple_polygon[0], tuple_polygon[1:])
 
 
 def save(state, precinct_dict, district_dict, objects_dir):
@@ -529,7 +531,7 @@ class Precinct:
                  d_election_data, r_election_data):
         
         # coordinate data
-        self.coords = coords
+        self.coords = polygon_to_shapely(coords)
         
         # meta info
         self.vote_id = vote_id

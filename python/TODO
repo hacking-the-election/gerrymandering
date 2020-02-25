@@ -1,6 +1,8 @@
 # General:
    Later:
     - Predict errors and create custom exceptions to throw in those cases
+    - Fill __init__.pys with __version__s and make pypi package
+    - speed up with cython and c++ extensions
 
 # Serialization:
    Now:
@@ -11,5 +13,6 @@
 # Communities:
    Now:
     - write communities algorithm
+    - update step 1 to accept states with islands
 # Quantification:
-   Write algorithm
+	- write algorithm

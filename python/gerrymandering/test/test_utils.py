@@ -9,6 +9,7 @@ import time
 
 import numpy as np
 import matplotlib.pyplot as plt
+from shapely.geometry import Polygon, MultiPolygon
 
 sys.path.append(abspath(dirname(dirname(dirname(__file__)))))
 
@@ -71,10 +72,22 @@ class TestClipping(unittest.TestCase):
         """
 
         @print_time
-        def test_get_border_speed():
-            return clip([p.coords for p in self.vermont[0]], UNION)
+        def test_get_border_speed(shapes):
+            return clip(shapes, UNION)
 
-        self.assertEqual(test_get_border_speed(), self.border_test_data)
+        shapely_vermont = []
+        for p in self.vermont[0]:
+            try:
+                shapely_vermont.append(
+                    polygon_to_shapely(p.coords)
+                )
+            except ValueError:
+                shapely_vermont.append(
+                    multipolygon_to_shapely(p.coords)
+                )
+        union = test_get_border_speed(shapely_vermont)
+        
+        convert_to_json([polygon_to_list(union)], "test_polys.json")
 
     def test_get_difference(self):
         """
@@ -82,19 +95,25 @@ class TestClipping(unittest.TestCase):
         its 5th congressional district
         """
 
+        connecticut_district_coords = [
+            d["geometry"]["coordinates"]
+            for d in self.connecticut[1]["features"]]
+        district_multipolygons = []
+        for district in connecticut_district_coords:
+            polygons = []
+            for polygon in district:
+                polygons.append(polygon_to_shapely(polygon))
+            district_multipolygons.append(MultiPolygon(polygons))
+        outer_border = clip(district_multipolygons, UNION)
+
         @print_time
-        def test_get_difference_speed():
-            connecticut_district_coords = [
-                d["geometry"]["coordinates"]
-                for d in self.connecticut[1]["features"]]
+        def test_get_difference_speed(shapes):
+            return clip(shapes, DIFFERENCE)
 
-            outer_border = clip(connecticut_district_coords, UNION)
-            difference = clip([outer_border, connecticut_district_coords[4]],
-                              DIFFERENCE)
+        difference = test_get_difference_speed([outer_border, district_multipolygons[4]])
 
-            return difference
-
-        self.assertEqual(test_get_difference_speed(), self.difference_test_data)
+        # print(multipolygon_to_list(difference))
+        convert_to_json(multipolygon_to_list(difference), "test_poly.json")
 
 
 class TestGeometry(unittest.TestCase):
@@ -107,10 +126,21 @@ class TestGeometry(unittest.TestCase):
         unittest.TestCase.__init__(self, *args, **kwargs)
 
         # poly1 has a hole, poly2 does not
-        self.poly1, self.poly2 = load(
-            DATA_DIR + "/geometry_test_data.pickle")
+        self.poly1, self.poly2 = [polygon_to_shapely(i) for i in load(
+            DATA_DIR + "/geometry_test_data.pickle")]
         # both polygons are precincts from arkansas
         # poly1 has geoid 05073008 and poly2 has geoid 05027020
+
+        self.north_dakota = load(DATA_DIR + "/nd_test.pickle")
+        self.north_dakota[0] = multipolygon_to_shapely(self.north_dakota[0])
+        for i in range(1, 3):
+            self.north_dakota[i] = polygon_to_shapely(self.north_dakota[i])
+        # precincts:
+        # 1 | 3810138-05 | non-contiguous
+        # 2 | 3801139-02 | hole
+        # 3 | 3800139-01 | normal
+
+        self.vermont = load(DATA_DIR + "/vermont.pickle")
 
     def test_get_compactness(self):
 
@@ -119,9 +149,18 @@ class TestGeometry(unittest.TestCase):
             return get_schwartzberg_compactness(polygon)
 
         # later to be tested with cpp outputs
-        print("compactness:")
-        print(f"poly1: {test_get_compactness_speed(self.poly1)}")
-        print(f"poly2: {test_get_compactness_speed(self.poly2)}")
+        self.assertEqual(
+            test_get_compactness_speed(self.north_dakota[0]),
+            0.6140866384724538
+        )
+        self.assertEqual(
+            test_get_compactness_speed(self.north_dakota[1]),
+            0.7997295546826071
+        )
+        self.assertEqual(
+            test_get_compactness_speed(self.north_dakota[2]),
+            0.8197172000202778
+        )
 
     def test_get_point_in_polygon(self):
 
@@ -134,9 +173,9 @@ class TestGeometry(unittest.TestCase):
             test_get_point_in_polygon_speed(
                     self.poly2,
                     [451937, 3666268]
-                ),
+            ),
             True
-            )
+        )
 
         # edge case: point is on edge of polygon
         self.assertEqual(
@@ -145,26 +184,7 @@ class TestGeometry(unittest.TestCase):
                 [1, 2]
             ),
             True
-            )
-
-        with open("python/gerrymandering/test/test_point_in_polygon.txt", "r") as f:
-            string_coords = f.read()
-        poly3 = [eval(string_coords)]
-        self.assertEqual(
-            test_get_point_in_polygon_speed(
-                poly3,
-                [-102.770884, 46.887414]
-            ),
-            True
-            )
-
-    def test_get_if_bordering(self):
-        
-        @print_time
-        def test_get_if_bordering(polygon1, polygon2):
-            return get_if_bordering(polygon1, polygon2)
-
-        self.assertEqual(test_get_if_bordering(self.poly1, self.poly2), True)
+        )
 
 
 class TestCommunities(unittest.TestCase):
@@ -172,11 +192,44 @@ class TestCommunities(unittest.TestCase):
     Tests for community algorithm-specfic functions
     """
 
-    def test_get_addable_precincts(self):
-        pass
+    def __init__(self, *args, **kwargs):
+        unittest.TestCase.__init__(self, *args, **kwargs)
 
-    def test_get_exchangeable_precincts(self):
-        pass
+        self.vermont = load(DATA_DIR + "/vermont.pickle")
+        self.alaska = load(DATA_DIR + "/alaska.pickle")
+
+    def test_get_bordering_precincts(self):
+        
+        @print_time
+        def test_get_bordering_precincts_speed(community, unchosen_precincts):
+            return Community.get_bordering_precincts(community,
+                       unchosen_precincts)
+
+        big_community = Community(self.vermont[0], 0)
+        small_community = Community([], 1)
+        # Precinct with id 50005VD42 touches another precinct at one
+        # vertex. Checks to make sure that precinct is not included in
+        # bordering precincts.
+        big_community.give_precinct(small_community, "50005VD42",
+            compactness=False)
+
+        self.assertEqual(
+            test_get_bordering_precincts_speed(
+                small_community,
+                big_community
+            ),
+            {"50005VD56", "50005VD52", "50005VD54", "50023VD184", "50005VD48",
+             "50005VD40", "50005VD50"}
+        )
+
+    def test_group_by_islands(self):
+        
+        @print_time
+        def test_group_by_islands_speed(precincts):
+            return group_by_islands(precincts)
+
+        with open("test_sort_islands.txt", "w+") as f:
+            f.write(str([len(island) for island in test_group_by_islands_speed(self.alaska[0])]))
 
 
 if __name__ == "__main__":

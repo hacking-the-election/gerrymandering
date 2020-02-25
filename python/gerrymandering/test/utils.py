@@ -6,6 +6,18 @@ Useful functions for unit testing
 import json
 import time
 
+from shapely.geometry import Polygon, MultiPolygon
+
+
+def polygon_to_shapely(polygon):
+    """
+    Converts list-type polygon `shape` to
+    `shapely.geometry.Polygon`
+    """
+    tuple_polygon = [[tuple(coord) for coord in linear_ring]
+                     for linear_ring in polygon]
+    return Polygon(tuple_polygon[0], tuple_polygon[1:])
+
 
 def convert_to_json(coords, output_file):
     """
@@ -20,10 +32,14 @@ def convert_to_json(coords, output_file):
         features.append({
             "type": "Feature",
             "geometry": {
-                "type": "Polygon",
+                "type": ("Polygon" if not isinstance(feature[0][0][0], list)
+                         else "MultiPolygon"),
                 "coordinates": feature
             }
         })
+
+    with open("test_communities.json", "w") as f:
+        f.write(str(features))
 
     with open(output_file, 'w+') as f:
         json.dump({"type":"FeatureCollection", "features":features}, f)
@@ -44,3 +60,27 @@ def return_time(func):
         func(*args, **kwargs)
         return time.time() - start_time
     return timed_func
+
+
+def _tuples_to_lists(lst):
+    return [list(coord) for coord in lst]
+
+
+def polygon_to_list(polygon):
+    polygon_list = [_tuples_to_lists(list(polygon.exterior.coords))]
+    for ring in list(polygon.interiors):
+        polygon_list.append(
+            _tuples_to_lists(list(ring.coords)))
+    return polygon_list
+
+
+def multipolygon_to_list(multipolygon):
+    multipolygon_list = []
+    for polygon in multipolygon.geoms:
+        multipolygon_list.append(polygon_to_list(polygon))
+    return multipolygon_list
+
+
+def multipolygon_to_shapely(multipolygon):
+    polygons = [polygon_to_shapely(p) for p in multipolygon]
+    return MultiPolygon(polygons)

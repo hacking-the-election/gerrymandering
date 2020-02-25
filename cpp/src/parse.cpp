@@ -19,10 +19,10 @@ using namespace rapidjson;
 // constant id strings
 //ndv	nrv	geoid10	GEOID10	POP100
 const std::string election_id_header = "geoid10";
-const std::vector<std::string> d_head = {"ndv"};
-const std::vector<std::string> r_head = {"nrv"};
+const std::vector<std::string> d_head = {"PRS08DEM"};
+const std::vector<std::string> r_head = {"PRS08REP"};
 const std::string geodata_id = "GEOID10";
-const std::string population_id = "POP100";
+const std::string population_id = "TOTPOP";
 
 std::vector<std::vector<std::string > > parse_sv(std::string, std::string);
 bool check_column(std::vector<std::vector<std::string> >, int);
@@ -203,16 +203,16 @@ std::vector<GeoGerry::Shape> parse_precinct_coordinates(std::string geoJSON) {
         if (shapes["features"][i]["properties"].HasMember(geodata_id.c_str())) {
             id = shapes["features"][i]["properties"][geodata_id.c_str()].GetString();
         }
-        // else {
-        //     std::cout << "\e[31merror: \e[0mYou have no precinct id." << std::endl;
-        //     std::cout << "If future k-vernooy runs into this error, it means that GEOID10 in your geoJSON in your voter data is missing. To fix... maybe try a loose comparison of the names?" << std::endl;
-        // }
+        else {
+            std::cout << "\e[31merror: \e[0mYou have no precinct id." << std::endl;
+            std::cout << "If future k-vernooy runs into this error, it means that GEOID10 in your geoJSON in your voter data is missing. To fix... maybe try a loose comparison of the names?" << std::endl;
+        }
 
         // get the population from geodata
         if (shapes["features"][i]["properties"].HasMember(population_id.c_str()))
             pop = shapes["features"][i]["properties"][population_id.c_str()].GetInt();
-        // else
-        //     std::cout << "\e[31merror: \e[0mNo population data" << std::endl;
+        else
+            std::cout << "\e[31merror: \e[0mNo population data" << std::endl;
         
         // create empty string buffer
         StringBuffer buffer;
@@ -419,31 +419,31 @@ GeoGerry::Precinct_Group combine_holes(GeoGerry::Precinct_Group pg) {
     return GeoGerry::Precinct_Group(new_pre);
 }
 
-std::vector<GeoGerry::p_index_set>  sort_precincts(GeoGerry::Multi_Shape shape, GeoGerry::Precinct_Group pg) {
-    std::vector<GeoGerry::p_index_set> islands;
+std::vector<GeoGerry::p_index_set> sort_precincts(GeoGerry::Multi_Shape shape, GeoGerry::Precinct_Group pg) {
 
+    std::vector<GeoGerry::p_index_set> islands(shape.border.size());
+    
     if (shape.border.size() > 1) {
-        GeoGerry::p_index_set ignore;
-        std::vector<GeoGerry::Precinct> tmp_precincts = pg.precincts;
-        
-        for (int i = 0; i < shape.border.size(); i++) {
-            GeoGerry::p_index_set island;
-            for (int j = 0; j < tmp_precincts.size(); j++) {
-                if (!(std::find(ignore.begin(), ignore.end(), j) != ignore.end())) {
-                    // not in the ignore list, must check;
-                    if (get_inside_first(tmp_precincts[j].hull, shape.border[i].hull)) {
-                        island.push_back(j);
-                        ignore.push_back(j);
-                    }
+        GeoGerry::p_index pid = 0;
+        for (GeoGerry::Precinct p : pg.precincts) {
+            int shape_i = 0;
+            for (GeoGerry::Shape s : shape.border) {
+                if (get_inside_first(p.hull, s.hull)) {
+                    islands[shape_i].push_back(pid);
+                    break;
                 }
+                shape_i++;
             }
-            islands.push_back(island);
         }
     }
     else {
         GeoGerry::p_index_set p(pg.precincts.size());
         std::iota(p.begin(), p.end(), 0);
         islands.push_back(p);
+    }
+
+    for (GeoGerry::p_index_set p : islands) {
+        std::cout << p.size() << std::endl;
     }
     // std::cout << pg.precincts.size() << std::endl;
     // std::cout << tmp_precincts.size() << std::endl;
@@ -486,8 +486,7 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
     pre_group = combine_holes(pre_group);
     int removed = before - pre_group.precincts.size();
     if (VERBOSE) std::cout << "removed " << removed << " hole precincts" << std::endl;
-    writef(pre_group.to_json(), "json.json");
-    
+
     std::vector<Shape> state_shape_v; // dummy exterior border
     std::cout << pre_group.precincts.size() << std::endl;
     // generate state data from files
@@ -495,7 +494,7 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
     State state = State(district_shapes, pre_group.precincts, state_shape_v);
     Multi_Shape border = generate_exterior_border(state);
     state.border = border.border;
-    state.islands = sort_precincts(border, state);
+    state.islands = sort_precincts(border.border, pre_group);
 
     return state; // return the state object
 }
