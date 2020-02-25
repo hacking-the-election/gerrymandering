@@ -41,6 +41,13 @@ INTERSECTION = 3
 # general geometry functions
 
 
+def _get_distance(p1, p2):
+    """
+    Finds distance between points `p1` and `p2` as lists of floats
+    """
+    return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
+
+
 def get_if_bordering(shape1, shape2):
     """
     Returns whether or not two shapes are bordering
@@ -269,3 +276,37 @@ def group_by_islands(precincts):
         return islands
     else:
         return [[p.vote_id for p in precincts]]
+
+
+def get_precinct_link_pair(island, island_precinct_groups):
+    """
+    Finds id of precinct that is closest to
+    `precinct` on any other island.
+
+    Args:
+        `island`:                 List of save_precincts.Precinct
+                                  objects that is create the island
+                                  you want to find the precinct that
+                                  is closest to.
+        `island_precinct_groups`: List of lists of
+                                  save_precincts.Precinct objects
+                                  grouped by islands in the whole state
+                                  minus `island`.
+
+    Returns string that is the vote_id of the
+    closest precinct on any other island.
+    """
+    island_borders = [clip([p.coords for p in island], UNION)
+                      for island in island_precinct_groups]
+    # List of precincts that border the "coastline" of the each island.
+    border_precincts = \
+        [p for p in island if get_if_bordering(p, island_border)
+         for island in island_borders for p in island]
+
+    # Distance from center of `island` to center of every precinct
+    # on the border of every other island grouped by island.
+    precinct_distances = \
+        [_get_distance(centroid, precinct.coords.centroid.coords[0])
+         for precinct in border_precincts]
+    
+    return min(precinct_distances)
