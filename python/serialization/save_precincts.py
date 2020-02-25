@@ -277,20 +277,24 @@ class Precinct:
                 # match geo_id and ele_id with a dictionary
                 population_to_election = {}
                 # conditionals for each state
-                if state == 'arkansas':
-                    for precinct in geo_data["features"]:
-                        dict_len = len(population_to_election)
-                        precinct_id = precinct["properties"][json_id].lower()
-                        for index in range(len(precinct_id) - 5):
-                            if precinct_id[index:index+4] == 'ward':
-                                precinct_id.replace('ward', '')
-                                break
-                        precinct_id = precinct_id.capitalize()
-                        for precinct in election_data["features"]:
-                            if precinct["properties"][ele_id] == precinct_id:
-                                population_to_election[precinct_id] = precinct["properties"][ele_id]
-                        if dict_len != (len(population_to_election) - 1):
-                            print('failed to match ids, precinct_ids are: ', precinct_id)
+                '''
+                failed arkansas
+                '''
+                # if state == 'arkansas':
+                #     for precinct in geo_data["features"]:
+                #         dict_len = len(population_to_election)
+                #         precinct_id = precinct["properties"][json_id[0]].lower()
+                #         for index in range(len(precinct_id) - 5):
+                #             if precinct_id[index:index+4] == 'ward':
+                #                 precinct_id.replace('ward', '')
+                #                 break
+                #         precinct_matched = False
+                #         for precinct in election_data["features"]:
+                #             if precinct["properties"][ele_id].lower() == precinct_id:
+                #                 population_to_election[precinct_id] = precinct["properties"][ele_id]
+                #                 precinct_matched = True
+                #         if dict_len != (len(population_to_election) - 1):
+                #             print('failed to match ids, precinct_ids are: ', precinct_id)
                 # create population dictionary
                 pop = {}
                 # fill population dictionary with conversion data.
@@ -559,7 +563,7 @@ if __name__ == "__main__":
 
     args = sys.argv[1:]
 
-    if len(args) != 6:
+    if len(args) != 7:
          raise TypeError(
             "Incorrect number of arguments: (see __doc__ for usage)")
     
