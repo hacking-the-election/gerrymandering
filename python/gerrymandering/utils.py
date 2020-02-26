@@ -18,7 +18,7 @@ multipolygon (list of polygons).
 __all__ = ["clip", "UNION", "DIFFERENCE", "get_if_bordering",
            "get_point_in_polygon", "Community", "group_by_islands",
            "get_precinct_link_pair", "LoopBreakException",
-           "LoopContinueException"]
+           "LoopContinueException", "get_area_intersection"]
 
 
 import math
@@ -92,6 +92,26 @@ def get_point_in_polygon(polygon, point):
     elif isinstance(point, Point):
         coord = point
     return shapely_polygon.contains(coord) or shapely_polygon.touches(coord)
+
+
+def get_area_intersection(polygon1, polygon2):
+    """
+    Finds the area intersecting between the two polygons passed as arguments
+    Both polygons should be shapely polygons
+    Returns float (area of intersection.)
+    """
+    # find area of both polygons
+    area1 = polygon1.area
+    area2 = polygon2.area
+    # find area of union
+    union_coords = clip([polygon1, polygon2], 1)
+    union_area = union_coords.area
+    # The area of the intersection is the sum of the two areas minus the area of the union
+    intersect_area = area1 + area2 - union_area
+    # if the intersection area is negative, raise exception
+    if abs(intersect_area) != intersect_area:
+        raise Exception("Negative area found, check inputs")
+    return intersect_area
 
 
 def clip(shapes, clip_type):

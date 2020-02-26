@@ -16,7 +16,7 @@ sys.path.append(abspath(dirname(dirname(dirname(__file__)))))
 
 from utils import *
 from serialization.load_precincts import load
-from serialization.save_precincts import Precinct
+from serialization.save_precincts import Precinct, polygon_to_shapely
 from gerrymandering.utils import *
 
 
@@ -145,6 +145,9 @@ class TestGeometry(unittest.TestCase):
             ),
             True
         )
+    
+    def test_get_area_intersection(self):
+        self.assertEqual()
 
 
 class TestCommunities(unittest.TestCase):

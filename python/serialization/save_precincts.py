@@ -95,23 +95,22 @@ def tostring(string):
         return str(string)
 
 
-def area(points):
+def area(linear_pair):
     """
-    Uses shoelace theorem to calculate area,
-    accepts polygon but uses first linear pair just in case the polygon 
-    actually is the linear pair
+    Uses shoelace theorem to calculate area.
+    Takes in linear_pair and returns a float
     """
     area = 0
     left_area = 0
     right_area = 0
     index = 0
-    for num, point in enumerate(points):
-        if point == points[-1]:
-            left_area += point[0]*points[0][1]
-            right_area += point[1]*points[0][0]
+    for num, point in enumerate(linear_pair):
+        if point == linear_pair[-1]:
+            left_area += point[0]*linear_pair[0][1]
+            right_area += point[1]*linear_pair[0][0]
         else:
-            left_area += point[0]*points[num+1][1]
-            right_area += point[1]*points[num+1][0]
+            left_area += point[0]*linear_pair[num+1][1]
+            right_area += point[1]*linear_pair[num+1][0]
     area = abs(left_area - right_area)/2
     return area
 
