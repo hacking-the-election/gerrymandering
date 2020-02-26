@@ -153,7 +153,7 @@ class Community:
     A collection of precincts
     """
     
-    def __init__(self, precincts, identifier):
+    def __init__(self, precincts, identifier, island=None, size=None):
         self.precincts = {precinct.vote_id: precinct for precinct in precincts}
         self.id = identifier
         if precincts != []:
@@ -164,6 +164,10 @@ class Community:
         self.standard_deviation = None
         self.population = None
         self.compactness = None
+
+        # Attributes useful for states with islands:
+        self.island = island
+        self.size = None
 
     def update_compactness(self):
         """
