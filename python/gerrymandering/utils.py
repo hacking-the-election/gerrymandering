@@ -261,29 +261,62 @@ def get_precinct_link_pair(island, island_precinct_groups):
     `precinct` on any other island.
 
     Args:
-        `island`:                 List of save_precincts.Precinct
+        `island`:                 List of `save_precincts.Precinct`
                                   objects that is create the island
                                   you want to find the precinct that
                                   is closest to.
         `island_precinct_groups`: List of lists of
-                                  save_precincts.Precinct objects
+                                  `save_precincts.Precinct` objects
                                   grouped by islands in the whole state
                                   minus `island`.
 
-    Returns string that is the vote_id of the
-    closest precinct on any other island.
+    Returns list of two strings that are the linked
+    pair between `island` and any other island.
     """
     island_borders = [clip([p.coords for p in island], UNION)
                       for island in island_precinct_groups]
     # List of precincts that border the "coastline" of the each island.
+    # Grouped by island.
     border_precincts = \
-        [p for p in island if get_if_bordering(p, island_border)
-         for island in island_borders for p in island]
+        [[p for p in island if get_if_bordering(p.coords, island_border)]
+         for p in island for island in island_borders]
 
-    # Distance from center of `island` to center of every precinct
-    # on the border of every other island grouped by island.
-    precinct_distances = \
-        [_get_distance(centroid, precinct.coords.centroid.coords[0])
-         for precinct in border_precincts]
-    
-    return min(precinct_distances)
+    island_centroid = \
+        clip([p.coords for p in island], UNION).centroid.coords[0]
+    # id of Precinct whose centroid is closest to centroid of `island`
+    closest_precinct = None
+    # Distance from above precinct to centroid of `island`
+    closest_precinct_distance = 0
+    # Island that contains above precinct
+    closest_isalnd = []
+    for i in range(len(border_precincts)):
+        for precinct in border_precincts[i]:
+            distance = _get_distance(island_centroid,
+                                     precinct.centroid.coords[0])
+            if (
+                    closest_precinct is None
+                    or distance < closest_precinct_distance
+                    ):
+                closest_precinct = precinct.vote_id
+                closest_precinct_distance = distance
+                closest_island = i
+    closest_island_centroid = \
+        island_borders[closest_island].centroid.coords[0]
+
+    # Find the precinct on the border of `island` that is closest to
+    # the centroid of the island that contains the precincts that is
+    # closest to the centroid of `island`.
+    island_border_precincts = [precinct for precinct in islands
+                               if get_if_bordering(p.coords, island_border)]
+    closest_second_precinct = None
+    closest_second_precinct_distance = 0
+    for precinct in island_border_precincts:
+        distance = _get_distance(closest_island_centroid,
+                                 precinct.centroid.coords[0])
+        if (
+                closest_second_precinct is None
+                or distance < closest_second_precinct_distance
+                ):
+            closest_second_precinct = precinct.vote_id
+            closest_precinct_distance = distance
+    return [closest_precinct, closest_second_precinct]
