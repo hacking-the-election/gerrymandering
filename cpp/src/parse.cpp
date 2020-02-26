@@ -433,14 +433,11 @@ std::vector<GeoGerry::p_index_set> sort_precincts(GeoGerry::Multi_Shape shape, G
                 if (get_inside_first(tmp_precincts[j].hull, shape.border[i].hull)) {
                     island.push_back(j);
                     // ignore.push_back(j);
-                    if (i == 40 && j == 2) {
-                        std::cout << std::setprecision(6) << tmp_precincts[j].hull.border[0][0] << ", " << tmp_precincts[j].hull.border[0][1] << std::endl;
-                        std::cout << shape.border[i].hull.to_json() << std::endl;
-                    }
                 }
                 // else {
-                //     // std::cout << std::setprecision(8) << tmp_precincts[j].hull.border[0][0] << ", " << tmp_precincts[j].hull.border[0][1] << " not in thing" << std::endl;
-                //     sad = j;
+                    // std::cout << std::setprecision(8) << tmp_precincts[j].hull.border[0][0] << ", " << tmp_precincts[j].hull.border[0][1] << " not in thing" << std::endl;
+                    // writef(shape.border[i].hull.to_json(), "stateb");
+                    // break;
                 // }
             // }
         }
@@ -455,6 +452,7 @@ std::vector<GeoGerry::p_index_set> sort_precincts(GeoGerry::Multi_Shape shape, G
     // }
 
     GeoGerry::Multi_Shape s;
+    // shape.border[0].draw();
     // s.border.push_back(shape.border[0]);
     for (GeoGerry::p_index pre : islands[49]) {
         s.border.push_back(pg.precincts[pre]);
@@ -498,7 +496,7 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
 
     int before = pre_group.precincts.size();
     if (VERBOSE) std::cout << "combining holes..." << std::endl;
-    // pre_group = combine_holes(pre_group);
+    pre_group = combine_holes(pre_group);
     int removed = before - pre_group.precincts.size();
     if (VERBOSE) std::cout << "removed " << removed << " hole precincts" << std::endl;
 
@@ -508,7 +506,9 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
     if (VERBOSE) std::cout << "generating state with precinct and district arrays..." << std::endl;
     State state = State(district_shapes, pre_group.precincts, state_shape_v);
     Multi_Shape border = generate_exterior_border(state);
+    if (VERBOSE) std::cout << "generating state with precinct and district arrays..." << std::endl;
     state.border = border.border;
+    border.draw();
     state.islands = sort_precincts(border.border, pre_group);
     // state.draw();
     return state; // return the state object

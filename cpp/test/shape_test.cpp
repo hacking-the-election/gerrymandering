@@ -28,8 +28,9 @@ int main(int argc, char* argv[]) {
     cout << point_in_ring({0, 0}, border) << endl;
     cout << point_in_ring({2, -1}, border) << endl;
     cout << point_in_ring({1, 1}, border) << endl;
+    cout << point_in_ring({0, 0.5}, border) << endl;
     
-    shape.draw();
+    // shape.draw();
     // assert_equal("checking area function", area(shape), 0.5);
     // assert_equal("testing center coord 1", center(shape)[0], 0.333333);
     // assert_equal("testing center coord 2", center(shape)[1], 0.333333);

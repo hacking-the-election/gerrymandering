@@ -279,18 +279,18 @@ bool point_in_ring(GeoGerry::coordinate coord, GeoGerry::LinearRing lr) {
         see the documentation for this implementation at
         http://geomalgorithms.com/a03-_inclusion.html.
     */
-    geos::geom::PrecisionModel::PrecisionModel p(geos::geom::PrecisionModel::PrecisionModel::FIXED);
-    geos::geom::Coordinate coordinate = Coordinate((double)coord[0], (double)coord[1]);
-    geos::algorithm::RayCrossingCounter* r = new geos::algorithm::RayCrossingCounter(coordinate);
+    // geos::geom::PrecisionModel::PrecisionModel p(geos::geom::PrecisionModel::PrecisionModel::FIXED);
+    // geos::geom::Coordinate coordinate = Coordinate((double)coord[0], (double)coord[1]);
+    // geos::algorithm::RayCrossingCounter* r = new geos::algorithm::RayCrossingCounter(coordinate);
 
-    for (segment seg : lr.get_segments())
-        r->countSegment(Coordinate((double)seg[0], (double)seg[1]), Coordinate((double)seg[2], (double)seg[3]));
+    // for (segment seg : lr.get_segments())
+    //     r->countSegment(Coordinate((double)seg[0], (double)seg[1]), Coordinate((double)seg[2], (double)seg[3]));
 
-    return r->isPointInPolygon();
+    // return r->isPointInPolygon();
 
-    // ClipperLib::Path path = ring_to_path(lr);
-    // ClipperLib::IntPoint p(coord[0] * c, coord[1] * c);
-    // return (!(ClipperLib::PointInPolygon(p, path) == 0));
+    ClipperLib::Path path = ring_to_path(lr);
+    ClipperLib::IntPoint p(coord[0] * c, coord[1] * c);
+    return (!(ClipperLib::PointInPolygon(p, path) == 0));
 }
 
 bool get_inside(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1) {
@@ -466,38 +466,32 @@ Multi_Shape generate_exterior_border(Precinct_Group precinct_group) {
         Get the exterior border of a shape with interior components.
         Equivalent to 'dissolve' in mapshaper - remove bordering edges
     */ 
-    cout << "a" << endl;
-    geos::geom::Geometry::NonConstVect gc = multi_shape_to_poly(precinct_group);
-    cout << "a" << endl;
-    std::unique_ptr<geos::geom::Geometry> geoms = geos::operation::geounion::UnaryUnionOp::Union(gc);
-    cout << "a" << endl;
-    int s = geoms->getNumGeometries();
-    cout << "a" << endl;
-    
-    Multi_Shape ms;
-    for (int i = 0; i < s; i++) {
-        Shape s = poly_to_shape(geoms->getGeometryN(i));
-        ms.border.push_back(s);
-    }
-    cout << "a" << endl;
+    // geos::geom::Geometry::NonConstVect gc = multi_shape_to_poly(precinct_group);
+    // std::unique_ptr<geos::geom::Geometry> geoms = geos::operation::geounion::UnaryUnionOp::Union(gc);
 
-    return ms;
-	// ClipperLib::Paths subj;
-
-    // for (Precinct p : precinct_group.precincts) {
-    //     for (ClipperLib::Path path : shape_to_paths(p)) {
-    //         subj.push_back(path);
-    //     }
+    // Multi_Shape ms;
+    // for (int i = 0; i < geoms->getNumGeometries(); i++) {
+    //     Shape s = poly_to_shape(geoms->getGeometryN(i));
+    //     ms.border.push_back(s);
     // }
 
-    // // Paths solutions
-    // ClipperLib::Paths solutions;
-    // ClipperLib::Clipper c;
+    // return ms;
+	ClipperLib::Paths subj;
 
-    // c.AddPaths(subj, ClipperLib::ptSubject, true);
-    // c.Execute(ClipperLib::ctUnion, solutions, ClipperLib::pftNonZero);
+    for (Precinct p : precinct_group.precincts) {
+        for (ClipperLib::Path path : shape_to_paths(p)) {
+            subj.push_back(path);
+        }
+    }
 
-    // return paths_to_multi_shape(solutions);
+    // Paths solutions
+    ClipperLib::Paths solutions;
+    ClipperLib::Clipper c;
+
+    c.AddPaths(subj, ClipperLib::ptSubject, true);
+    c.Execute(ClipperLib::ctUnion, solutions, ClipperLib::pftNonZero);
+
+    return paths_to_multi_shape(solutions);
     // return clipper_mult_int_to_shape(solutions);
 }
 
