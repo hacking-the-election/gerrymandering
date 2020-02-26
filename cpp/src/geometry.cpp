@@ -1,6 +1,6 @@
 /*=======================================
  geometry.cpp:                  k-vernooy
- last modified:               Wed, Feb 19
+ last modified:               Wed, Feb 26
  
  Definition of useful functions for
  computational geometry. Basic 
@@ -11,17 +11,13 @@
 #include "../include/geometry.hpp"
 #include "../include/shape.hpp"   // class definitions
 #include "../include/gui.hpp"     // for the draw function
-#include <chrono>
 
 // define geometric constants
 #define PI 3.14159265358979323846
 const int c = pow(10, 18);
 
 using namespace GeoGerry;
-using std::vector;
-using std::array;
-using std::string;
-// using namespace std::chrono;
+using namespace std;
 
 /*
     Following methods utilize the segment of segments typedefs.
@@ -283,34 +279,18 @@ bool point_in_ring(GeoGerry::coordinate coord, GeoGerry::LinearRing lr) {
         see the documentation for this implementation at
         http://geomalgorithms.com/a03-_inclusion.html.
     */
-
-    // int cn = 0;
-    // geos::geom::Geometry* lr2 = shape_to_poly(lr);
-    geos::geom::Coordinate coordinate = Coordinate(coord[0], coord[1]);
+    geos::geom::PrecisionModel::PrecisionModel p(geos::geom::PrecisionModel::PrecisionModel::FIXED);
+    geos::geom::Coordinate coordinate = Coordinate((double)coord[0], (double)coord[1]);
     geos::algorithm::RayCrossingCounter* r = new geos::algorithm::RayCrossingCounter(coordinate);
-    for (segment seg : lr.get_segments()) {
-        r->countSegment(Coordinate(seg[0], seg[1]), Coordinate(seg[2], seg[3]));
-    }
+
+    for (segment seg : lr.get_segments())
+        r->countSegment(Coordinate((double)seg[0], (double)seg[1]), Coordinate((double)seg[2], (double)seg[3]));
+
     return r->isPointInPolygon();
 
-    // return t;
     // ClipperLib::Path path = ring_to_path(lr);
     // ClipperLib::IntPoint p(coord[0] * c, coord[1] * c);
-    // int ret = ClipperLib::PointInPolygon(p, path);
-
-    // return (ret != 0);
-    // loop through all edges of the polygon
-    // for (segment seg : lr.get_segments()) {
-
-    //    if (((seg[1] <= coord[1]) && (seg[3] > coord[1])) ||  // an upward crossing
-    //        ((seg[1] > coord[1]) && (seg[3] <= coord[1]))) {  // a downward crossing
-    //         double vt = (double)(coord[1]  - seg[1]) / (seg[3] - seg[1]);
-    //         if (coord[0] < seg[0] + vt * (seg[2] - seg[0])) // coord[0] < intersect
-    //             ++cn;   // a valid crossing of y = coord[1] right of coord[0]
-    //     }
-    // }
-
-    // return (cn & 1);    // 0 if even (out), and 1 if  odd (in)
+    // return (!(ClipperLib::PointInPolygon(p, path) == 0));
 }
 
 bool get_inside(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1) {
@@ -486,23 +466,38 @@ Multi_Shape generate_exterior_border(Precinct_Group precinct_group) {
         Get the exterior border of a shape with interior components.
         Equivalent to 'dissolve' in mapshaper - remove bordering edges
     */ 
-
-	ClipperLib::Paths subj;
-
-    for (Precinct p : precinct_group.precincts) {
-        for (ClipperLib::Path path : shape_to_paths(p)) {
-            subj.push_back(path);
-        }
+    cout << "a" << endl;
+    geos::geom::Geometry::NonConstVect gc = multi_shape_to_poly(precinct_group);
+    cout << "a" << endl;
+    std::unique_ptr<geos::geom::Geometry> geoms = geos::operation::geounion::UnaryUnionOp::Union(gc);
+    cout << "a" << endl;
+    int s = geoms->getNumGeometries();
+    cout << "a" << endl;
+    
+    Multi_Shape ms;
+    for (int i = 0; i < s; i++) {
+        Shape s = poly_to_shape(geoms->getGeometryN(i));
+        ms.border.push_back(s);
     }
+    cout << "a" << endl;
 
-    // Paths solutions
-    ClipperLib::Paths solutions;
-    ClipperLib::Clipper c;
+    return ms;
+	// ClipperLib::Paths subj;
 
-    c.AddPaths(subj, ClipperLib::ptSubject, true);
-    c.Execute(ClipperLib::ctUnion, solutions, ClipperLib::pftNonZero);
+    // for (Precinct p : precinct_group.precincts) {
+    //     for (ClipperLib::Path path : shape_to_paths(p)) {
+    //         subj.push_back(path);
+    //     }
+    // }
 
-    return paths_to_multi_shape(solutions);
+    // // Paths solutions
+    // ClipperLib::Paths solutions;
+    // ClipperLib::Clipper c;
+
+    // c.AddPaths(subj, ClipperLib::ptSubject, true);
+    // c.Execute(ClipperLib::ctUnion, solutions, ClipperLib::pftNonZero);
+
+    // return paths_to_multi_shape(solutions);
     // return clipper_mult_int_to_shape(solutions);
 }
 
@@ -541,7 +536,7 @@ GeoGerry::LinearRing path_to_ring(ClipperLib::Path path) {
     GeoGerry::LinearRing s;
 
     for (ClipperLib::IntPoint point : path ) {
-        coordinate p = {(static_cast<long double>(point.X) / c), (static_cast<long double>(point.Y) / c)};
+        coordinate p = {((point.X) / (long double)c), ((point.Y) / (long double)c)};
         if (p[0] != 0 && p[1] != 0) s.border.push_back(p);
     }
 
@@ -570,11 +565,11 @@ GeoGerry::Multi_Shape paths_to_multi_shape(ClipperLib::Paths paths) {
     Multi_Shape ms;
     
     for (ClipperLib::Path path : paths) {
-        if (ClipperLib::Orientation(path)) {
+        // if (ClipperLib::Orientation(path)) {
             GeoGerry::LinearRing border = path_to_ring(path);
             GeoGerry::Shape s(border);
             ms.border.push_back(s);
-        }
+        // }
         // else {
         //     std::cout << "hole" << std::endl;
         //     ReversePath(path);
@@ -639,6 +634,17 @@ geos::geom::Geometry* shape_to_poly(GeoGerry::LinearRing shape) {
     geos::geom::Polygon* poly = global_factory->createPolygon(outer, holes);
 
     return poly;
+}
+
+geos::geom::Geometry::NonConstVect multi_shape_to_poly(GeoGerry::Multi_Shape ms) {
+    geos::geom::Geometry::NonConstVect geoms;
+
+    for (Shape s : ms.border) {
+        geos::geom::Geometry* geo = shape_to_poly(s.hull);
+        geoms.push_back(geo);
+    }
+
+    return geoms;
 }
 
 Shape poly_to_shape(const geos::geom::Geometry* path) {

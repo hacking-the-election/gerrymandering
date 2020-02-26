@@ -51,6 +51,7 @@ geos::geom::Point* create_point(long double x, long double y);
 geos::geom::Geometry* shape_to_poly(GeoGerry::LinearRing shape);
 GeoGerry::Shape poly_to_shape(const geos::geom::Geometry* path);
 GeoGerry::Multi_Shape* multipoly_to_shape(geos::geom::MultiPolygon* paths);
+geos::geom::Geometry::NonConstVect multi_shape_to_poly(GeoGerry::Multi_Shape ms);
 
 // for algorithm helper methods
 double get_standard_deviation_partisanship(GeoGerry::Precinct_Group pg);
