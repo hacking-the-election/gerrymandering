@@ -16,7 +16,9 @@ multipolygon (list of polygons).
 
 
 __all__ = ["clip", "UNION", "DIFFERENCE", "get_if_bordering",
-           "get_point_in_polygon", "Community", "group_by_islands"]
+           "get_point_in_polygon", "Community", "group_by_islands",
+           "get_precinct_link_pair", "LoopBreakException",
+           "LoopContinueException"]
 
 
 import math
@@ -34,6 +36,22 @@ logging.basicConfig(filename="precincts.log", level=logging.DEBUG)
 UNION = 1
 DIFFERENCE = 2
 INTERSECTION = 3
+
+
+# ===================================================
+# custom exceptions
+
+
+class LoopBreakException(Excpetion):
+    """
+    Used to break outer loops from within nested loops.
+    """
+
+
+class LoopContinueException(Exception):
+    """
+    Used to continue outer loops from within nested loops.
+    """
 
 
 # ===================================================
