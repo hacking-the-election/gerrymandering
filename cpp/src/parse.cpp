@@ -147,12 +147,22 @@ GeoGerry::Shape string_to_vector(std::string str) {
     for (int i = 0; i < mp[0].Size(); i++)
         hull.border.push_back({mp[0][i][0].GetDouble(), mp[0][i][1].GetDouble()});
 
+    if (mp[0][0][0] != mp[0][mp[0].Size() - 1][0] || 
+        mp[0][0][1] != mp[0][mp[0].Size() - 1][1]) {       
+        hull.border.push_back(hull.border[0]);
+    }
+
     v.hull = hull;
 
     for (int i = 1; i < mp.Size(); i++) {
         GeoGerry::LinearRing hole;
-        for (int j = 0; j < mp[i].Size(); j++)
+        for (int j = 0; j < mp[i].Size(); j++) {
             hole.border.push_back({mp[i][j][0].GetDouble(), mp[i][j][1].GetDouble()});
+        }
+        if (mp[i][0][0] != mp[i][mp[i].Size() - 1][0] || 
+            mp[i][0][1] != mp[i][mp[i].Size() - 1][1]) {       
+            hole.border.push_back(hole.border[0]);
+        }
 
         v.holes.push_back(hole);
     }
@@ -236,6 +246,8 @@ std::vector<GeoGerry::Shape> parse_precinct_coordinates(std::string geoJSON) {
                 shape.holes.push_back(geo.holes[i]);
             }
 
+            if (shape.hull.border[0] != shape.hull.border[shape.hull.border.size() - 1])
+                std::cout << "Ok something failed" << std::endl;
             shapes_vector.push_back(shape);
         }
         else {
@@ -250,6 +262,9 @@ std::vector<GeoGerry::Shape> parse_precinct_coordinates(std::string geoJSON) {
                 shape.is_part_of_multi_polygon = true;
                 float fract = shape.get_area() / total_area;
                 shape.pop = (int) round(pop * fract);
+
+                if (shape.hull.border[0] != shape.hull.border[shape.hull.border.size() - 1])
+                    std::cout << "Ok something failed" << std::endl;
                 shapes_vector.push_back(shape);
             }
         }
@@ -433,12 +448,11 @@ std::vector<GeoGerry::p_index_set> sort_precincts(GeoGerry::Multi_Shape shape, G
                 if (get_inside_first(tmp_precincts[j].hull, shape.border[i].hull)) {
                     island.push_back(j);
                     // ignore.push_back(j);
+                    // if (i == 40 && j == 2) {
+                    //     std::cout << tmp_precincts[j].hull.border[0][0] << ", " << tmp_precincts[j].hull.border[0][1] << std::endl;
+                    //     std::cout << shape.border[i].hull.to_json();
+                    // }
                 }
-                // else {
-                    // std::cout << std::setprecision(8) << tmp_precincts[j].hull.border[0][0] << ", " << tmp_precincts[j].hull.border[0][1] << " not in thing" << std::endl;
-                    // writef(shape.border[i].hull.to_json(), "stateb");
-                    // break;
-                // }
             // }
         }
         islands.push_back(island);
@@ -457,7 +471,7 @@ std::vector<GeoGerry::p_index_set> sort_precincts(GeoGerry::Multi_Shape shape, G
     for (GeoGerry::p_index pre : islands[49]) {
         s.border.push_back(pg.precincts[pre]);
     }
-    s.draw();
+    // s.draw();
     // std::cout << pg.precincts.size() << std::endl;
     // std::cout << tmp_precincts.size() << std::endl;
     return islands;
@@ -506,10 +520,8 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
     if (VERBOSE) std::cout << "generating state with precinct and district arrays..." << std::endl;
     State state = State(district_shapes, pre_group.precincts, state_shape_v);
     Multi_Shape border = generate_exterior_border(state);
-    if (VERBOSE) std::cout << "generating state with precinct and district arrays..." << std::endl;
     state.border = border.border;
-    border.draw();
-    state.islands = sort_precincts(border.border, pre_group);
+    state.islands = sort_precincts(border, pre_group);
     // state.draw();
     return state; // return the state object
 }

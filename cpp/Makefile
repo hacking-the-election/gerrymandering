@@ -8,7 +8,7 @@ SDL = -lSDL2 -lSDL2main
 V = 11
 CLIPPER = lib/clipper/clipper.cpp#`geos-config --ldflags` -lgeos
 OPT = #-Wall -pedantic -Wextra
-GEOS = `geos-config --ldflags` -lgeos
+GEOS = #`geos-config --ldflags` -lgeos
 
 all: community
 #all: state_serializer
