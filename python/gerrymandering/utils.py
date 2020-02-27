@@ -154,7 +154,7 @@ class Community:
     A collection of precincts
     """
     
-    def __init__(self, precincts, identifier, island=None, size=None):
+    def __init__(self, precincts, identifier):
         self.precincts = {precinct.vote_id: precinct for precinct in precincts}
         self.id = identifier
         if precincts != []:
@@ -167,7 +167,7 @@ class Community:
         self.compactness = None
 
         # Attributes useful for states with islands:
-        self.island = island
+        self.islands = islands
         self.size = None
 
     def update_compactness(self):
@@ -362,22 +362,19 @@ def get_precinct_link_pair(island, island_precinct_groups):
     return [closest_precinct, closest_second_precinct]
 
 
-def create_island_communities(precincts, community_sizes,
-                              linked_precincts, communities):
+def fill_community(precincts, linked_precincts, community):
     """
-    Breaks an island into a group of communities.
+    Fills a community up with precincts.
 
     Args:
-        `precincts`:        List of Precinct objects in the island.
-        `community_sizes`:  List of ints that are the size of each
-                            community in the island.
+        `precincts`:        List of Precinct objects in the island the
+                            community is on.
         `linked_precincts`: Set of precincts that are meant to be part
                             of communities that span islands, therefore
                             making them untouchable during this step.
-        `communities`:      List that community objects will be
-                            appended to.
+        `community`:        Community object to fill with precincts.
 
-    Returns None
+    Returns Community object with filled precincts attribute
     """
 
     kwargs = {
@@ -389,40 +386,35 @@ def create_island_communities(precincts, community_sizes,
     }
     unchosen_precincts = Community(precincts[:], 0)
 
-    for i, community_size in enumerate(community_sizes[:-1], 1):
-        community = Community([], i)
-        for _ in range(community_size):
-            # Set of precincts that have been tried
-            tried_precincts = set()
+    for _ in range(community.size):
+        # Set of precincts that have been tried
+        tried_precincts = set()
 
-            # Give random precinct to `community`
+        # Give random precinct to `community`
+        random_precinct = random.sample(
+            community.get_bordering_precincts(unchosen_precincts) \
+            - tried_precincts - linked_precincts, 1)[0]
+
+        unchosen_precincts.give_precinct(
+            community, random_precinct, **kwargs)
+        tried_precincts.add(random_precinct)
+
+        # Keep trying other precincts until one of them
+        # doesn't make an island.
+        while isinstance(unchosen_precincts.coords, MultiPolygon):
+            # Give it back
+            community.give_precinct(
+                unchosen_precincts, random_precinct, **kwargs)
+            print(f"precinct {random_precinct} added to and removed "
+                  f"from community {community.id} because it created an "
+                   "island")
+            # Random precinct that hasn't already been
+            # tried and also borders community.
             random_precinct = random.sample(
                 community.get_bordering_precincts(unchosen_precincts) \
                 - tried_precincts - linked_precincts, 1)[0]
-
             unchosen_precincts.give_precinct(
                 community, random_precinct, **kwargs)
             tried_precincts.add(random_precinct)
 
-            # Keep trying other precincts until one of them
-            # doesn't make an island.
-            while isinstance(unchosen_precincts.coords, MultiPolygon):
-                # Give it back
-                community.give_precinct(
-                    unchosen_precincts, random_precinct, **kwargs)
-                print(f"precinct {random_precinct} added to and removed"
-                      f" from community {i} because it created an island")
-                # Random precinct that hasn't already been
-                # tried and also borders community.
-                random_precinct = random.sample(
-                    community.get_bordering_precincts(unchosen_precincts) \
-                    - tried_precincts - linked_precincts, 1)[0]
-                unchosen_precincts.give_precinct(
-                    community, random_precinct, **kwargs)
-                tried_precincts.add(random_precinct)
-
-            print(f"precinct {random_precinct} added to community {i}")
-
-        communities.append(community)
-    
-    communities.append(unchosen_precincts)
+        print(f"precinct {random_precinct} added to community {community.id}")
