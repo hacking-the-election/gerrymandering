@@ -31,8 +31,8 @@ int main(int argc, char* argv[]) {
     // read binary file from path
     string read_path = string(argv[1]);
     State state = State::read_binary(read_path);
-
-    int districts_in_state = 3;  // state.state_districts.size();
+    cout << "generating communities from given parameters..." << endl;
+    int districts_in_state = 2;  // state.state_districts.size();
     state.generate_communities(districts_in_state, 0.5, 0.2, 0.15);
 
     // write as binary
