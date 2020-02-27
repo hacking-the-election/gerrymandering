@@ -26,14 +26,6 @@ def create_initial_configuration(precincts, n_districts):
     communities that consist of random groups of communities.
     """
 
-    kwargs = {
-        "partisanship": False,
-        "standard_deviation": False,
-        "population": False, 
-        "compactness": False, 
-        "coords": True
-    }
-
     # Calculate `community_sizes`, a list of numbers corresponding to
     # the number of precincts each community should have.
     n_precincts = len(precincts)
@@ -45,145 +37,114 @@ def create_initial_configuration(precincts, n_districts):
     # communities to start with.
     unchosen_precincts = Community(precincts[:], 0)
     communities = []  # Will contain Community objects.
-    if isinstance(unchosen_precincts.coords, MultiPolygon):
-        # State is multipolygon, which means it has islands.
+    # State is multipolygon, which means it has islands.
 
-        # There should be communities of two sizes
-        small_community = min(community_sizes)
-        large_community = max(community_sizes)
-        island_precinct_groups = group_by_islands(precincts)
-        island_available_precincts = \
-            [len(island) for island in island_precinct_groups]
+    # There should be communities of two sizes
+    small_community = min(community_sizes)
+    large_community = max(community_sizes)
+    island_precinct_groups = group_by_islands(precincts)
+    # Should eventually all become zero
+    island_available_precincts = \
+        [len(island) for island in island_precinct_groups]
 
-        # Add communities with only
-        # id, island, and size attributes filled.
-        # Also fill list below with links between
-        # islands with fractional number of communities.
-        linked_precinct_pairs = []
-        for i, island in enumerate(island_precinct_groups):
-            # Each element is list of x, y, and difference with number
-            # of precincts.
-            try:
-                community_grouping_attempts = []
-                for x in range(community_sizes.count(small_community)):
-                    for y in range(community_sizes.count(large_community)):
-                        if ((n_precincts := \
-                            x * small_community + y * large_community)
-                                == island_available_precincts[i]):
-                            # Remove x small communities and y large ones
-                            # because those many precincts were used in
-                            # making this community.
-                            for _ in range(x):
-                                community_sizes.remove(small_community)
-                                communities.append(
-                                    Community([], len(communities),
-                                              [i], small_community))
-                            for _ in range(y):
-                                community_sizes.remove(large_community)
-                                communities.append(
-                                    Community([], len(communities),
-                                              [i], large_community))
+    # Add communities with only
+    # id, island, and size attributes filled.
+    # Also fill list below with links between
+    # islands with fractional number of communities.
+    linked_precinct_pairs = []
+    for i, island in enumerate(island_precinct_groups):
+        # Each element is list of x, y, and difference with number
+        # of precincts.
+        try:
+            community_grouping_attempts = []
+            for x in range(community_sizes.count(small_community)):
+                for y in range(community_sizes.count(large_community)):
+                    if ((n_precincts := \
+                        x * small_community + y * large_community)
+                            == island_available_precincts[i]):
+                        # Remove x small communities and y large ones
+                        # because those many precincts were used in
+                        # making this community.
+                        for _ in range(x):
+                            community_sizes.remove(small_community)
+                            communities.append(
+                                Community([], len(communities),
+                                            [i], small_community))
+                        for _ in range(y):
+                            community_sizes.remove(large_community)
+                            communities.append(
+                                Community([], len(communities),
+                                            [i], large_community))
 
-                            # All the precincts are used in the island,
-                            # so none are available anymore.
-                            island_available_precincts[i] = 0
-                            raise LoopBreakException
-                        elif n_precinct > island_available_precincts[i]:
-                            # Any attempts with a higher y will also
-                            # yield too many communities, so stop now.
-                            break
-                        else:
-                            community_grouping_attempts.append(
-                                [x, y, island_available_precincts
-                                       - n_precincts]
-                            )
-                # No configuration works out
-                best_configuration = min(community_grouping_attempts,
-                                         key=lambda x: x[-1])
-                for _ in range(best_configuration[0]):
-                    community_sizes.remove(small_community)
-                    communities.append(
-                        Community([], len(communities),
-                                  [i], small_community))
-                for _ in range(best_configuration[1]):
-                    community_sizes.remove(large_community)
-                    communities.append(
-                        Community([], len(communities),
-                                  [i], large_community))
-
-                # Subtract number of precincts taken up by communities
-                # on island from available precincts.
-                island_available_precincts[i] -= n_precincts
-
-                # Number of precincts that have been added through
-                # linking to other islands. Eventually will become
-                # equal to `large_community` or `small_community`
-                n_extra_precincts = 0
-                islands_used = []
-                # Loop through islands with some precincts left
-                islands_with_precincts = \
-                    [[il, n_il_precincts] for il, n_il_precincts in
-                     zip(island_precinct_groups, island_available_precincts)
-                     if il_precincts != 0]
-                for other_island, n_other_island_precincts in \
-                        islands_with_precincts:
-
-                    precinct_link_pair = get_precinct_link_pair(island,
-                                                                other_island)
-                    linked_precinct_pairs.append(precinct_link_pair)
-                    if (n_extra_precincts + n_other_island_precincts
-                            >= community_sizes[0]):
+                        # All the precincts are used in the island,
+                        # so none are available anymore.
+                        island_available_precincts[i] = 0
+                        raise LoopBreakException
+                    elif n_precinct > island_available_precincts[i]:
+                        # Any attempts with a higher y will also
+                        # yield too many communities, so stop now.
                         break
                     else:
-                        n_extra_precincts += n_other_island_precincts
-            except LoopBreakException:
-                pass
-    else:
-        # Create all communities except last
-        # (which will be unchosen precincts)
-        for i, community_size in enumerate(community_sizes[:-1], 1):
-            community = Community([], i)
-            for _ in range(community_size):
-                try:
-                    # Set of precincts that have been tried
-                    tried_precincts = set()
+                        community_grouping_attempts.append(
+                            [x, y, island_available_precincts
+                                    - n_precincts]
+                        )
+            # No configuration works out
+            best_configuration = min(community_grouping_attempts,
+                                        key=lambda x: x[-1])
+            for _ in range(best_configuration[0]):
+                community_sizes.remove(small_community)
+                communities.append(
+                    Community([], len(communities),
+                                [i], small_community))
+            for _ in range(best_configuration[1]):
+                community_sizes.remove(large_community)
+                communities.append(
+                    Community([], len(communities),
+                                [i], large_community))
 
-                    # Give random precinct to `community`
-                    random_precinct = random.sample(
-                        community.get_bordering_precincts(unchosen_precincts) \
-                        - tried_precincts, 1)[0]
+            # Subtract number of precincts taken up by communities
+            # on island from available precincts.
+            island_available_precincts[i] -= n_precincts
 
-                    unchosen_precincts.give_precinct(
-                        community, random_precinct, **kwargs)
-                    tried_precincts.add(random_precinct)
+            # Number of precincts that have been added through
+            # linking to other islands. Eventually will become
+            # equal to `large_community` or `small_community`
+            n_extra_precincts = 0
+            islands_used = []
+            # Loop through islands with some precincts left
+            islands_with_precincts = \
+                [[il, n_il_precincts] for il, n_il_precincts in
+                    zip(island_precinct_groups, island_available_precincts)
+                    if il_precincts != 0 and il != island]
+            for other_island, n_other_island_precincts in \
+                    islands_with_precincts:
 
-                    # Keep trying other precincts until one of them
-                    # doesn't make an island.
-                    while isinstance(unchosen_precincts.coords, MultiPolygon):
-                        # Give it back
-                        community.give_precinct(
-                            unchosen_precincts, random_precinct, **kwargs)
-                        print(f"precinct {random_precinct} added to and removed"
-                              f" from community {i} because it created an island")
-                        # Random precinct that hasn't already been
-                        # tried and also borders community.
-                        random_precinct = random.sample(
-                            community.get_bordering_precincts(unchosen_precincts) \
-                            - tried_precincts, 1)[0]
-                        unchosen_precincts.give_precinct(
-                            community, random_precinct, **kwargs)
-                        tried_precincts.add(random_precinct)
+                precinct_link_pair = get_precinct_link_pair(island,
+                                                            other_island)
+                linked_precinct_pairs.append(precinct_link_pair)
+                if (n_extra_precincts + n_other_island_precincts
+                        >= community_sizes[0]):
+                    island_available_precincts[
+                        islands_with_precincts.index(
+                            [other_island, n_other_island_precincts])] \
+                    -= (n_extra_precincts + n_other_island_precincts ) \
+                        - community_sizes[0]
+                    break
+                else:
+                    n_extra_precincts += n_other_island_precincts
+        except LoopBreakException:
+            pass
 
-                    print(f"precinct {random_precinct} added to community {i}")
-
-                except Exception as e:
-                    # Save your progress!
-                    logging.info(unchosen_precincts.precincts)
-                    with open("test_communities.pickle", "wb+") as f:
-                        pickle.dump(communities + [community], f)
-                    raise e
-
-            communities.append(community)
+    try:
+        for community in communities:
+            pass
+    except Exception as e:
+        # Save your progress!
+        logging.info(unchosen_precincts.precincts)
+        with open("test_communities.pickle", "wb+") as f:
+            pickle.dump(communities, f)
+        raise e
 
     communities.append(unchosen_precincts)
 
