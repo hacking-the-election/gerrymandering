@@ -17,7 +17,7 @@ multipolygon (list of polygons).
 
 __all__ = ["clip", "UNION", "DIFFERENCE", "get_schwartzberg_compactness",
            "get_if_bordering", "get_point_in_polygon", "get_area_intersection", 
-           "Community", "group_by_islands"]
+           "Community", "group_by_islands", "polygon_to_shapely", "shapely_to_polygon", "average", "stdev"]
 
 
 import math
@@ -26,7 +26,7 @@ import logging
 from shapely.ops import unary_union
 from shapely.geometry import MultiLineString, MultiPolygon, Polygon, Point
 
-from test.utils import print_time
+from .test.utils import print_time
 
 
 logging.basicConfig(filename="precincts.log", level=logging.DEBUG)
@@ -39,13 +39,6 @@ INTERSECTION = 3
 
 # ===================================================
 # general geometry functions
-
-
-def _get_distance(p1, p2):
-    """
-    Finds distance between points `p1` and `p2` as lists of floats
-    """
-    return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
 
 
 def get_if_bordering(shape1, shape2):
@@ -108,6 +101,32 @@ def get_area_intersection(polygon1, polygon2):
         raise Exception("Negative area found, check inputs")
     return intersect_area
 
+def average(number_list):
+    '''
+    Finds the average of the integers in number_list.
+    Returns float.
+    '''
+    sum = sum(number_list)
+    return sum/len(number_list)
+
+def stdev(number_list, weight_list=None):
+    '''
+    Finds the standard deviation of the integers in integers list.
+    If weight_list applies, multiply each of the numbers in number_list by the weight
+    (decimal) corresponding in weight_list. weight_list should have a list of decimals.
+    Does not use sample, but all elements in list
+    Returns float.
+    '''
+    average_int = average(number_list)
+    squared_sum = 0
+    for integer in number_list:
+        difference = average_int - integer
+        if weight_list:
+            squared_sum += (difference * difference) * weight_list
+        else:
+            squared_sum += (difference * difference)
+    return math.sqrt(squared_sum / len(number_list))
+
 def clip(shapes, clip_type):
     """
     Finds external border of a group of shapes
@@ -137,7 +156,28 @@ def clip(shapes, clip_type):
                 "Invalid clip type. Use utils.UNION or utils.DIFFERENCE")
     return solution
 
+def polygon_to_shapely(polygon):
+    """
+    Converts list-type polygon `shape` to
+    `shapely.geometry.Polygon`
+    """
+    tuple_polygon = [[tuple(coord) for coord in linear_ring]
+                     for linear_ring in polygon]
+    return Polygon(tuple_polygon[0], tuple_polygon[1:])
 
+def shapely_to_polygon(polygon):
+    """
+    Creates json polygon from shapely.geometry.Polygon
+    NOTE: Assumes shapely polygon only has exterior and no holes.
+    """
+    coordinates = list(polygon.exterior.coords)
+    linear_ring = []
+    for tuple1 in coordinates:
+        x = tuple1[0]
+        y = tuple1[1]
+        point_list = [x, y]
+        linear_ring.append(point_list)
+    return [linear_ring]
 # ===================================================
 # Community algorithm-specifc functions and classes:
 
@@ -276,37 +316,3 @@ def group_by_islands(precincts):
         return islands
     else:
         return [[p.vote_id for p in precincts]]
-
-
-def get_precinct_link_pair(island, island_precinct_groups):
-    """
-    Finds id of precinct that is closest to
-    `precinct` on any other island.
-
-    Args:
-        `island`:                 List of save_precincts.Precinct
-                                  objects that is create the island
-                                  you want to find the precinct that
-                                  is closest to.
-        `island_precinct_groups`: List of lists of
-                                  save_precincts.Precinct objects
-                                  grouped by islands in the whole state
-                                  minus `island`.
-
-    Returns string that is the vote_id of the
-    closest precinct on any other island.
-    """
-    island_borders = [clip([p.coords for p in island], UNION)
-                      for island in island_precinct_groups]
-    # List of precincts that border the "coastline" of the each island.
-    border_precincts = \
-        [p for p in island if get_if_bordering(p, island_border)
-         for island in island_borders for p in island]
-
-    # Distance from center of `island` to center of every precinct
-    # on the border of every other island grouped by island.
-    precinct_distances = \
-        [_get_distance(centroid, precinct.coords.centroid.coords[0])
-         for precinct in border_precincts]
-    
-    return min(precinct_distances)

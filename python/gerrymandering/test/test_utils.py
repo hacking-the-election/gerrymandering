@@ -11,7 +11,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from shapely.geometry import Polygon, MultiPolygon
 
-sys.path.append(abspath(dirname(dirname(dirname(__file__)))))
+sys.path.append(dirname(dirname(dirname(abspath(__file__)))))
+print(dirname(abspath((__file__))))
 
 from utils import *
 from serialization.load_precincts import load
@@ -19,7 +20,7 @@ from serialization.save_precincts import Precinct, polygon_to_shapely
 from gerrymandering.utils import *
 
 
-DATA_DIR = "../data/test/python"
+DATA_DIR = abspath("../../../../data/bin/python")
 
 
 class TestClipping(unittest.TestCase):
@@ -187,7 +188,10 @@ class TestGeometry(unittest.TestCase):
         )
     
     def test_get_area_intersection(self):
-        self.assertEqual()
+        self.assertEqual(get_area_intersection(
+            self.north_dakota[0], self.north_dakota[3]
+            )
+        )
 
 
 class TestCommunities(unittest.TestCase):
