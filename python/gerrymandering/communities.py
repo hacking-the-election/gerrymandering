@@ -11,7 +11,8 @@ from shapely.geometry import Polygon, MultiPolygon
 
 sys.path.append(abspath(dirname(dirname(__file__))))
 
-from gerrymandering.utils import *
+from gerrymandering.utils import (Community, group_by_islands,
+                                  LoopBreakException, get_precinct_link_pair)
 from .test.utils import convert_to_json
 
 
@@ -80,7 +81,7 @@ def create_initial_configuration(precincts, n_districts):
                         # so none are available anymore.
                         island_available_precincts[i] = 0
                         raise LoopBreakException
-                    elif n_precinct > island_available_precincts[i]:
+                    elif n_precincts > island_available_precincts[i]:
                         # Any attempts with a higher y will also
                         # yield too many communities, so stop now.
                         break
@@ -116,7 +117,7 @@ def create_initial_configuration(precincts, n_districts):
             islands_with_precincts = \
                 [[il, n_il_precincts] for il, n_il_precincts in
                     zip(island_precinct_groups, island_available_precincts)
-                    if il_precincts != 0 and il != island]
+                    if n_il_precincts != 0 and il != island]
             for other_island, n_other_island_precincts in \
                     islands_with_precincts:
 
@@ -160,6 +161,7 @@ def make_communities(state_file):
     with open(state_file, 'rb') as f:
         state_data = pickle.load(f)
     precincts = state_data[0]
+    districts = state_data[1]
 
     # Step 1
     communities = create_initial_configuration(precincts, len(districts))
