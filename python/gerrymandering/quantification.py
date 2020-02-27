@@ -43,6 +43,8 @@ def quantify(communities_file, districts_file):
                     for district in district_data["features"]}
     # find partianshipps
     partisanships = {id:community_dict[community][0] for id, community in community_dict.items()}
+    # find areas of communities
+    community_areas = {community:save_precincts.area(community_dict[community][1]) for community in community_areas}
     # begin finding district gerrymandering scores
     district_scores = {}
     for district in district_dict:
@@ -55,12 +57,15 @@ def quantify(communities_file, districts_file):
             community1 = community_dict[community][1]
             if get_area_intersection(polygon_to_shapely(district), community1) > 0:
                 intersecting_communities[community] = get_area_intersection(polygon_to_shapely(district, community1))
+        # find average_community_area and calculate weights for each district relative to 
         average_community_area = sum(intersecting_communities.values())/len(intersecting_communities)
+        area_weights = [area/average_community_area for area in intersecting_communities.values()]
         biggest_community = {}
         for key in intersecting_communities:
             if intersecting_communities[key] > biggest_community.get(key, 0):
                 biggest_community[key] = intersecting_communities[key]
-        # Create list of partisanship (decimal of proportion of republicans in district) weighted by area/
+        # Create list of partisanship (decimal of proportion of republicans in district) 
+        # for intersecting communities
         district_partisanships = [partisanships[community] for community in intersecting_communities]
         stdev_district = stdev(district_partisanships)
         for key, value in biggest_community.items():

@@ -17,6 +17,13 @@
 
 #include "../lib/clipper/clipper.hpp"
 
+// #include <geos.h>
+// #include <geos/operation.h>
+// #include <geos/operation/union/UnaryUnionOp.h>
+// #include <geos/algorithm/RayCrossingCounter.h>
+
+// #include "gui.hpp"     // for the draw function
+
 // coordinate manipulation for gui draw methods
 GeoGerry::bounding_box normalize_coordinates(GeoGerry::Shape* shape);
 GeoGerry::coordinate_set resize_coordinates(GeoGerry::bounding_box box, GeoGerry::coordinate_set shape, int screenX, int screenY);
@@ -38,6 +45,13 @@ ClipperLib::Path ring_to_path(GeoGerry::LinearRing ring);
 GeoGerry::LinearRing path_to_ring(ClipperLib::Path path);
 ClipperLib::Paths shape_to_paths(GeoGerry::Shape shape);
 GeoGerry::Multi_Shape paths_to_multi_shape(ClipperLib::Paths paths);
+
+// geos::geom::LinearRing* create_linearring(GeoGerry::coordinate_set coords);
+// geos::geom::Point* create_point(long double x, long double y);
+// geos::geom::Geometry* shape_to_poly(GeoGerry::LinearRing shape);
+// GeoGerry::Shape poly_to_shape(const geos::geom::Geometry* path);
+// GeoGerry::Multi_Shape* multipoly_to_shape(geos::geom::MultiPolygon* paths);
+// geos::geom::Geometry::NonConstVect multi_shape_to_poly(GeoGerry::Multi_Shape ms);
 
 // for algorithm helper methods
 double get_standard_deviation_partisanship(GeoGerry::Precinct_Group pg);

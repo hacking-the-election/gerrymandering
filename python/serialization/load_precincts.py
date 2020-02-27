@@ -9,7 +9,7 @@ from os.path import abspath, dirname
 import sys
 
 sys.path.append(abspath(dirname(__file__)))
-
+from gerrymandering.utils import shapely_to_polygon
 
 def load(state_file):
     """
@@ -47,11 +47,13 @@ def print_stats(lst, state):
 def convert_to_json(state_file, output_file):
     """
     Converts pickled list of Precinct objects to geojson
+    this is being left for dead
     """
     precincts = load(state_file)[0]
-
+    print(type(precincts))
     features = []
     for precinct in precincts:
+        precinct = shapely_to_polygon(precinct)
         precinct_json = {
             "type": "Feature",
             "geometry": {
@@ -69,10 +71,11 @@ def convert_to_json(state_file, output_file):
             precinct_json["properties"][key] = val
         for key, val in precinct.r_election_data.items():
             precinct_json["properties"][key] = val
+        precinct_json = shapely_to_polygon(precinct_json)
         features.append(precinct_json)
-
+    print(features)
     geo_json = {"type": "FeatureCollection", "features":features}
-
+    print('stuff')
     with open(output_file, 'w+') as f:
         json.dump(geo_json, f)
 

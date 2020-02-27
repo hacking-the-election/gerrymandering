@@ -6,6 +6,7 @@ import sys
 from os.path import abspath, dirname
 import unittest
 import time
+import pickle
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -76,19 +77,7 @@ class TestClipping(unittest.TestCase):
         def test_get_border_speed(shapes):
             return clip(shapes, UNION)
 
-        shapely_vermont = []
-        for p in self.vermont[0]:
-            try:
-                shapely_vermont.append(
-                    polygon_to_shapely(p.coords)
-                )
-            except ValueError:
-                shapely_vermont.append(
-                    multipolygon_to_shapely(p.coords)
-                )
-        union = test_get_border_speed(shapely_vermont)
-        
-        convert_to_json([polygon_to_list(union)], "test_polys.json")
+        union = test_get_border_speed([p.coords for p in self.vermont[0]])
 
     def test_get_difference(self):
         """
@@ -132,36 +121,7 @@ class TestGeometry(unittest.TestCase):
         # both polygons are precincts from arkansas
         # poly1 has geoid 05073008 and poly2 has geoid 05027020
 
-        self.north_dakota = load(DATA_DIR + "/nd_test.pickle")
-        self.north_dakota[0] = multipolygon_to_shapely(self.north_dakota[0])
-        for i in range(1, 3):
-            self.north_dakota[i] = polygon_to_shapely(self.north_dakota[i])
-        # precincts:
-        # 1 | 3810138-05 | non-contiguous
-        # 2 | 3801139-02 | hole
-        # 3 | 3800139-01 | normal
-
         self.vermont = load(DATA_DIR + "/vermont.pickle")
-
-    def test_get_compactness(self):
-
-        @print_time
-        def test_get_compactness_speed(polygon):
-            return get_schwartzberg_compactness(polygon)
-
-        # later to be tested with cpp outputs
-        self.assertEqual(
-            test_get_compactness_speed(self.north_dakota[0]),
-            0.6140866384724538
-        )
-        self.assertEqual(
-            test_get_compactness_speed(self.north_dakota[1]),
-            0.7997295546826071
-        )
-        self.assertEqual(
-            test_get_compactness_speed(self.north_dakota[2]),
-            0.8197172000202778
-        )
 
     def test_get_point_in_polygon(self):
 
@@ -178,7 +138,7 @@ class TestGeometry(unittest.TestCase):
             True
         )
 
-        # edge case: point is on edge of polygon
+        # point is on edge of polygon
         self.assertEqual(
             test_get_point_in_polygon_speed(
                 [[[0, 0], [2, 0], [2, 2], [0, 2]]],
@@ -205,6 +165,13 @@ class TestCommunities(unittest.TestCase):
         self.vermont = load(DATA_DIR + "/vermont.pickle")
         self.alaska = load(DATA_DIR + "/alaska.pickle")
         self.alaska_islands = load(DATA_DIR + "/alaska_islands.pickle")
+
+        # TestGeometry class.
+        self.north_dakota = load(DATA_DIR + "/nd_test.pickle")
+        # precincts:
+        # 1 | 3810138-05 | non-contiguous
+        # 2 | 3801139-02 | hole
+        # 3 | 3800139-01 | normal
 
     def test_get_bordering_precincts(self):
         
@@ -239,6 +206,30 @@ class TestCommunities(unittest.TestCase):
         self.assertEqual(
             test_group_by_islands_speed(self.alaska[0]),
             self.alaska_islands
+        )
+
+    def test_compactness(self):
+
+        @print_time
+        def test_get_compactness_speed(community):
+            community.update_compactness()
+            return community.compactness
+
+        # later to be tested with cpp outputs
+        c1 = Community([self.north_dakota[0]], 1)
+        c2 = Community([self.north_dakota[1]], 2)
+        c3 = Community([self.north_dakota[2]], 3)
+        self.assertAlmostEqual(
+            test_get_compactness_speed(c1),
+            0.6140866384724538
+        )
+        self.assertAlmostEqual(
+            test_get_compactness_speed(c2),
+            0.7997295546826071
+        )
+        self.assertAlmostEqual(
+            test_get_compactness_speed(c3),
+            0.8197172000202778
         )
 
 

@@ -53,22 +53,74 @@ def create_initial_configuration(precincts, n_districts):
         large_community = max(community_sizes)
         
         island_precinct_groups = group_by_islands(precincts)
-        # Dictionary mapping island index in above list to number of
-        # communities it can hold.
-        island_community_counts = {}
+        # Configuration of communities for each island.
+        island_community_counts = []
         for i, island in enumerate(island_precinct_groups):
-            for x in range(community_sizes.count(small_community)):
-                for y in range(community_sizes.count(large_community)):
-                    if (x * small_community + y * large_community
-                            == len(island)):
-                        island_community_counts[i] = x + y
-
+            # Each element is list of x, y, and difference with number
+            # of precincts.
+            try:
+                community_grouping_attempts = []
+                for x in range(community_sizes.count(small_community)):
+                    for y in range(community_sizes.count(large_community)):
+                        if ((n_precincts := \
+                            x * small_community + y * large_community)
+                                == len(island)):
+                            island_community_counts.append([x, y])
+                            # Remove x small communities and y large ones
+                            # because those many precincts were used in
+                            # making this community.
+                            for _ in range(x):
+                                community_sizes.remove(small_community)
+                            for _ in range(y):
+                                community_sizes.remove(large_community)
+                            raise LoopBreakException
+                        elif n_precinct > len(island):
+                            break
+                        else:
+                            community_grouping_attempts.append(
+                                [x, y, n_precincts - len(island)]
+                            )
+                # No configuration works out
+                best_configuration = min(community_grouping_attempts,
+                                         key=lambda x: x[-1])[0:2]
+                for _ in range(x):
+                    community_sizes.remove(small_community)
+                for _ in range(y):
+                    community_sizes.remove(large_community)
+                # 0.5 added to show it's going
+                # to have a split community
+                island_community_counts.append([x + 0.5, y + 0.5])
+            except LoopBreakException:
+                pass
+         
+        # "linked precincts" are chosen between islands.
         linked_precinct_pairs = []
-        for island, n_communities in island_precinct_groups.items():
-            # TODO: fill out above list
-            pass
-        all_linked_precincts = set([precinct for pair in linked_precinct_pairs
-                                    for precinct in pair])
+        all_linked_precincts = set()
+        for island_precincts, island_communities in zip(
+                island_precinct_groups, island_community_counts):
+            
+            try:
+                if island_community_counts[0] % 1 != 0:
+                    # There is a 0.5 added to the first value of the
+                    # community configuration meaning there is a fracional
+                    # community on this island.
+                    try:
+                        for precinct in island_precincts:
+                            if precinct.vote_id in all_linked_precincts:
+                                raise LoopBreakException
+
+                        precinct_group_copy = island_precinct_groups[:]
+                        precinct_group_copy.remove(island_precincts)
+                        precinct_pair = get_precinct_link_pair(
+                            island_precinct_groups, precinct_group_copy)
+                        linked_precinct_pairs.append(precinct_pair)
+                        for precinct in precinct_pair:
+                            all_linked_precincts.add(precinct.vote_id)
+
+                    except LoopContinueException:
+                        continue
+            except LoopBreakException:
+                pass
     else:
         # Create all communities except last
         # (which will be unchosen precincts)

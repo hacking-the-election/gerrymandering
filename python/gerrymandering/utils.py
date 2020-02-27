@@ -15,9 +15,16 @@ multipolygon (list of polygons).
 """
 
 
+<<<<<<< HEAD
 __all__ = ["clip", "UNION", "DIFFERENCE", "get_schwartzberg_compactness",
            "get_if_bordering", "get_point_in_polygon", "get_area_intersection", 
            "Community", "group_by_islands", "polygon_to_shapely", "shapely_to_polygon", "average", "stdev"]
+=======
+__all__ = ["clip", "UNION", "DIFFERENCE", "get_if_bordering",
+           "get_point_in_polygon", "Community", "group_by_islands",
+           "get_precinct_link_pair", "LoopBreakException",
+           "LoopContinueException", "get_area_intersection"]
+>>>>>>> 4261ce43b0fc64a6e2d7a790a24291771df67b52
 
 
 import math
@@ -35,6 +42,22 @@ logging.basicConfig(filename="precincts.log", level=logging.DEBUG)
 UNION = 1
 DIFFERENCE = 2
 INTERSECTION = 3
+
+
+# ===================================================
+# custom exceptions
+
+
+class LoopBreakException(Excpetion):
+    """
+    Used to break outer loops from within nested loops.
+    """
+
+
+class LoopContinueException(Exception):
+    """
+    Used to continue outer loops from within nested loops.
+    """
 
 
 # ===================================================
@@ -69,18 +92,6 @@ def get_point_in_polygon(polygon, point):
         coord = point
     return shapely_polygon.contains(coord) or shapely_polygon.touches(coord)
 
-
-def get_schwartzberg_compactness(polygon):
-    """
-    Returns the schwartzberg compactness value of `polygon`
-
-    Implemenatation of this algorithm (schwartzberg):
-    https://fisherzachary.github.io/public/r-output.html
-    """
-    area = polygon.area
-    circumference = 2 * math.pi * math.sqrt(area / math.pi)
-    perimeter = polygon.length
-    return circumference / perimeter
 
 def get_area_intersection(polygon1, polygon2):
     """
@@ -186,37 +197,6 @@ class Community:
     """
     A collection of precincts
     """
-
-    @staticmethod
-    def get_standard_deviation(precincts):
-        """
-        Returns standard deviation of republican percentage in
-        `precincts`
-        """
-
-        try:
-            rep_percentages = [
-                p.r_election_sum / (p.r_election_sum + p.d_election_sum) * 100
-                for p in precincts]
-            mean = sum(rep_percentages) / len(rep_percentages)
-            
-            return math.sqrt(sum([(p - mean) ** 2 for p in rep_percentages]))
-        except ZeroDivisionError:
-            return 0.0
-
-    @staticmethod
-    def get_partisanship(precincts):
-        """
-        Returns average percentage of republicans in `precincts`
-        """
-
-        rep_sum = 0
-        total_sum = 0
-        for precinct in precincts:
-            if (r_sum := precinct.r_election_sum) != -1:
-                rep_sum += r_sum
-                total_sum += r_sum + precinct.d_election_sum
-        return rep_sum / total_sum
     
     def __init__(self, precincts, identifier):
         self.precincts = {precinct.vote_id: precinct for precinct in precincts}
@@ -229,6 +209,46 @@ class Community:
         self.standard_deviation = None
         self.population = None
         self.compactness = None
+
+    def update_compactness(self):
+        """
+        Updates the `compactness` attribute.
+
+        Implemenatation of this algorithm (schwartzberg):
+        https://fisherzachary.github.io/public/r-output.html
+        """
+        area = self.coords.area
+        circumference = 2 * math.pi * math.sqrt(area / math.pi)
+        perimeter = self.coords.length
+        self.compactness = circumference / perimeter
+
+    def update_standard_deviation(self):
+        """
+        Updates the `standard_deviation` attribute.
+        """
+
+        try:
+            rep_percentages = [
+                p.r_election_sum / (p.r_election_sum + p.d_election_sum) * 100
+                for p in self.precincts]
+            mean = sum(rep_percentages) / len(rep_percentages)
+            
+            self.standard_deviation = math.sqrt(sum([(p - mean) ** 2 for p in rep_percentages]))
+        except ZeroDivisionError:
+            self.standard_deviation = 0.0
+
+    def update_partisanship(self):
+        """
+        Updates the `partisanship` attribute
+        """
+
+        rep_sum = 0
+        total_sum = 0
+        for precinct in self.precincts:
+            if (r_sum := precinct.r_election_sum) != -1:
+                rep_sum += r_sum
+                total_sum += r_sum + precinct.d_election_sum
+        self.partisanship = rep_sum / total_sum
 
     def give_precinct(self, other, precinct_id, coords=True,
                       partisanship=True, standard_deviation=True,
@@ -316,3 +336,70 @@ def group_by_islands(precincts):
         return islands
     else:
         return [[p.vote_id for p in precincts]]
+
+
+def get_precinct_link_pair(island, island_precinct_groups):
+    """
+    Finds id of precinct that is closest to
+    `precinct` on any other island.
+
+    Args:
+        `island`:                 List of `save_precincts.Precinct`
+                                  objects that is create the island
+                                  you want to find the precinct that
+                                  is closest to.
+        `island_precinct_groups`: List of lists of
+                                  `save_precincts.Precinct` objects
+                                  grouped by islands in the whole state
+                                  minus `island`.
+
+    Returns list of two strings that are the linked
+    pair between `island` and any other island.
+    """
+    island_borders = [clip([p.coords for p in island], UNION)
+                      for island in island_precinct_groups]
+    # List of precincts that border the "coastline" of the each island.
+    # Grouped by island.
+    border_precincts = \
+        [[p for p in island if get_if_bordering(p.coords, island_border)]
+         for p in island for island in island_borders]
+
+    island_centroid = \
+        clip([p.coords for p in island], UNION).centroid.coords[0]
+    # id of Precinct whose centroid is closest to centroid of `island`
+    closest_precinct = None
+    # Distance from above precinct to centroid of `island`
+    closest_precinct_distance = 0
+    # Island that contains above precinct
+    closest_isalnd = []
+    for i in range(len(border_precincts)):
+        for precinct in border_precincts[i]:
+            distance = _get_distance(island_centroid,
+                                     precinct.centroid.coords[0])
+            if (
+                    closest_precinct is None
+                    or distance < closest_precinct_distance
+                    ):
+                closest_precinct = precinct.vote_id
+                closest_precinct_distance = distance
+                closest_island = i
+    closest_island_centroid = \
+        island_borders[closest_island].centroid.coords[0]
+
+    # Find the precinct on the border of `island` that is closest to
+    # the centroid of the island that contains the precincts that is
+    # closest to the centroid of `island`.
+    island_border_precincts = [precinct for precinct in islands
+                               if get_if_bordering(p.coords, island_border)]
+    closest_second_precinct = None
+    closest_second_precinct_distance = 0
+    for precinct in island_border_precincts:
+        distance = _get_distance(closest_island_centroid,
+                                 precinct.centroid.coords[0])
+        if (
+                closest_second_precinct is None
+                or distance < closest_second_precinct_distance
+                ):
+            closest_second_precinct = precinct.vote_id
+            closest_precinct_distance = distance
+    return [closest_precinct, closest_second_precinct]

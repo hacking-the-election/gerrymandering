@@ -51,7 +51,7 @@ class Exceptions;       // for any error to be thrown
 
 // simplify the coordinate modification system
 
-typedef std::array<double, 2> coordinate;           // a list in form {x1, y1}
+typedef std::array<long double, 2> coordinate;      // a list in form {x1, y1}
 typedef std::vector<coordinate> coordinate_set;     // list of coordiantes: {{x1, y1}, {x2, y2}}
 typedef std::array<double, 4> bounding_box;         // an array of 4 max/mins:
 
@@ -59,7 +59,7 @@ typedef std::array<double, 4> bounding_box;         // an array of 4 max/mins:
 typedef double unit_interval;
 
 // a set of two coordinates:
-typedef std::array<double, 4> segment;
+typedef std::array<long double, 4> segment;
 typedef std::vector<segment> segments;
 
 // for defining indices of arrays rather than referring to objects:

@@ -1,6 +1,6 @@
 /*=======================================
  geometry.cpp:                  k-vernooy
- last modified:               Wed, Feb 19
+ last modified:               Wed, Feb 26
  
  Definition of useful functions for
  computational geometry. Basic 
@@ -13,13 +13,11 @@
 #include "../include/gui.hpp"     // for the draw function
 
 // define geometric constants
-#define PI M_PI
-const int c = pow(10, 7);
+#define PI 3.14159265358979323846
+const int c = pow(10, 18);
 
 using namespace GeoGerry;
-using std::vector;
-using std::array;
-using std::string;
+using namespace std;
 
 /*
     Following methods utilize the segment of segments typedefs.
@@ -281,25 +279,21 @@ bool point_in_ring(GeoGerry::coordinate coord, GeoGerry::LinearRing lr) {
         see the documentation for this implementation at
         http://geomalgorithms.com/a03-_inclusion.html.
     */
+    // geos::geom::PrecisionModel::PrecisionModel p(geos::geom::PrecisionModel::PrecisionModel::FIXED);
+    // geos::geom::Coordinate coordinate = Coordinate((double)coord[0], (double)coord[1]);
+    // geos::algorithm::RayCrossingCounter* r = new geos::algorithm::RayCrossingCounter(coordinate);
 
-    // int cn = 0;
+    // for (segment seg : lr.get_segments())
+    //     r->countSegment(Coordinate((double)seg[0], (double)seg[1]), Coordinate((double)seg[2], (double)seg[3]));
+
+    // return r->isPointInPolygon();
+    if (lr.border[0] != lr.border[lr.border.size() - 1])
+        lr.border.push_back(lr.border[0]);
+
     ClipperLib::Path path = ring_to_path(lr);
+
     ClipperLib::IntPoint p(coord[0] * c, coord[1] * c);
-    int ret = ClipperLib::PointInPolygon(p, path);
-
-    return (ret != 0);
-    // loop through all edges of the polygon
-    // for (segment seg : lr.get_segments()) {
-
-    //    if (((seg[1] <= coord[1]) && (seg[3] > coord[1])) ||  // an upward crossing
-    //        ((seg[1] > coord[1]) && (seg[3] <= coord[1]))) {  // a downward crossing
-    //         double vt = (double)(coord[1]  - seg[1]) / (seg[3] - seg[1]);
-    //         if (coord[0] < seg[0] + vt * (seg[2] - seg[0])) // coord[0] < intersect
-    //             ++cn;   // a valid crossing of y = coord[1] right of coord[0]
-    //     }
-    // }
-
-    // return (cn & 1);    // 0 if even (out), and 1 if  odd (in)
+    return (!(ClipperLib::PointInPolygon(p, path) == 0));
 }
 
 bool get_inside(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1) {
@@ -326,7 +320,6 @@ bool get_inside_first(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1) {
 bool get_inside_or(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1) {
     for (coordinate c : s0.border)
         if (point_in_ring(c, s1)) return true;
-
     return false;
 }
 
@@ -476,7 +469,16 @@ Multi_Shape generate_exterior_border(Precinct_Group precinct_group) {
         Get the exterior border of a shape with interior components.
         Equivalent to 'dissolve' in mapshaper - remove bordering edges
     */ 
+    // geos::geom::Geometry::NonConstVect gc = multi_shape_to_poly(precinct_group);
+    // std::unique_ptr<geos::geom::Geometry> geoms = geos::operation::geounion::UnaryUnionOp::Union(gc);
 
+    // Multi_Shape ms;
+    // for (int i = 0; i < geoms->getNumGeometries(); i++) {
+    //     Shape s = poly_to_shape(geoms->getGeometryN(i));
+    //     ms.border.push_back(s);
+    // }
+
+    // return ms;
 	ClipperLib::Paths subj;
 
     for (Precinct p : precinct_group.precincts) {
@@ -531,7 +533,7 @@ GeoGerry::LinearRing path_to_ring(ClipperLib::Path path) {
     GeoGerry::LinearRing s;
 
     for (ClipperLib::IntPoint point : path ) {
-        coordinate p = {(float)((float)point.X / (float)c), (float)((float)point.Y / (float) c)};
+        coordinate p = {((point.X) / (long double)c), ((point.Y) / (long double)c)};
         if (p[0] != 0 && p[1] != 0) s.border.push_back(p);
     }
 
@@ -560,11 +562,11 @@ GeoGerry::Multi_Shape paths_to_multi_shape(ClipperLib::Paths paths) {
     Multi_Shape ms;
     
     for (ClipperLib::Path path : paths) {
-        if (ClipperLib::Orientation(path)) {
+        // if (ClipperLib::Orientation(path)) {
             GeoGerry::LinearRing border = path_to_ring(path);
             GeoGerry::Shape s(border);
             ms.border.push_back(s);
-        }
+        // }
         // else {
         //     std::cout << "hole" << std::endl;
         //     ReversePath(path);
@@ -587,10 +589,152 @@ Multi_Shape poly_tree_to_shape(ClipperLib::PolyTree tree) {
     
     for (ClipperLib::PolyNode* polynode : tree.Childs) {
         // if (polynode->IsHole()) x++;
-        LinearRing s = path_to_ring(polynode->Contour);
+        GeoGerry::LinearRing s = path_to_ring(polynode->Contour);
         Shape shape(s);
         ms.border.push_back(shape);
     }
 
     return ms;
 }
+
+// geos::geom::GeometryFactory::Ptr global_factory;
+
+// Point* create_point(long double x, long double y) {
+//     /* given coordinates creates a point object */
+//     Coordinate c(x, y);
+//     Point* p = global_factory->createPoint(c);
+//     return p;
+// }
+
+// geos::geom::LinearRing* create_linearring(coordinate_set coords) {
+//     // We will use a coordinate list to build the linearring
+//     CoordinateArraySequence* cl = new CoordinateArraySequence();
+
+//     for (coordinate c : coords) {
+//         cl->add(Coordinate(c[0], c[1]));
+//     }
+
+//     geos::geom::LinearRing* lr = global_factory->createLinearRing(cl);
+//     return lr; // our LinearRing
+// }
+
+// geos::geom::Geometry* shape_to_poly(GeoGerry::LinearRing shape) {
+//     /*
+//         Creates a GEOS library polygon object from a
+//         given Shape object by looping through points
+//     */
+
+//     // blank holes vector
+//     vector<geos::geom::LinearRing*>* holes = new vector<geos::geom::LinearRing*>;
+//     // outer ring generated by looping through coordinates
+//     geos::geom::LinearRing* outer = create_linearring(shape.border);
+//     geos::geom::Polygon* poly = global_factory->createPolygon(outer, holes);
+
+//     return poly;
+// }
+
+// geos::geom::Geometry::NonConstVect multi_shape_to_poly(GeoGerry::Multi_Shape ms) {
+//     geos::geom::Geometry::NonConstVect geoms;
+
+//     for (Shape s : ms.border) {
+//         geos::geom::Geometry* geo = shape_to_poly(s.hull);
+//         geoms.push_back(geo);
+//     }
+
+//     return geoms;
+// }
+
+// Shape poly_to_shape(const geos::geom::Geometry* path) {
+//     /*
+//         Creates a shape object from a clipper Path
+//         object by looping through points
+//     */
+
+//     Shape s;
+    
+//     // write coordinates in path to vector of Coordinates
+//     std::unique_ptr<geos::geom::CoordinateSequence> points = path->getCoordinates();
+//     vector<Coordinate> coords;
+//     points->toVector(coords);
+    
+//     for (Coordinate coord : coords) {
+//         coordinate nc = {coord.x, coord.y};
+//         s.hull.border.push_back(nc);
+//     }
+
+//     return s;
+// }
+
+// Multi_Shape* multipoly_to_shape(MultiPolygon* paths) {
+//     /*
+//         Create a Multi_Shape object from a clipper Paths
+//         (multi path) object through nested iteration
+//     */
+
+//     Multi_Shape* ms;
+    
+//     return ms;
+// }
+
+// boost_polygon ring_to_boost_poly(LinearRing shape) {
+
+//     /*
+//         Converts a shape object into a boost polygon object
+//         by looping over each point and manually adding it to a 
+//         boost polygon using assign_points and vectors
+//     */
+
+//     boost_polygon poly;
+
+//     // create vector of boost points
+//     std::vector<boost_point> points;
+
+//     for (coordinate c : shape.border) 
+//         points.push_back(boost_point(c[0],c[1])),
+
+//     assign_points(poly, points);
+//     correct(poly);
+
+//     return poly;
+// }
+
+// LinearRing boost_poly_to_ring(boost_polygon poly) {
+
+//     /*
+//         Convert from a boost polygon into a Shape object.
+//         Loop over each point in the polygon, add it to the
+//         shape's border.
+//     */
+
+//     coordinate_set b;
+//     vector<boost_point> const& points = poly.outer();
+
+//     for (std::vector<boost_point>::size_type i = 0; i < points.size(); ++i)
+//         b.push_back({get<0>(points[i]), get<1>(points[i])});
+
+//     LinearRing shape(b);
+//     return shape;
+// }
+
+// Shape boost_poly_to_shape(boost_multi_polygon poly) {
+
+//     /*
+//         overload the poly_to_shape function to work with multipolygons
+//         loop over each polygon, use same process to add to shape's border
+//         !!! WARNING: Should update shape data structure to work with
+//             multipolygon set. Not quite sure how to do this yet...
+//     */
+
+//     coordinate_set b;
+
+//     for (boost_polygon p : poly) {
+//         vector<boost_point> const& points = p.outer();
+
+//         for (std::vector<boost_point>::size_type i = 0; i < points.size(); ++i) {
+//             b.push_back({(float) get<0>(points[i]), (float) get<1>(points[i])});
+//         }
+//     }
+
+//     Shape shape(b);
+//     return shape;
+// }
