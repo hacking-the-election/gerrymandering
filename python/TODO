@@ -2,6 +2,8 @@
    Now:
     - replace "` -" with "`:" for docstring consistency
     - format all docstrings like get_nearest_island_precinct in gerrymandering.utils
+    - remove all wild card imports
+    - Move island grouping into serialization
    Later:
     - Predict errors and create custom exceptions to throw in those cases
     - Fill __init__.pys with __version__s and make pypi package

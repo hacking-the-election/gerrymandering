@@ -22,6 +22,7 @@ __all__ = ["clip", "UNION", "DIFFERENCE", "get_if_bordering",
 
 
 import math
+import random
 import logging
 
 from shapely.ops import unary_union
@@ -240,19 +241,15 @@ class Community:
         # Update other attributes that are dependent on precincts attribute
         for community in [self, other]:
             if partisanship:
-                community.partisanship = Community.get_partisanship(
-                    community.precincts.values())
+                community.update_partisanship
             if standard_deviation:
-                community.standard_deviation = \
-                    Community.get_standard_deviation(
-                        community.precincts.values())
+                community.update_standard_deviation
             if population:
                 community.population = sum(
                     [precinct.population for precinct in
                      community.precincts.values()])
             if compactness:
-                community.compactness = get_schwartzberg_compactness(
-                    community.coords)
+                community.update_compactness
 
     def get_bordering_precincts(self, unchosen_precincts):
         """
@@ -315,13 +312,14 @@ def get_precinct_link_pair(island, island_precinct_groups):
     Returns list of two strings that are the linked
     pair between `island` and any other island.
     """
-    island_borders = [clip([p.coords for p in island], UNION)
-                      for island in island_precinct_groups]
+    island_borders = [clip([p.coords for p in i], UNION)
+                      for i in island_precinct_groups]
+    island_border = clip([p.coords for p in island])
     # List of precincts that border the "coastline" of the each island.
     # Grouped by island.
     border_precincts = \
-        [[p for p in island if get_if_bordering(p.coords, island_border)]
-         for p in island for island in island_borders]
+        [[p for p in i if get_if_bordering(p.coords, island_border)]
+         for p in i for i in island_borders]
 
     island_centroid = \
         clip([p.coords for p in island], UNION).centroid.coords[0]
@@ -348,8 +346,8 @@ def get_precinct_link_pair(island, island_precinct_groups):
     # Find the precinct on the border of `island` that is closest to
     # the centroid of the island that contains the precincts that is
     # closest to the centroid of `island`.
-    island_border_precincts = [precinct for precinct in islands
-                               if get_if_bordering(p.coords, island_border)]
+    island_border_precincts = [precinct for precinct in island
+                               if get_if_bordering(precinct.coords, island_border)]
     closest_second_precinct = None
     closest_second_precinct_distance = 0
     for precinct in island_border_precincts:
@@ -362,3 +360,65 @@ def get_precinct_link_pair(island, island_precinct_groups):
             closest_second_precinct = precinct.vote_id
             closest_precinct_distance = distance
     return [closest_precinct, closest_second_precinct]
+
+
+def create_island_communities(precincts, community_sizes, communities):
+    """
+    Breaks an island into a group of communities.
+
+    Args:
+        `precincts`:   List of Precinct objects in the island.
+        `community_sizes`: List of ints that are the size of each
+                           community in the island.
+        `communities`:     List that community objects will be appended
+                           to.
+
+    Returns None
+    """
+
+    kwargs = {
+        "partisanship": False,
+        "standard_deviation": False,
+        "population": False, 
+        "compactness": False, 
+        "coords": True
+    }
+    unchosen_precincts = Community(precincts[:], 0)
+
+    for i, community_size in enumerate(community_sizes[:-1], 1):
+        community = Community([], i)
+        for _ in range(community_size):
+            # Set of precincts that have been tried
+            tried_precincts = set()
+
+            # Give random precinct to `community`
+            random_precinct = random.sample(
+                community.get_bordering_precincts(unchosen_precincts) \
+                - tried_precincts, 1)[0]
+
+            unchosen_precincts.give_precinct(
+                community, random_precinct, **kwargs)
+            tried_precincts.add(random_precinct)
+
+            # Keep trying other precincts until one of them
+            # doesn't make an island.
+            while isinstance(unchosen_precincts.coords, MultiPolygon):
+                # Give it back
+                community.give_precinct(
+                    unchosen_precincts, random_precinct, **kwargs)
+                print(f"precinct {random_precinct} added to and removed"
+                        f" from community {i} because it created an island")
+                # Random precinct that hasn't already been
+                # tried and also borders community.
+                random_precinct = random.sample(
+                    community.get_bordering_precincts(unchosen_precincts) \
+                    - tried_precincts, 1)[0]
+                unchosen_precincts.give_precinct(
+                    community, random_precinct, **kwargs)
+                tried_precincts.add(random_precinct)
+
+            print(f"precinct {random_precinct} added to community {i}")
+
+        communities.append(community)
+    
+    communities.append(unchosen_precincts)
