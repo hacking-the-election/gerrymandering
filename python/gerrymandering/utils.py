@@ -28,7 +28,7 @@ import logging
 from shapely.ops import unary_union
 from shapely.geometry import MultiLineString, MultiPolygon, Polygon, Point
 
-from .test.utils import print_time
+from test.utils import print_time
 
 
 logging.basicConfig(filename="precincts.log", level=logging.DEBUG)
@@ -112,8 +112,8 @@ def average(number_list):
     Finds the average of the integers in number_list.
     Returns float.
     '''
-    sum = sum(number_list)
-    return sum/len(number_list)
+    sum1 = sum(number_list)
+    return sum1/len(number_list)
 
 def stdev(number_list, weight_list=None):
     '''
@@ -125,10 +125,10 @@ def stdev(number_list, weight_list=None):
     '''
     average_int = average(number_list)
     squared_sum = 0
-    for integer in number_list:
+    for num, integer in enumerate(number_list):
         difference = average_int - integer
         if weight_list:
-            squared_sum += (difference * difference) * weight_list
+            squared_sum += (difference * difference) * weight_list[num]
         else:
             squared_sum += (difference * difference)
     return math.sqrt(squared_sum / len(number_list))
@@ -183,7 +183,8 @@ def shapely_to_polygon(polygon):
         y = tuple1[1]
         point_list = [x, y]
         linear_ring.append(point_list)
-    return [linear_ring]
+    print(linear_ring[0], linear_ring[-1])
+    return linear_ring
 # ===================================================
 # Community algorithm-specifc functions and classes:
 
@@ -225,7 +226,7 @@ class Community:
         try:
             rep_percentages = [
                 p.r_election_sum / (p.r_election_sum + p.d_election_sum) * 100
-                for p in self.precincts]
+                for p in self.precincts.values()]
             mean = sum(rep_percentages) / len(rep_percentages)
             
             self.standard_deviation = math.sqrt(sum([(p - mean) ** 2 for p in rep_percentages]))
@@ -239,7 +240,7 @@ class Community:
 
         rep_sum = 0
         total_sum = 0
-        for precinct in self.precincts:
+        for precinct in self.precincts.values():
             if (r_sum := precinct.r_election_sum) != -1:
                 rep_sum += r_sum
                 total_sum += r_sum + precinct.d_election_sum

@@ -49,23 +49,25 @@ def quantify(communities_file, districts_file):
     district_dict = {district["properties"]["District"]: district["geometry"]["coordinates"] 
                     for district in district_data["features"]}
     # find partianshipps
-    partisanships = {id:community_dict[community][0] for id, community in community_dict.items()}
+    partisanships = {id:community_dict[id][0] for id in community_dict}
     # find areas of communities
-    community_areas = {community:save_precincts.area(community_dict[community][1]) for community in community_areas}
+    community_areas = {community:save_precincts.area(shapely_to_polygon(community_dict[community][1])) for community in community_dict}
     # begin finding district gerrymandering scores
     district_scores = {}
     for district in district_dict:
+        print('yes')
         # finds total area of district
-        total_area = sum(save_precincts.area(district_dict[district]))
+        total_area = save_precincts.area(district_dict[district][0][0])
         # keys: community.id for community object
         # values: area of intersection with district
         intersecting_communities ={}
         for community in community_dict.keys():
+            # note: this is where stuff is really slow
             community1 = community_dict[community][1]
-            if get_area_intersection(polygon_to_shapely(district), community1) > 0:
+            if get_area_intersection(polygon_to_shapely(district_dict[district][0]), community1) > 0:
                 intersecting_communities[community] = get_area_intersection(
-                                                    polygon_to_shapely(district, community1))
-        # find average_community_area and calculate weights for each district relative to 
+                                                    polygon_to_shapely(district_dict[district][0]), community1)
+        # find average_community_area and calculate weights for each district 
         average_community_area = sum(intersecting_communities.values())/len(intersecting_communities)
         area_weights = [area/average_community_area for area in intersecting_communities.values()]
         # percentage of community in district, for community in intersecting_communities
@@ -75,7 +77,7 @@ def quantify(communities_file, districts_file):
         # small portion of communitites that are big get punished proportionally, weighted by the 
         # area of that community in the district.
         community_weight = sum([community_percentages[num]*area_weights[num] 
-        for num in range(community_percentages)])
+        for num in range(len(community_percentages))])
         # Create list of partisanship weights (decimal of proportion of republicans in district) 
         # for intersecting communities
         district_partisanships = [partisanships[community] for community in intersecting_communities]
