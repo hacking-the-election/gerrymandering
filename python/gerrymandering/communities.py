@@ -21,11 +21,14 @@ import logging
 logging.basicConfig(filename="precincts.log", level=logging.DEBUG)
 
 
-def create_initial_configuration(precincts, n_districts):
+def create_initial_configuration(island_precinct_groups, n_districts):
     """
     Takes `precincts` as a list of precincts and returns a list of
     communities that consist of random groups of communities.
     """
+
+    precincts = [precinct for island in island_precinct_groups
+                 for precinct in island]
 
     # Calculate `community_sizes`, a list of numbers corresponding to
     # the number of precincts each community should have.

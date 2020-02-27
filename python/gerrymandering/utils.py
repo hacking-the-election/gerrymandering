@@ -43,7 +43,7 @@ INTERSECTION = 3
 # custom exceptions
 
 
-class LoopBreakException(Excpetion):
+class LoopBreakException(Exception):
     """
     Used to break outer loops from within nested loops.
     """
