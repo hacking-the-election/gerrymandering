@@ -15,16 +15,11 @@ multipolygon (list of polygons).
 """
 
 
-<<<<<<< HEAD
-__all__ = ["clip", "UNION", "DIFFERENCE", "get_schwartzberg_compactness",
-           "get_if_bordering", "get_point_in_polygon", "get_area_intersection", 
-           "Community", "group_by_islands", "polygon_to_shapely", "shapely_to_polygon", "average", "stdev"]
-=======
 __all__ = ["clip", "UNION", "DIFFERENCE", "get_if_bordering",
            "get_point_in_polygon", "Community", "group_by_islands",
            "get_precinct_link_pair", "LoopBreakException",
-           "LoopContinueException", "get_area_intersection"]
->>>>>>> 4261ce43b0fc64a6e2d7a790a24291771df67b52
+           "LoopContinueException", "get_area_intersection", 
+           "shapely_to_polygon", "polygon_to_shapely", "average", "stdev"]
 
 
 import math
@@ -48,7 +43,7 @@ INTERSECTION = 3
 # custom exceptions
 
 
-class LoopBreakException(Excpetion):
+class LoopBreakException(Exception):
     """
     Used to break outer loops from within nested loops.
     """
