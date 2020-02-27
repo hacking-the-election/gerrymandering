@@ -154,7 +154,7 @@ class Community:
     A collection of precincts
     """
     
-    def __init__(self, precincts, identifier):
+    def __init__(self, precincts, identifier, islands):
         self.precincts = {precinct.vote_id: precinct for precinct in precincts}
         self.id = identifier
         if precincts != []:
@@ -167,8 +167,9 @@ class Community:
         self.compactness = None
 
         # Attributes useful for states with islands:
+
+        # dict with keys as index and values as number of precincts.
         self.islands = islands
-        self.size = None
 
     def update_compactness(self):
         """
@@ -222,7 +223,7 @@ class Community:
 
         if not isinstance(other, Community):
             raise TypeError(f"Invalid type {type(other)}.\n"
-                            "Can only give precinct to community.")
+                             "Can only give precinct to community.")
         try:
             precinct = self.precincts[precinct_id]
         except KeyError:
@@ -251,7 +252,7 @@ class Community:
             if compactness:
                 community.update_compactness
 
-    def fill(self, precincts, linked_precincts):
+    def fill(self, precincts, linked_precincts, island_index):
         """
         Fills a community up with precincts.
 
@@ -261,6 +262,8 @@ class Community:
             `linked_precincts`: Set of precincts that are meant to be part
                                 of communities that span islands, therefore
                                 making them untouchable during this step.
+            `island_index`    : Index of island that corresponds to
+                                a key in `self.islands`.
         """
 
         kwargs = {
@@ -272,7 +275,7 @@ class Community:
         }
         unchosen_precincts = Community(precincts[:], 0)
 
-        for _ in range(self.size):
+        for _ in range(self.islands[island_index]):
             # Set of precincts that have been tried
             tried_precincts = set()
 

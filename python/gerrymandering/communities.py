@@ -73,12 +73,12 @@ def create_initial_configuration(island_precinct_groups, n_districts):
                             community_sizes.remove(small_community)
                             communities.append(
                                 Community([], len(communities),
-                                            [i], small_community))
+                                          {i: large_community}))
                         for _ in range(y):
                             community_sizes.remove(large_community)
                             communities.append(
                                 Community([], len(communities),
-                                            [i], large_community))
+                                          {i: large_community}))
 
                         # All the precincts are used in the island,
                         # so none are available anymore.
@@ -100,12 +100,12 @@ def create_initial_configuration(island_precinct_groups, n_districts):
                 community_sizes.remove(small_community)
                 communities.append(
                     Community([], len(communities),
-                                [i], small_community))
+                              {i: small_community}))
             for _ in range(best_configuration[1]):
                 community_sizes.remove(large_community)
                 communities.append(
                     Community([], len(communities),
-                                [i], large_community))
+                              {i: large_community}))
 
             # Subtract number of precincts taken up by communities
             # on island from available precincts.
@@ -115,7 +115,9 @@ def create_initial_configuration(island_precinct_groups, n_districts):
             # linking to other islands. Eventually will become
             # equal to `large_community` or `small_community`
             n_extra_precincts = 0
-            islands_used = []
+            # dict with keys of island index and value of number of
+            # precincts used in community
+            islands_used = {}
             # Loop through islands with some precincts left
             islands_with_precincts = \
                 [[il, n_il_precincts] for il, n_il_precincts in
@@ -127,22 +129,38 @@ def create_initial_configuration(island_precinct_groups, n_districts):
                 precinct_link_pair = get_precinct_link_pair(island,
                                                             other_island)
                 linked_precinct_pairs.append(precinct_link_pair)
+                other_island_index = islands_with_precincts.index(
+                    [other_island, n_other_island_precincts])
                 if (n_extra_precincts + n_other_island_precincts
                         >= community_sizes[0]):
-                    island_available_precincts[
-                        islands_with_precincts.index(
-                            [other_island, n_other_island_precincts])] \
-                    -= (n_extra_precincts + n_other_island_precincts ) \
-                        - community_sizes[0]
+                    precincts_added = (
+                        (community_sizes[0] - n_extra_precincts)
+                        + n_other_island_precincts
+                    )
+                    island_available_precincts[other_island_index] \
+                        -= precincts_added
+                    islands_used[other_island_index] = precincts_added
                     break
                 else:
                     n_extra_precincts += n_other_island_precincts
+                    islands_used[other_island_index] = \
+                        n_other_island_precincts
+
+            communities.append(Community([], len(communities),
+                               islands_used))
         except LoopBreakException:
             pass
 
+    all_linked_precincts = set(
+        [p for pair in linked_precinct_pairs for p in pair])
+
     try:
-        for community in communities:
-            pass
+        # Add precincts to each community that has any area on each island.
+        for i, island in enumerate(island_precinct_groups):
+            for community in communities:
+                if i in community.islands:
+                    community.fill(island, all_linked_precincts, i)
+
     except Exception as e:
         # Save your progress!
         logging.info(unchosen_precincts.precincts)
