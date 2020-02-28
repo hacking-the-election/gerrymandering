@@ -11,7 +11,7 @@ from shapely.geometry import Polygon, MultiPolygon
 
 sys.path.append(abspath(dirname(dirname(__file__))))
 
-from gerrymandering.utils import *
+from utils import *
 from .test.utils import convert_to_json
 
 
@@ -47,7 +47,6 @@ def create_initial_configuration(precincts, n_districts):
     communities = []  # Will contain Community objects.
     if isinstance(unchosen_precincts.coords, MultiPolygon):
         # State is multipolygon, which means it has islands.
-
         # There should be communities of two sizes
         small_community = min(community_sizes)
         large_community = max(community_sizes)
@@ -172,7 +171,30 @@ def create_initial_configuration(precincts, n_districts):
 
     return communities
     
-
+def modify_for_partisanship(communities_list, threshold):
+    '''
+    Takes list of community objects, and returns a different list with the modified communities
+    '''
+    communities_coords = {community.id : community.precincts for community in communities_list}
+    # update partisanship values (in case this hasn't already been done)
+    for community in communities_list.values():
+        community.update_standard_deviation()
+    # create dictionary of ids and community partisanship standard deviations
+    community_stdev = {community.id : community.standard_deviation for community in communities_list}
+    # check if any communities are above the threshold
+    # count the number of times the list has been checked
+    count = 0
+    num_of_above_precincts = 0
+    average_stdev = average(community_stdev.values())
+    for id, community in community_stdev.items():
+        # if a community is above the threshold
+        if community > threshold:
+            most_stdev = {}
+            for id1, community1 in community_stdev.items():
+                if community > most_stdev.get(id, 0):
+                    most_stdev[id] = community
+            biggest_precincts = communities_coords[most_stdev.keys()[0]]
+            group_by_islands(biggest_precincts)
 
 def make_communities(state_file):
     """
