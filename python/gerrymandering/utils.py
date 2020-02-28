@@ -429,7 +429,7 @@ def get_closest_precinct(island, island_precinct_groups, island_borders):
                 closest_precinct = closest_precinct_on_island
                 closest_precinct_island_index = i
 
-    return [closest_precinct.vote_id, closest_precinct_island_index]
+    return closest_precinct.vote_id, closest_precinct_island_index
 
 
 def get_precinct_link_pair(island, island_precinct_groups,
@@ -450,9 +450,9 @@ def get_precinct_link_pair(island, island_precinct_groups,
         `island_borders`:         List of Polygons that are borders of
                                   all the islands in the state.
 
-    Returns list of two strings (vote_ids of precinct on `island` and
-    other precinct) and one integer (index of the island the other
-    precinct is on).
+    Returns two strings (vote_ids of precinct on `island` and other
+    precinct) and one integer (index of the island the other precinct
+    is on).
     """
 
     precinct1, closest_precinct_island_index = get_closest_precinct(
@@ -466,4 +466,4 @@ def get_precinct_link_pair(island, island_precinct_groups,
             island_border_precincts
         )
 
-    return [precinct1, precinct2, closest_precinct_island_index]
+    return precinct1, precinct2, closest_precinct_island_index
