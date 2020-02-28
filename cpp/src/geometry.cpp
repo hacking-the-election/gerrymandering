@@ -26,26 +26,44 @@ using namespace std;
 */
 
 segment coords_to_seg(coordinate c1, coordinate c2) {
-    // combines coordinates into a segment array
+    /*
+        @desc: combines coordinates into a segment array
+        @params: `c1`, `c2`: coordinates 1 and 2 in segment
+        @return: A segment with the coordinates provided
+    */
+
     segment s = {{c1[0], c1[1], c2[0], c2[1]}};
     return s;
 }
 
 double get_distance(segment s) {
-    // Distance formula on a segment array
+    /* 
+        @desc: Distance formula on a segment array
+        @params: `s`: a segment to get the distance of
+        @return: A double representing the distance
+    */
+   
     return sqrt(pow((s[2] - s[0]), 2) + pow((s[3] - s[1]), 2));
 }
 
 double get_distance(coordinate c0, coordinate c1) {
-    // Distance formula on two separate points
-    return sqrt(pow((c1[0] - c0[0]), 2) + pow((c1[1] - c0[1]), 2));
+    /*
+        @desc: Distance formula on two separate points
+        @params: `c1`, `c2`: coordinates 1 and 2 in segment
+        @return: distance between coordinates
+    */
+
+    return get_distance(coords_to_seg(c0, c1));
 }
 
-vector<double> calculate_line(segment s) {
+vector<double> get_equation(segment s) {
     /*
-        Use slope/intercept form and substituting
-        coordinates in order to determine equation
-        of a line segment
+        @desc: Use slope/intercept form and substituting coordinates
+               in order to determine equation of a line segment
+
+        @params: `s`: the segment to calculate
+        @return: vector of slope and intercept
+        @warn: Need handlers for div by 0
     */
 
     double m = (s[3] - s[1]) / (s[2] - s[0]);
@@ -55,16 +73,25 @@ vector<double> calculate_line(segment s) {
 }
 
 bool get_colinear(segment s0, segment s1) {
-    // returns whether or not two lines have the same equation
-    return (calculate_line(s0) == calculate_line(s1));
+    /*
+        @desc: gets whether or not two lines have the same equation
+        @params: `s0`, `s1`: two segments to check colinearity
+        @return: boolean are colinear
+    */
+
+    return (get_equation(s0) == get_equation(s1));
 }
 
 bool get_overlap(segment s0, segment s1) {
     /*
-        Returns whether or not two segments' bounding boxes
-        overlap, meaning one of the extremes of a segment are
-        within the range of the other's. One shared point does
-        not count to overlap.
+        @desc: Returns whether or not two segments' bounding boxes
+               overlap, meaning one of the extremes of a segment are
+               within the range of the other's. One shared point does
+               not count to overlap.
+        
+        @params: `s0`, `s1`: two segments to check overlap
+        @return: boolean segments overlap
+        @warn: This function is untested!
     */
     
     if (s0[0] > s0[2])
@@ -80,6 +107,12 @@ bool get_overlap(segment s0, segment s1) {
 }
 
 bool get_bordering(segment s0, segment s1) {
+    /*
+        @desc: Returns whether or not two segments are colinear and overlap
+        @params: `s0`, `s1`: two segments to check bordering
+        @return: boolean segments border
+    */
+
     return (get_colinear(s0, s1) && get_overlap(s0, s1));
 }
 
@@ -111,6 +144,37 @@ segments GeoGerry::LinearRing::get_segments() {
     return segs;
 }
 
+segments GeoGerry::Shape::get_segments() {
+    /*
+        Returns list of all segments in a shape, including
+        hole LinearRings array
+    */
+
+    segments segs = hull.get_segments();
+    
+    for (LinearRing hole : holes) {
+        for (segment seg : hole.get_segments()) segs.push_back(seg);
+    }
+
+    return segs;
+}
+
+segments GeoGerry::Multi_Shape::get_segments() {
+    /*
+        Returns a list of all segments in a multi_shape,
+        for each shape, including holes
+    */
+
+    segments segs;
+
+    for (Shape s : border) {
+        for (segment seg : s.get_segments()) segs.push_back(seg);
+    }
+
+    return segs;
+}
+
+
 coordinate GeoGerry::LinearRing::get_center() {
     /* 
         Returns the average {x,y} of a linear ring (set of points).
@@ -137,6 +201,7 @@ coordinate GeoGerry::LinearRing::get_center() {
     return centroid;
 }
 
+
 double GeoGerry::LinearRing::get_area() {
     /*
         Returns the area of a linear ring, using latitude * long area
@@ -155,6 +220,7 @@ double GeoGerry::LinearRing::get_area() {
     return (area / 2);
 }
 
+
 double GeoGerry::LinearRing::get_perimeter() {
     /*
         Returns the perimeter of a LinearRing object using
@@ -168,6 +234,7 @@ double GeoGerry::LinearRing::get_perimeter() {
 
     return t;
 }
+
 
 coordinate GeoGerry::Shape::get_center() {
     /*
@@ -186,6 +253,7 @@ coordinate GeoGerry::Shape::get_center() {
     int size = 1 + holes.size();
     return {center[0] / size, center[1] / size};
 }
+
 
 double GeoGerry::Shape::get_area() {
     /*
@@ -216,6 +284,7 @@ double GeoGerry::Shape::get_perimeter() {
     return perimeter;
 }
 
+
 double GeoGerry::Multi_Shape::get_perimeter() {
     /*
         Returns sum perimeter of a multi shape object
@@ -230,6 +299,7 @@ double GeoGerry::Multi_Shape::get_perimeter() {
     return p;
 }
 
+
 double Multi_Shape::get_area() {
     /*
         Returns sum area of all Shape objects within
@@ -243,26 +313,31 @@ double Multi_Shape::get_area() {
     return total;
 }
 
-segments GeoGerry::Shape::get_segments() {
-    // return a segment list with shape's segments, including holes
-    segments segs = hull.get_segments();
-    for (GeoGerry::LinearRing h : holes) {
-        segments hole_segs = h.get_segments();
-        for (segment s : hole_segs) {
-            segs.push_back(s);
-        }
-    }
-
-    return segs;
-}
 
 bool get_bordering(Shape s0, Shape s1) {
     // returns whether or not two shapes touch each other
 
     for (segment seg0 : s0.get_segments()) {
         for (segment seg1 : s1.get_segments()) {
-            if (calculate_line(seg0) == calculate_line(seg1) && get_overlap(seg0, seg1)) {
+            if (get_equation(seg0) == get_equation(seg1) && get_overlap(seg0, seg1)) {
                 return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+
+bool get_bordering(Multi_Shape ms0, Multi_Shape ms1) {
+    // returns whether or not two shapes touch each other
+
+    for (Shape s : ms0.border) {
+        for (segment seg0 : s.get_segments()) {
+            for (segment seg1 : ms1.get_segments()) {
+                if (get_equation(seg0) == get_equation(seg1) && get_overlap(seg0, seg1)) {
+                    return true;
+                }
             }
         }
     }
@@ -279,19 +354,13 @@ bool point_in_ring(GeoGerry::coordinate coord, GeoGerry::LinearRing lr) {
         see the documentation for this implementation at
         http://geomalgorithms.com/a03-_inclusion.html.
     */
-    // geos::geom::PrecisionModel::PrecisionModel p(geos::geom::PrecisionModel::PrecisionModel::FIXED);
-    // geos::geom::Coordinate coordinate = Coordinate((double)coord[0], (double)coord[1]);
-    // geos::algorithm::RayCrossingCounter* r = new geos::algorithm::RayCrossingCounter(coordinate);
 
-    // for (segment seg : lr.get_segments())
-    //     r->countSegment(Coordinate((double)seg[0], (double)seg[1]), Coordinate((double)seg[2], (double)seg[3]));
-
-    // return r->isPointInPolygon();
+    // close ring for PIP problem
     if (lr.border[0] != lr.border[lr.border.size() - 1])
         lr.border.push_back(lr.border[0]);
 
+    // convert to clipper types for builtin function
     ClipperLib::Path path = ring_to_path(lr);
-
     ClipperLib::IntPoint p(coord[0] * c, coord[1] * c);
     return (!(ClipperLib::PointInPolygon(p, path) == 0));
 }
@@ -390,7 +459,21 @@ p_index_set get_bordering_shapes(vector<Community> shapes, Shape shape) {
 }
 
 p_index_set get_bordering_precincts(Precinct_Group shape, int p_index) {
-    return {1};
+    /*
+        Returns precincts in a Precinct_Group that border
+        a specified precinct index in that group
+    */
+
+    p_index_set precincts;
+
+    for (int i = 0; i < shape.precincts.size(); i++) {
+        if ( i != p_index ) {
+            // don't check the same precinct
+            if (get_bordering(shape.precincts[p_index], shape.precincts[i]))
+                precincts.push_back(i);
+        }
+    }
+    return precincts;
 }
 
 unit_interval Shape::get_compactness() {
@@ -467,46 +550,33 @@ double get_median_partisanship(Precinct_Group pg) {
 Multi_Shape generate_exterior_border(Precinct_Group precinct_group) {
     /*
         Get the exterior border of a shape with interior components.
-        Equivalent to 'dissolve' in mapshaper - remove bordering edges
+        Equivalent to 'dissolve' in mapshaper - remove bordering edges.
+        Uses the Clipper library by Angus Johnson to union many polygons
+        efficiently.
+
+        @params:
+            `precinct_group`: A precinct group to generate the border of
+
+        @return:
+            Multi_Polygon: exterior border of `precinct_group`
     */ 
-    // geos::geom::Geometry::NonConstVect gc = multi_shape_to_poly(precinct_group);
-    // std::unique_ptr<geos::geom::Geometry> geoms = geos::operation::geounion::UnaryUnionOp::Union(gc);
 
-    // Multi_Shape ms;
-    // for (int i = 0; i < geoms->getNumGeometries(); i++) {
-    //     Shape s = poly_to_shape(geoms->getGeometryN(i));
-    //     ms.border.push_back(s);
-    // }
-
-    // return ms;
+    // create paths array from polygon
 	ClipperLib::Paths subj;
 
-    for (Precinct p : precinct_group.precincts) {
-        for (ClipperLib::Path path : shape_to_paths(p)) {
+    for (Precinct p : precinct_group.precincts)
+        for (ClipperLib::Path path : shape_to_paths(p))
             subj.push_back(path);
-        }
-    }
 
-    // Paths solutions
+
     ClipperLib::Paths solutions;
-    ClipperLib::Clipper c;
+    ClipperLib::Clipper c; // the executor
 
+    // execute union on paths array
     c.AddPaths(subj, ClipperLib::ptSubject, true);
     c.Execute(ClipperLib::ctUnion, solutions, ClipperLib::pftNonZero);
 
     return paths_to_multi_shape(solutions);
-    // return clipper_mult_int_to_shape(solutions);
-}
-
-p_index State::get_addable_precinct(p_index_set available_precincts, p_index current_precinct) {
-    /*
-        A method for the initial generation of the
-        communities algorithm - returns the next addable
-        precinct to a given community, to avoid creating islands
-    */
-
-    p_index ret;
-    return ret;
 }
 
 ClipperLib::Path ring_to_path(GeoGerry::LinearRing ring) {
@@ -738,3 +808,23 @@ Multi_Shape poly_tree_to_shape(ClipperLib::PolyTree tree) {
 //     Shape shape(b);
 //     return shape;
 // }
+
+p_index_set get_ext_bordering_precincts(Precinct_Group precincts, State state) {
+    /*
+        A method for getting the precincts in a state
+        that border a precinct group. This is used in the communities
+        algorithm.
+
+        @params
+            `precincts`: The precinct group to find borders of
+            `state`: A state object with lists of precincts to look through
+
+        @return
+            A set of precinct indices that border `precincts`
+    */
+
+    p_index_set bordering_pre;
+    for (Precinct p : ) {
+        if (get_bordering(p, ));
+    }
+}
