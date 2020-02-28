@@ -58,8 +58,9 @@ double get_distance(coordinate c0, coordinate c1) {
 
 vector<double> get_equation(segment s) {
     /*
-        @desc: Use slope/intercept form and substituting coordinates
-               in order to determine equation of a line segment
+        @desc:
+            Use slope/intercept form and substituting coordinates
+            in order to determine equation of a line segment
 
         @params: `s`: the segment to calculate
         @return: `vector` slope and intercept
@@ -84,10 +85,11 @@ bool get_colinear(segment s0, segment s1) {
 
 bool get_overlap(segment s0, segment s1) {
     /*
-        @desc: Returns whether or not two segments' bounding boxes
-               overlap, meaning one of the extremes of a segment are
-               within the range of the other's. One shared point does
-               not count to overlap.
+        @desc:
+            Returns whether or not two segments' bounding boxes
+            overlap, meaning one of the extremes of a segment are
+            within the range of the other's. One shared point does
+            not count to overlap.
         
         @params: `s0`, `s1`: two segments to check overlap
         @return: `bool` segments overlap
@@ -118,8 +120,10 @@ bool get_bordering(segment s0, segment s1) {
 
 segments GeoGerry::LinearRing::get_segments() {
     /*
-        @desc: returns a vector of segments from the
-               coordinate array of a LinearRing.border property
+        @desc:
+            returns a vector of segments from the
+            coordinate array of a LinearRing.border property
+
         @params: none
         @return: segments of a ring
     */
@@ -213,8 +217,9 @@ coordinate GeoGerry::LinearRing::get_center() {
 
 double GeoGerry::LinearRing::get_area() {
     /*
-        @desc: returns the area of a linear ring, using latitude * long
-               area - an implementation of the shoelace theorem
+        @desc:
+            returns the area of a linear ring, using latitude * long
+            area - an implementation of the shoelace theorem
 
         @params: none
         @ref: https://www.mathopenref.com/coordpolygonarea.html
@@ -250,8 +255,9 @@ double GeoGerry::LinearRing::get_perimeter() {
 
 coordinate GeoGerry::Shape::get_center() {
     /*
-        @desc: returns average centroid from list of `holes`
-               and `hull` by calling `LinearRing::get_center`
+        @desc:
+            returns average centroid from list of `holes`
+            and `hull` by calling `LinearRing::get_center`
 
         @params: none
         @return: `coordinate` average centroid of shape
@@ -272,8 +278,9 @@ coordinate GeoGerry::Shape::get_center() {
 
 double GeoGerry::Shape::get_area() {
     /*
-        @desc: returns the area of the hull of a shape
-               minus the combined area of any holes
+        @desc:
+            gets the area of the hull of a shape
+            minus the combined area of any holes
 
         @params: none
         @return: `double` totale area of shape
@@ -289,8 +296,9 @@ double GeoGerry::Shape::get_area() {
 
 double GeoGerry::Shape::get_perimeter() {
     /*
-        @desc: returns the sum perimeter of all LinearRings
-               in a shape object, including holes
+        @desc:
+            gets the sum perimeter of all LinearRings
+            in a shape object, including holes
 
         @params: none
         @return: `double` total perimeter of shape
@@ -306,7 +314,7 @@ double GeoGerry::Shape::get_perimeter() {
 
 double Multi_Shape::get_area() {
     /*
-        @desc: Returns sum area of all Shape objects in border
+        @desc: gets sum area of all Shape objects in border
         @params: none
         @return: `double` total area of shapes
     */
@@ -321,8 +329,9 @@ double Multi_Shape::get_area() {
 
 double GeoGerry::Multi_Shape::get_perimeter() {
     /*
-        @desc: returns sum perimeter of a multi shape object
-               by looping through each shape and calling method
+        @desc:
+            gets sum perimeter of a multi shape object
+            by looping through each shape and calling method
             
         @params: none
         @return `double` total perimeter of shapes array
@@ -338,7 +347,7 @@ double GeoGerry::Multi_Shape::get_perimeter() {
 
 bool get_bordering(Shape s0, Shape s1) {
     /*
-        @desc: returns whether or not two shapes touch each other
+        @desc: gets whether or not two shapes touch each other
         @params: `Shape` s0, `Shape` s1: shapes to check bordering
         @return: `bool` shapes are boording
     */
@@ -354,8 +363,9 @@ bool get_bordering(Shape s0, Shape s1) {
 
 bool point_in_ring(GeoGerry::coordinate coord, GeoGerry::LinearRing lr) {
     /*
-        @desc: returns whether or not a point is in a ring using
-               the ray intersection method (clipper implementation)
+        @desc:
+            gets whether or not a point is in a ring using
+            the ray intersection method (clipper implementation)
 
         @ref: http://www.angusj.com/delphi/clipper/documentation/Docs/Units/ClipperLib/Functions/PointInPolygon.htm
         @params: 
@@ -377,8 +387,15 @@ bool point_in_ring(GeoGerry::coordinate coord, GeoGerry::LinearRing lr) {
 
 bool get_inside(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1) {
     /*
-        returns whether or not s0 is inside of 
-        s1 using the intersection point method
+        @desc:
+            gets whether or not s0 is inside of 
+            s1 using the intersection point method
+
+        @params:
+            `LinearRing` s0: ring inside `s1`
+            `LinearRing` s1: ring containing `s0`
+
+        @return: `bool` `s0` inside `s1`
     */
 
     for (coordinate c : s0.border)
@@ -389,24 +406,28 @@ bool get_inside(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1) {
 
 bool get_inside_first(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1) {
     /*
-        returns whether or not s0 is inside of 
-        s1 using the intersection point method
+        @desc:
+            gets whether or not the first point of s0 is
+            inside of s1 using the intersection point method
+
+        @params:
+            `LinearRing` s0: ring inside `s1`
+            `LinearRing` s1: ring containing `s0`
+
+        @return: `bool` first coordinate of `s0` inside `s1`
     */
 
     return (point_in_ring(s0.border[0], s1));
 }
 
-bool get_inside_or(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1) {
-    for (coordinate c : s0.border)
-        if (point_in_ring(c, s1)) return true;
-    return false;
-}
-
 p_index_set get_inner_boundary_precincts(Precinct_Group shape) {
-   
     /*
-        returns an array of indices that correspond
-        to precincts on the inner edge of a Precinct Group
+        @desc:
+            gets an array of indices that correspond
+            to precincts on the inner edge of a Precinct Group
+        
+        @params: `Precinct_Group` shape: the precinct group to get inner precincts of
+        @return: `p_index_set` indices of inner border precincts
     */
 
     p_index_set boundary_precincts;
@@ -428,8 +449,9 @@ p_index_set get_inner_boundary_precincts(Precinct_Group shape) {
 
 p_index_set get_bordering_shapes(vector<Shape> shapes, Shape shape) {
     /*
-        returns set of indices corresponding to the Precinct_Groups that
-        border with the Precinct_Group[index] shape.
+        @desc:
+            returns set of indices corresponding to the Precinct_Groups that
+            border with the Precinct_Group[index] shape.
     */
 
     p_index_set vec;
@@ -633,6 +655,7 @@ ClipperLib::Paths shape_to_paths(GeoGerry::Shape shape) {
     return p;
 }
 
+
 GeoGerry::Multi_Shape paths_to_multi_shape(ClipperLib::Paths paths) {
     /*
         Create a Multi_Shape object from a clipper Paths
@@ -675,6 +698,29 @@ Multi_Shape poly_tree_to_shape(ClipperLib::PolyTree tree) {
     }
 
     return ms;
+}
+
+
+p_index_set get_ext_bordering_precincts(Precinct_Group precincts, State state) {
+    /*
+        @desc: a method for getting the precincts in a state that
+               border a precinct group. This is used in the communities
+               algorithm.
+
+        @params
+            `precincts`: The precinct group to find borders of
+            `state`: A state object with lists of precincts to look through
+
+        @return: `p_index_set` a set of precinct indices that border `precincts`
+    */
+
+    p_index_set bordering_pre;
+    Multi_Shape border = generate_exterior_border(precincts);
+
+    for (int i = 0; i < state.precincts.size(); i++)
+        if (get_bordering(state.precincts[i], border)) bordering_pre.push_back(i);
+
+    return bordering_pre;
 }
 
 // geos::geom::GeometryFactory::Ptr global_factory;
@@ -755,87 +801,3 @@ Multi_Shape poly_tree_to_shape(ClipperLib::PolyTree tree) {
     
 //     return ms;
 // }
-
-// boost_polygon ring_to_boost_poly(LinearRing shape) {
-
-//     /*
-//         Converts a shape object into a boost polygon object
-//         by looping over each point and manually adding it to a 
-//         boost polygon using assign_points and vectors
-//     */
-
-//     boost_polygon poly;
-
-//     // create vector of boost points
-//     std::vector<boost_point> points;
-
-//     for (coordinate c : shape.border) 
-//         points.push_back(boost_point(c[0],c[1])),
-
-//     assign_points(poly, points);
-//     correct(poly);
-
-//     return poly;
-// }
-
-// LinearRing boost_poly_to_ring(boost_polygon poly) {
-
-//     /*
-//         Convert from a boost polygon into a Shape object.
-//         Loop over each point in the polygon, add it to the
-//         shape's border.
-//     */
-
-//     coordinate_set b;
-//     vector<boost_point> const& points = poly.outer();
-
-//     for (std::vector<boost_point>::size_type i = 0; i < points.size(); ++i)
-//         b.push_back({get<0>(points[i]), get<1>(points[i])});
-
-//     LinearRing shape(b);
-//     return shape;
-// }
-
-// Shape boost_poly_to_shape(boost_multi_polygon poly) {
-
-//     /*
-//         overload the poly_to_shape function to work with multipolygons
-//         loop over each polygon, use same process to add to shape's border
-//         !!! WARNING: Should update shape data structure to work with
-//             multipolygon set. Not quite sure how to do this yet...
-//     */
-
-//     coordinate_set b;
-
-//     for (boost_polygon p : poly) {
-//         vector<boost_point> const& points = p.outer();
-
-//         for (std::vector<boost_point>::size_type i = 0; i < points.size(); ++i) {
-//             b.push_back({(float) get<0>(points[i]), (float) get<1>(points[i])});
-//         }
-//     }
-
-//     Shape shape(b);
-//     return shape;
-// }
-
-p_index_set get_ext_bordering_precincts(Precinct_Group precincts, State state) {
-    /*
-        @desc: a method for getting the precincts in a state that
-               border a precinct group. This is used in the communities
-               algorithm.
-
-        @params
-            `precincts`: The precinct group to find borders of
-            `state`: A state object with lists of precincts to look through
-
-        @return: `p_index_set` a set of precinct indices that border `precincts`
-    */
-
-    p_index_set bordering_pre;
-    Multi_Shape border = generate_exterior_border(precincts);
-
-    for (Precinct p : state.precincts) {
-        if (get_bordering(p, border));
-    }
-}
