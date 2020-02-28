@@ -673,7 +673,7 @@ void State::generate_communities(int num_communities, double compactness_toleran
     // }
 }
 
-string Community::save_frame(string write_path, State precinct_list) {
+string Community::save_frame() {
     string line;
     for (Precinct p : precincts) {
         line += "\"" + p.shape_id + "\", ";
@@ -684,13 +684,14 @@ string Community::save_frame(string write_path, State precinct_list) {
     return line;
 }
 
-Community Community::load_frame(std::string read_path, State precinct_list) {
-    Community c;
+Communities Community::load_frame(std::string read_path, State precinct_list) {
+    Communities cs;
     string file = readf(read_path);
     std::stringstream fs(file);
     std::string line;
 
     while (getline(fs, line)) {
+        Community c;
         vector<string> vals = split(line, "\"");
 
         for (string v : vals) {
@@ -702,7 +703,9 @@ Community Community::load_frame(std::string read_path, State precinct_list) {
                 } 
             }
         }
+
+        cs.push_back(c);
     }
 
-    return c;
+    return cs;
 }
