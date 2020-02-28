@@ -2,15 +2,13 @@
    Now:
     - replace "` -" with "`:" for docstring consistency
     - format all docstrings properly. (with args and all). separate args with 2 newlines. Change 'Args' to 'Params'
-    - Make all import alphabetical
+    - Make all imports alphabetical
    Later:
     - Predict errors and create custom exceptions to throw in those cases
     - Fill __init__.pys with __version__s and make pypi package
     - speed up with cython and c++ extensions (may have to be done before fair if code is too slow)
 
 # Serialization:
-   Now:
-    - serialize all data from raw directory in data repo
    Later (Possible after project):
     - update unit tests
 
@@ -18,7 +16,6 @@
    Now:
     - write communities algorithm
     - update step 1 to accept states with islands
-    - remove `distance` parameter from `get_closest_precinct_on_island` and give `_` value of distance when not needed. (More readable)
-
-# Quantification:
-	- write algorithm
+    - fix style issues with code in utils.py
+    - update docstrings for community algorithm functions
+    - continue working on partisanship test

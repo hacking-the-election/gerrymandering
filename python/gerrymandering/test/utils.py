@@ -38,9 +38,6 @@ def convert_to_json(coords, output_file):
             }
         })
 
-    with open("test_communities.json", "w") as f:
-        f.write(str(features))
-
     with open(output_file, 'w+') as f:
         json.dump({"type":"FeatureCollection", "features":features}, f)
 

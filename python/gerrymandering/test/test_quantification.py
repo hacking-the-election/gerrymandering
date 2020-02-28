@@ -5,7 +5,7 @@ from .utils import Community
 from serialization.save_precincts import Precinct
 
 class TestQuantification(unittest.TestCase):
-    def __init__:
+    def __init__(self):
         communities = [Community()]
         
 if __name__ == '__main__':
