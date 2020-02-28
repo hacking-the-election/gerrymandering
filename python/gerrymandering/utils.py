@@ -25,6 +25,7 @@ __all__ = ["clip", "UNION", "DIFFERENCE", "get_if_bordering",
 import math
 import random
 import logging
+import pickle
 
 from shapely.ops import unary_union
 from shapely.geometry import MultiLineString, MultiPolygon, Polygon, Point
@@ -71,7 +72,7 @@ def get_if_bordering(shape1, shape2):
     """
     Returns whether or not two shapes are bordering
     """
-    return isinstance(clip([shape1, shape2], INTERSECTION), MultiLineString)
+    return isinstance(clip([shape1, shape2], INTERSECTION), Polygon)
 
 
 def get_point_in_polygon(polygon, point):
@@ -318,6 +319,8 @@ class Community:
                                 a key in `self.islands`.
         """
 
+        added_precincts = []
+
         kwargs = {
             "partisanship": False,
             "standard_deviation": False,
@@ -325,7 +328,7 @@ class Community:
             "compactness": False, 
             "coords": True
         }
-        unchosen_precincts = Community(precincts[:], 0)
+        unchosen_precincts = Community(precincts[:], 0, {})
 
         for _ in range(self.islands[island_index]):
             # Set of precincts that have been tried
@@ -358,7 +361,10 @@ class Community:
                     self, random_precinct, **kwargs)
                 tried_precincts.add(random_precinct)
 
+            added_precincts.append(random_precinct)
             print(f"precinct {random_precinct} added to community {self.id}")
+
+        return added_precincts
 
     def get_bordering_precincts(self, unchosen_precincts):
         """
@@ -404,8 +410,7 @@ def group_by_islands(precincts):
 
 
 def get_closest_precinct_on_island(island_centroid,
-                                   other_island_border_precincts,
-                                   distance=False):
+                                   other_island_border_precincts):
     """
     Finds precinct on `other_island` that is closest to `island`
 
@@ -413,8 +418,6 @@ def get_closest_precinct_on_island(island_centroid,
         `island_centroid`:               Centroid of island.
         `other_island_border_precincts`: Precincts on border of other
                                          island.
-        `distance`:                      Whether or not to return distance after
-                                         precinct
 
     Returns `save_precincts.Precinct` object.
     """
@@ -423,15 +426,13 @@ def get_closest_precinct_on_island(island_centroid,
     for p in other_island_border_precincts:
         distance = _get_distance(island_centroid,
                                  p.coords.centroid.coords[0])
-        if (closest_precinct is None
+        if (
+                closest_precinct is None
                 or distance < closest_precinct_distance):
             closest_precinct = p
             closest_precinct_distance = distance
 
-    if distance:
-        return closest_precinct, closest_precinct_distance
-    else:
-        return closest_precinct
+    return closest_precinct, closest_precinct_distance
 
 
 def get_closest_precinct(island, island_precinct_groups,
@@ -462,8 +463,6 @@ def get_closest_precinct(island, island_precinct_groups,
     Returns vote_id attribute of closest precinct and index of island
     that contains that precinct.
     """
-    island_index = island_precinct_groups.index(island)
-
     # List of precincts that border the "coastline" of the each island.
     # Grouped by island.
     border_precincts = \
@@ -481,7 +480,7 @@ def get_closest_precinct(island, island_precinct_groups,
                                                border_precincts):
         closest_precinct_on_island, distance = \
             get_closest_precinct_on_island(
-                island_centroid, island_border_precincts, True)
+                island_centroid, island_border_precincts)
         if (
                 closest_precinct is None
                 or closest_precinct_distance > distance):
@@ -489,7 +488,12 @@ def get_closest_precinct(island, island_precinct_groups,
             closest_precinct = closest_precinct_on_island
             closest_precinct_island_index = state_island_borders.index(border)
 
-    return closest_precinct.vote_id, closest_precinct_island_index
+    try:
+        return closest_precinct.vote_id, closest_precinct_island_index
+    except AttributeError as e:
+        with open("test_communities_debug1.pickle", "wb+") as f:
+            pickle.dump([island_borders, island_precinct_groups], f)
+        raise e
 
 
 def get_precinct_link_pair(island, island_precinct_groups,
@@ -521,12 +525,13 @@ def get_precinct_link_pair(island, island_precinct_groups,
     """
 
     precinct1, closest_precinct_island_index = get_closest_precinct(
-        island, island_precinct_groups, island_borders, state_island_borders)
+        island, island_precinct_groups, island_borders,
+        island_border, state_island_borders)
     
     island_border_precincts = \
         [p for p in island if get_if_bordering(island_border, p.coords)]
 
-    precinct2 = get_closest_precinct_on_island(
+    precinct2, _ = get_closest_precinct_on_island(
             island_borders[closest_precinct_island_index].centroid.coords[0],
             island_border_precincts
         )
