@@ -1,6 +1,6 @@
-/*==================================================
+/*===============================================
  community.cpp:                        k-vernooy
- last modified:                      Mon, Feb 15
+ last modified:                     Fri, Feb 28
 
  Definition of the community-generation algorithm for
  quantifying gerrymandering and redistricting. This
@@ -23,7 +23,7 @@
  Python. If you're interested in contributing to the
  open source political movement, please contact us
  at: hacking.the.election@gmail.com
-==================================================*/
+===============================================*/
 
 #include "../../../include/shape.hpp"    // class definitions
 #include "../../../include/util.hpp"     // array modification functions
@@ -75,10 +75,8 @@ void State::generate_initial_communities(int num_communities) {
     int base = floor(num_precincts / num_communities); // the base num
     int rem = num_precincts % num_communities; // how many need to be increased by 1
 
-    for (int i = 0; i < num_communities - rem; i++)
-        base_sizes.push_back(base);
-    for (int i = 0; i < rem; i++)
-        large_sizes.push_back(base + 1);
+    for (int i = 0; i < num_communities - rem; i++) base_sizes.push_back(base);
+    for (int i = 0; i < rem; i++) large_sizes.push_back(base + 1);
     
     vector<p_index_set> available_precincts = islands;      // precincts that have yet to be used up
     p_index_set fractional_islands;                         // indices of islands that can't be made of base and large
@@ -115,13 +113,12 @@ void State::generate_initial_communities(int num_communities) {
             // this island must contain a fractional community
             fractional_islands.push_back(island_index);
 
-            // Find the number of whole communities it can contain
+            // find the number of whole communities it can contain
             // regardless, by rounding down to the nearest array element
             int round;
             
             for (auto it = vals.begin(); it != vals.end(); it++) {
-                if (it->first > island.size())
-                    break;
+                if (it->first > island.size()) break;
                 round = it->first;
             }
             
@@ -262,7 +259,7 @@ void State::generate_initial_communities(int num_communities) {
                     i++;
                 }
 
-                // // reset variables
+                // reset variables
                 min_p_distance = pow(10, 80);
                 i = 0;
 
@@ -278,21 +275,22 @@ void State::generate_initial_communities(int num_communities) {
                     i++;
                 }
 
-                community.link_position.push_back({{fractional_island_i, link}, {min_index, min_link}}); // 1st island, second precinct
+                available_precincts[fractional_island_i].erase(available_precincts[fractional_island_i].begin() + link);
+                available_precincts[min_index].erase(available_precincts[min_index].begin() + min_link);
 
+                // set community meta information
+                community.link_position.push_back({{fractional_island_i, link}, {min_index, min_link}});
                 community.is_linked = true;
                 community.location.push_back(fractional_islands[min_index]);
+
                 
-                if (total_leftover - island_leftover_c < 0)
-                    community.size.push_back(total_leftover);
-                else
-                    community.size.push_back(island_leftover_c);
+                if (total_leftover - island_leftover_c < 0) community.size.push_back(total_leftover);
+                else community.size.push_back(island_leftover_c);
 
                 total_leftover -= island_leftover_c;
 
-                if (total_leftover >= 0)
-                    // used up a whole island, still have precincts you need to get from somewhere
-                    ignore_fractionals.push_back(fractional_islands[min_index]);
+                // if used up a whole island, still have precincts you need to get from somewhere
+                if (total_leftover >= 0) ignore_fractionals.push_back(fractional_islands[min_index]);
             }
 
             c.push_back(community);
@@ -309,10 +307,17 @@ void State::generate_initial_communities(int num_communities) {
             int island_i = community.location[i];
             p_index_set island_available_precincts = available_precincts[i]; 
 
+            int start_precinct;
+            
+            if (community.link_position.size() > 0)
+                // need to start on the linked precinct
+                start_precinct = community.link_position[i][0][1];
+            else
+                start_precinct = rand_num(0, community.precincts.size() - 1);
+
             for (int x = 0; x < size; x++) {
                 int precinct = -1;
                 vector<p_index> tried_precincts; // precincts that will create islands
-
                 p_index start; // random precinct in border thats not linked
 
                 do {

@@ -1,6 +1,6 @@
 /*=======================================
  geometry.cpp:                  k-vernooy
- last modified:               Wed, Feb 26
+ last modified:              Fri, Feb 28
  
  Definition of useful functions for
  computational geometry. Basic 

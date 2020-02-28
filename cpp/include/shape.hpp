@@ -1,6 +1,6 @@
 /*=======================================
  shape.hpp:                     k-vernooy
- last modified:               Wed, Feb 19
+ last modified:               Fri, Feb 28
  
  Class definitions and method declarations
  for shapes, precincts, states, and 
@@ -67,10 +67,11 @@ typedef int p_index;                       // defines an index in an array
 typedef std::vector<p_index> p_index_set;  // vector of indices in an array
 typedef std::array<int, 2> seg_index;      // {p_index, segment_index};
 
+
 class Exceptions {
     /*
-        For throwing custom errors when I inevitably pass
-        bad inputs to some of these constructors
+        For throwing custom errors when bad inputs are
+        passed to some of these functions/constructors
     */
 
     public:
@@ -79,7 +80,14 @@ class Exceptions {
                 return "Points of LinearRing do not make closed shape.";
             }
         };
+        
+        struct CreatesIsland : public std::exception {
+            const char* what() const throw() {
+                return "This precinct exchange would create an island";
+            }
+        };
 };
+
 
 class LinearRing {
     /*
@@ -121,6 +129,7 @@ class LinearRing {
         friend class boost::serialization::access;
         template<class Archive> void serialize(Archive & ar, const unsigned int version);
 };
+
 
 class Shape {
     /* 
@@ -190,6 +199,7 @@ class Shape {
         bool is_part_of_multi_polygon = false; // for parsing rules
 };
 
+
 class Precinct : public Shape {
 
     // Derived shape class for defining a precinct
@@ -252,6 +262,7 @@ class Precinct : public Shape {
         int rep; // republican vote total
 };
 
+
 class Multi_Shape : public Shape {
     /*
         A class containing a vector of shapes
@@ -307,6 +318,7 @@ class Multi_Shape : public Shape {
         virtual void draw(); // prints to an SDL window
 };
 
+
 class Precinct_Group : public Multi_Shape {
 
     /* 
@@ -340,6 +352,7 @@ class Precinct_Group : public Multi_Shape {
         int id; // the district id number
 };
 
+
 // for cleaner naming of types when writing community algorithm
 // typedef Precinct_Group Community;
 typedef std::vector<Community> Communities;
@@ -363,6 +376,7 @@ class Community : public Precinct_Group {
         std::string save_frame();
         static Communities load_frame(std::string read_path, State precinct_list);
 };
+
 
 class State : public Precinct_Group {
     /*

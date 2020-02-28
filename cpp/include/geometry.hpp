@@ -1,6 +1,6 @@
 /*=======================================
  geometry.hpp                   k-vernooy
- last modified:               Wed, Feb 19
+ last modified:               Fri, Feb 28
  
  Declarations of functions for geometrical
  manipulations and searching algorithms.
