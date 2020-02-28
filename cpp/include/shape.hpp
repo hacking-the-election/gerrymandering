@@ -47,10 +47,10 @@ class Multi_Shape;     // A group of Shapes
 class Precinct;        // Voter block class
 class Precinct_Group;  // A group of precincts
 class State;           // Contains arrays of the above, as well as methods for various algorithms
-class Exceptions;       // for any error to be thrown
+class Exceptions;      // for any error to be thrown
+class Community;       // list of precinct id's
 
 // simplify the coordinate modification system
-
 typedef std::array<long double, 2> coordinate;      // a list in form {x1, y1}
 typedef std::vector<coordinate> coordinate_set;     // list of coordiantes: {{x1, y1}, {x2, y2}}
 typedef std::array<double, 4> bounding_box;         // an array of 4 max/mins:
@@ -63,7 +63,6 @@ typedef std::array<long double, 4> segment;
 typedef std::vector<segment> segments;
 
 // for defining indices of arrays rather than referring to objects:
-
 typedef int p_index;                       // defines an index in an array   
 typedef std::vector<p_index> p_index_set;  // vector of indices in an array
 typedef std::array<int, 2> seg_index;      // {p_index, segment_index};
@@ -77,7 +76,7 @@ class Exceptions {
     public:
         struct RingNotClosed : public std::exception {
             const char* what() const throw() {
-                return "Segments of LinearRing do not make closed shape. Wait how is this even possible?";
+                return "Points of LinearRing do not make closed shape.";
             }
         };
 };
@@ -340,6 +339,8 @@ class Precinct_Group : public Multi_Shape {
 };
 
 // for cleaner naming of types when writing community algorithm
+// typedef Precinct_Group Community;
+typedef std::vector<Community> Communities;
 
 class Community : public Precinct_Group {
     /*
@@ -356,11 +357,10 @@ class Community : public Precinct_Group {
         std::vector<int> size;                             // number of precincts initially in community -  if this is on multiple islands it has multiple elements
         
         Community(){}
+
+        std::string save_frame();
+        static Communities load_frame(std::string read_path, State precinct_list);
 };
-
-// typedef Precinct_Group Community;
-typedef std::vector<Community> Communities;
-
 
 class State : public Precinct_Group {
     /*
@@ -412,9 +412,14 @@ class State : public Precinct_Group {
 
         // return precinct that can be added to the current precinct that won't create islands in the state
         p_index get_addable_precinct(p_index_set available_precincts, p_index current_precinct);
+
         // write out communities at a certain point in time
         void save_communities(std::string write_path);
+        void read_communities(std::string write_path);
+        void playback_communities(std::string read_path);
+
         virtual void draw();
+
         // name of state
         std::string name = "no_name";
 

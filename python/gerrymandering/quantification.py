@@ -34,7 +34,6 @@ def quantify(communities_file, districts_file):
     '''
     with open (communities_file, 'rb') as f:
         data = pickle.load(f)
-    print(data)
     with open(districts_file, 'r') as f:
         district_data = json.load(f)
 
@@ -50,12 +49,12 @@ def quantify(communities_file, districts_file):
                     for district in district_data["features"]}
     # find partianshipps
     partisanships = {id:community_dict[id][0] for id in community_dict}
+    print(partisanships)
     # find areas of communities
     community_areas = {community:save_precincts.area(shapely_to_polygon(community_dict[community][1])) for community in community_dict}
     # begin finding district gerrymandering scores
     district_scores = {}
     for district in district_dict:
-        print('yes')
         # finds total area of district
         total_area = save_precincts.area(district_dict[district][0][0])
         # keys: community.id for community object
@@ -81,6 +80,7 @@ def quantify(communities_file, districts_file):
         # Create list of partisanship weights (decimal of proportion of republicans in district) 
         # for intersecting communities
         district_partisanships = [partisanships[community] for community in intersecting_communities]
+        # find weighted standard deviation using partisanship, area_weights
         stdev_district = stdev(district_partisanships, area_weights)
         # find biggest community, and area
         biggest_community = {}

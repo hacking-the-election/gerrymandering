@@ -9,8 +9,6 @@
     - speed up with cython and c++ extensions (may have to be done before fair if code is too slow)
 
 # Serialization:
-   Now:
-    - serialize all data from raw directory in data repo
    Later (Possible after project):
     - update unit tests
 
@@ -20,6 +18,4 @@
     - update step 1 to accept states with islands
     - fix style issues with code in utils.py
     - update docstrings for community algorithm functions
-
-# Quantification:
-	- write algorithm
+    - continue working on partisanship test
