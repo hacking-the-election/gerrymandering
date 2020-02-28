@@ -249,11 +249,40 @@ void State::generate_initial_communities(int num_communities) {
                 // island_leftover_c contains amount of available precincts on linking island
                 
                 p_index link, min_link;
-                
+                double min_p_distance = pow(10, 80); // arbitrarily high number (easy min)
+                int i = 0;
+
+                // find the precinct closest to the center of the island
                 for (p_index p : islands[fractional_islands[min_index]]) {
                     coordinate p_center = precincts[p].get_center();
                     double dist = get_distance(p_center, island_center);
+                    cout << dist << endl;
+
+                    if (dist < min_p_distance) {
+                        min_p_distance = dist;
+                        link = i;
+                    }
+                    i++;
                 }
+                // cout << "selected precincct from isl 1: " << link << endl;
+                // // reset variables
+                min_p_distance = pow(10, 80);
+                i = 0;
+
+                // find the precinct closest to the center of the island
+                for (p_index p : islands[fractional_islands[fractional_island_i]]) {
+                    coordinate p_center = precincts[p].get_center();
+                    double dist = get_distance(p_center, min_island_center);
+                    cout << dist << endl;
+                    if (dist < min_p_distance) {
+                        min_p_distance = dist;
+                        min_link = i;
+                    }
+                    i++;
+                }
+                // cout << "selected precincct from isl 1: " << min_link << endl;
+
+                cout << "linking precinct " << link << " with " << min_link << std::endl;
 
                 community.link_position.push_back({{fractional_island_i, link}, {min_index, min_link}}); // 1st island, second precinct
 
@@ -642,4 +671,38 @@ void State::generate_communities(int num_communities, double compactness_toleran
         
     //     i++;
     // }
+}
+
+string Community::save_frame(string write_path, State precinct_list) {
+    string line;
+    for (Precinct p : precincts) {
+        line += "\"" + p.shape_id + "\", ";
+    }
+
+    line = line.substr(0, line.size() - 2);
+    cout << line << endl;
+    return line;
+}
+
+Community Community::load_frame(std::string read_path, State precinct_list) {
+    Community c;
+    string file = readf(read_path);
+    std::stringstream fs(file);
+    std::string line;
+
+    while (getline(fs, line)) {
+        vector<string> vals = split(line, "\"");
+
+        for (string v : vals) {
+            if (v != ", ") { // v contains a precinct id
+                for (Precinct p : precinct_list.precincts) {
+                    if (p.shape_id == v) {
+                        c.add_precinct(p);
+                    }
+                } 
+            }
+        }
+    }
+
+    return c;
 }
