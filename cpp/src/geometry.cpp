@@ -29,7 +29,7 @@ segment coords_to_seg(coordinate c1, coordinate c2) {
     /*
         @desc: combines coordinates into a segment array
         @params: `c1`, `c2`: coordinates 1 and 2 in segment
-        @return: A segment with the coordinates provided
+        @return: `GeoGerry::segment` a segment with the coordinates provided
     */
 
     segment s = {{c1[0], c1[1], c2[0], c2[1]}};
@@ -40,7 +40,7 @@ double get_distance(segment s) {
     /* 
         @desc: Distance formula on a segment array
         @params: `s`: a segment to get the distance of
-        @return: A double representing the distance
+        @return: `double` the distance of the segment
     */
    
     return sqrt(pow((s[2] - s[0]), 2) + pow((s[3] - s[1]), 2));
@@ -50,7 +50,7 @@ double get_distance(coordinate c0, coordinate c1) {
     /*
         @desc: Distance formula on two separate points
         @params: `c1`, `c2`: coordinates 1 and 2 in segment
-        @return: distance between coordinates
+        @return: `double` the distance between the coordinates
     */
 
     return get_distance(coords_to_seg(c0, c1));
@@ -62,7 +62,7 @@ vector<double> get_equation(segment s) {
                in order to determine equation of a line segment
 
         @params: `s`: the segment to calculate
-        @return: vector of slope and intercept
+        @return: `vector` slope and intercept
         @warn: Need handlers for div by 0
     */
 
@@ -76,7 +76,7 @@ bool get_colinear(segment s0, segment s1) {
     /*
         @desc: gets whether or not two lines have the same equation
         @params: `s0`, `s1`: two segments to check colinearity
-        @return: boolean are colinear
+        @return: `bool` are colinear
     */
 
     return (get_equation(s0) == get_equation(s1));
@@ -90,7 +90,7 @@ bool get_overlap(segment s0, segment s1) {
                not count to overlap.
         
         @params: `s0`, `s1`: two segments to check overlap
-        @return: boolean segments overlap
+        @return: `bool` segments overlap
         @warn: This function is untested!
     */
     
@@ -110,7 +110,7 @@ bool get_bordering(segment s0, segment s1) {
     /*
         @desc: Returns whether or not two segments are colinear and overlap
         @params: `s0`, `s1`: two segments to check bordering
-        @return: boolean segments border
+        @return: `bool` segments border
     */
 
     return (get_colinear(s0, s1) && get_overlap(s0, s1));
@@ -118,8 +118,10 @@ bool get_bordering(segment s0, segment s1) {
 
 segments GeoGerry::LinearRing::get_segments() {
     /*
-        Returns a vector of segments from the
-        coordinate array of a LinearRing.border property
+        @desc: returns a vector of segments from the
+               coordinate array of a LinearRing.border property
+        @params: none
+        @return: segments of a ring
     */
 
     segments segs;
@@ -146,8 +148,9 @@ segments GeoGerry::LinearRing::get_segments() {
 
 segments GeoGerry::Shape::get_segments() {
     /*
-        Returns list of all segments in a shape, including
-        hole LinearRings array
+        @desc: get list of all segments in a shape, including hole LinearRings array
+        @params: none
+        @return: segments of a shape
     */
 
     segments segs = hull.get_segments();
@@ -161,15 +164,14 @@ segments GeoGerry::Shape::get_segments() {
 
 segments GeoGerry::Multi_Shape::get_segments() {
     /*
-        Returns a list of all segments in a multi_shape,
-        for each shape, including holes
+        @desc: get a list of all segments in a multi_shape, for each shape, including holes
+        @params: none
+        @return: segments array of each shape
     */
 
     segments segs;
-
-    for (Shape s : border) {
+    for (Shape s : border)
         for (segment seg : s.get_segments()) segs.push_back(seg);
-    }
 
     return segs;
 }
@@ -177,24 +179,31 @@ segments GeoGerry::Multi_Shape::get_segments() {
 
 coordinate GeoGerry::LinearRing::get_center() {
     /* 
-        Returns the average {x,y} of a linear ring (set of points).
-        In the future, could use centroid algorithm for determining
-        center - may be a better measure of center
+        @desc: Gets the centroid of a polygon with coords
+        @ref: https://en.wikipedia.org/wiki/Centroid#Centroid_of_polygon
+        @params: none
+        @return: coordinate of centroid
     */
 
     coordinate centroid = {0, 0};
+    double x0, y0, x1, y1;
 
     for (int i = 0; i < border.size() - 1; i++) {
-        double x0 = border[i][0];
-        double y0 = border[i][1];
-        double x1 = border[i + 1][0];
-        double y1 = border[i + 1][1];
+        // assign coordinates to variables
+        x0 = border[i][0];
+        y0 = border[i][1];
+        x1 = border[i + 1][0];
+        y1 = border[i + 1][1];
 
+        // get first factor in centroid formula
         double factor = ((x0 * y1) - (x1 * y0));
+        
+        // calculate current coordinate
         centroid[0] += (x0 + x1) * factor;
         centroid[1] += (y0 + y1) * factor;
     }
 
+    // divide to find centroid
     centroid[0] /= (6 * this->get_area());
     centroid[1] /= (6 * this->get_area());
 
@@ -204,9 +213,12 @@ coordinate GeoGerry::LinearRing::get_center() {
 
 double GeoGerry::LinearRing::get_area() {
     /*
-        Returns the area of a linear ring, using latitude * long area
-        An implementation of the shoelace theorem, found at 
-        https://www.mathopenref.com/coordpolygonarea.html
+        @desc: returns the area of a linear ring, using latitude * long
+               area - an implementation of the shoelace theorem
+
+        @params: none
+        @ref: https://www.mathopenref.com/coordpolygonarea.html
+        @return: area of linear ring as a double
     */
 
     double area = 0;
@@ -223,9 +235,9 @@ double GeoGerry::LinearRing::get_area() {
 
 double GeoGerry::LinearRing::get_perimeter() {
     /*
-        Returns the perimeter of a LinearRing object using
-        latitude and longitude coordinates by summing distance
-        formula distances for all segments
+        @desc: returns the perimeter of a LinearRing object by summing distance
+        @params: none
+        @return: `double` perimeter
     */
 
     double t = 0;
@@ -238,8 +250,11 @@ double GeoGerry::LinearRing::get_perimeter() {
 
 coordinate GeoGerry::Shape::get_center() {
     /*
-        Returns average center from list of holes
-        and hull by calling LinearRing::get_center.
+        @desc: returns average centroid from list of `holes`
+               and `hull` by calling `LinearRing::get_center`
+
+        @params: none
+        @return: `coordinate` average centroid of shape
     */
 
     coordinate center = hull.get_center();
@@ -257,14 +272,16 @@ coordinate GeoGerry::Shape::get_center() {
 
 double GeoGerry::Shape::get_area() {
     /*
-        Returns the area of the hull of a shape
-        minus the combined area of any holes
+        @desc: returns the area of the hull of a shape
+               minus the combined area of any holes
+
+        @params: none
+        @return: `double` totale area of shape
     */
 
     double area = hull.get_area();
-    for (GeoGerry::LinearRing h : holes) {
+    for (GeoGerry::LinearRing h : holes)
         area -= h.get_area();
-    }
 
     return area;
 }
@@ -272,38 +289,26 @@ double GeoGerry::Shape::get_area() {
 
 double GeoGerry::Shape::get_perimeter() {
     /*
-        Returns the sum perimeter of all LinearRings
-        in a shape object, including holes
+        @desc: returns the sum perimeter of all LinearRings
+               in a shape object, including holes
+
+        @params: none
+        @return: `double` total perimeter of shape
     */
 
     double perimeter = hull.get_perimeter();
-    for (GeoGerry::LinearRing h : holes) {
+    for (GeoGerry::LinearRing h : holes)
         perimeter += h.get_perimeter();
-    }
 
     return perimeter;
 }
 
 
-double GeoGerry::Multi_Shape::get_perimeter() {
-    /*
-        Returns sum perimeter of a multi shape object
-        by looping through each shape and calling method
-    */
-
-    double p = 0;
-    for (Shape shape : border) {
-        p += shape.get_perimeter();
-    }
-
-    return p;
-}
-
-
 double Multi_Shape::get_area() {
     /*
-        Returns sum area of all Shape objects within
-        border data member as double type.
+        @desc: Returns sum area of all Shape objects in border
+        @params: none
+        @return: `double` total area of shapes
     */
 
     double total = 0;
@@ -314,45 +319,50 @@ double Multi_Shape::get_area() {
 }
 
 
+double GeoGerry::Multi_Shape::get_perimeter() {
+    /*
+        @desc: returns sum perimeter of a multi shape object
+               by looping through each shape and calling method
+            
+        @params: none
+        @return `double` total perimeter of shapes array
+    */
+
+    double p = 0;
+    for (Shape shape : border)
+        p += shape.get_perimeter();
+
+    return p;
+}
+
+
 bool get_bordering(Shape s0, Shape s1) {
-    // returns whether or not two shapes touch each other
-
-    for (segment seg0 : s0.get_segments()) {
-        for (segment seg1 : s1.get_segments()) {
-            if (get_equation(seg0) == get_equation(seg1) && get_overlap(seg0, seg1)) {
+    /*
+        @desc: returns whether or not two shapes touch each other
+        @params: `Shape` s0, `Shape` s1: shapes to check bordering
+        @return: `bool` shapes are boording
+    */
+    
+    for (segment seg0 : s0.get_segments())
+        for (segment seg1 : s1.get_segments())
+            if (get_equation(seg0) == get_equation(seg1) && get_overlap(seg0, seg1)) 
                 return true;
-            }
-        }
-    }
 
     return false;
 }
 
-
-bool get_bordering(Multi_Shape ms0, Multi_Shape ms1) {
-    // returns whether or not two shapes touch each other
-
-    for (Shape s : ms0.border) {
-        for (segment seg0 : s.get_segments()) {
-            for (segment seg1 : ms1.get_segments()) {
-                if (get_equation(seg0) == get_equation(seg1) && get_overlap(seg0, seg1)) {
-                    return true;
-                }
-            }
-        }
-    }
-
-    return false;
-}
 
 bool point_in_ring(GeoGerry::coordinate coord, GeoGerry::LinearRing lr) {
     /*
-        returns whether or not a point is in a ring using
-        the ray intersection method - counts number of times
-        a ray hits the polygon
+        @desc: returns whether or not a point is in a ring using
+               the ray intersection method (clipper implementation)
 
-        see the documentation for this implementation at
-        http://geomalgorithms.com/a03-_inclusion.html.
+        @ref: http://www.angusj.com/delphi/clipper/documentation/Docs/Units/ClipperLib/Functions/PointInPolygon.htm
+        @params: 
+            `coordinate` coord: the point to check
+            `LinearRing` lr: the shape to check the point against
+        
+        @return: `bool` point is in/on polygon
     */
 
     // close ring for PIP problem
@@ -811,20 +821,21 @@ Multi_Shape poly_tree_to_shape(ClipperLib::PolyTree tree) {
 
 p_index_set get_ext_bordering_precincts(Precinct_Group precincts, State state) {
     /*
-        A method for getting the precincts in a state
-        that border a precinct group. This is used in the communities
-        algorithm.
+        @desc: a method for getting the precincts in a state that
+               border a precinct group. This is used in the communities
+               algorithm.
 
         @params
             `precincts`: The precinct group to find borders of
             `state`: A state object with lists of precincts to look through
 
-        @return
-            A set of precinct indices that border `precincts`
+        @return: `p_index_set` a set of precinct indices that border `precincts`
     */
 
     p_index_set bordering_pre;
-    for (Precinct p : ) {
-        if (get_bordering(p, ));
+    Multi_Shape border = generate_exterior_border(precincts);
+
+    for (Precinct p : state.precincts) {
+        if (get_bordering(p, border));
     }
 }

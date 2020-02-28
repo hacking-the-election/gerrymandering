@@ -282,9 +282,11 @@ class Multi_Shape : public Shape {
             }
         }
 
-        double get_perimeter();
-        double get_compactness();
-        double get_area();
+        double get_perimeter();               // total perimeter of border array
+        double get_compactness();             // average compactenss of each shape
+        double get_area();                    // total area of the border shape array
+        virtual segments get_segments();      // return a segment list with shape's segments
+
         // for boost serialization
         friend class boost::serialization::access;
         template<class Archive> void serialize(Archive & ar, const unsigned int version);

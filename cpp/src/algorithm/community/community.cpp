@@ -322,7 +322,7 @@ void State::generate_initial_communities(int num_communities) {
             }
         }
     }
-
+    
     // // add the last community that has no precincts yet
     // Community community;
     // for (p_index precinct : available_pre) {
