@@ -224,11 +224,40 @@ def create_initial_configuration(island_precinct_groups, n_districts,
         [p for pair in linked_precinct_chains for p in pair])
 
     try:
-        # Add precincts to each community that has any area on each island.
-        for i, island in enumerate(island_precinct_groups):
+        # First fill communities with links with the rest of thei precincts
+        for chain in linked_precinct_chains:
+            first_chain_island = [i for i, il in enumerate(island_precinct_groups)
+                                  if chain[0] in il][0]
             for community in communities:
-                if i in community.islands:
-                    community.fill(island, all_linked_precincts, i)
+                if (
+                        len(list(community.islands.values())) > 1
+                        and first_chain_island in list(community.islands.values())
+                        ):
+                    for island_index in community.islands.values():
+                        added_precincts = \
+                            community.fill(island_precinct_groups[island_index],
+                                           all_linked_precincts, island_index)
+
+                        # Remove these precincts from being listed as in
+                        # island. When other communities fill using this
+                        # island, they should not have the precincts
+                        # added to this community available to them.
+                        for precinct in island_precinct_groups[island_index][:]:
+                            if precinct.vote_id in added_precincts:
+                                island_precinct_groups[island_index].remove(
+                                    precincts)
+
+        # Then fill communities on only one island
+        for community in communities:
+            if len(community.precincts) == 0:
+                added_precincts = community.fill(
+                    island_precinct_groups[list(community.islands.keys())[0]],
+                    all_linked_precincts, list(community.islands.keys())[0]
+                )
+                for precinct in island_precinct_groups[island_index][:]:
+                    if precinct.vote_id in added_precincts:
+                        island_precinct_groups[island_index].remove(
+                            precincts)
 
     except Exception as e:
         # Save your progress!
