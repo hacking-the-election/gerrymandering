@@ -19,6 +19,7 @@ from serialization.save_precincts import Precinct
 
 
 VERMONT = load("../data/test/python/vermont.pickle")
+ALASKA = load("../data/test/python/alaska.pickle")
 
 
 class TestInitialConfiguration(unittest.TestCase):
@@ -32,7 +33,7 @@ class TestInitialConfiguration(unittest.TestCase):
         def test_initial_configuration_speed(precincts, n_districts):
             return communities.create_initial_configuration(precincts, n_districts)
 
-        vermont_output = test_initial_configuration_speed(VERMONT[0], 2)
+        vermont_output = test_initial_configuration_speed(ALASKA[0], 2)
         with open("test_communities.pickle", "wb") as f:
             pickle.dump(vermont_output, f)
         vermont_output_coords = []

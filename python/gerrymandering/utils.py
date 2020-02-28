@@ -23,6 +23,7 @@ __all__ = ["clip", "UNION", "DIFFERENCE", "get_if_bordering",
 
 
 import math
+import random
 import logging
 
 from shapely.ops import unary_union
@@ -194,7 +195,7 @@ class Community:
     A collection of precincts
     """
     
-    def __init__(self, precincts, identifier):
+    def __init__(self, precincts, identifier, islands):
         self.precincts = {precinct.vote_id: precinct for precinct in precincts}
         self.id = identifier
         if precincts != []:
@@ -205,6 +206,11 @@ class Community:
         self.standard_deviation = None
         self.population = None
         self.compactness = None
+
+        # Attributes useful for states with islands:
+
+        # dict with keys as index and values as number of precincts.
+        self.islands = islands
 
     def update_compactness(self):
         """
@@ -258,7 +264,7 @@ class Community:
 
         if not isinstance(other, Community):
             raise TypeError(f"Invalid type {type(other)}.\n"
-                            "Can only give precinct to community.")
+                             "Can only give precinct to community.")
         try:
             precinct = self.precincts[precinct_id]
         except KeyError:
@@ -277,19 +283,71 @@ class Community:
         # Update other attributes that are dependent on precincts attribute
         for community in [self, other]:
             if partisanship:
-                community.partisanship = Community.get_partisanship(
-                    community.precincts.values())
+                community.update_partisanship
             if standard_deviation:
-                community.standard_deviation = \
-                    Community.get_standard_deviation(
-                        community.precincts.values())
+                community.update_standard_deviation
             if population:
                 community.population = sum(
                     [precinct.population for precinct in
                      community.precincts.values()])
             if compactness:
-                community.compactness = get_schwartzberg_compactness(
-                    community.coords)
+                community.update_compactness
+
+    def fill(self, precincts, linked_precincts, island_index):
+        """
+        Fills a community up with precincts.
+
+        Args:
+            `precincts`:        List of Precinct objects in the island the
+                                community is on.
+            `linked_precincts`: Set of precincts that are meant to be part
+                                of communities that span islands, therefore
+                                making them untouchable during this step.
+            `island_index`    : Index of island that corresponds to
+                                a key in `self.islands`.
+        """
+
+        kwargs = {
+            "partisanship": False,
+            "standard_deviation": False,
+            "population": False, 
+            "compactness": False, 
+            "coords": True
+        }
+        unchosen_precincts = Community(precincts[:], 0)
+
+        for _ in range(self.islands[island_index]):
+            # Set of precincts that have been tried
+            tried_precincts = set()
+
+            # Give random precinct to `community`
+            random_precinct = random.sample(
+                self.get_bordering_precincts(unchosen_precincts) \
+                - tried_precincts - linked_precincts, 1)[0]
+
+            unchosen_precincts.give_precinct(
+                self, random_precinct, **kwargs)
+            tried_precincts.add(random_precinct)
+
+            # Keep trying other precincts until one of them
+            # doesn't make an island.
+            while isinstance(unchosen_precincts.coords, MultiPolygon):
+                # Give it back
+                self.give_precinct(
+                    unchosen_precincts, random_precinct, **kwargs)
+                print(f"precinct {random_precinct} added to and removed "
+                    f"from community {self.id} because it created an "
+                    "island")
+                # Random precinct that hasn't already been
+                # tried and also borders community.
+                random_precinct = random.sample(
+                    self.get_bordering_precincts(unchosen_precincts) \
+                    - tried_precincts - linked_precincts, 1)[0]
+                unchosen_precincts.give_precinct(
+                    self, random_precinct, **kwargs)
+                tried_precincts.add(random_precinct)
+
+            print(f"precinct {random_precinct} added to community {self.id}")
 
     def get_bordering_precincts(self, unchosen_precincts):
         """
@@ -328,16 +386,98 @@ def group_by_islands(precincts):
                 # all of them must be.
                 if get_point_in_polygon(
                         island, list(precinct.coords.exterior.coords[1])):
-                    islands[i].append(precinct.vote_id)
+                    islands[i].append(precinct)
         return islands
     else:
-        return [[p.vote_id for p in precincts]]
+        return [[p for p in precincts]]
 
 
-def get_precinct_link_pair(island, island_precinct_groups):
+def get_closest_precinct_on_island(island_centroid,
+                                   other_island_border_precincts,
+                                   distance=False):
     """
-    Finds id of precinct that is closest to
-    `precinct` on any other island.
+    Finds precinct on `other_island` that is closest to `island`
+
+    Args:
+        `island_centroid`:               Centroid of island.
+        `other_island_border_precincts`: Precincts on border of other
+                                         island.
+        `distance`:                      Whether or not to return distance after
+                                         precinct
+
+    Returns `save_precincts.Precinct` object.
+    """
+    closest_precinct = None
+    closest_precinct_distance = 0
+    for p in other_island_border_precincts:
+        distance = _get_distance(island_centroid,
+                                 p.coords.centroid.coords[0])
+        if (closest_precinct is None
+                or distance < closest_precinct_distance):
+            closest_precinct = p
+            closest_precinct_distance = distance
+
+    if distance:
+        return closest_precinct, closest_precinct_distance
+    else:
+        return closest_precinct
+
+
+def get_closest_precinct(island, island_precinct_groups, island_borders):
+    """
+    Finds precinct on border of any island in `island_precinct_groups`
+    that is closest to `island`. Meant to be used as second precinct in
+    a "linked pair" of precincts.
+    
+    Args:
+        `island`:                 List of `save_precincts.Precinct`
+                                  objects that is create the island
+                                  you want to find the precinct that
+                                  is closest to.
+        `island_precinct_groups`: List of lists of
+                                  `save_precincts.Precinct` objects
+                                  grouped by islands in the whole state.
+        `island_borders`:         List of Polygons that are borders of
+                                  all the islands in the state.
+
+    Returns vote_id attribute of closest precinct and index of island
+    that contains that precinct.
+    """
+    island_index = island_precinct_groups.index(island)
+
+    # List of precincts that border the "coastline" of the each island.
+    # Grouped by island.
+    border_precincts = \
+        [[precinct for precinct in il
+          if get_if_bordering(precinct.coords, i_border)]
+         for i_border, il in zip(island_borders, island_precinct_groups)]
+
+    island_centroid = island_borders[island_index].centroid.coords[0]
+    
+    closest_precinct = None
+    closest_precinct_distance = 0
+    closest_precinct_island_index = 0
+
+    for i, island_border_precincts in enumerate(border_precincts):
+        if i != island_index:
+            closest_precinct_on_island, distance = \
+                get_closest_precinct_on_island(
+                    island_centroid, island_border_precincts, True)
+            if (
+                    closest_precinct is None
+                    or closest_precinct_distance > distance):
+                closest_precinct_distance = distance
+                closest_precinct = closest_precinct_on_island
+                closest_precinct_island_index = i
+
+    return closest_precinct.vote_id, closest_precinct_island_index
+
+
+def get_precinct_link_pair(island, island_precinct_groups,
+                           island_border, island_borders):
+    """
+    Finds pair of two closest precincts on borders of `island` and any
+    island in `island_precinct_groups`.
 
     Args:
         `island`:                 List of `save_precincts.Precinct`
@@ -346,56 +486,25 @@ def get_precinct_link_pair(island, island_precinct_groups):
                                   is closest to.
         `island_precinct_groups`: List of lists of
                                   `save_precincts.Precinct` objects
-                                  grouped by islands in the whole state
-                                  minus `island`.
+                                  grouped by islands in the whole state.
+        `island_border`:          Polygon that is the border of `island`
+        `island_borders`:         List of Polygons that are borders of
+                                  all the islands in the state.
 
-    Returns list of two strings that are the linked
-    pair between `island` and any other island.
+    Returns two strings (vote_ids of precinct on `island` and other
+    precinct) and one integer (index of the island the other precinct
+    is on).
     """
-    island_borders = [clip([p.coords for p in island], UNION)
-                      for island in island_precinct_groups]
-    # List of precincts that border the "coastline" of the each island.
-    # Grouped by island.
-    border_precincts = \
-        [[p for p in island if get_if_bordering(p.coords, island_border)]
-         for p in island for island in island_borders]
 
-    island_centroid = \
-        clip([p.coords for p in island], UNION).centroid.coords[0]
-    # id of Precinct whose centroid is closest to centroid of `island`
-    closest_precinct = None
-    # Distance from above precinct to centroid of `island`
-    closest_precinct_distance = 0
-    # Island that contains above precinct
-    closest_isalnd = []
-    for i in range(len(border_precincts)):
-        for precinct in border_precincts[i]:
-            distance = _get_distance(island_centroid,
-                                     precinct.centroid.coords[0])
-            if (
-                    closest_precinct is None
-                    or distance < closest_precinct_distance
-                    ):
-                closest_precinct = precinct.vote_id
-                closest_precinct_distance = distance
-                closest_island = i
-    closest_island_centroid = \
-        island_borders[closest_island].centroid.coords[0]
+    precinct1, closest_precinct_island_index = get_closest_precinct(
+        island, island_precinct_groups, island_borders)
+    
+    island_border_precincts = \
+        [p for p in island if get_if_bordering(island_border, p.coords)]
 
-    # Find the precinct on the border of `island` that is closest to
-    # the centroid of the island that contains the precincts that is
-    # closest to the centroid of `island`.
-    island_border_precincts = [precinct for precinct in islands
-                               if get_if_bordering(p.coords, island_border)]
-    closest_second_precinct = None
-    closest_second_precinct_distance = 0
-    for precinct in island_border_precincts:
-        distance = _get_distance(closest_island_centroid,
-                                 precinct.centroid.coords[0])
-        if (
-                closest_second_precinct is None
-                or distance < closest_second_precinct_distance
-                ):
-            closest_second_precinct = precinct.vote_id
-            closest_precinct_distance = distance
-    return [closest_precinct, closest_second_precinct]
+    precinct2 = get_closest_precinct_on_island(
+            island_borders[closest_precinct_island_index].centroid.coords[0],
+            island_border_precincts
+        )
+
+    return precinct1, precinct2, closest_precinct_island_index

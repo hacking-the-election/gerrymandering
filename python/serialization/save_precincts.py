@@ -35,7 +35,8 @@ import warnings
 from shapely.geometry import Polygon
 
 sys.path.insert(-1, dirname(dirname(abspath(__file__))))
-from gerrymandering.utils import polygon_to_shapely, get_point_in_polygon as gpip
+from gerrymandering.utils import (get_point_in_polygon as gpip,
+                                  group_by_islands)
 
 
 logging.basicConfig(level=logging.INFO, filename="precincts.log")
@@ -526,7 +527,7 @@ class Precinct:
 
         # save precinct list to state file
         try:
-            save(precinct_dict[0].state, precinct_dict,
+            save(precinct_dict[0].state, group_by_islands(precinct_dict),
                  district_dict, objects_dir)
         except IndexError:
             raise Exception("No precincts saved to precinct list.")
