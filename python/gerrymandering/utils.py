@@ -18,7 +18,8 @@ multipolygon (list of polygons).
 __all__ = ["clip", "UNION", "DIFFERENCE", "get_if_bordering",
            "get_point_in_polygon", "Community", "group_by_islands",
            "get_precinct_link_pair", "LoopBreakException",
-           "LoopContinueException", "get_area_intersection"]
+           "LoopContinueException", "get_area_intersection", 
+           "shapely_to_polygon", "polygon_to_shapely", "average", "stdev"]
 
 
 import math
@@ -28,7 +29,7 @@ import logging
 from shapely.ops import unary_union
 from shapely.geometry import MultiLineString, MultiPolygon, Polygon, Point
 
-from .test.utils import print_time
+from test.utils import print_time
 
 
 logging.basicConfig(filename="precincts.log", level=logging.DEBUG)
@@ -57,13 +58,6 @@ class LoopContinueException(Exception):
 
 # ===================================================
 # general geometry functions
-
-
-def _get_distance(p1, p2):
-    """
-    Finds distance between points `p1` and `p2` as lists of floats
-    """
-    return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
 
 
 def get_if_bordering(shape1, shape2):
@@ -114,6 +108,31 @@ def get_area_intersection(polygon1, polygon2):
         raise Exception("Negative area found, check inputs")
     return intersect_area
 
+def average(number_list):
+    '''
+    Finds the average of the integers in number_list.
+    Returns float.
+    '''
+    sum1 = sum(number_list)
+    return sum1/len(number_list)
+
+def stdev(number_list, weight_list=None):
+    '''
+    Finds the standard deviation of the integers in integers list.
+    If weight_list applies, multiply each of the numbers in number_list by the weight
+    (decimal) corresponding in weight_list. weight_list should have a list of decimals.
+    Does not use sample, but all elements in list
+    Returns float.
+    '''
+    average_int = average(number_list)
+    squared_sum = 0
+    for num, integer in enumerate(number_list):
+        difference = average_int - integer
+        if weight_list:
+            squared_sum += (difference * difference) * weight_list[num]
+        else:
+            squared_sum += (difference * difference)
+    return math.sqrt(squared_sum / len(number_list))
 
 def clip(shapes, clip_type):
     """
@@ -144,7 +163,29 @@ def clip(shapes, clip_type):
                 "Invalid clip type. Use utils.UNION or utils.DIFFERENCE")
     return solution
 
+def polygon_to_shapely(polygon):
+    """
+    Converts list-type polygon `shape` to
+    `shapely.geometry.Polygon`
+    """
+    tuple_polygon = [[tuple(coord) for coord in linear_ring]
+                     for linear_ring in polygon]
+    return Polygon(tuple_polygon[0], tuple_polygon[1:])
 
+def shapely_to_polygon(polygon):
+    """
+    Creates json polygon from shapely.geometry.Polygon
+    NOTE: Assumes shapely polygon only has exterior and no holes.
+    """
+    coordinates = list(polygon.exterior.coords)
+    linear_ring = []
+    for tuple1 in coordinates:
+        x = tuple1[0]
+        y = tuple1[1]
+        point_list = [x, y]
+        linear_ring.append(point_list)
+    print(linear_ring[0], linear_ring[-1])
+    return linear_ring
 # ===================================================
 # Community algorithm-specifc functions and classes:
 
@@ -191,7 +232,7 @@ class Community:
         try:
             rep_percentages = [
                 p.r_election_sum / (p.r_election_sum + p.d_election_sum) * 100
-                for p in self.precincts]
+                for p in self.precincts.values()]
             mean = sum(rep_percentages) / len(rep_percentages)
             
             self.standard_deviation = math.sqrt(sum([(p - mean) ** 2 for p in rep_percentages]))
@@ -205,7 +246,7 @@ class Community:
 
         rep_sum = 0
         total_sum = 0
-        for precinct in self.precincts:
+        for precinct in self.precincts.values():
             if (r_sum := precinct.r_election_sum) != -1:
                 rep_sum += r_sum
                 total_sum += r_sum + precinct.d_election_sum

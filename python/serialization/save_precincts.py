@@ -48,16 +48,6 @@ def customwarn(message, category, filename, lineno, file=None, line=None):
 warnings.showwarning = customwarn
 
 
-def polygon_to_shapely(polygon):
-    """
-    Converts list-type polygon `shape` to
-    `shapely.geometry.Polygon`
-    """
-    tuple_polygon = [[tuple(coord) for coord in linear_ring]
-                     for linear_ring in polygon]
-    return Polygon(tuple_polygon[0], tuple_polygon[1:])
-
-
 def save(state, precinct_dict, district_dict, objects_dir):
     """
     Save the list of precincts for a state to a file
@@ -114,6 +104,17 @@ def area(linear_pair):
             right_area += point[1]*linear_pair[num+1][0]
     area = abs(left_area - right_area)/2
     return area
+
+def convert_to_json(input_dict, output_file):
+    """
+    Converts coordinates to json for testing.
+    input_Dict should have coordinates for values
+    output_file should have a filepath
+    """
+    features = [{"type":"Feature", "geometry":{"type":"Polygon", "coordinates": str(precinct) + '\n'}, "properties":"None"} for precinct in input_dict.values()]
+    json1 = {"type":"FeatureCollection", "features":features}
+    with open(output_file, 'w') as f:
+        json.dump(json1, f)
 
 def hole_remover(precinct_dict, pop, dem_keys, rep_keys, dem_cols, rep_cols):
     num_of_holes = 0
@@ -472,6 +473,7 @@ class Precinct:
         print('number of precincts removed:', len(hole_precincts[0]))
         print('total # of precincts after holes:',  len(precinct_coords))
         print('holes without precincts:', hole_precincts[2])
+        convert_to_json(precinct_coords, '../../../testserialization.json')
         # get election and geo data (separate processes for whether or
         # not there is an individual election data file)
         if is_election_data:
