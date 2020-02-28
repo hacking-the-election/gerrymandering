@@ -36,7 +36,7 @@ from shapely.geometry import Polygon
 
 sys.path.insert(-1, dirname(dirname(abspath(__file__))))
 from gerrymandering.utils import (get_point_in_polygon as gpip,
-                                  group_by_islands)
+                                  group_by_islands, clip, UNION)
 
 
 logging.basicConfig(level=logging.INFO, filename="precincts.log")
@@ -48,13 +48,24 @@ def customwarn(message, category, filename, lineno, file=None, line=None):
 warnings.showwarning = customwarn
 
 
+def polygon_to_shapely(polygon):
+    """
+    Converts list-type polygon `shape` to
+    `shapely.geometry.Polygon`
+    """
+    tuple_polygon = [[tuple(coord) for coord in linear_ring]
+                     for linear_ring in polygon]
+    return Polygon(tuple_polygon[0], tuple_polygon[1:])
+
+
 def save(state, precinct_dict, district_dict, objects_dir):
     """
     Save the list of precincts for a state to a file
     """
+    state_border = clip([p.coords for i in precinct_dict for p in i], UNION)
     file = f'{objects_dir}/{state}.pickle'
     with open(file, 'wb+') as f:
-        pickle.dump([precinct_dict, district_dict], f)
+        pickle.dump([precinct_dict, district_dict, state_border], f)
 
 
 def convert_to_int(string):
