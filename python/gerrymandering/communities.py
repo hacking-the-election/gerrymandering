@@ -271,9 +271,13 @@ def create_initial_configuration(island_precinct_groups, n_districts,
 
     return communities
     
-def modify_for_partisanship(communities_list, threshold):
+def modify_for_partisanship(communities_list, precinct_corridors, threshold):
     '''
-    Takes list of community objects, and returns a different list with the modified communities
+    Takes list of community objects, and returns a different list with the modified communities.,
+    as well as the # of precincts that changed hands during this step.
+    precinct_corridors should be a list of lists of two precincts, which are "connected", i.e.
+    should be considered bordering. The threshold is a decimal for maximum community partisanship 
+    standard deviation, i.e. (0.05)
     '''
     communities_coords = {community.id : community.precincts for community in communities_list}
     # update partisanship values (in case this hasn't already been done)
@@ -298,19 +302,53 @@ def modify_for_partisanship(communities_list, threshold):
                 if community > most_stdev.get(id, 0):
                     most_stdev[id] = community
             biggest_community_precincts = communities_coords[most_stdev.keys()[0]]
-            border_precincts = {most_stdev.keys()[0]: []}
+            border_precincts = {'biggest_community': [], 'other':[]}
             # create dictionary of the precincts bordering it
             # group_by_islands(biggest_community_precincts)
             for id1, community1 in community_stdev.items():
+                # if community is biggest one, skip
                 if id1 == most_stdev.keys()[0]:
                     continue
-                # see utils.py for deeper description of island problem
                 if get_if_bordering(shapely_to_polygon(most_stdev.values()[0].coords), 
                                     json_communities[id1]):
                     # the following result has first key: precincts ids inside most stdev community
                     # second key: precinct ids in other community
                     specific_border_precincts = get_bordering_precincts(most_stdev.values()[0], community1)
                     for precinct in specific_border_precincts[most_stdev.keys()[0]]:
+                        border_precincts['biggest_community'].append(precinct)
+                    if specific_border_precincts[id1] != 0: 
+                        border_precincts['other'].extend(specific_border_precincts[id1])
+            # add precinct corridors that have precincts inside community, but only one
+            for precinct in most_stdev.values()[0].precincts:
+                for pair in precinct_corridors:
+                    if precinct in pair:
+                        # if both sides of a precinct corridor are in the community, 
+                        # no need to be added
+                        if pair[:].remove(precinct)[0] in community.precincts:
+                            continue
+                        else:
+                            border_precincts.other(pair[:].remove(precinct))
+            # find which precinct exchanges are the best
+            precinct_exchanges_dict = {}
+            # for border precincts within the highest stdev community, find stdev without that precinct
+            community_stdev = most_stdev.values()[0].standard_deviation
+            for precinct in border_precincts['biggest_community']:
+                other_precinct_list = most_stdev.values()[0].precincts.values()[:].remove(precinct)
+                precinct_stdev = stdev([precinct.r_election_sum for precinct in other_precinct_list])
+                precinct_exchanges_dict[(community_stdev - precinct_stdev)] = precinct 
+            # for border precincts outside the highest stdev community, find stdev with that precinct
+            for precinct in border_precincts['other']:
+                added_precinct_list = most_stdev.values()[0].precincts.values()[:].append(precinct)
+                precinct_stdev = stdev([precinct.r_election_sum for precinct in other_precinct_list])
+                precinct_exchanges_dict[(community_stdev - precinct_stdev)] = precinct
+            # add or remove precincts from border_precincts until there are no more beneficial exchanges,
+            # or until the community's standard deviation is below the threshold
+
+            
+
+            
+            
+                    
                         
 def make_communities(state_file):
     """
@@ -326,5 +364,5 @@ def make_communities(state_file):
     # Step 1
     communities = create_initial_configuration(
         precincts, len(districts), state_border)
-
+    partisanship_modifiy
     return communities
