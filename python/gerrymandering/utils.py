@@ -489,7 +489,7 @@ def get_closest_precinct(island, island_precinct_groups,
             closest_precinct_island_index = state_island_borders.index(border)
 
     try:
-        return closest_precinct.vote_id, closest_precinct_island_index
+        return closest_precinct, closest_precinct_island_index
     except AttributeError as e:
         with open("test_communities_debug1.pickle", "wb+") as f:
             pickle.dump([island_borders, island_precinct_groups], f)

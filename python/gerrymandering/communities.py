@@ -128,7 +128,7 @@ def create_initial_configuration(island_precinct_groups, n_districts,
                 n_extra_precincts = n_precincts
                 # dict with keys of island index and value of number of
                 # precincts used in community
-                islands_used = {i: n_precincts}
+                islands_used = {i: island_available_precincts[i]}
                 # Loop through islands with some precincts left
                 eligible_islands = \
                     [[il, n_il_precincts, island_precinct_groups.index(il)]
@@ -138,7 +138,9 @@ def create_initial_configuration(island_precinct_groups, n_districts,
 
                 last_island_used = i
 
-                while n_extra_precincts < community_sizes[0]:
+                while (
+                        n_extra_precincts < community_sizes[0]
+                        and eligible_islands != []):
                     # Islands that can be linked to:
                     # All islands with a fractional number of communities
                     # other than current island and islands we have already
@@ -215,9 +217,12 @@ def create_initial_configuration(island_precinct_groups, n_districts,
                 ],
                 f)
         raise e
-
-    print([[precinct.vote_id for precinct in chain]
-          for chain in linked_precinct_chains])
+    
+    try:
+        print([[precinct.vote_id for precinct in chain]
+            for chain in linked_precinct_chains])
+    except AttributeError:
+        print(linked_precinct_chains)
     print(island_available_precincts)
 
     all_linked_precincts = set(

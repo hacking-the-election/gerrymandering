@@ -16,6 +16,6 @@
    Now:
     - write communities algorithm
     - update step 1 to accept states with islands
-    - fix style issues with code in utils.py
+    - fix style issues with code in utils.py and communities.py
     - update docstrings for community algorithm functions
     - continue working on partisanship test
