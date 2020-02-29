@@ -58,8 +58,9 @@ double get_median_partisanship(GeoGerry::Precinct_Group pg);
 
 bool point_in_ring(GeoGerry::coordinate coord, GeoGerry::LinearRing lr);
 bool get_inside(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1);
-bool get_inside_or(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1);
 bool get_inside_first(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1);
-bool get_inside_d(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1);
+
+bool creates_island(GeoGerry::Precinct_Group set, GeoGerry::p_index remove);
+bool creates_island(GeoGerry::p_index_set set, GeoGerry::p_index remove, GeoGerry::State precincts);
 
 double get_distance(GeoGerry::coordinate c1, GeoGerry::coordinate c2);
