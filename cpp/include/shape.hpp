@@ -367,7 +367,7 @@ class Community : public Precinct_Group {
 
         bool is_linked = false;                            // whether or not this community has a linked counterpart
         std::vector<std::vector
-            <std::vector<int> > > link_position;           // gives island and precinct link location: { {0, 1}, {2, 0} } - first island, second precinct linked to third island, first precinct
+            <std::vector<int> > > link_position;           // gives island and precinct link location: { { {0, 1}, {2, 0} }, { {0, 1}, {2, 0} } } - first island, second precinct linked to third island, first precinct
         std::vector<int> location;                         // indexes of island it's located on
         std::vector<int> size;                             // number of precincts initially in community -  if this is on multiple islands it has multiple elements
         

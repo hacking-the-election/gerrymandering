@@ -14,7 +14,7 @@
 
 // define geometric constants
 #define PI 3.14159265358979323846
-const int c = pow(10, 18);
+const int c = pow(10, 15);
 
 using namespace GeoGerry;
 using namespace std;
@@ -68,7 +68,8 @@ vector<double> get_equation(segment s) {
     */
 
     double m = (s[3] - s[1]) / (s[2] - s[0]);
-    double b = -m * s[0] + s[1];
+    double b = -m * -s[0] + s[1];
+    b = -1 * ( (m * s[0]) - s[1] );
 
     return {m, b};
 }
@@ -129,20 +130,19 @@ segments GeoGerry::LinearRing::get_segments() {
     */
 
     segments segs;
-    
+    vector<coordinate> border_x = border;
+
     // loop through segments
     if (border[border.size() - 1] == border[0])
-        border.pop_back();
+        border_x.pop_back();
 
-    for (int i = 0; i < border.size(); i++) {
-        coordinate c1 = border[i];  // starting coord
+    for (int i = 0; i < border_x.size(); i++) {
+        coordinate c1 = border_x[i];  // starting coord
         coordinate c2;              // ending coord
 
         // find position of ending coordinate
-        if (i == border.size() - 1)
-            c2 = border[0];
-        else
-            c2 = border[i + 1];
+        if (i == border_x.size() - 1) c2 = border_x[0];
+        else c2 = border_x[i + 1];
 
         segs.push_back(coords_to_seg(c1, c2)); // add to list
     }
@@ -354,7 +354,45 @@ bool get_bordering(Shape s0, Shape s1) {
     
     for (segment seg0 : s0.get_segments())
         for (segment seg1 : s1.get_segments())
-            if (get_equation(seg0) == get_equation(seg1) && get_overlap(seg0, seg1)) 
+            if (get_colinear(seg0, seg1) && get_overlap(seg0, seg1))
+                return true;
+
+    return false;
+}
+
+
+bool get_bordering(Multi_Shape s0, Shape s1) {
+    /*
+        @desc: gets whether or not two shapes touch each other
+        @params: `Multi_Shape` s0, `Shape` s1: shapes to check bordering
+        @return: `bool` shapes are boording
+    */
+
+    for (segment seg0 : s0.get_segments()) {
+        for (segment seg1 : s1.get_segments()) {
+            if (get_colinear(seg0, seg1)) {
+                if (get_overlap(seg0, seg1)) {        
+                    return true;
+                }
+                cout << "colinear" << endl;
+            }
+        }
+    }
+
+    return false;
+}
+
+
+bool get_bordering(Multi_Shape s0, Multi_Shape s1) {
+    /*
+        @desc: gets whether or not two shapes touch each other
+        @params: `Multi_Shape` s0, `Multi_Shape` s1: shapes to check bordering
+        @return: `bool` shapes are boording
+    */
+
+    for (segment seg0 : s0.get_segments())
+        for (segment seg1 : s1.get_segments())
+            if (get_colinear(seg0, seg1) && get_overlap(seg0, seg1))
                 return true;
 
     return false;
@@ -446,6 +484,47 @@ p_index_set get_inner_boundary_precincts(Precinct_Group shape) {
 }
 
 
+GeoGerry::p_index_set get_inner_boundary_precincts(p_index_set precincts, State state) {
+    /*
+        @desc:
+            gets an array of indices that correspond
+            to precincts on the inner edge of a precinct_index_set
+        
+        @params: 
+            `p_index_set` precincts: the precinct index set to get inner precincts of
+            `State` state: The precincts that correspond to the indices
+
+        @return: `p_index_set` indices of inner border precincts
+    */
+
+    p_index_set boundary_precincts;
+
+    Precinct_Group pg;
+    for (p_index p : precincts)
+        pg.add_precinct(state.precincts[p]);
+    
+    Multi_Shape border = generate_exterior_border(pg);
+
+    if (pg.precincts.size() == 1) {
+        if (border.border[0].hull != pg.precincts[0].hull) {
+            cout << "SOMETHING FAILED" << endl;
+            cout << border.border[0].hull.border[0][0] << ", " << border.border[0].hull.border[0][1] << endl;
+            cout << pg.precincts[0].hull.border[0][0] << ", " << pg.precincts[0].hull.border[0][1] << endl;
+        }
+    }
+
+    int i = 0;
+    for (Precinct p : pg.precincts) {
+        if (get_bordering(border, p)) boundary_precincts.push_back(i);
+        i++;
+    }
+
+    if (boundary_precincts.size() > 0)
+        cout << "SOMETHING WORKED" << endl;
+
+    return boundary_precincts;
+}
+
 
 p_index_set get_bordering_shapes(vector<Shape> shapes, Shape shape) {
     /*
@@ -457,7 +536,7 @@ p_index_set get_bordering_shapes(vector<Shape> shapes, Shape shape) {
     p_index_set vec;
     
     for (p_index i = 0; i < shapes.size(); i++)
-        if ( ( shapes[i] != shape ) && get_bordering(shapes[i], shape)) vec.push_back(i);
+        if (( shapes[i] != shape ) && get_bordering(shapes[i], shape)) vec.push_back(i);
     
     return vec;
 }
@@ -471,8 +550,8 @@ p_index_set get_bordering_shapes(vector<Precinct_Group> shapes, Shape shape) {
     p_index_set vec;
     
     for (p_index i = 0; i < shapes.size(); i++)
-        if ( ( shapes[i] != shape ) && get_bordering(shapes[i], shape)) vec.push_back(i);
-    
+        if (( shapes[i] != shape ) && get_bordering(shapes[i], shape)) vec.push_back(i);
+
     return vec;
 }
 
@@ -605,8 +684,10 @@ Multi_Shape generate_exterior_border(Precinct_Group precinct_group) {
     ClipperLib::Clipper c; // the executor
 
     // execute union on paths array
+    cout << subj[0][0].X << ", " << subj[0][0].Y << endl;
     c.AddPaths(subj, ClipperLib::ptSubject, true);
     c.Execute(ClipperLib::ctUnion, solutions, ClipperLib::pftNonZero);
+    cout << solutions[0][0].X << ", " << solutions[0][0].Y << endl << endl;
 
     return paths_to_multi_shape(solutions);
 }
@@ -617,11 +698,9 @@ ClipperLib::Path ring_to_path(GeoGerry::LinearRing ring) {
         given Shape object by looping through points
     */
 
-    ClipperLib::Path p(ring.border.size());
-
-    for (coordinate point : ring.border ) {
-        p << ClipperLib::IntPoint(point[0] * c, point[1] * c);
-    }
+    ClipperLib::Path p;
+    for (coordinate point : ring.border )
+        p.push_back(ClipperLib::IntPoint(point[0] * c, point[1] * c));
 
     return p;
 }
@@ -635,9 +714,12 @@ GeoGerry::LinearRing path_to_ring(ClipperLib::Path path) {
     GeoGerry::LinearRing s;
 
     for (ClipperLib::IntPoint point : path ) {
-        coordinate p = {((point.X) / (long double)c), ((point.Y) / (long double)c)};
+        coordinate p = {(long double) point.X / c, (long double) point.Y / c};
         if (p[0] != 0 && p[1] != 0) s.border.push_back(p);
     }
+
+    if (s.border[0] != s.border[s.border.size() - 1])
+        s.border.push_back(s.border[0]);
 
     return s;
 }
@@ -721,6 +803,66 @@ p_index_set get_ext_bordering_precincts(Precinct_Group precincts, State state) {
         if (get_bordering(state.precincts[i], border)) bordering_pre.push_back(i);
 
     return bordering_pre;
+}
+
+
+bool creates_island(GeoGerry::Precinct_Group set, GeoGerry::p_index remove) {
+    /*
+        @desc: determines whether removing a precinct index from a set of
+               precincts will create an island or not
+
+        @params
+            `set`: The precinct group to check removal of precinct `remove` from
+            `remove`: The precinct index to remove from the `set`
+
+        @return: `bool` exchange creates an island
+    */
+
+    // calculate initial number of islands in set
+    int islands_before = generate_exterior_border(set).border.size();
+    
+    // remove precinct from set
+    set.precincts.erase(set.precincts.begin() + remove);
+
+    // calculate new number of islands
+    int islands_after = generate_exterior_border(set).border.size();
+
+    // return whether exchange has created an island
+    return (islands_after > islands_before);
+}
+
+bool creates_island(GeoGerry::p_index_set set, GeoGerry::p_index remove, GeoGerry::State precincts) {
+    /*
+        @desc: determines whether removing a precinct index from a set of
+               precincts will create an island or not
+
+        @params
+            `set`: an list of precinct indices corresponding to the `precincts.precincts` attribute
+            `remove`: The precinct index to remove from the `set`
+            `precincts`: A state object that contains precincts to match to `set`
+
+        @return: `bool` exchange creates an island
+    */
+   
+
+    // calculate initial number of islands in set
+    Precinct_Group pg_before;
+    for (int i = 0; i < set.size(); i++)
+        pg_before.add_precinct(precincts.precincts[i]);
+
+    int islands_before = generate_exterior_border(pg_before).border.size();
+
+    // remove precinct from set
+    set.erase(std::remove(set.begin(), set.end(), remove), set.end());
+    
+    // calculate new number of islands
+    Precinct_Group pg_after;
+    for (int i = 0; i < set.size(); i++)
+        pg_after.add_precinct(precincts.precincts[i]);
+
+    int islands_after = generate_exterior_border(pg_after).border.size();
+
+    return (islands_after > islands_before);
 }
 
 // geos::geom::GeometryFactory::Ptr global_factory;
