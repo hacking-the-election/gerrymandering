@@ -47,7 +47,7 @@ ClipperLib::Paths shape_to_paths(GeoGerry::Shape shape);
 GeoGerry::Multi_Shape paths_to_multi_shape(ClipperLib::Paths paths);
 
 // geos::geom::LinearRing* create_linearring(GeoGerry::coordinate_set coords);
-// geos::geom::Point* create_point(long double x, long double y);
+// geos::geom::Point* create_point(double x, double y);
 // geos::geom::Geometry* shape_to_poly(GeoGerry::LinearRing shape);
 // GeoGerry::Shape poly_to_shape(const geos::geom::Geometry* path);
 // GeoGerry::Multi_Shape* multipoly_to_shape(geos::geom::MultiPolygon* paths);

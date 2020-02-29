@@ -26,7 +26,7 @@ def get_bordering_precincts(community1, community2):
     # find union of two communities
     combined_union = clip([shapely_to_polygon(coords1)[0], 
                           shapely_to_polygon(coords2)[0]],
-                          UNION)
+                          1)
     # border_coords will have points in combined_coords
     # not in combined_union
     border_coords = []

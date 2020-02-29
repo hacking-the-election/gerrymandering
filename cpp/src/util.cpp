@@ -66,34 +66,12 @@ vector<string> split(string str, string del) {
     return array;
 }
 
-
-string join(vector<string> str, string del) {
-
-    /*
-        join a vector of strings into a string by a delimiter
-        arguments: 
-            str - vector of strings to be joined
-            del - the delimiter by which to join
-    */
-
+template<typename T> std::string join(vector<T> str, string del) {
     string ret;
-
     for (int i = 0; i < str.size() - 1; i++)
-        ret += str[i] + del; // add string with delimiter
+        ret += str[i] + del;
 
-    ret += str[str.size() - 1]; // add last string
-    return ret;
-}
-
-
-
-string join(vector<int> str, string del) {
-    string ret;
-
-    for (int i = 0; i < str.size() - 1; i++)
-        ret += to_string(str[i]) + del; // add string with delimiter
-
-    ret += to_string(str[str.size() - 1]); // add last string
+    ret += str[str.size() - 1];
     return ret;
 }
 

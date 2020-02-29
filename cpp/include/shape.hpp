@@ -19,6 +19,7 @@
 #include <map>
 #include <array> 
 #include <exception>
+#include <math.h>
 
 // for the rapidjson parser
 #include "../lib/rapidjson/include/rapidjson/document.h"
@@ -51,7 +52,7 @@ class Exceptions;      // for any error to be thrown
 class Community;       // list of precinct id's
 
 // simplify the coordinate modification system
-typedef std::array<long double, 2> coordinate;      // a list in form {x1, y1}
+typedef std::array<double, 2> coordinate;      // a list in form {x1, y1}
 typedef std::vector<coordinate> coordinate_set;     // list of coordiantes: {{x1, y1}, {x2, y2}}
 typedef std::array<double, 4> bounding_box;         // an array of 4 max/mins:
 
@@ -59,7 +60,7 @@ typedef std::array<double, 4> bounding_box;         // an array of 4 max/mins:
 typedef double unit_interval;
 
 // a set of two coordinates:
-typedef std::array<long double, 4> segment;
+typedef std::array<double, 4> segment;
 typedef std::vector<segment> segments;
 
 // for defining indices of arrays rather than referring to objects:
@@ -111,7 +112,7 @@ class LinearRing {
         virtual coordinate get_center();      // average of all points in shape
         virtual segments get_segments();      // return a segment list with shape's segments
 
-        std::string to_json();
+        virtual std::string to_json();
 
         coordinate_set border;
 
@@ -170,6 +171,7 @@ class Shape {
         LinearRing hull;                 // array of coordinates - ext border
         std::vector<LinearRing> holes;        // array of holes in shape
         std::string shape_id;                 // the shape's ID, if applicable
+        virtual std::string to_json();
 
         virtual void draw();             // prints to an SDL window
 
@@ -198,7 +200,6 @@ class Shape {
         int pop = 0; // total population
         bool is_part_of_multi_polygon = false; // for parsing rules
 };
-
 
 class Precinct : public Shape {
 
@@ -243,7 +244,7 @@ class Precinct : public Shape {
 
         double get_ratio();                 // returns dem/total ratio
         std::vector<int> get_voter_data();  // get data in {dem, rep} format
-    
+
         // add operator overloading for object equality
         friend bool operator== (Precinct p1, Precinct p2) {
             return (p1.hull == p2.hull && p1.holes == p2.holes && p1.dem == p2.dem && p1.rep == p2.rep && p1.pop == p2.pop);
