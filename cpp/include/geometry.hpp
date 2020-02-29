@@ -30,9 +30,10 @@ GeoGerry::Multi_Shape generate_exterior_border(GeoGerry::Precinct_Group p);
 
 // get precincts on the inside border of a precinct group
 GeoGerry::p_index_set get_inner_boundary_precincts(GeoGerry::Precinct_Group shape);
-GeoGerry::p_index_set get_bordering_precincts(GeoGerry::Precinct_Group shape, int p_index);
-p_index_set get_ext_bordering_precincts(Precinct_Group precincts, State state);
+GeoGerry::p_index_set get_inner_boundary_precincts(GeoGerry::p_index_set precincts, GeoGerry::State state);
 
+GeoGerry::p_index_set get_bordering_precincts(GeoGerry::Precinct_Group shape, int p_index);
+GeoGerry::p_index_set get_ext_bordering_precincts(GeoGerry::Precinct_Group precincts, GeoGerry::State state);
 
 // overload get_bordering_shapes for vector inheritance problem
 GeoGerry::p_index_set get_bordering_shapes(std::vector<GeoGerry::Shape> shapes, GeoGerry::Shape shape);
@@ -58,8 +59,9 @@ double get_median_partisanship(GeoGerry::Precinct_Group pg);
 
 bool point_in_ring(GeoGerry::coordinate coord, GeoGerry::LinearRing lr);
 bool get_inside(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1);
-bool get_inside_or(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1);
 bool get_inside_first(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1);
-bool get_inside_d(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1);
+
+bool creates_island(GeoGerry::Precinct_Group set, GeoGerry::p_index remove);
+bool creates_island(GeoGerry::p_index_set set, GeoGerry::p_index remove, GeoGerry::State precincts);
 
 double get_distance(GeoGerry::coordinate c1, GeoGerry::coordinate c2);

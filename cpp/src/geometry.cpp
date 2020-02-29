@@ -446,6 +446,37 @@ p_index_set get_inner_boundary_precincts(Precinct_Group shape) {
 }
 
 
+GeoGerry::p_index_set get_inner_boundary_precincts(p_index_set precincts, State state) {
+    /*
+        @desc:
+            gets an array of indices that correspond
+            to precincts on the inner edge of a precinct_index_set
+        
+        @params: 
+            `p_index_set` precincts: the precinct index set to get inner precincts of
+            `State` state: The precincts that correspond to the indices
+
+        @return: `p_index_set` indices of inner border precincts
+    */
+
+    p_index_set boundary_precincts;
+
+    Precinct_Group pg;
+    for (p_index p : precincts) {
+        pg.add_precinct(state.precincts[p]);
+    }
+
+    Multi_Shape border = generate_exterior_border(pg);
+
+    int i = 0;
+    for (Precinct p : pg.precincts) {
+        if (get_bordering(p, border)) boundary_precincts.push_back(i);
+        i++;
+    }
+
+    return boundary_precincts;
+}
+
 
 p_index_set get_bordering_shapes(vector<Shape> shapes, Shape shape) {
     /*
@@ -721,6 +752,66 @@ p_index_set get_ext_bordering_precincts(Precinct_Group precincts, State state) {
         if (get_bordering(state.precincts[i], border)) bordering_pre.push_back(i);
 
     return bordering_pre;
+}
+
+
+bool creates_island(GeoGerry::Precinct_Group set, GeoGerry::p_index remove) {
+    /*
+        @desc: determines whether removing a precinct index from a set of
+               precincts will create an island or not
+
+        @params
+            `set`: The precinct group to check removal of precinct `remove` from
+            `remove`: The precinct index to remove from the `set`
+
+        @return: `bool` exchange creates an island
+    */
+
+    // calculate initial number of islands in set
+    int islands_before = generate_exterior_border(set).border.size();
+    
+    // remove precinct from set
+    set.precincts.erase(set.precincts.begin() + remove);
+
+    // calculate new number of islands
+    int islands_after = generate_exterior_border(set).border.size();
+
+    // return whether exchange has created an island
+    return (islands_after > islands_before);
+}
+
+bool creates_island(GeoGerry::p_index_set set, GeoGerry::p_index remove, GeoGerry::State precincts) {
+    /*
+        @desc: determines whether removing a precinct index from a set of
+               precincts will create an island or not
+
+        @params
+            `set`: an list of precinct indices corresponding to the `precincts.precincts` attribute
+            `remove`: The precinct index to remove from the `set`
+            `precincts`: A state object that contains precincts to match to `set`
+
+        @return: `bool` exchange creates an island
+    */
+   
+
+    // calculate initial number of islands in set
+    Precinct_Group pg_before;
+    for (int i = 0; i < set.size(); i++)
+        pg_before.add_precinct(precincts.precincts[i]);
+
+    int islands_before = generate_exterior_border(pg_before).border.size();
+
+    // remove precinct from set
+    set.erase(std::remove(set.begin(), set.end(), remove), set.end());
+    
+    // calculate new number of islands
+    Precinct_Group pg_after;
+    for (int i = 0; i < set.size(); i++)
+        pg_after.add_precinct(precincts.precincts[i]);
+
+    int islands_after = generate_exterior_border(pg_after).border.size();
+
+    return (islands_after > islands_before);
 }
 
 // geos::geom::GeometryFactory::Ptr global_factory;

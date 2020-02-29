@@ -70,7 +70,7 @@ def _get_distance(p1, p2):
 
 def get_if_bordering(shape1, shape2):
     """
-    Returns whether or not two shapes are bordering
+    Returns whether or not two shapes are bordering as a bool
     """
     return (isinstance(clip([shape1, shape2], INTERSECTION), Polygon)
             or isinstance(clip([shape1, shape2], INTERSECTION), MultiLineString))
@@ -571,7 +571,7 @@ def get_bordering_precincts(community1, community2):
     the border between them.
     If the two communities share no border, returns []
     """
-    # finds 
+    # finds coordinates of the two communities
     coords1 = community1.coords
     coords2 = community2.coords
     combined_precincts = {**community1.precincts, **community2.precincts}
@@ -593,7 +593,25 @@ def get_bordering_precincts(community1, community2):
         point_list  = str(point).split()
         if point_list in combined_union:
             border_coords.append(point_list)
+    if border_coords == []:
+        return []
     # check all precincts in either commmunity to see if 
     # they fall along border line 
+    # keys: ids of the two communities in question
+    # values: list of ids of border precincts in respective communities
+    border_precincts = {community1.id : [], community2.id : []}
+    # Currently the system does not check for precincts closest on different islands
+    # need to talk to kai about this 
     for precinct in combined_precincts:
-        pass
+        for point in border_coords:
+            # if precinct is already in border_precincts, there's
+            # no need to check it again
+            if precinct.vote_id in border_precincts:
+                break
+            if get_point_in_polygon(precinct.coords, point):
+                if get_point_in_polygon(polygon_to_shapely(coords1.boundary), precinct.coords[0][0]):
+                    border_precincts[community1.id].append(precinct.vote_id)
+                else:
+                    border_precincts[community2.id].append(precinct.vote_id)
+    
+    return border_precincts
