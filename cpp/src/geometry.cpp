@@ -11,10 +11,13 @@
 #include "../include/geometry.hpp"
 #include "../include/shape.hpp"   // class definitions
 #include "../include/gui.hpp"     // for the draw function
+#include "../include/util.hpp"
+#include <iomanip>
 
 // define geometric constants
 #define PI 3.14159265358979323846
-const int c = pow(10, 15);
+const int c = pow(10, 18);
+const int d = pow(10, 9);
 
 using namespace GeoGerry;
 using namespace std;
@@ -25,6 +28,10 @@ using namespace std;
     which is used for below border functions.
 */
 
+double round_d(double value) {
+    return round(value * d) / d;
+}
+
 segment coords_to_seg(coordinate c1, coordinate c2) {
     /*
         @desc: combines coordinates into a segment array
@@ -32,7 +39,7 @@ segment coords_to_seg(coordinate c1, coordinate c2) {
         @return: `GeoGerry::segment` a segment with the coordinates provided
     */
 
-    segment s = {{c1[0], c1[1], c2[0], c2[1]}};
+    segment s = {{ round(c1[0] * d) / d, round(c1[1] * d) / d, round(c2[0] * d) / d, round(c2[1] * d) / d}};
     return s;
 }
 
@@ -69,7 +76,7 @@ vector<double> get_equation(segment s) {
 
     double m = (s[3] - s[1]) / (s[2] - s[0]);
     double b = -m * -s[0] + s[1];
-    b = -1 * ( (m * s[0]) - s[1] );
+    // b = -1 * ( (m * s[0]) - s[1] );
 
     return {m, b};
 }
@@ -81,7 +88,8 @@ bool get_colinear(segment s0, segment s1) {
         @return: `bool` are colinear
     */
 
-    return (get_equation(s0) == get_equation(s1));
+    return (double_equality(get_equation(s0)[0], get_equation(s1)[0]) && 
+            double_equality(get_equation(s0)[1], get_equation(s1)[1]));
 }
 
 bool get_overlap(segment s0, segment s1) {
@@ -109,15 +117,6 @@ bool get_overlap(segment s0, segment s1) {
                );
 }
 
-bool get_bordering(segment s0, segment s1) {
-    /*
-        @desc: Returns whether or not two segments are colinear and overlap
-        @params: `s0`, `s1`: two segments to check bordering
-        @return: `bool` segments border
-    */
-
-    return (get_colinear(s0, s1) && get_overlap(s0, s1));
-}
 
 segments GeoGerry::LinearRing::get_segments() {
     /*
@@ -133,16 +132,22 @@ segments GeoGerry::LinearRing::get_segments() {
     vector<coordinate> border_x = border;
 
     // loop through segments
-    if (border[border.size() - 1] == border[0])
-        border_x.pop_back();
+    // while (border_x[border_x.size() - 1] == border_x[0])
+    //     border_x.pop_back();
 
     for (int i = 0; i < border_x.size(); i++) {
         coordinate c1 = border_x[i];  // starting coord
-        coordinate c2;              // ending coord
+        c1[0] = round_d(c1[0]);
+        c1[1] = round_d(c1[1]);
+
+        coordinate c2;                // ending coord
 
         // find position of ending coordinate
         if (i == border_x.size() - 1) c2 = border_x[0];
         else c2 = border_x[i + 1];
+
+        c2[0] = round_d(c2[0]);
+        c2[1] = round_d(c2[1]);
 
         segs.push_back(coords_to_seg(c1, c2)); // add to list
     }
@@ -157,11 +162,11 @@ segments GeoGerry::Shape::get_segments() {
         @return: segments of a shape
     */
 
-    segments segs = hull.get_segments();
+    segments segs = this->hull.get_segments();
     
-    for (LinearRing hole : holes) {
-        for (segment seg : hole.get_segments()) segs.push_back(seg);
-    }
+    for (LinearRing hole : this->holes)
+        for (segment seg : hole.get_segments())
+            segs.push_back(seg);
 
     return segs;
 }
@@ -174,8 +179,9 @@ segments GeoGerry::Multi_Shape::get_segments() {
     */
 
     segments segs;
-    for (Shape s : border)
-        for (segment seg : s.get_segments()) segs.push_back(seg);
+    for (Shape s : this->border)
+        for (segment seg : s.get_segments())
+            segs.push_back(seg);
 
     return segs;
 }
@@ -368,13 +374,18 @@ bool get_bordering(Multi_Shape s0, Shape s1) {
         @return: `bool` shapes are boording
     */
 
-    for (segment seg0 : s0.get_segments()) {
-        for (segment seg1 : s1.get_segments()) {
-            if (get_colinear(seg0, seg1)) {
-                if (get_overlap(seg0, seg1)) {        
+    segments msegs = s0.get_segments();
+    segments csegs = s1.get_segments();
+
+    cout << fixed << setprecision(20) << msegs[0][0] << ", " << msegs[0][1] << endl;
+    
+    for (int i = 0; i < msegs.size(); i++) {
+        for (int j = 0; j < csegs.size(); j++) {
+            if (get_colinear(msegs[i], csegs[j])) {
+                if (get_overlap(msegs[i], csegs[j])) {
+                    cout << "bordering!" << endl;      
                     return true;
                 }
-                cout << "colinear" << endl;
             }
         }
     }
@@ -505,22 +516,23 @@ GeoGerry::p_index_set get_inner_boundary_precincts(p_index_set precincts, State 
     
     Multi_Shape border = generate_exterior_border(pg);
 
-    if (pg.precincts.size() == 1) {
-        if (border.border[0].hull != pg.precincts[0].hull) {
-            cout << "SOMETHING FAILED" << endl;
-            cout << border.border[0].hull.border[0][0] << ", " << border.border[0].hull.border[0][1] << endl;
-            cout << pg.precincts[0].hull.border[0][0] << ", " << pg.precincts[0].hull.border[0][1] << endl;
-        }
-    }
-
     int i = 0;
     for (Precinct p : pg.precincts) {
-        if (get_bordering(border, p)) boundary_precincts.push_back(i);
+        if (get_bordering(border, p)) {
+            boundary_precincts.push_back(i);
+        }
+        else {
+            writef(border.border[0].to_json(), "file1.json");
+            writef(p.to_json(), "file2.json");
+        }
         i++;
     }
 
     if (boundary_precincts.size() > 0)
         cout << "SOMETHING WORKED" << endl;
+    else {
+        cout << "no bordering polys" << endl;
+    }
 
     return boundary_precincts;
 }
@@ -596,7 +608,7 @@ unit_interval Shape::get_compactness() {
 
     double circle_radius = sqrt(this->get_area() / PI);
     double circumference = 2 * circle_radius * PI;
-    std::cout << this->get_area() << ", " << circumference << ", " << this->get_perimeter();
+    // std::cout << this->get_area() << ", " << circumference << ", " << this->get_perimeter();
     return (circumference / this->get_perimeter());
 }
 
@@ -609,7 +621,7 @@ unit_interval Multi_Shape::get_compactness() {
 
     double circle_radius = sqrt(this->get_area() / PI);
     double circumference = 2 * circle_radius * PI;
-    std::cout << this->get_area() << ", " << circumference << ", " << this->get_perimeter() << std::endl;
+    // std::cout << this->get_area() << ", " << circumference << ", " << this->get_perimeter() << std::endl;
     return (circumference / this->get_perimeter());
 }
 
@@ -684,10 +696,8 @@ Multi_Shape generate_exterior_border(Precinct_Group precinct_group) {
     ClipperLib::Clipper c; // the executor
 
     // execute union on paths array
-    cout << subj[0][0].X << ", " << subj[0][0].Y << endl;
     c.AddPaths(subj, ClipperLib::ptSubject, true);
     c.Execute(ClipperLib::ctUnion, solutions, ClipperLib::pftNonZero);
-    cout << solutions[0][0].X << ", " << solutions[0][0].Y << endl << endl;
 
     return paths_to_multi_shape(solutions);
 }
@@ -714,7 +724,7 @@ GeoGerry::LinearRing path_to_ring(ClipperLib::Path path) {
     GeoGerry::LinearRing s;
 
     for (ClipperLib::IntPoint point : path ) {
-        coordinate p = {(long double) point.X / c, (long double) point.Y / c};
+        coordinate p = {(double) point.X / c, (double) point.Y / c};
         if (p[0] != 0 && p[1] != 0) s.border.push_back(p);
     }
 
@@ -725,10 +735,17 @@ GeoGerry::LinearRing path_to_ring(ClipperLib::Path path) {
 }
 
 ClipperLib::Paths shape_to_paths(GeoGerry::Shape shape) {
+
+    if (shape.hull.border[0] != shape.hull.border[shape.hull.border.size() - 1])
+        shape.hull.border.push_back(shape.hull.border[0]);
+
     ClipperLib::Paths p;
     p.push_back(ring_to_path(shape.hull));
     
     for (GeoGerry::LinearRing ring : shape.holes) {
+        if (ring.border[0] != ring.border[ring.border.size() - 1])
+            ring.border.push_back(ring.border[0]);
+
         ClipperLib::Path path = ring_to_path(ring);
         ReversePath(path);
         p.push_back(path);
@@ -740,17 +757,28 @@ ClipperLib::Paths shape_to_paths(GeoGerry::Shape shape) {
 
 GeoGerry::Multi_Shape paths_to_multi_shape(ClipperLib::Paths paths) {
     /*
-        Create a Multi_Shape object from a clipper Paths
-        (multi path) object through nested iteration
+        @desc: 
+              Create a Multi_Shape object from a clipper Paths
+              (multi path) object through nested iteration
+
+        @params: `ClipperLib::Paths` paths: A
+        @warn:
+            `ClipperLib::ReversePath` is arbitrarily called here,
+            and there should be better ways to check whether or not
+            it's actually needed
     */
 
     Multi_Shape ms;
-    
+    ReversePaths(paths);
+
     for (ClipperLib::Path path : paths) {
         // if (ClipperLib::Orientation(path)) {
-            GeoGerry::LinearRing border = path_to_ring(path);
-            GeoGerry::Shape s(border);
-            ms.border.push_back(s);
+        GeoGerry::LinearRing border = path_to_ring(path);
+        if (border.border[0] != border.border[border.border.size() - 1])
+            border.border.insert(border.border.begin(), border.border[border.border.size() - 1]);
+
+        GeoGerry::Shape s(border);
+        ms.border.push_back(s);
         // }
         // else {
         //     std::cout << "hole" << std::endl;
@@ -867,7 +895,7 @@ bool creates_island(GeoGerry::p_index_set set, GeoGerry::p_index remove, GeoGerr
 
 // geos::geom::GeometryFactory::Ptr global_factory;
 
-// Point* create_point(long double x, long double y) {
+// Point* create_point(double x, double y) {
 //     /* given coordinates creates a point object */
 //     Coordinate c(x, y);
 //     Point* p = global_factory->createPoint(c);

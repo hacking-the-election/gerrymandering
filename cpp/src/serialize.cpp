@@ -41,6 +41,14 @@ std::string GeoGerry::Precinct_Group::to_json() {
     return str;
 }
 
+std::string GeoGerry::Shape::to_json() {
+    std::string str = "{\"type\": \"FeatureCollection\", \"features\":[{\"type\":\"Feature\",\"geometry\":{\"type\":\"Polygon\",\"coordinates\":[";
+    str += hull.to_json();
+    str += "]}}]}";
+
+    return str;
+}
+
 std::string GeoGerry::State::to_json() {
     /*
         dumps a state object as json
