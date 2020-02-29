@@ -72,7 +72,7 @@ def get_if_bordering(shape1, shape2):
     """
     Returns whether or not two shapes (json polygons) are bordering as a bool
     """
-    return isinstance(clip([shape1, shape2], INTERSECTION), Polygon)
+    return isinstance(clip([shape1, shape2], INTERSECTION), MultiLineString)
 
 
 def get_point_in_polygon(polygon, point):
@@ -125,6 +125,7 @@ def average(number_list):
     sum1 = sum(number_list)
     return sum1/len(number_list)
 
+
 def stdev(number_list, weight_list=None):
     '''
     Finds the standard deviation of the numbers in number_list.
@@ -142,6 +143,7 @@ def stdev(number_list, weight_list=None):
         else:
             squared_sum += (difference * difference)
     return math.sqrt(squared_sum / len(number_list))
+
 
 def clip(shapes, clip_type):
     """
@@ -169,8 +171,9 @@ def clip(shapes, clip_type):
             solution = shapes[0].intersection(shapes[1])
         else:
             raise ValueError(
-                "Invalid clip type. Use utils.UNION or utils.DIFFERENCE")
+                "Invalid clip type. Use utils.UNION, utils.DIFFERENCE, or utils.INTERSECTION")
     return solution
+
 
 def polygon_to_shapely(polygon):
     """
@@ -180,6 +183,7 @@ def polygon_to_shapely(polygon):
     tuple_polygon = [[tuple(coord) for coord in linear_ring]
                      for linear_ring in polygon]
     return Polygon(tuple_polygon[0], tuple_polygon[1:])
+
 
 def shapely_to_polygon(polygon):
     """
@@ -204,6 +208,8 @@ def shapely_to_polygon(polygon):
         linear_ring.append(point_list)
     # return polygon
     return [linear_ring]
+
+
 # ===================================================
 # Community algorithm-specifc functions and classes:
 
@@ -228,8 +234,6 @@ class Community:
         self.standard_deviation = None
         self.population = None
         self.compactness = None
-
-        # Attributes useful for states with islands:
 
         # dict with keys as index and values as number of precincts.
         self.islands = islands
@@ -421,7 +425,8 @@ def group_by_islands(precincts):
 
 
 def get_closest_precinct_on_island(island_centroid,
-                                   other_island_border_precincts):
+                                   other_island_border_precincts,
+                                   other_island_border):
     """
     Finds precinct on `other_island` that is closest to `island`
 
@@ -429,6 +434,8 @@ def get_closest_precinct_on_island(island_centroid,
         `island_centroid`:               Centroid of island.
         `other_island_border_precincts`: Precincts on border of other
                                          island.
+        `other_island_border`:           Polygon that is outside border
+                                         of other island
 
     Returns `save_precincts.Precinct` object.
     """
@@ -440,6 +447,14 @@ def get_closest_precinct_on_island(island_centroid,
         if (
                 closest_precinct is None
                 or distance < closest_precinct_distance):
+            # If removing this precinct from the island
+            # creates an isolated section within the island.
+            if isinstance(clip([other_island_border, p.coords], DIFFERENCE),
+                          MultiPolygon):
+                continue
+            else:
+                closest_precinct = p
+                closest_precinct_distance = distance
             closest_precinct = p
             closest_precinct_distance = distance
 
@@ -491,7 +506,7 @@ def get_closest_precinct(island, island_precinct_groups,
                                                border_precincts):
         closest_precinct_on_island, distance = \
             get_closest_precinct_on_island(
-                island_centroid, island_border_precincts)
+                island_centroid, island_border_precincts, island_border)
         if (
                 closest_precinct is None
                 or closest_precinct_distance > distance):
@@ -500,7 +515,7 @@ def get_closest_precinct(island, island_precinct_groups,
             closest_precinct_island_index = state_island_borders.index(border)
 
     try:
-        return closest_precinct.vote_id, closest_precinct_island_index
+        return closest_precinct, closest_precinct_island_index
     except AttributeError as e:
         with open("test_communities_debug1.pickle", "wb+") as f:
             pickle.dump([island_borders, island_precinct_groups], f)
@@ -543,8 +558,10 @@ def get_precinct_link_pair(island, island_precinct_groups,
         [p for p in island if get_if_bordering(island_border, p.coords)]
 
     precinct2, _ = get_closest_precinct_on_island(
-            island_borders[closest_precinct_island_index].centroid.coords[0],
-            island_border_precincts
+            state_island_borders[
+                closest_precinct_island_index].centroid.coords[0],
+            island_border_precincts,
+            island_border
         )
 
     return precinct1, precinct2, closest_precinct_island_index
