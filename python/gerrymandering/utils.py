@@ -70,7 +70,7 @@ def _get_distance(p1, p2):
 
 def get_if_bordering(shape1, shape2):
     """
-    Returns whether or not two shapes are bordering
+    Returns whether or not two shapes are bordering as a bool
     """
     return isinstance(clip([shape1, shape2], INTERSECTION), Polygon)
 
@@ -581,7 +581,11 @@ def get_bordering_precincts(community1, community2):
         return []
     # check all precincts in either commmunity to see if 
     # they fall along border line 
-    border_precincts = {}
+    # keys: ids of the two communities in question
+    # values: list of ids of border precincts in respective communities
+    border_precincts = {community1.id : [], community2.id : []}
+    # Currently the system does not check for precincts closest on different islands
+    # need to talk to kai about this 
     for precinct in combined_precincts:
         for point in border_coords:
             # if precinct is already in border_precincts, there's
@@ -589,5 +593,9 @@ def get_bordering_precincts(community1, community2):
             if precinct.vote_id in border_precincts:
                 break
             if get_point_in_polygon(precinct.coords, point):
-                border_precincts[precinct.vote_id] = precinct.coords
-    return precincts
+                if get_point_in_polygon(polygon_to_shapely(coords1.boundary), precinct.coords[0][0]):
+                    border_precincts[community1.id].append(precinct.vote_id)
+                else:
+                    border_precincts[community2.id].append(precinct.vote_id)
+    
+    return border_precincts

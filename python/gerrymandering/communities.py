@@ -10,7 +10,9 @@ from os.path import abspath, dirname
 
 from gerrymandering.utils import (UNION, Community, LoopBreakException,
                                   average, clip, get_closest_precinct,
-                                  get_precinct_link_pair, group_by_islands)
+                                  get_precinct_link_pair, group_by_islands,
+                                  shapely_to_polygon, polygon_to_shapely,
+                                  get_if_bordering, get_bordering_precincts)
 from shapely.geometry import MultiPolygon, Polygon
 
 from .test.utils import convert_to_json
@@ -279,6 +281,9 @@ def modify_for_partisanship(communities_list, threshold):
         community.update_standard_deviation()
     # create dictionary of ids and community partisanship standard deviations
     community_stdev = {community.id : community.standard_deviation for community in communities_list}
+    # create json polygon coordinate dict for our communities
+    json_communities = {community.id : shapely_to_polygon(community.coords) 
+                        for community in communities_list}
     # check if any communities are above the threshold
     # count the number of times the list has been checked
     count = 0
@@ -287,13 +292,26 @@ def modify_for_partisanship(communities_list, threshold):
     for id, community in community_stdev.items():
         # if a community is above the threshold
         if community > threshold:
+            # find the community with the highest political deviaiton
             most_stdev = {}
             for id1, community1 in community_stdev.items():
                 if community > most_stdev.get(id, 0):
                     most_stdev[id] = community
             biggest_community_precincts = communities_coords[most_stdev.keys()[0]]
-            group_by_islands(biggest_community_precincts)
-
+            border_precincts = {most_stdev.keys()[0]: []}
+            # create dictionary of the precincts bordering it
+            # group_by_islands(biggest_community_precincts)
+            for id1, community1 in community_stdev.items():
+                if id1 == most_stdev.keys()[0]:
+                    continue
+                # see utils.py for deeper description of island problem
+                if get_if_bordering(shapely_to_polygon(most_stdev.values()[0].coords), 
+                                    json_communities[id1]):
+                    # the following result has first key: precincts ids inside most stdev community
+                    # second key: precinct ids in other community
+                    specific_border_precincts = get_bordering_precincts(most_stdev.values()[0], community1)
+                    for precinct in specific_border_precincts[most_stdev.keys()[0]]:
+                        
 def make_communities(state_file):
     """
     `state_file` - path to state that is to be divided into communities
