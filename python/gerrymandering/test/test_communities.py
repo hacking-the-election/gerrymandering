@@ -18,7 +18,7 @@ from serialization.load_precincts import load
 from serialization.save_precincts import Precinct
 
 
-VERMONT = load("../data/test/python/alaska.pickle")
+VERMONT = load("../data/test/python/vermont.pickle")
 ALASKA = load("../data/test/python/alaska.pickle")
 
 
@@ -31,22 +31,22 @@ class TestInitialConfiguration(unittest.TestCase):
 
         @print_time
         def test_initial_configuration_speed(precincts, n_districts,
-                                             state_border):
+                                            state_border):
             return communities.create_initial_configuration(
                 precincts, n_districts, state_border)
 
-        alaska_output = test_initial_configuration_speed(
-            ALASKA[0], 2, ALASKA[2])
+        vermont_output = test_initial_configuration_speed(
+            VERMONT[0], 2, VERMONT[2])
         with open("test_communities.pickle", "wb") as f:
-            pickle.dump(alaska_output, f)
-        alaska_output_coords = []
-        for community in alaska_output:
+            pickle.dump(vermont_output, f)
+        vermont_output_coords = []
+        for community in vermont_output:
             if isinstance(community.coords, MultiPolygon):
-                alaska_output_coords.append(multipolygon_to_list(community.coords))
+                vermont_output_coords.append(multipolygon_to_list(community.coords))
             elif isinstance(community.coords, Polygon):
-                alaska_output_coords.append(polygon_to_list(community.coords))
+                vermont_output_coords.append(polygon_to_list(community.coords))
 
-        convert_to_json(alaska_output_coords, "test_communities.json")
+        convert_to_json(vermont_output_coords, "test_communities.json")
 
 if __name__ == "__main__":
     unittest.main()
