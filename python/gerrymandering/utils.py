@@ -72,8 +72,7 @@ def get_if_bordering(shape1, shape2):
     """
     Returns whether or not two shapes are bordering as a bool
     """
-    return (isinstance(clip([shape1, shape2], INTERSECTION), Polygon)
-            or isinstance(clip([shape1, shape2], INTERSECTION), MultiLineString))
+    return isinstance(clip([shape1, shape2], INTERSECTION), MultiLineString)
 
 
 def get_point_in_polygon(polygon, point):
@@ -172,7 +171,7 @@ def clip(shapes, clip_type):
             solution = shapes[0].intersection(shapes[1])
         else:
             raise ValueError(
-                "Invalid clip type. Use utils.UNION or utils.DIFFERENCE")
+                "Invalid clip type. Use utils.UNION, utils.DIFFERENCE, or utils.INTERSECTION")
     return solution
 
 
@@ -450,12 +449,14 @@ def get_closest_precinct_on_island(island_centroid,
                 or distance < closest_precinct_distance):
             # If removing this precinct from the island
             # creates an isolated section within the island.
-            if isinstance(clip([other_island_border, p.coords], UNION),
+            if isinstance(clip([other_island_border, p.coords], DIFFERENCE),
                           MultiPolygon):
                 continue
             else:
                 closest_precinct = p
                 closest_precinct_distance = distance
+            closest_precinct = p
+            closest_precinct_distance = distance
 
     return closest_precinct, closest_precinct_distance
 

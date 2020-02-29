@@ -8,19 +8,16 @@ import random
 import sys
 from os.path import abspath, dirname
 
+sys.path.append(abspath(dirname(dirname(__file__))))
+
+from shapely.geometry import MultiPolygon, Polygon
+
 from gerrymandering.utils import (UNION, Community, LoopBreakException,
                                   average, clip, get_closest_precinct,
                                   get_precinct_link_pair, group_by_islands,
                                   shapely_to_polygon, polygon_to_shapely,
                                   get_if_bordering, get_bordering_precincts)
-from shapely.geometry import MultiPolygon, Polygon
-
 from .test.utils import convert_to_json
-
-sys.path.append(abspath(dirname(dirname(__file__))))
-
-
-
 
 logging.basicConfig(filename="precincts.log", level=logging.DEBUG)
 
@@ -98,9 +95,7 @@ def create_initial_configuration(island_precinct_groups, n_districts,
                             # so none are available anymore.
                             island_available_precincts[i] = 0
                             print(f"perfect configuration found for island {i} "
-                                  f"which started with {len(island)} precincts "
-                                  f"and had {island_available_precincts[i]} until "
-                                   "now.")
+                                  f"which started with {len(island)} precincts ")
                             raise LoopBreakException
                         elif (island_n_precincts + large_community
                               > island_available_precincts[i]):
@@ -233,6 +228,7 @@ def create_initial_configuration(island_precinct_groups, n_districts,
         raise e
     
     print(linked_precinct_chains)
+    print([[p.vote_id for p in chain] for chain in linked_precinct_chains])
     print(island_available_precincts)
 
     all_linked_precincts = set(
@@ -270,14 +266,15 @@ def create_initial_configuration(island_precinct_groups, n_districts,
         # Then fill communities that are on only one island
         for community in communities:
             if len(community.precincts) == 0:
+                island_index = list(community.islands.keys())[0]
                 added_precincts = community.fill(
-                    island_precinct_groups[list(community.islands.keys())[0]],
-                    all_linked_precincts, list(community.islands.keys())[0]
+                    island_precinct_groups[island_index],
+                    all_linked_precincts, island_index
                 )
                 for precinct in island_precinct_groups[island_index][:]:
                     if precinct.vote_id in added_precincts:
                         island_precinct_groups[island_index].remove(
-                            precincts)
+                            precinct)
                 print(f"community {community.id} completely filled")
 
     except Exception as e:
