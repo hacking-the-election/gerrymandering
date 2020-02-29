@@ -36,7 +36,7 @@ def quantify(communities_file, districts_file):
         data = pickle.load(f)
     with open(districts_file, 'r') as f:
         district_data = json.load(f)
-
+    print(data[0].coords.boundary)
     for community in data:
         community.update_partisanship()
     # keys: community index
@@ -51,7 +51,7 @@ def quantify(communities_file, districts_file):
     partisanships = {id:community_dict[id][0] for id in community_dict}
     print(partisanships)
     # find areas of communities
-    community_areas = {community:save_precincts.area(shapely_to_polygon(community_dict[community][1])) for community in community_dict}
+    community_areas = {community:save_precincts.area(shapely_to_polygon(community_dict[community][1])[0]) for community in community_dict}
     # begin finding district gerrymandering scores
     district_scores = {}
     for district in district_dict:

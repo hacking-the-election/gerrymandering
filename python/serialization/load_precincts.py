@@ -50,7 +50,6 @@ def convert_to_json(state_file, output_file):
     this is being left for dead
     """
     precincts = load(state_file)[0]
-    print(type(precincts))
     features = []
     for precinct in precincts:
         precinct = shapely_to_polygon(precinct)

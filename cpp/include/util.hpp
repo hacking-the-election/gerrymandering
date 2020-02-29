@@ -23,3 +23,4 @@ std::string join(std::vector<int> str, std::string del);
 
 // assertions (type equality)
 bool is_number(std::string token);
+int rand_num(int start, int end);

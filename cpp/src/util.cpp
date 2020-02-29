@@ -8,6 +8,7 @@
 
 #include "../include/util.hpp"
 #include <regex> // for is_number()
+#include <random>
 
 using namespace std;
 
@@ -102,4 +103,17 @@ bool is_number(string token) {
     // checks if a string is any number type
 
     return regex_match(token, regex( ( "((\\+|-)?[[:digit:]]+)(\\.(([[:digit:]]+)?))?" ) ));
+}
+
+int rand_num(int start, int end) {
+    /*
+        @def: gets random number from `start` to `end`
+        @params: `start`, `end`: range of numbers to generate
+        @return: `int` random number
+    */
+
+    std::random_device rd; 
+    std::mt19937 eng(rd()); 
+    uniform_int_distribution<> distr(start, end);
+    return distr(eng) - 1;
 }
