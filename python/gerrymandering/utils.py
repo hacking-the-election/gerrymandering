@@ -30,7 +30,7 @@ import pickle
 from shapely.ops import unary_union
 from shapely.geometry import MultiLineString, MultiPolygon, Polygon, Point
 
-from .test.utils import print_time
+from test.utils import print_time
 
 
 logging.basicConfig(filename="precincts.log", level=logging.DEBUG)
@@ -70,7 +70,7 @@ def _get_distance(p1, p2):
 
 def get_if_bordering(shape1, shape2):
     """
-    Returns whether or not two shapes are bordering as a bool
+    Returns whether or not two shapes (json polygons) are bordering as a bool
     """
     return isinstance(clip([shape1, shape2], INTERSECTION), MultiLineString)
 
@@ -128,7 +128,7 @@ def average(number_list):
 
 def stdev(number_list, weight_list=None):
     '''
-    Finds the standard deviation of the integers in integers list.
+    Finds the standard deviation of the numbers in number_list.
     If weight_list applies, multiply each of the numbers in number_list by the weight
     (decimal) corresponding in weight_list. weight_list should have a list of decimals.
     Does not use sample, but all elements in list
@@ -601,8 +601,6 @@ def get_bordering_precincts(community1, community2):
     # keys: ids of the two communities in question
     # values: list of ids of border precincts in respective communities
     border_precincts = {community1.id : [], community2.id : []}
-    # Currently the system does not check for precincts closest on different islands
-    # need to talk to kai about this 
     for precinct in combined_precincts:
         for point in border_coords:
             # if precinct is already in border_precincts, there's
@@ -614,5 +612,16 @@ def get_bordering_precincts(community1, community2):
                     border_precincts[community1.id].append(precinct.vote_id)
                 else:
                     border_precincts[community2.id].append(precinct.vote_id)
-    
     return border_precincts
+
+
+def find_precinct_corridors(community_list):
+    """
+    given a list of communities, return list
+    of precincts that should be connected to each other
+    as stepping stone connections between islands
+    maximum number of connections to other islands: three
+    """
+    state_precincts = [].extend([community.precincts.values() for community in community_list])
+    islands = group_by_islands(state_precincts)
+    for island in islands:

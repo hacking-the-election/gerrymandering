@@ -38,7 +38,7 @@ using namespace GeoGerry;
 
 #define VERBOSE 1
 #define WRITE 0
-#define DEBUG_COMMUNITIES 1
+#define DEBUG_COMMUNITIES 0
 
 /*
     Define constants to be used in the algorithm.    
@@ -133,7 +133,7 @@ void State::generate_initial_communities(int num_communities) {
             com.size.push_back(base);
             com.location.push_back(island_index);
             c.push_back(com);
-            cout << "full community of " << base << endl;
+            if (DEBUG_COMMUNITIES) cout << "full community of " << base << endl;
         }
         for (int j = 0; j < y; j++) {
             large_sizes.pop_back();
@@ -141,13 +141,14 @@ void State::generate_initial_communities(int num_communities) {
             com.size.push_back(base + 1);
             com.location.push_back(island_index);
             c.push_back(com);
-            cout << "full community of " << base + 1 << endl;
+            if (DEBUG_COMMUNITIES) cout << "full community of " << base + 1 << endl;
         }
 
         island_index++;
     }
 
     vector<p_index> ignore_fractionals; // fractional islands to be ignored, not removed
+    if (VERBOSE) cout << "linking fractional communities..." << endl;
 
     for (p_index fractional_island_i = 0; fractional_island_i < fractional_islands.size(); fractional_island_i++) {
         /*
@@ -255,38 +256,66 @@ void State::generate_initial_communities(int num_communities) {
 
                 // find the precinct closest to the center of the island
                 if (fractional_island_i == n_fractional_island_i) {
+                    p_index_set ignore_p;
+                    cout << "generating first link" << endl;
                     do {
                         for (p_index p : get_inner_boundary_precincts(islands[fractional_islands[min_index]], *this)) {
+                        // for (p_index p : islands[fractional_islands[min_index]]) {
                             coordinate p_center = precincts[p].get_center();
                             double dist = get_distance(p_center, island_center);
 
-                            if (dist < min_p_distance) {
+                            if (dist < min_p_distance && (std::find(ignore_p.begin(), ignore_p.end(), p) == ignore_p.end())) {
                                 min_p_distance = dist;
                                 link = i;
                             }
                             i++;
                         }
+
+                        ignore_p.push_back(link);
+
                     } while (creates_island(islands[fractional_islands[min_index]], link, *this));
                 }
                 else {
                     link = community.link_position[community.link_position.size() - 1][1][1];
                 }
 
-                // reset variables
+                p_index_set ignore_p = {};
                 min_p_distance = pow(10, 80);
                 i = 0;
 
-                // find the precinct closest to the center of the island
-                for (p_index p : islands[fractional_islands[n_fractional_island_i]]) {
-                    coordinate p_center = precincts[p].get_center();
-                    double distc = get_distance(p_center, min_island_center);
+                do {
+                    for (p_index p : get_inner_boundary_precincts(islands[fractional_islands[n_fractional_island_i]], *this)) {
+                        cout << "iter" << endl;
+                        coordinate p_center = precincts[p].get_center();
+                        double distc = get_distance(p_center, min_island_center);
 
-                    if (distc < min_p_distance) {
-                        min_p_distance = distc;
-                        min_link = i;
+                        if (distc < min_p_distance && (std::find(ignore_p.begin(), ignore_p.end(), p) == ignore_p.end())) {
+                            min_p_distance = distc;
+                            min_link = i;
+                        }
+                        i++;
                     }
-                    i++;
-                }
+
+                    ignore_p.push_back(link);
+
+                } while (creates_island(islands[fractional_islands[n_fractional_island_i]], min_link, *this));
+
+                // //==================================================
+                // // reset variables
+
+                // // find the precinct closest to the center of the island
+                // for (p_index p : islands[fractional_islands[n_fractional_island_i]]) {
+                //     coordinate p_center = precincts[p].get_center();
+                //     double distc = get_distance(p_center, min_island_center);
+
+                //     if (distc < min_p_distance) {
+                //         min_p_distance = distc;
+                //         min_link = i;
+                //     }
+                //     i++;
+                // }
+                // //===========================================================
+
 
                 if (DEBUG_COMMUNITIES) cout << "linking precinct " << link << " on " << n_fractional_island_i << " with " << min_link << " on " << min_index << endl;
                 // cout << available_precincts.size() << endl;
@@ -335,6 +364,7 @@ void State::generate_initial_communities(int num_communities) {
 
     }  // fractional linker
 
+    if (VERBOSE) cout << "filling communities with real precincts..." << endl;
 
     for (Community community : c) {
         // fill linked communities with generation method
