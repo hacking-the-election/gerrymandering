@@ -115,6 +115,7 @@ def get_area_intersection(polygon1, polygon2):
     if abs(intersect_area) != intersect_area:
         raise Exception("Negative area found, check inputs")
     return intersect_area
+    
 
 def average(number_list):
     '''
@@ -185,15 +186,24 @@ def shapely_to_polygon(polygon):
     Creates json polygon from shapely.geometry.Polygon
     NOTE: Assumes shapely polygon only has exterior and no holes.
     """
-    coordinates = list(polygon.exterior.coords)
+    try:
+        coordinates = list(polygon.exterior.coords)
+    except AttributeError:
+        try: 
+            x = polygon[0]
+        except:
+            raise Exception('Incorrect input, not a shapely polygon')
+        else:
+            raise Exception('Incorrect input, a json polygon was inputted, \
+                            switch to shapely')
     linear_ring = []
     for tuple1 in coordinates:
         x = tuple1[0]
         y = tuple1[1]
         point_list = [x, y]
         linear_ring.append(point_list)
-    print(linear_ring[0], linear_ring[-1])
-    return linear_ring
+    # return polygon
+    return [linear_ring]
 # ===================================================
 # Community algorithm-specifc functions and classes:
 
@@ -247,7 +257,8 @@ class Community:
                 for p in self.precincts.values()]
             mean = sum(rep_percentages) / len(rep_percentages)
             
-            self.standard_deviation = math.sqrt(sum([(p - mean) ** 2 for p in rep_percentages]))
+            self.standard_deviation = math.sqrt(sum([(p - mean) ** 2 
+                                      for p in rep_percentages]))
         except ZeroDivisionError:
             self.standard_deviation = 0.0
 
@@ -537,3 +548,46 @@ def get_precinct_link_pair(island, island_precinct_groups,
         )
 
     return precinct1, precinct2, closest_precinct_island_index
+
+def get_bordering_precincts(community1, community2):
+    """
+    Takes two community objects and returns list of precinct objects along either side of 
+    the border between them.
+    If the two communities share no border, returns []
+    """
+    # finds coordinates of the two communities
+    coords1 = community1.coords
+    coords2 = community2.coords
+    combined_precincts = {**community1.precincts, **community2.precincts}
+    area_intersection = get_area_intersection(coords1, coords2)
+    # if area_intersection is positive, something's wrong
+    if area_intersection > 0:
+        raise Exception('Communities intersect!')
+    # create combined list of coordinates in each community,
+    combined_coords = list(coords1.boundary).extend(list(coords2.boundary))
+    # find union of two communities
+    combined_union = clip([shapely_to_polygon(coords1)[0], 
+                          shapely_to_polygon(coords2)[0]],
+                          1)
+    # border_coords will have points in combined_coords
+    # not in combined_union
+    border_coords = []
+    for point in combined_coords:
+        # point, e.x. -73.142 29.538
+        point_list  = str(point).split()
+        if point_list in combined_union:
+            border_coords.append(point_list)
+    if border_coords == []:
+        return []
+    # check all precincts in either commmunity to see if 
+    # they fall along border line 
+    border_precincts = {}
+    for precinct in combined_precincts:
+        for point in border_coords:
+            # if precinct is already in border_precincts, there's
+            # no need to check it again
+            if precinct.vote_id in border_precincts:
+                break
+            if get_point_in_polygon(precinct.coords, point):
+                border_precincts[precinct.vote_id] = precinct.coords
+    return precincts
