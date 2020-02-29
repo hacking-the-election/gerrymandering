@@ -446,6 +446,37 @@ p_index_set get_inner_boundary_precincts(Precinct_Group shape) {
 }
 
 
+GeoGerry::p_index_set get_inner_boundary_precincts(p_index_set precincts, State state) {
+    /*
+        @desc:
+            gets an array of indices that correspond
+            to precincts on the inner edge of a precinct_index_set
+        
+        @params: 
+            `p_index_set` precincts: the precinct index set to get inner precincts of
+            `State` state: The precincts that correspond to the indices
+
+        @return: `p_index_set` indices of inner border precincts
+    */
+
+    p_index_set boundary_precincts;
+
+    Precinct_Group pg;
+    for (p_index p : precincts) {
+        pg.add_precinct(state.precincts[p]);
+    }
+
+    Multi_Shape border = generate_exterior_border(pg);
+
+    int i = 0;
+    for (Precinct p : pg.precincts) {
+        if (get_bordering(p, border)) boundary_precincts.push_back(i);
+        i++;
+    }
+
+    return boundary_precincts;
+}
+
 
 p_index_set get_bordering_shapes(vector<Shape> shapes, Shape shape) {
     /*
@@ -744,7 +775,7 @@ bool creates_island(GeoGerry::Precinct_Group set, GeoGerry::p_index remove) {
 
     // calculate new number of islands
     int islands_after = generate_exterior_border(set).border.size();
-    
+
     // return whether exchange has created an island
     return (islands_after > islands_before);
 }

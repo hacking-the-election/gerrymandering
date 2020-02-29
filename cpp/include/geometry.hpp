@@ -30,9 +30,10 @@ GeoGerry::Multi_Shape generate_exterior_border(GeoGerry::Precinct_Group p);
 
 // get precincts on the inside border of a precinct group
 GeoGerry::p_index_set get_inner_boundary_precincts(GeoGerry::Precinct_Group shape);
+GeoGerry::p_index_set get_inner_boundary_precincts(GeoGerry::p_index_set precincts, GeoGerry::State state);
+
 GeoGerry::p_index_set get_bordering_precincts(GeoGerry::Precinct_Group shape, int p_index);
 GeoGerry::p_index_set get_ext_bordering_precincts(GeoGerry::Precinct_Group precincts, GeoGerry::State state);
-
 
 // overload get_bordering_shapes for vector inheritance problem
 GeoGerry::p_index_set get_bordering_shapes(std::vector<GeoGerry::Shape> shapes, GeoGerry::Shape shape);
