@@ -19,3 +19,4 @@
     - fix style issues with code in utils.py and communities.py
     - update docstrings for community algorithm functions
     - continue working on partisanship test
+    - Make utils a package with modules having functions and classes required for each step of the algorithm and general.

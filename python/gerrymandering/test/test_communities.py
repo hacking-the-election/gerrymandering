@@ -31,7 +31,7 @@ class TestInitialConfiguration(unittest.TestCase):
 
         @print_time
         def test_initial_configuration_speed(precincts, n_districts,
-                                             state_border):
+                                            state_border):
             return communities.create_initial_configuration(
                 precincts, n_districts, state_border)
 
