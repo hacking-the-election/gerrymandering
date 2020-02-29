@@ -555,7 +555,7 @@ def get_bordering_precincts(community1, community2):
     the border between them.
     If the two communities share no border, returns []
     """
-    # finds 
+    # finds coordinates of the two communities
     coords1 = community1.coords
     coords2 = community2.coords
     combined_precincts = {**community1.precincts, **community2.precincts}
@@ -577,7 +577,17 @@ def get_bordering_precincts(community1, community2):
         point_list  = str(point).split()
         if point_list in combined_union:
             border_coords.append(point_list)
+    if border_coords == []:
+        return []
     # check all precincts in either commmunity to see if 
     # they fall along border line 
+    border_precincts = {}
     for precinct in combined_precincts:
-        pass
+        for point in border_coords:
+            # if precinct is already in border_precincts, there's
+            # no need to check it again
+            if precinct.vote_id in border_precincts:
+                break
+            if get_point_in_polygon(precinct.coords, point):
+                border_precincts[precinct.vote_id] = precinct.coords
+    return precincts
