@@ -55,7 +55,7 @@ def create_initial_configuration(island_precinct_groups, n_districts,
     # Should eventually all become zero
     island_available_precincts = \
         [len(island) for island in island_precinct_groups]
-    print(f"number of precincts on each island: {island_available_precincts}")
+    print(f"{island_available_precincts=}")
 
     # island_borders = [clip([p.coords for p in il], UNION)
     #                   for il in island_precinct_groups]
@@ -133,10 +133,14 @@ def create_initial_configuration(island_precinct_groups, n_districts,
                         Community([], len(communities) + 1,
                                   {i: large_community}))
 
-                island_available_precincts[i] -= island_n_precincts
+                island_available_precincts[i] -= \
+                    (best_configuration[0] * small_community \
+                   + best_configuration[1] * large_community)
                 
             except LoopBreakException:
                 pass
+
+        print(f"{island_available_precincts=}")
 
         for i, available_precincts in enumerate(island_available_precincts):
             if available_precincts == 0:
@@ -147,10 +151,11 @@ def create_initial_configuration(island_precinct_groups, n_districts,
             link_community = Community(
                 [], len(communities) + 1,
                 {i: available_precincts})
+            island_available_precincts[i] = 0
             # All islands with extra precincts excluding current island.
             eligible_islands = \
                 [j for j, il in enumerate(island_available_precincts)
-                 if j != i and il != 0]
+                 if il != 0]
             linked_precinct_chains.append([])
             last_island_used = i
 
@@ -172,7 +177,7 @@ def create_initial_configuration(island_precinct_groups, n_districts,
                             ],
                             island_borders[:]
                         )
-                    linked_precinct_chains.append(precinct1)
+                    linked_precinct_chains[-1].append(precinct1)
                 else:
                     precinct2, new_island = \
                         get_closest_precinct(
@@ -190,19 +195,28 @@ def create_initial_configuration(island_precinct_groups, n_districts,
                         )
 
                 print(f"island {last_island_used} linked to island {new_island}")
-                linked_precinct_chains.append(precinct2)
+                print(f"got {island_available_precincts[new_island]} more precincts.")
+                print(f"number of precincts in community so far is {sum(link_community.islands.values())}")
+                linked_precinct_chains[-1].append(precinct2)
                 last_island_used = new_island
                 link_community.islands[new_island] = \
                     island_available_precincts[new_island]
                 island_available_precincts[new_island] = 0
-                eligible_islands.remove(new_island)
+                try:
+                    eligible_islands.remove(new_island)
+                except ValueError as  ve:
+                    print(eligible_islands)
+                    raise ve
 
             extra_precincts_added = \
-                sum(list(link_community.islands.values())) - community_sizes[0]
+                sum(link_community.islands.values()) - community_sizes[0]
             island_available_precincts[last_island_used] = extra_precincts_added
             link_community.islands[last_island_used] -= extra_precincts_added
+            print(f"removed {extra_precincts_added} precincts from island {last_island_used}.")
             community_sizes.pop(0)
-            print(f"chain completed using islands {link_community.islands}. {sum(list(link_community.islands.values()))} precincts in multi-island community")
+            print(f"chain completed using islands {link_community.islands}. "
+                  f"{sum(link_community.islands.values())} precincts in "
+                   "multi-island community")
 
     except Exception as e:
         # Save as much information about what happened in the program as possible.
@@ -315,7 +329,9 @@ def modify_for_partisanship(communities_list, threshold):
                     # second key: precinct ids in other community
                     specific_border_precincts = get_bordering_precincts(most_stdev.values()[0], community1)
                     for precinct in specific_border_precincts[most_stdev.keys()[0]]:
-                        
+                        pass
+
+
 def make_communities(state_file):
     """
     `state_file` - path to state that is to be divided into communities
