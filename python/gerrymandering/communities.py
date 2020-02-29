@@ -5,19 +5,17 @@ Algorithm implementation for breaking a state into political communities
 import logging
 import pickle
 import random
-import sys
-from os.path import abspath, dirname
-
-sys.path.append(abspath(dirname(dirname(__file__))))
 
 from shapely.geometry import MultiPolygon, Polygon
 
-from gerrymandering.utils import (UNION, Community, LoopBreakException,
-                                  average, clip, get_closest_precinct,
-                                  get_precinct_link_pair, group_by_islands,
-                                  shapely_to_polygon, polygon_to_shapely,
-                                  get_if_bordering, get_bordering_precincts)
-from .test.utils import convert_to_json
+from gerrymandering.utils.communities import (Community, get_closest_precinct,
+                                              get_precinct_link_pair,
+                                              group_by_islands,
+                                              LoopBreakException)
+from gerrymandering.utils.geometry import (clip, UNION, shapely_to_polygon,
+                                           polygon_to_shapely, get_if_bordering)
+from gerrymandering.utils.stats import average, stdev, get_bordering_precincts
+
 
 logging.basicConfig(filename="precincts.log", level=logging.DEBUG)
 
@@ -374,5 +372,4 @@ def make_communities(state_file):
     # Step 1
     communities = create_initial_configuration(
         precincts, len(districts), state_border)
-    partisanship_modifiy
     return communities

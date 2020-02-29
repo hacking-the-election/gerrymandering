@@ -21,7 +21,9 @@ import json
 sys.path.append('..')
 sys.path.append('../serialization')
 import gerrymandering
-from gerrymandering.utils import *
+from gerrymandering.utils.quantification import get_area_intersection
+from gerrymandering.utils.geometry import polygon_to_shapely, shapely_to_polygon
+from gerrymandering.utils.stats import average, stdev
 from serialization import save_precincts
 
 def quantify(communities_file, districts_file):

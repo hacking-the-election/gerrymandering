@@ -1,8 +1,10 @@
 # General:
-   Now:
-    - replace "` -" with "`:" for docstring consistency
-    - format all docstrings properly. (with args and all). separate args with 2 newlines. Change 'Args' to 'Params'
-    - Make all imports alphabetical
+   Now: 
+    - Style:
+      - replace "` -" with "`:" for docstring consistency
+      - format all docstrings properly. (with args and all). separate args with 2 newlines. Change 'Args' to 'Params'
+      - Make all imports alphabetical
+    - update __main__.py in gerrymandering
    Later:
     - Predict errors and create custom exceptions to throw in those cases
     - Fill __init__.pys with __version__s and make pypi package
@@ -17,6 +19,5 @@
    Now:
     - use threading during community filling process
     - go back two steps if line 372 in utils.py throws a valueerror
-    - fix style issues with code in utils.py and communities.py
     - continue working on partisanship test
-    - Make utils a package with modules having functions and classes required for each step of the algorithm and general.
+    - make communities algorithm into package
