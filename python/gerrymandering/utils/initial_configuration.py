@@ -213,11 +213,35 @@ class Community:
             # Set of precincts that have been tried
             tried_precincts = set()
 
-            random_precinct = self.try_precinct(
-                unchosen_precincts,
-                tried_precincts,
-                linked_precincts
-            )
+            if p == 1:
+                # Choose precinct that is on outside border of island.
+                border_precincts = {
+                    precinct for precinct in self.precincts.values()
+                    if get_if_bordering(precinct.coords, island_border)
+                }
+                if border_precincts != set():
+                    eligible_precincts = \
+                        (self.get_bordering_precincts(unchosen_precincts) \
+                         - tried_precincts - linked_precincts) & border_precincts
+                    random_precinct = random.sample(
+                        eligible_precincts, 1)[0]
+                else:
+                    random_precinct = self.try_precinct(
+                        unchosen_precincts,
+                        tried_precincts,
+                        linked_precincts,
+                        island_index,
+                        island_border
+                    )
+            else:
+                random_precinct = self.try_precinct(
+                    unchosen_precincts,
+                    tried_precincts,
+                    linked_precincts,
+                    island_index,
+                    island_border
+                )
+
             unchosen_precincts.give_precinct(
                 self, random_precinct, **kwargs
             )
@@ -236,7 +260,9 @@ class Community:
                 random_precinct = self.try_precinct(
                     unchosen_precincts,
                     tried_precincts,
-                    linked_precincts
+                    linked_precincts,
+                    island_index,
+                    island_border
                 )
                 unchosen_precincts.give_precinct(
                     self, random_precinct, **kwargs)
