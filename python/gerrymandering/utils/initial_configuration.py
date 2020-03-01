@@ -1,44 +1,18 @@
 """
-Useful computational geometry functions and classes
-for communities algorithm
-
-For interpreting docstrings:
-"list" refers to either `list` or `numpy.array`.
-"point" refers to a list of two floats that represent a
-point in 2-d space.
-"segment" refers to a list of two points.
-"polygon" refers to a list of segments of which the first represents
-the hull of the polygon, and the rest represent any holes in the
-polygon.
-"shape" refers to an object that can be either a polygon or a
-multipolygon (list of polygons).
+Functions specific to initial configuration step in communities algorithm
 """
-
-
-__all__ = ["clip", "UNION", "DIFFERENCE", "get_if_bordering",
-           "get_point_in_polygon", "Community", "group_by_islands",
-           "get_precinct_link_pair", "LoopBreakException",
-           "LoopContinueException", "get_area_intersection", 
-           "shapely_to_polygon", "polygon_to_shapely", "average", "stdev"]
 
 
 import math
 import random
-import logging
 import pickle
 
-from shapely.ops import unary_union
-from shapely.geometry import MultiLineString, MultiPolygon, Polygon, Point
+from shapely.geometry import MultiPolygon, Polygon
 
-from test.utils import print_time
-
-
-logging.basicConfig(filename="precincts.log", level=logging.DEBUG)
-
-
-UNION = 1
-DIFFERENCE = 2
-INTERSECTION = 3
+from .geometry import (clip, UNION, DIFFERENCE, get_distance,
+                       get_if_bordering, get_point_in_polygon,
+                       get_area_intersection, polygon_to_shapely,
+                       shapely_to_polygon)
 
 
 # ===================================================
@@ -49,165 +23,6 @@ class LoopBreakException(Exception):
     """
     Used to break outer loops from within nested loops.
     """
-
-
-class LoopContinueException(Exception):
-    """
-    Used to continue outer loops from within nested loops.
-    """
-
-
-# ===================================================
-# general geometry functions
-
-
-def _get_distance(p1, p2):
-    """
-    Finds distance between points `p1` and `p2` as lists of floats
-    """
-    return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
-
-
-def get_if_bordering(shape1, shape2):
-    """
-    Returns whether or not two shapes (json polygons) are bordering as a bool
-    """
-    return isinstance(clip([shape1, shape2], INTERSECTION), MultiLineString)
-
-
-def get_point_in_polygon(polygon, point):
-    """
-    Returns whether or not point is in polygon
-    (with or without holes)
-
-    Polygon can either be list or shapely.geometry.Polygon object
-    Point can either be list or shapely.geomtry.Point object
-
-    Returns bool
-    """
-    if isinstance(polygon, list):
-        tuple_polygon = [[tuple(coord) for coord in ring] for ring in polygon]
-        shapely_polygon = Polygon(tuple_polygon[0], tuple_polygon[1:])
-    elif isinstance(polygon, Polygon):
-        shapely_polygon = polygon
-    if isinstance(point, list):
-        coord = Point(*point)
-    elif isinstance(point, Point):
-        coord = point
-    return shapely_polygon.contains(coord) or shapely_polygon.touches(coord)
-
-
-def get_area_intersection(polygon1, polygon2):
-    """
-    Finds the area intersecting between the two polygons passed as arguments
-    Both polygons should be shapely polygons
-    Returns float (area of intersection.)
-    """
-    # find area of both polygons
-    area1 = polygon1.area
-    area2 = polygon2.area
-    # find area of union
-    union_coords = clip([polygon1, polygon2], 1)
-    union_area = union_coords.area
-    # The area of the intersection is the sum of the two areas minus the area of the union
-    intersect_area = area1 + area2 - union_area
-    # if the intersection area is negative, raise exception
-    if abs(intersect_area) != intersect_area:
-        raise Exception("Negative area found, check inputs")
-    return intersect_area
-    
-
-def average(number_list):
-    '''
-    Finds the average of the integers in number_list.
-    Returns float.
-    '''
-    sum1 = sum(number_list)
-    return sum1/len(number_list)
-
-
-def stdev(number_list, weight_list=None):
-    '''
-    Finds the standard deviation of the numbers in number_list.
-    If weight_list applies, multiply each of the numbers in number_list by the weight
-    (decimal) corresponding in weight_list. weight_list should have a list of decimals.
-    Does not use sample, but all elements in list
-    Returns float.
-    '''
-    average_int = average(number_list)
-    squared_sum = 0
-    for num, integer in enumerate(number_list):
-        difference = average_int - integer
-        if weight_list:
-            squared_sum += (difference * difference) * weight_list[num]
-        else:
-            squared_sum += (difference * difference)
-    return math.sqrt(squared_sum / len(number_list))
-
-
-def clip(shapes, clip_type):
-    """
-    Finds external border of a group of shapes
-
-    Args:
-    `shapes`: array of array of array of vertices
-    `clip_type`: either 1 (union) or 2 (difference)
-
-    if `clip_type` is difference, then there should only be 2 shapes in
-    `shapes`
-
-    Returns array of vertices
-    """
-    if clip_type == 1:
-        solution = unary_union(shapes)
-    else:
-        if len(shapes) != 2:
-            raise ValueError(
-                "Polygon clip of type DIFFERENCE takes exactly 2 input shapes"
-                )
-        if clip_type == 2:    
-            solution = shapes[0].difference(shapes[1])
-        elif clip_type == 3:
-            solution = shapes[0].intersection(shapes[1])
-        else:
-            raise ValueError(
-                "Invalid clip type. Use utils.UNION, utils.DIFFERENCE, or utils.INTERSECTION")
-    return solution
-
-
-def polygon_to_shapely(polygon):
-    """
-    Converts list-type polygon `shape` to
-    `shapely.geometry.Polygon`
-    """
-    tuple_polygon = [[tuple(coord) for coord in linear_ring]
-                     for linear_ring in polygon]
-    return Polygon(tuple_polygon[0], tuple_polygon[1:])
-
-
-def shapely_to_polygon(polygon):
-    """
-    Creates json polygon from shapely.geometry.Polygon
-    NOTE: Assumes shapely polygon only has exterior and no holes.
-    """
-    try:
-        coordinates = list(polygon.exterior.coords)
-    except AttributeError:
-        try: 
-            x = polygon[0]
-        except:
-            raise Exception('Incorrect input, not a shapely polygon')
-        else:
-            raise Exception('Incorrect input, a json polygon was inputted, \
-                            switch to shapely')
-    linear_ring = []
-    for tuple1 in coordinates:
-        x = tuple1[0]
-        y = tuple1[1]
-        point_list = [x, y]
-        linear_ring.append(point_list)
-    # return polygon
-    return [linear_ring]
 
 
 # ===================================================
@@ -442,7 +257,7 @@ def get_closest_precinct_on_island(island_centroid,
     closest_precinct = None
     closest_precinct_distance = 0
     for p in other_island_border_precincts:
-        distance = _get_distance(island_centroid,
+        distance = get_distance(island_centroid,
                                  p.coords.centroid.coords[0])
         if (
                 closest_precinct is None
@@ -514,12 +329,7 @@ def get_closest_precinct(island, island_precinct_groups,
             closest_precinct = closest_precinct_on_island
             closest_precinct_island_index = state_island_borders.index(border)
 
-    try:
-        return closest_precinct, closest_precinct_island_index
-    except AttributeError as e:
-        with open("test_communities_debug1.pickle", "wb+") as f:
-            pickle.dump([island_borders, island_precinct_groups], f)
-        raise e
+    return closest_precinct, closest_precinct_island_index
 
 
 def get_precinct_link_pair(island, island_precinct_groups,
@@ -566,54 +376,6 @@ def get_precinct_link_pair(island, island_precinct_groups,
 
     return precinct1, precinct2, closest_precinct_island_index
 
-def get_bordering_precincts(community1, community2):
-    """
-    Takes two community objects and returns list of precinct objects along either side of 
-    the border between them.
-    If the two communities share no border, returns []
-    """
-    # finds coordinates of the two communities
-    coords1 = community1.coords
-    coords2 = community2.coords
-    combined_precincts = {**community1.precincts, **community2.precincts}
-    area_intersection = get_area_intersection(coords1, coords2)
-    # if area_intersection is positive, something's wrong
-    if area_intersection > 0:
-        raise Exception('Communities intersect!')
-    # create combined list of coordinates in each community,
-    combined_coords = list(coords1.boundary).extend(list(coords2.boundary))
-    # find union of two communities
-    combined_union = clip([shapely_to_polygon(coords1)[0], 
-                          shapely_to_polygon(coords2)[0]],
-                          1)
-    # border_coords will have points in combined_coords
-    # not in combined_union
-    border_coords = []
-    for point in combined_coords:
-        # point, e.x. -73.142 29.538
-        point_list  = str(point).split()
-        if point_list in combined_union:
-            border_coords.append(point_list)
-    if border_coords == []:
-        return []
-    # check all precincts in either commmunity to see if 
-    # they fall along border line 
-    # keys: ids of the two communities in question
-    # values: list of ids of border precincts in respective communities
-    border_precincts = {community1.id : [], community2.id : []}
-    for precinct in combined_precincts:
-        for point in border_coords:
-            # if precinct is already in border_precincts, there's
-            # no need to check it again
-            if precinct.vote_id in border_precincts:
-                break
-            if get_point_in_polygon(precinct.coords, point):
-                if get_point_in_polygon(polygon_to_shapely(coords1.boundary), precinct.coords[0][0]):
-                    border_precincts[community1.id].append(precinct.vote_id)
-                else:
-                    border_precincts[community2.id].append(precinct.vote_id)
-    return border_precincts
-
 
 def find_precinct_corridors(community_list):
     """
@@ -625,3 +387,4 @@ def find_precinct_corridors(community_list):
     state_precincts = [].extend([community.precincts.values() for community in community_list])
     islands = group_by_islands(state_precincts)
     for island in islands:
+        pass
