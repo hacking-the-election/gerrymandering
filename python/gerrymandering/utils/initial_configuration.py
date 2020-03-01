@@ -142,7 +142,7 @@ class Community:
             if compactness:
                 community.update_compactness
 
-    def fill(self, precincts, linked_precincts, island_index):
+    def fill(self, precincts, linked_precincts, island_index, island_border):
         """
         Fills a community up with precincts.
 
@@ -154,10 +154,14 @@ class Community:
                                 making them untouchable during this step.
             `island_index`    : Index of island that corresponds to
                                 a key in `self.islands`.
+            `island_border`   : Border of island with index `island_index`
+
+        Returns list of added precincts and Polygon that is outer border
+        of group of precincts on island that have not been added to a
+        community.
         """
 
         added_precincts = []
-
         kwargs = {
             "partisanship": False,
             "standard_deviation": False,
@@ -165,9 +169,10 @@ class Community:
             "compactness": False, 
             "coords": True
         }
-        unchosen_precincts = Community(precincts[:], 0, {})
+        unchosen_precincts = Community(precincts[:], 0, {}, island_border)
 
         for _ in range(self.islands[island_index]):
+
             # Set of precincts that have been tried
             tried_precincts = set()
 
@@ -198,10 +203,10 @@ class Community:
                     self, random_precinct, **kwargs)
                 tried_precincts.add(random_precinct)
 
-            added_precincts.append(random_precinct)
+            added_precincts.append(self.precincts[random_precinct])
             print(f"precinct {random_precinct} added to community {self.id}")
 
-        return added_precincts
+        return added_precincts, unchosen_precincts.coords
 
     def get_bordering_precincts(self, unchosen_precincts):
         """
