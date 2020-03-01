@@ -10,15 +10,16 @@
 
 #include "shape.hpp"
 #include <math.h>  // for rounding functions
-#include <cmath>
 #include <algorithm> // for reverse, unique
+#include <cmath>
 #include <iostream>
 #include <string>
 
 #include "../lib/clipper/clipper.hpp"
 
 GeoGerry::segment coords_to_seg(GeoGerry::coordinate c1, GeoGerry::coordinate c2);
-double get_distance(GeoGerry::coordinate c0, GeoGerry::coordinate c1);
+
+double get_distance(GeoGerry::coordinate c1, GeoGerry::coordinate c2);
 double get_distance(GeoGerry::segment s);
 
 // coordinate manipulation for gui draw methods
@@ -63,5 +64,3 @@ bool get_inside_first(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1);
 
 bool creates_island(GeoGerry::Precinct_Group set, GeoGerry::p_index remove);
 bool creates_island(GeoGerry::p_index_set set, GeoGerry::p_index remove, GeoGerry::State precincts);
-
-double get_distance(GeoGerry::coordinate c1, GeoGerry::coordinate c2);
