@@ -11,9 +11,9 @@ import sys
 
 sys.path.append(dirname(dirname(__file__)))
 
+from utils.geometry import get_if_bordering, shapely_to_polygon
 from utils.partisanship import get_bordering_precincts
 from utils.stats import average, stdev
-from utils.geometry import shapely_to_polygon, get_if_bordering
 
 
 def modify_for_partisanship(communities_list, precinct_corridors, threshold):

@@ -3,8 +3,14 @@ Functions for partisanship refinement step in communities algorithm
 """
 
 
-from .geometry import (get_area_intersection, clip, UNION, shapely_to_polygon,
-                       polygon_to_shapely, get_point_in_polygon)
+from .geometry import (
+    clip,
+    get_area_intersection,
+    get_point_in_polygon,
+    polygon_to_shapely,
+    shapely_to_polygon,
+    UNION
+)
 
 
 def get_bordering_precincts(community1, community2):

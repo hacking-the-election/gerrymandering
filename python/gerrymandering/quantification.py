@@ -13,15 +13,18 @@ usage: python3 quantification.py [communities_pickle_file] [districts_file]
 # Therefore, this quantification algorithm solely measures cracking and packing, but takes partisanship into 
 # account to weight the gerrymandering score in order to create a fuller picture.
 
-import sys
+import json
 from os.path import dirname
 import pickle
-import json
+import sys
 
 sys.path.append(dirname(dirname(__file__)))
 
-from utils.geometry import (polygon_to_shapely, shapely_to_polygon,
-                            get_area_intersection)
+from utils.geometry import (
+    get_area_intersection,
+    polygon_to_shapely,
+    shapely_to_polygon
+)
 from utils.stats import average, stdev
 from serialization import save_precincts
 
