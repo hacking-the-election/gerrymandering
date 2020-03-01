@@ -9,7 +9,7 @@ from os.path import abspath, dirname
 import sys
 
 sys.path.append(abspath(dirname(__file__)))
-from gerrymandering.utils import shapely_to_polygon
+from gerrymandering.utils.geometry import shapely_to_polygon
 
 def load(state_file):
     """

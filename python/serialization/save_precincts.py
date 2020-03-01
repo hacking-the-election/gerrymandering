@@ -35,8 +35,9 @@ import warnings
 from shapely.geometry import Polygon
 
 sys.path.insert(-1, dirname(dirname(abspath(__file__))))
-from gerrymandering.utils import (get_point_in_polygon as gpip,
-                                  group_by_islands, clip, UNION)
+from gerrymandering.utils.geometry import (get_point_in_polygon as gpip,
+                                           clip, UNION)
+from gerrymandering.utils.initial_configuration import group_by_islands
 
 
 logging.basicConfig(level=logging.INFO, filename="precincts.log")
