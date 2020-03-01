@@ -14,16 +14,17 @@ usage: python3 quantification.py [communities_pickle_file] [districts_file]
 # account to weight the gerrymandering score in order to create a fuller picture.
 
 import sys
-from os.path import dirname
+from os.path import dirname, abspath
 import pickle
 import json
 
-sys.path.append(dirname(dirname(__file__)))
+sys.path.append(dirname(dirname(abspath(__file__))))
 
 from utils.geometry import (polygon_to_shapely, shapely_to_polygon,
                             get_area_intersection)
 from utils.stats import average, stdev
 from serialization import save_precincts
+from gerrymandering.utils.initial_configuration import Community
 
 def quantify(communities_file, districts_file):
     '''

@@ -6,14 +6,15 @@ standard deviation below a certain threshold.
 """
 
 
-from os.path import dirname
+from os.path import dirname, abspath
 import sys
+import pickle
+sys.path.append(dirname(dirname(dirname(abspath(__file__)))))
 
-sys.path.append(dirname(dirname(__file__)))
-
-from utils.partisanship import get_bordering_precincts
-from utils.stats import average, stdev
-from utils.geometry import shapely_to_polygon, get_if_bordering
+from gerrymandering.utils.initial_configuration import Community
+from gerrymandering.utils.partisanship import get_bordering_precincts
+from gerrymandering.utils.stats import average, stdev
+from gerrymandering.utils.geometry import shapely_to_polygon, get_if_bordering, communities_to_json
 
 
 def modify_for_partisanship(communities_list, precinct_corridors, threshold):
@@ -121,7 +122,7 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold):
                     if high_precinct in precincts_list:
                         # find the community with the corresponding id
                         for community3 in communities_list:
-                            if community3.id == community_id
+                            if community3.id == community_id:
                                 other_community = community3
                 # find precincts that can no longer be used now once a precinct has changed hands
                 no_longer_applicable_precincts = []
@@ -147,4 +148,12 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold):
                         if precinct not in no_longer_applicable_precincts:
                             precinct_list_to_remove.append(precinct)
                     border_precincts[id] = precinct_list_to_remove
+    
+    communities_to_json(communities_list, '../../../../partisanship_after.json')
     return communities_list
+
+# just for testing, will delete later
+with open('../../../../test_communities.pickle', 'rb') as f:
+    x = pickle.load(f)
+
+modify_for_partisanship(x, [], 0.1)
