@@ -17,6 +17,8 @@
 #define VERBOSE 1  // print progress messages
 using namespace rapidjson;
 
+const int c = pow(10, 8);
+
 // constant id strings
 //ndv	nrv	geoid10	GEOID10	POP100
 const std::string election_id_header = "geoid10";
@@ -144,8 +146,12 @@ GeoGerry::Shape string_to_vector(std::string str) {
     mp.Parse(str.c_str());
 
     GeoGerry::LinearRing hull;
-    for (int i = 0; i < mp[0].Size(); i++)
-        hull.border.push_back({mp[0][i][0].GetDouble(), mp[0][i][1].GetDouble()});
+    for (int i = 0; i < mp[0].Size(); i++) {
+        double x = mp[0][i][0].GetDouble() * c;
+        double y = mp[0][i][1].GetDouble() * c;
+
+        hull.border.push_back({(long long int) x, (long long int) y});
+    }
 
     if (mp[0][0][0] != mp[0][mp[0].Size() - 1][0] || 
         mp[0][0][1] != mp[0][mp[0].Size() - 1][1]) {       
@@ -157,7 +163,7 @@ GeoGerry::Shape string_to_vector(std::string str) {
     for (int i = 1; i < mp.Size(); i++) {
         GeoGerry::LinearRing hole;
         for (int j = 0; j < mp[i].Size(); j++) {
-            hole.border.push_back({mp[i][j][0].GetDouble(), mp[i][j][1].GetDouble()});
+            hole.border.push_back({(long long int) mp[i][j][0].GetDouble() * c, (long long int) mp[i][j][1].GetDouble() * c});
         }
         if (mp[i][0][0] != mp[i][mp[i].Size() - 1][0] || 
             mp[i][0][1] != mp[i][mp[i].Size() - 1][1]) {       
@@ -254,13 +260,13 @@ std::vector<GeoGerry::Shape> parse_precinct_coordinates(std::string geoJSON) {
             GeoGerry::Multi_Shape geo = multi_string_to_vector(coords);
 
             // calculate area of multipolygon
-            float total_area = geo.get_area();
+            double total_area = geo.get_area();
 
             // create many shapes with the same ID, add them to the array
             for (GeoGerry::Shape s : geo.border) {
                 GeoGerry::Shape shape(s.hull, s.holes, id);
                 shape.is_part_of_multi_polygon = true;
-                float fract = shape.get_area() / total_area;
+                double fract = shape.get_area() / total_area;
                 shape.pop = (int) round(pop * fract);
 
                 if (shape.hull.border[0] != shape.hull.border[shape.hull.border.size() - 1])
@@ -344,7 +350,7 @@ std::vector<GeoGerry::Precinct> merge_data( std::vector<GeoGerry::Shape> precinc
 
         // create a precinct object and add it to the array
         if (precinct_shape.is_part_of_multi_polygon) {
-            float total_area = precinct_shape.get_area();
+            double total_area = precinct_shape.get_area();
 
             for (int i = 0; i < precinct_shapes.size(); i++) {
                 if (i != x && precinct_shapes[i].shape_id == p_id) {
@@ -530,6 +536,8 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
     // sort files into
     if (VERBOSE) std::cout << "sorting precincts into islands from exterior state border..." << std::endl;
     state.islands = sort_precincts(border, pre_group);
+    writef(state.to_json(), "akp.json");
 
+    state.draw();
     return state; // return the state object
 }

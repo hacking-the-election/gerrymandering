@@ -39,7 +39,7 @@ segment coords_to_seg(coordinate c1, coordinate c2) {
         @return: `GeoGerry::segment` a segment with the coordinates provided
     */
 
-    segment s = {{ round(c1[0] * d) / d, round(c1[1] * d) / d, round(c2[0] * d) / d, round(c2[1] * d) / d}};
+    segment s = {{ c1[0], c1[1], c2[0], c2[1] }};
     return s;
 }
 
@@ -88,8 +88,7 @@ bool get_colinear(segment s0, segment s1) {
         @return: `bool` are colinear
     */
 
-    return (double_equality(get_equation(s0)[0], get_equation(s1)[0]) && 
-            double_equality(get_equation(s0)[1], get_equation(s1)[1]));
+    return (get_equation(s0) == get_equation(s1));
 }
 
 bool get_overlap(segment s0, segment s1) {
@@ -378,7 +377,7 @@ bool get_bordering(Multi_Shape s0, Shape s1) {
     segments csegs = s1.get_segments();
 
     cout << fixed << setprecision(20) << msegs[0][0] << ", " << msegs[0][1] << endl;
-    
+
     for (int i = 0; i < msegs.size(); i++) {
         for (int j = 0; j < csegs.size(); j++) {
             if (get_colinear(msegs[i], csegs[j])) {
@@ -430,7 +429,7 @@ bool point_in_ring(GeoGerry::coordinate coord, GeoGerry::LinearRing lr) {
 
     // convert to clipper types for builtin function
     ClipperLib::Path path = ring_to_path(lr);
-    ClipperLib::IntPoint p(coord[0] * c, coord[1] * c);
+    ClipperLib::IntPoint p(coord[0], coord[1]);
     return (!(ClipperLib::PointInPolygon(p, path) == 0));
 }
 
@@ -710,7 +709,7 @@ ClipperLib::Path ring_to_path(GeoGerry::LinearRing ring) {
 
     ClipperLib::Path p;
     for (coordinate point : ring.border )
-        p.push_back(ClipperLib::IntPoint(point[0] * c, point[1] * c));
+        p.push_back(ClipperLib::IntPoint(point[0], point[1]));
 
     return p;
 }
@@ -724,7 +723,7 @@ GeoGerry::LinearRing path_to_ring(ClipperLib::Path path) {
     GeoGerry::LinearRing s;
 
     for (ClipperLib::IntPoint point : path ) {
-        coordinate p = {(double) point.X / c, (double) point.Y / c};
+        coordinate p = {point.X, point.Y};
         if (p[0] != 0 && p[1] != 0) s.border.push_back(p);
     }
 
