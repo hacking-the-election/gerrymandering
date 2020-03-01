@@ -24,6 +24,7 @@ from utils.geometry import (polygon_to_shapely, shapely_to_polygon,
                             get_area_intersection)
 from utils.stats import average, stdev
 from serialization import save_precincts
+from gerrymandering.utils.initial_configuration import Community
 
 def quantify(communities_file, districts_file):
     '''
