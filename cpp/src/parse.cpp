@@ -248,12 +248,9 @@ std::vector<GeoGerry::Shape> parse_precinct_coordinates(std::string geoJSON) {
             GeoGerry::Shape shape(border, id);
             shape.pop = pop;
 
-            for (int i = 0; i < geo.holes.size(); i++) {
+            for (int i = 0; i < geo.holes.size(); i++)
                 shape.holes.push_back(geo.holes[i]);
-            }
 
-            if (shape.hull.border[0] != shape.hull.border[shape.hull.border.size() - 1])
-                std::cout << "Ok something failed" << std::endl;
             shapes_vector.push_back(shape);
         }
         else {
@@ -268,9 +265,6 @@ std::vector<GeoGerry::Shape> parse_precinct_coordinates(std::string geoJSON) {
                 shape.is_part_of_multi_polygon = true;
                 double fract = shape.get_area() / total_area;
                 shape.pop = (int) round(pop * fract);
-
-                if (shape.hull.border[0] != shape.hull.border[shape.hull.border.size() - 1])
-                    std::cout << "Ok something failed" << std::endl;
                 shapes_vector.push_back(shape);
             }
         }
@@ -442,9 +436,16 @@ GeoGerry::Precinct_Group combine_holes(GeoGerry::Precinct_Group pg) {
 
 std::vector<GeoGerry::p_index_set> sort_precincts(GeoGerry::Multi_Shape shape, GeoGerry::Precinct_Group pg) {
     /*
-        Takes an array of precincts and an exterior border array (islands), and
-        determines which precincts go in which island. Returns array of precinct_index_list
-        that correspond to precinct indices in the pg.precincts array
+        @desc:
+            Takes an array of precincts and an exterior border array (islands), and
+            determines which precincts go in which island. Returns array of precinct_index_list
+            that correspond to precinct indices in the pg.precincts array
+
+        @params:
+            `Multi_Shape` shape: The island shapes that will contain sorted precincts
+            `Precinct_Group` pg: The precincts to be sorted
+
+        @return: `p_index_set` array of precinct index sets that correspond to individual islands
     */
 
     std::vector<GeoGerry::p_index_set> islands;
@@ -484,7 +485,11 @@ std::vector<GeoGerry::p_index_set> sort_precincts(GeoGerry::Multi_Shape shape, G
 }
 
 int hole_count(GeoGerry::Precinct_Group pg) {
-    // counts sum of holes in a given precinct group
+    /*
+        @desc: counts sum of holes in a given precinct group
+        @params: `Precinct_Group` pg: Precincts to count holes of
+        @return: `int` number of holes in precincts
+    */
 
     int sum = 0;
     for (GeoGerry::Precinct p : pg.precincts )
@@ -496,8 +501,16 @@ int hole_count(GeoGerry::Precinct_Group pg) {
 
 GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON, std::string voter_data, std::string district_geoJSON) {
     /*
-        Parse precinct and district geojson, along with
-        precinct voter data, into a State object.
+        @desc:
+            Parse precinct and district geojson, along with
+            precinct voter data, into a State object.
+    
+        @params:
+            `string` precinct_geoJSON: A string file with geodata for precincts
+            `string` voter_data: A string file with tab separated voter data
+            `string` district_geoJSON: A string file with geodata for districts
+
+        @return: `State` parsed state object
     */
 
     //! Should probably allocate memory with malloc
@@ -536,8 +549,6 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
     // sort files into
     if (VERBOSE) std::cout << "sorting precincts into islands from exterior state border..." << std::endl;
     state.islands = sort_precincts(border, pre_group);
-    writef(state.to_json(), "akp.json");
-
-    state.draw();
+    if (VERBOSE) std::cout << "state serialized!" << std::endl;
     return state; // return the state object
 }

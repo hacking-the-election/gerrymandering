@@ -93,6 +93,19 @@ bool get_colinear(segment s0, segment s1) {
 }
 
 bool point_on_segment(coordinate c, segment s) {
+    /*
+        @desc: checks if a coordinate lines within a line segment
+        @params:
+            `coordinate` c: coordinate to check
+            `segment` s: segment to contain point
+
+        @return: `bool` segment contains line
+    */
+
+    if ((c[0] == s[0] && c[1] == s[1]) || (c[0] == s[2] && c[1] == s[3]))
+        // point on endpoints of segment
+        return true;
+
     int crossproduct = (c[1] - s[1]) * (s[2] - s[0]) - (c[0] - s[0]) * (s[3] - s[1]);
     if (abs(crossproduct) != 0)
         return false;
@@ -123,22 +136,27 @@ bool get_overlap(segment s0, segment s1) {
     */
     
     // s0[2], s0[3] is within the other segment
-    coordinate c1, c2;
-    c1 = {s0[0], s0[1]};
-    c2 = {s0[2], s0[3]};
+    int s0min = s0[0];
+    int s0max = s0[2];
+    if (s0[2] < s0min) {
+        s0min = s0[2];
+        s0max = s0[0];
+    }
 
-    return (point_on_segment(c1, s1) || point_on_segment(c2, s1));
+    int s1min = s1[0];
+    int s1max = s1[2];
+    if (s1[2] < s1min) {
+        s1min = s1[2];
+        s1max = s1[0];
+    }
 
-    // if (s0[0] > s0[2])
-    //     return (
-    //             ((s1[0] < s0[0]) && (s1[0] > s0[2]))
-    //             || ((s1[2] < s0[0]) && (s1[2] > s0[2])) 
-    //            );
-    // else
-    //     return (
-    //             ((s1[0] < s0[2]) && (s1[0] > s0[0]))
-    //             || ((s1[2] < s0[2]) && (s1[2] > s0[0]))
-    //            );
+    return (s0min <= s1max && s1min <= s0max);
+    
+    // coordinate c1, c2;
+    // c1 = {s0[0], s0[1]};
+    // c2 = {s0[2], s0[3]};
+
+    // return (point_on_segment(c1, s1) || point_on_segment(c2, s1));
 }
 
 
@@ -403,12 +421,17 @@ bool get_bordering(Multi_Shape s0, Shape s1) {
 
     for (int i = 0; i < msegs.size(); i++) {
         for (int j = 0; j < csegs.size(); j++) {
-            if (get_colinear(msegs[i], csegs[j])) {
+            if (get_colinear(msegs[i], csegs[j]) && get_overlap(msegs[i], csegs[j])) {
                 // cout << "colinear" << endl;
-                if (get_overlap(msegs[i], csegs[j])) {
+                // if (get_overlap(msegs[i], csegs[j])) {
                     // cout << "bordering!" << endl;      
                     return true;
-                }
+                // }
+                // else {
+                //     cout << "segments are colinear but don't overlap" << endl;
+                //     cout << msegs[i][0] << ", " << msegs[i][1] << ", " << msegs[i][2] << ", " << msegs[i][3] << endl;
+                //     cout << csegs[j][0] << ", " << csegs[j][1] << ", " << csegs[j][2] << ", " << csegs[j][3] << endl;
+                // }
             }
         }
     }
@@ -504,11 +527,12 @@ p_index_set get_inner_boundary_precincts(Precinct_Group shape) {
 
     p_index_set boundary_precincts;
     Multi_Shape exterior_border = generate_exterior_border(shape);
-    
+    writef(exterior_border.to_json(), "border.json");
+
     int i = 0;
     
     for (Precinct p : shape.precincts) {
-        if (get_bordering(p, exterior_border)) {
+        if (get_bordering(exterior_border, p)) {
             boundary_precincts.push_back(i);
         }
         i++;
@@ -843,8 +867,11 @@ p_index_set get_ext_bordering_precincts(Precinct_Group precincts, State state) {
     p_index_set bordering_pre;
     Multi_Shape border = generate_exterior_border(precincts);
 
-    for (int i = 0; i < state.precincts.size(); i++)
-        if (get_bordering(state.precincts[i], border)) bordering_pre.push_back(i);
+    for (int i = 0; i < state.precincts.size(); i++) {
+        if (!(std::find(precincts.precincts.begin(), precincts.precincts.end(), state.precincts[i]) != precincts.precincts.end())) {
+            if (get_bordering(border, state.precincts[i])) bordering_pre.push_back(i);
+        }
+    }
 
     return bordering_pre;
 }

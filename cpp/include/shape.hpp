@@ -298,7 +298,8 @@ class Multi_Shape : public Shape {
         double get_compactness();             // average compactenss of each shape
         double get_area();                    // total area of the border shape array
         virtual segments get_segments();      // return a segment list with shape's segments
-
+        virtual std::string to_json();       
+        
         // for boost serialization
         friend class boost::serialization::access;
         template<class Archive> void serialize(Archive & ar, const unsigned int version);
