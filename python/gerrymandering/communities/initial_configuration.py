@@ -302,5 +302,4 @@ def create_initial_configuration(island_precinct_groups, n_districts,
         with open("test_communities.pickle", "wb+") as f:
             pickle.dump([communities, linked_precinct_chains], f)
         raise e
-
     return communities

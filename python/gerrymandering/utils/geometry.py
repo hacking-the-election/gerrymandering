@@ -4,6 +4,7 @@ Geometric functions
 
 
 import math
+import json
 
 from shapely.geometry import MultiLineString, Point, Polygon
 from shapely.ops import unary_union
@@ -133,3 +134,16 @@ def get_area_intersection(polygon1, polygon2):
     if abs(intersect_area) != intersect_area:
         raise Exception("Negative area found, check inputs")
     return intersect_area
+
+def communities_to_json(communities_list, output_path):
+    """
+    convert lists of communities of the kind outputed by communities
+    into a json file for viewing
+    """
+    features = []
+    for community in communities_list:
+        coords = shapely_to_polygon(community.coords)
+        features.append({"geometry": {"type":"Polygon", "coordinates":coords}})
+    completed_json = {"type":"FeatureCollection", "features":features}
+    with open(output_path, 'w') as f:
+        json.dump(f)

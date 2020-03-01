@@ -13,7 +13,15 @@
 
 namespace fs = boost::filesystem;
 
+std::string geojson_header = "{\"type\": \"FeatureCollection\", \"features\":[";
+
 std::string GeoGerry::LinearRing::to_json() {
+    /*
+        @desc: converts a linear ring into a json array of coords
+        @params: none
+        @return: `string` json array
+    */
+
     std::string str = "[";
     for (GeoGerry::coordinate c : border)
         str += "[" + std::to_string(c[0]) + ", " + std::to_string(c[1]) + "],";
@@ -25,7 +33,16 @@ std::string GeoGerry::LinearRing::to_json() {
 }
 
 std::string GeoGerry::Precinct_Group::to_json() {
-    std::string str = "{\"type\": \"FeatureCollection\", \"features\":[";
+    /*
+        @desc:
+            converts a Precinct_Group object into a geojson document
+            for viewing in mapshaper or elsewhere
+
+        @params: none
+        @return: `string` json array
+    */
+
+    std::string str = geojson_header;
     
     for (GeoGerry::Precinct p : precincts) {
         str += "{\"type\":\"Feature\",\"geometry\":{\"type\":\"Polygon\",\"coordinates\":[";
@@ -42,21 +59,50 @@ std::string GeoGerry::Precinct_Group::to_json() {
 }
 
 std::string GeoGerry::Shape::to_json() {
-    std::string str = "{\"type\": \"FeatureCollection\", \"features\":[{\"type\":\"Feature\",\"geometry\":{\"type\":\"Polygon\",\"coordinates\":[";
+    /*
+        @desc: Converts a normal shape object into geojson
+        @params: none
+        @return: `string` geojson object
+    */
+
+    std::string str = geojson_header;
     str += hull.to_json();
-    str += "]}}]}";
+    str += "]}}";
 
     return str;
 }
 
-std::string GeoGerry::State::to_json() {
+std::string GeoGerry::Multi_Shape::to_json() {
     /*
-        dumps a state object as json
-        just uses string manipulation, no json parsing
+        @desc: Converts a multiple shape object into geojson
+        @params: none
+        @return: `string` geojson object
     */
+
+    std::string str = geojson_header + "{\"type\":\"Feature\",\"geometry\":{\"type\":\"MultiPolygon\",\"coordinates\":[";
+    for (Shape s : border) {
+        str += "[";
+        str += s.hull.to_json();
+        for (LinearRing h : s.holes) {
+            str += h.to_json();
+        }
+        str += "],";
+    }
+    
+    str = str.substr(0, str.size() - 1);
+    str += "]}}";
+
+    return str;
+}
+
+// std::string GeoGerry::State::to_json() {
+    // /*
+    //     dumps a state object as json
+    //     just uses string manipulation, no json parsing
+    // */
    
     // begin json string
-    std::string str = "{" + N; 
+    // std::string str = "{" + N; 
 
     // str += T + OQ + "state" + CQC + "{" + N
     //     + TAB(2) + OQ + "name" + CQC + OQ + name + CQ + C + N
@@ -132,8 +178,8 @@ std::string GeoGerry::State::to_json() {
 
     // str += T + "}" + N; // close state
     // str += "}" + N; // close json
-    return str;
-}
+//     return str;
+// }
 
 
 /*

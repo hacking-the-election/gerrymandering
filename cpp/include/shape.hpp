@@ -52,15 +52,15 @@ class Exceptions;      // for any error to be thrown
 class Community;       // list of precinct id's
 
 // simplify the coordinate modification system
-typedef std::array<double, 2> coordinate;      // a list in form {x1, y1}
+typedef std::array<long long int, 2> coordinate;              // a list in form {x1, y1}
 typedef std::vector<coordinate> coordinate_set;     // list of coordiantes: {{x1, y1}, {x2, y2}}
-typedef std::array<double, 4> bounding_box;         // an array of 4 max/mins:
+typedef std::array<long long int, 4> bounding_box;            // an array of 4 max/mins:
 
 // for values between 0-1:
 typedef double unit_interval;
 
 // a set of two coordinates:
-typedef std::array<double, 4> segment;
+typedef std::array<long long int, 4> segment;
 typedef std::vector<segment> segments;
 
 // for defining indices of arrays rather than referring to objects:
@@ -298,7 +298,8 @@ class Multi_Shape : public Shape {
         double get_compactness();             // average compactenss of each shape
         double get_area();                    // total area of the border shape array
         virtual segments get_segments();      // return a segment list with shape's segments
-
+        virtual std::string to_json();       
+        
         // for boost serialization
         friend class boost::serialization::access;
         template<class Archive> void serialize(Archive & ar, const unsigned int version);
@@ -408,7 +409,7 @@ class State : public Precinct_Group {
         // serialize and read to and from binary, json
         void write_binary(std::string path);
         static State read_binary(std::string path);
-        std::string to_json();
+        // std::string to_json();
 
         // for boost serialization
         friend class boost::serialization::access;

@@ -18,7 +18,7 @@ GeoGerry::bounding_box normalize_coordinates(GeoGerry::Shape* shape) {
     */
 
     // set dummy extremes
-    float top = shape->hull.border[0][1], 
+    int top = shape->hull.border[0][1], 
         bottom = shape->hull.border[0][1], 
         left = shape->hull.border[0][0], 
         right = shape->hull.border[0][0];
@@ -32,7 +32,7 @@ GeoGerry::bounding_box normalize_coordinates(GeoGerry::Shape* shape) {
     }
 
     // add to each coordinate to move it to quadrant 1
-    for (float i = 0; i < shape->hull.border.size(); i++) {
+    for (int i = 0; i < shape->hull.border.size(); i++) {
         shape->hull.border[i][0] += (0 - left);
         shape->hull.border[i][1] += (0 - bottom);
     }
@@ -53,7 +53,7 @@ GeoGerry::coordinate_set resize_coordinates(GeoGerry::bounding_box box, GeoGerry
     double ratioTop = ceil((float) box[0]) / (float) (screenX);   // the rounded ratio of top:top
     double ratioRight = ceil((float) box[3]) / (float) (screenY); // the rounded ratio of side:side
     
-    // find out which is larger and assign it's reciporical to the scale factor
+    // find out which is larger and assign its reciporical to the scale factor
     double scaleFactor = floor(1 / ((ratioTop > ratioRight) ? ratioTop : ratioRight)); 
 
     // dilate each coordinate in the shape
@@ -118,7 +118,7 @@ GeoGerry::coordinate_set connect_dots(GeoGerry::coordinate_set shape) {
         double y = y0;
 
         for (int i = 0; i <= steps; i++) {
-            newShape.push_back({(double)x, (double)y});
+            newShape.push_back({(long long int)x, (long long int)y});
             x += xinc;
             y += yinc;
         }
@@ -185,7 +185,7 @@ void GeoGerry::Shape::draw() {
 
 GeoGerry::bounding_box normalize_coordinates(GeoGerry::Multi_Shape* multi_shape) {
     // set dummy extremes
-    double top = multi_shape->border[0].hull.border[0][1], 
+    int top = multi_shape->border[0].hull.border[0][1], 
         bottom = multi_shape->border[0].hull.border[0][1], 
         left = multi_shape->border[0].hull.border[0][0], 
         right = multi_shape->border[0].hull.border[0][0];
@@ -284,7 +284,7 @@ GeoGerry::coordinate_set connect_dots(std::vector<GeoGerry::Shape> shapes) {
 
             int steps = abs(dx) > abs(dy) ? abs(dx) : abs(dy);
 
-            float xinc = dx / (float) steps;
+            int xinc = dx / (float) steps;
             float yinc = dy / (float) steps;
 
             float x = x0;
@@ -292,11 +292,11 @@ GeoGerry::coordinate_set connect_dots(std::vector<GeoGerry::Shape> shapes) {
 
             for (int n = 0; n <= steps; n++) {
                 if (j == 0) {
-                    newShape.push_back({(float)x + 1, (float)y});
-                    newShape.push_back({(float)x, (float)y + 1});
-                    newShape.push_back({(float)x + 1, (float)y + 1});
+                    newShape.push_back({(long long int)x + 1, (long long int)y});
+                    newShape.push_back({(long long int)x, (long long int)y + 1});
+                    newShape.push_back({(long long int)x + 1, (long long int)y + 1});
                 }
-                newShape.push_back({(float)x, (float)y});
+                newShape.push_back({(long long int)x, (long long int)y});
                 x += xinc;
                 y += yinc;
             }
@@ -355,7 +355,7 @@ GeoGerry::bounding_box normalize_coordinates(GeoGerry::State* state) {
     */
    
     // set dummy extremes
-    float top = state->precincts[0].hull.border[0][1], 
+    int top = state->precincts[0].hull.border[0][1], 
         bottom = state->precincts[0].hull.border[0][1], 
         left = state->precincts[0].hull.border[0][0], 
         right = state->precincts[0].hull.border[0][0];
@@ -460,7 +460,7 @@ GeoGerry::coordinate_set connect_dots(std::vector<GeoGerry::Precinct> shapes) {
             float y = y0;
 
             for (int i = 0; i <= steps; i++) {
-                newShape.push_back({(float)x, (float)y});
+                newShape.push_back({(long long int)x, (long long int)y});
                 x += xinc;
                 y += yinc;
             }

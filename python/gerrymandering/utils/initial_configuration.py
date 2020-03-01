@@ -382,16 +382,3 @@ def get_precinct_link_pair(island, island_precinct_groups,
         )
 
     return precinct1, precinct2, closest_precinct_island_index
-
-
-def find_precinct_corridors(community_list):
-    """
-    given a list of communities, return list
-    of precincts that should be connected to each other
-    as stepping stone connections between islands
-    maximum number of connections to other islands: three
-    """
-    state_precincts = [].extend([community.precincts.values() for community in community_list])
-    islands = group_by_islands(state_precincts)
-    for island in islands:
-        pass

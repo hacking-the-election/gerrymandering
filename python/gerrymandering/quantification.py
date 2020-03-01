@@ -27,6 +27,7 @@ from utils.geometry import (
 )
 from utils.stats import average, stdev
 from serialization import save_precincts
+from gerrymandering.utils.initial_configuration import Community
 
 def quantify(communities_file, districts_file):
     '''
