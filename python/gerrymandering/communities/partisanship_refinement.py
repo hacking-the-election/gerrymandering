@@ -116,11 +116,13 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold):
                 # if there are no beneficial precinct exchanges left, stop
                 if highest_precinct_exchange <= 0:
                     break
-                
                 # find other community to add/subtract from
-                for community2, precincts_list in border_precincts.items():
+                for community_id, precincts_list in border_precincts.items():
                     if high_precinct in precincts_list:
-                        other_community = community2
+                        # find the community with the corresponding id
+                        for community3 in communities_list:
+                            if community3.id == community_id
+                                other_community = community3
                 # find precincts that can no longer be used now once a precinct has changed hands
                 no_longer_applicable_precincts = []
                 # if precinct is in biggest stdev community:
