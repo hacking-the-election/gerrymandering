@@ -28,7 +28,8 @@ from utils.initial_configuration import (
     get_closest_precinct,
     get_precinct_link_pair,
     group_by_islands,
-    LoopBreakException
+    LoopBreakException,
+    CommunityFillCompleteException
 )
 
 
@@ -264,13 +265,17 @@ def create_initial_configuration(island_precinct_groups, n_districts,
                         and first_chain_island in list(community.islands.values())
                         ):
                     for island_index in community.islands.keys():
-                        added_precincts, unchosen_precincts_border = \
+                        try:
                             community.fill(
                                 island_precinct_groups[island_index],
                                 all_linked_precincts,
                                 island_index,
                                 island_borders[island_index]
                             )
+                        except CommunityFillCompleteException as e:
+                            added_precincts = e.added_precincts
+                            unchosen_precincts_border = \
+                                e.unchosen_precincts_border
 
                         # Remove these precincts from being listed as in
                         # island. When other communities fill using this
@@ -290,13 +295,16 @@ def create_initial_configuration(island_precinct_groups, n_districts,
         for community in communities:
             if len(community.precincts) == 0:
                 island_index = list(community.islands.keys())[0]
-                added_precincts, unchosen_precincts_border = \
+                try:
                     community.fill(
                         island_precinct_groups[island_index],
                         all_linked_precincts,
                         island_index,
                         island_borders[island_index]
                     )
+                except CommunityFillCompleteException as e:
+                    added_precincts = e.added_precincts
+                    unchosen_precincts_border = e.unchosen_precincts_border
                 for precinct in island_precinct_groups[island_index][:]:
                     if precinct.vote_id in added_precincts:
                         island_precinct_groups[island_index].remove(
