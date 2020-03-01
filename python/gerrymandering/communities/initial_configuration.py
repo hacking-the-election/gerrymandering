@@ -67,10 +67,8 @@ def create_initial_configuration(island_precinct_groups, n_districts,
         [len(island) for island in island_precinct_groups]
     print(f"{island_available_precincts=}")
 
-    # island_borders = [clip([p.coords for p in il], UNION)
-    #                   for il in island_precinct_groups]
-    with open("../data/test/python/alaska_island_borders.pickle", "rb") as f:
-        island_borders = pickle.load(f)
+    island_borders = [clip([p.coords for p in il], UNION)
+                      for il in island_precinct_groups]
 
     # vote_ids of precincts in chains
     linked_precinct_chains = []
