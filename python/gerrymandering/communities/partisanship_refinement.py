@@ -10,13 +10,12 @@ from os.path import dirname
 import sys
 import pickle
 
-sys.path.append(dirname(dirname(__file__)))
-
-from utils.initial_configuration import Community
-from utils.partisanship import get_bordering_precincts
-from utils.stats import average, stdev
-from utils.geometry import shapely_to_polygon, get_if_bordering, communities_to_json
-
+from gerrymandering.utils.initial_configuration import Community
+from gerrymandering.utils.partisanship import get_bordering_precincts
+from gerrymandering.utils.stats import average, stdev
+from gerrymandering.utils.geometry import shapely_to_polygon, polygon_to_shapely, get_if_bordering, communities_to_json
+from serialization import save_precincts
+sys.modules['save_precincts'] = save_precincts
 
 def modify_for_partisanship(communities_list, precinct_corridors, threshold):
     '''
@@ -26,9 +25,10 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold):
     should be considered bordering. The threshold is a decimal for maximum community partisanship 
     standard deviation, i.e. (0.05)
     '''
+    communities_dict = {community.id : community for community in communities_list}
     communities_coords = {community.id : community.precincts for community in communities_list}
     # update partisanship values (in case this hasn't already been done)
-    for community in communities_list.values():
+    for community in communities_list:
         community.update_standard_deviation()
     # create dictionary of ids and community partisanship standard deviations
     community_stdev = {community.id : community.standard_deviation for community in communities_list}
@@ -45,25 +45,30 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold):
         if community > threshold:
             # find the community with the highest political deviaiton
             most_stdev = {}
-            for id1, community1 in community_stdev.items():
-                if community > most_stdev.get(id, 0):
-                    most_stdev[id] = community
-            most_stdev_id = most_stdev.keys()[0]
-            most_stdev_community = most_stdev.values()[0]
+            for community in communities_list:
+                if len(most_stdev) == 0: 
+                    most_stdev[community.id] = community
+
+                elif community.standard_deviation > most_stdev[list(most_stdev.keys())[0]].standard_deviation:
+                    del most_stdev[list(most_stdev.keys())[0]]
+                    most_stdev[community.id] = community
+            most_stdev_id = list(most_stdev.keys())[0]
+            most_stdev_community = list(most_stdev.values())[0]
             biggest_community_precincts = communities_coords[most_stdev_id]
             # relates border precinct to community border it's from (not including most_stdev_community)
             border_precincts = {most_stdev_community.id: []}
             # create dictionary of the precincts bordering it
-            # group_by_islands(biggest_community_precincts)
-            for id1, community1 in community_stdev.items():
+            for id1, community1 in communities_dict.items():
                 # if community is biggest one, skip
                 if id1 == most_stdev_id:
                     continue
-                if get_if_bordering(shapely_to_polygon(most_stdev_community.coords), 
-                                    json_communities[id1]):
+                print(most_stdev_id, community1.id)
+                if get_if_bordering(most_stdev_community.coords, 
+                                    polygon_to_shapely(json_communities[id1])):
                     # the following result has first key: precincts ids inside most stdev community
                     # second key: precinct ids in other community
                     specific_border_precincts = get_bordering_precincts(most_stdev_community, community1)
+                    print(specific_border_precincts)
                     for precinct in specific_border_precincts[most_stdev_id]:
                         border_precincts[most_stdev_community.id].append(precinct)
                     if specific_border_precincts[id1] != 0: 

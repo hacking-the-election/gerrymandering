@@ -12,7 +12,7 @@ import pickle
 import random
 import sys
 
-sys.path.append(dirname(dirname(__file__)))
+sys.path.append(dirname(dirname(abspath(__file__))))
 
 from shapely.geometry import MultiPolygon, Polygon
 

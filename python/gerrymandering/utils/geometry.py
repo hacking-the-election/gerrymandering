@@ -24,7 +24,7 @@ def get_distance(p1, p2):
 
 def get_if_bordering(shape1, shape2):
     """
-    Returns whether or not two shapes (json polygons) are bordering as a bool
+    Returns whether or not two shapes (shapely polygons) are bordering as a bool
     """
     return isinstance(clip([shape1, shape2], INTERSECTION), MultiLineString)
 
@@ -56,8 +56,8 @@ def clip(shapes, clip_type):
     Finds external border of a group of shapes
 
     Args:
-    `shapes`: array of array of array of vertices
-    `clip_type`: either 1 (union) or 2 (difference)
+    `shapes`: list of shapely polygons
+    `clip_type`: either 1 (union) or 2 (difference) or 3 (intersection)
 
     if `clip_type` is difference, then there should only be 2 shapes in
     `shapes`
