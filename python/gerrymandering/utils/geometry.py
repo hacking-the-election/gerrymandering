@@ -86,6 +86,9 @@ def polygon_to_shapely(polygon):
     Converts list-type polygon `shape` to
     `shapely.geometry.Polygon`
     """
+    # if input is already in correct form
+    if isinstance(polygon, Polygon):
+        return polygon
     tuple_polygon = [[tuple(coord) for coord in linear_ring]
                      for linear_ring in polygon]
     return Polygon(tuple_polygon[0], tuple_polygon[1:])
@@ -96,6 +99,9 @@ def shapely_to_polygon(polygon):
     Creates json polygon from shapely.geometry.Polygon
     NOTE: Assumes shapely polygon only has exterior and no holes.
     """
+    # if input is already in correct form
+    if isinstance(polygon, list):
+        return polygon
     try:
         coordinates = list(polygon.exterior.coords)
     except AttributeError:
@@ -143,7 +149,7 @@ def communities_to_json(communities_list, output_path):
     features = []
     for community in communities_list:
         coords = shapely_to_polygon(community.coords)
-        features.append({"geometry": {"type":"Polygon", "coordinates":coords}})
+        features.append({"geometry": {"type":"Polygon", "coordinates":coords}, "type":"Feature", "properties":{"ID":community.id}})
     completed_json = {"type":"FeatureCollection", "features":features}
     with open(output_path, 'w') as f:
-        json.dump(f)
+        json.dump(completed_json, f)
