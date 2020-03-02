@@ -17,24 +17,29 @@ def get_bordering_precincts(community1, community2):
     coords1 = community1.coords
     coords2 = community2.coords
     combined_precincts = {**community1.precincts, **community2.precincts}
-    area_intersection = get_area_intersection(coords1, coords2)
+    area_intersection = clip([coords1, coords2], 3).area
+    print(area_intersection)
     # if area_intersection is positive, something's wrong
     if area_intersection > 0:
         raise Exception('Communities intersect!')
     # create combined list of coordinates in each community,
-    combined_coords = list(coords1.boundary).extend(list(coords2.boundary))
+    combined_coords = shapely_to_polygon(coords1)[0]
+    to_combine = shapely_to_polygon(coords2)[0]
+    for coord in to_combine:
+        combined_coords.append(coord)
+    # at this point, combined_coords is a linear ring of points
+    combined_coords = combined_coords
     # find union of two communities
-    combined_union = clip([shapely_to_polygon(coords1)[0], 
-                          shapely_to_polygon(coords2)[0]],
-                          1)
+    combined_union = clip([coords1, coords2], 1)
+    combined_union = shapely_to_polygon(combined_union)
+    union_points = [combined_union[0][y] for y in range(len(combined_union[0]))]
     # border_coords will have points in combined_coords
     # not in combined_union
     border_coords = []
     for point in combined_coords:
         # point, e.x. -73.142 29.538
-        point_list  = str(point).split()
-        if point_list in combined_union:
-            border_coords.append(point_list)
+        if point in union_points:
+            border_coords.append(point)
     if border_coords == []:
         return []
     # check all precincts in either commmunity to see if 
@@ -42,15 +47,17 @@ def get_bordering_precincts(community1, community2):
     # keys: ids of the two communities in question
     # values: list of ids of border precincts in respective communities
     border_precincts = {community1.id : [], community2.id : []}
-    for precinct in combined_precincts:
+    for precinct in combined_precincts.values():
+        print(precinct)
         for point in border_coords:
             # if precinct is already in border_precincts, there's
             # no need to check it again
-            if precinct.vote_id in border_precincts:
+            if precinct in border_precincts.values():
                 break
             if get_point_in_polygon(precinct.coords, point):
-                if get_point_in_polygon(polygon_to_shapely(coords1.boundary), precinct.coords[0][0]):
-                    border_precincts[community1.id].append(precinct.vote_id)
+                if precinct in community1.precincts.values():
+                    border_precincts[community1.id].append(precinct)
                 else:
-                    border_precincts[community2.id].append(precinct.vote_id)
+                    border_precincts[community2.id].append(precinct)
+    print(border_precincts)
     return border_precincts

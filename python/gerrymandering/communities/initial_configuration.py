@@ -12,7 +12,7 @@ import random
 from os.path import abspath, dirname
 import sys
 
-sys.path.append(abspath(dirname(dirname(__file__))))
+sys.path.append(dirname(dirname(abspath(__file__))))
 
 from shapely.geometry import MultiPolygon, Polygon
 
