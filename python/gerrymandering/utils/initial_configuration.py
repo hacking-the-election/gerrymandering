@@ -114,7 +114,6 @@ class Community:
                 total_sum += r_sum + precinct.d_election_sum
         self.partisanship = rep_sum / total_sum
 
-    @print_time
     def give_precinct(self, other, precinct_id, coords=True,
                       partisanship=True, standard_deviation=True,
                       population=True, compactness=True):
@@ -138,10 +137,16 @@ class Community:
         other.precincts[precinct_id] = precinct
         # Update borders
         if coords:
-            self.coords = clip([self.coords, precinct.coords],
-                            DIFFERENCE)
-            other.coords = clip([p.coords for p in other.precincts.values()],
-                                UNION)
+            def update_self_coords():
+                self.coords = clip([self.coords, precinct.coords],
+                                   DIFFERENCE)
+            def update_other_coords():
+                other.coords = clip([p.coords for p in other.precincts.values()],
+                                    UNION)
+            thread_1 = threading.Thread(target=update_self_coords)
+            thread_2 = threading.Thread(target=update_other_coords)
+            thread_1.run()
+            thread_2.run()
 
         # Update other attributes that are dependent on precincts attribute
         for community in [self, other]:
@@ -255,8 +260,8 @@ class Community:
                 self.give_precinct(
                     unchosen_precincts, random_precinct, **kwargs)
                 print(f"precinct {random_precinct} added to and removed "
-                    f"from community {self.id} because it created an "
-                    "island")
+                      f"from community {self.id} because it created an "
+                      "island")
                 # Random precinct that hasn't already been
                 # tried and also borders community.
                 random_precinct = self.try_precinct(
@@ -271,12 +276,12 @@ class Community:
                 tried_precincts.add(random_precinct)
 
             added_precincts.append(self.precincts[random_precinct])
-            print(f"precinct {random_precinct} added to community {self.id}")
+            print(f"precinct {random_precinct} added to community {self.id}."
+                  f"Number of precincts is now {len(self.precincts)}")
 
         raise CommunityFillCompleteException(added_precincts,
                                              unchosen_precincts.coords)
 
-    @print_time
     def get_bordering_precincts(self, unchosen_precincts):
         """
         Returns list of precincts bordering `self`
