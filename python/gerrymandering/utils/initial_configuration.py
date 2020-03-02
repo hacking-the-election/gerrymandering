@@ -6,6 +6,7 @@ Functions specific to initial configuration step in communities algorithm
 import math
 import pickle
 import random
+import threading
 
 from shapely.geometry import MultiPolygon, Polygon
 
@@ -20,6 +21,7 @@ from .geometry import (
     shapely_to_polygon,
     UNION
 )
+from funcs import print_time
 
 
 # ===================================================
@@ -30,6 +32,17 @@ class LoopBreakException(Exception):
     """
     Used to break outer loops from within nested loops.
     """
+
+
+class CommunityFillCompleteException(Exception):
+    """
+    Used to break out of all levels of recursion when a community is filled.
+    """
+
+    def __init__(self, added_precincts, unchosen_precincts_border):
+        self.added_precincts = added_precincts
+        self.unchosen_precincts_border = unchosen_precincts_border
+        Exception.__init__(self)
 
 
 # ===================================================
@@ -124,10 +137,16 @@ class Community:
         other.precincts[precinct_id] = precinct
         # Update borders
         if coords:
-            self.coords = clip([self.coords, precinct.coords],
-                               DIFFERENCE)
-            other.coords = clip([p.coords for p in other.precincts.values()],
-                                UNION)
+            def update_self_coords():
+                self.coords = clip([self.coords, precinct.coords],
+                                   DIFFERENCE)
+            def update_other_coords():
+                other.coords = clip([p.coords for p in other.precincts.values()],
+                                    UNION)
+            thread_1 = threading.Thread(target=update_self_coords)
+            thread_2 = threading.Thread(target=update_other_coords)
+            thread_1.run()
+            thread_2.run()
 
         # Update other attributes that are dependent on precincts attribute
         for community in [self, other]:
@@ -142,7 +161,27 @@ class Community:
             if compactness:
                 community.update_compactness
 
-    def fill(self, precincts, linked_precincts, island_index):
+    def try_precinct(self, unchosen_precincts, tried_precincts,
+                     linked_precincts, island_index, island_border):
+        """
+        Tries to select a random precinct. If that doesnt work, raises a 
+        """
+        try:
+            # Give random precinct to `community`
+            random_precinct = random.sample(
+                self.get_bordering_precincts(unchosen_precincts) \
+                - tried_precincts - linked_precincts, 1)[0]
+            return random_precinct
+        except ValueError:
+            # No precincts can be added without creating island.
+            print(f"restarting filling of community {self.id}")
+            added_precincts, unchosen_precincts_border = \
+                self.fill(precincts, linked_precincts,
+                          island_index, Polygon(island_border))
+            raise CommunityFillCompleteException(added_precincts,
+                                                 unchosen_precincts_border)
+
+    def fill(self, precincts, linked_precincts, island_index, island_border):
         """
         Fills a community up with precincts.
 
@@ -154,10 +193,14 @@ class Community:
                                 making them untouchable during this step.
             `island_index`    : Index of island that corresponds to
                                 a key in `self.islands`.
+            `island_border`   : Border of island with index `island_index`
+
+        Returns list of added precincts and Polygon that is outer border
+        of group of precincts on island that have not been added to a
+        community.
         """
 
         added_precincts = []
-
         kwargs = {
             "partisanship": False,
             "standard_deviation": False,
@@ -165,20 +208,50 @@ class Community:
             "compactness": False, 
             "coords": True
         }
-        unchosen_precincts = Community(precincts[:], 0, {})
+        unchosen_precincts = Community(
+            precincts[:],  # copy
+            0,
+            {},
+            Polygon(island_border)  # copy
+        )
 
-        for _ in range(self.islands[island_index]):
+        for p in range(self.islands[island_index]):
+
             # Set of precincts that have been tried
             tried_precincts = set()
 
-            # Give random precinct to `community`
-            random_precinct = random.sample(
-                self.get_bordering_precincts(unchosen_precincts) \
-                - tried_precincts - linked_precincts, 1)[0]
+            if p == 1:
+                # Choose precinct that is on outside border of island.
+                border_precincts = {
+                    precinct for precinct in self.precincts.values()
+                    if get_if_bordering(precinct.coords, island_border)
+                }
+                if border_precincts != set():
+                    eligible_precincts = \
+                        (self.get_bordering_precincts(unchosen_precincts) \
+                         - tried_precincts - linked_precincts) & border_precincts
+                    random_precinct = random.sample(
+                        eligible_precincts, 1)[0]
+                else:
+                    random_precinct = self.try_precinct(
+                        unchosen_precincts,
+                        tried_precincts,
+                        linked_precincts,
+                        island_index,
+                        island_border
+                    )
+            else:
+                random_precinct = self.try_precinct(
+                    unchosen_precincts,
+                    tried_precincts,
+                    linked_precincts,
+                    island_index,
+                    island_border
+                )
 
             unchosen_precincts.give_precinct(
-                self, random_precinct, **kwargs)
-            tried_precincts.add(random_precinct)
+                self, random_precinct, **kwargs
+            )
 
             # Keep trying other precincts until one of them
             # doesn't make an island.
@@ -187,21 +260,27 @@ class Community:
                 self.give_precinct(
                     unchosen_precincts, random_precinct, **kwargs)
                 print(f"precinct {random_precinct} added to and removed "
-                    f"from community {self.id} because it created an "
-                    "island")
+                      f"from community {self.id} because it created an "
+                      "island")
                 # Random precinct that hasn't already been
                 # tried and also borders community.
-                random_precinct = random.sample(
-                    self.get_bordering_precincts(unchosen_precincts) \
-                    - tried_precincts - linked_precincts, 1)[0]
+                random_precinct = self.try_precinct(
+                    unchosen_precincts,
+                    tried_precincts,
+                    linked_precincts,
+                    island_index,
+                    island_border
+                )
                 unchosen_precincts.give_precinct(
                     self, random_precinct, **kwargs)
                 tried_precincts.add(random_precinct)
 
-            added_precincts.append(random_precinct)
-            print(f"precinct {random_precinct} added to community {self.id}")
+            added_precincts.append(self.precincts[random_precinct])
+            print(f"precinct {random_precinct} added to community {self.id}."
+                  f"Number of precincts is now {len(self.precincts)}")
 
-        return added_precincts
+        raise CommunityFillCompleteException(added_precincts,
+                                             unchosen_precincts.coords)
 
     def get_bordering_precincts(self, unchosen_precincts):
         """
@@ -213,9 +292,27 @@ class Community:
         """
         bordering_precincts = set()
         if self.precincts != {}:
-            for vote_id, precinct in unchosen_precincts.precincts.items():
-                if get_if_bordering(precinct.coords, self.coords):
-                    bordering_precincts.add(precinct.vote_id)
+            # create 20 threads that will simeltaneously calculate
+            # whether or not a certain number of precincts are
+            # bordering self.coords
+
+            precincts = list(unchosen_precincts.precincts.values())
+            n_precincts = len(precincts)
+            precincts_per_thread = n_precincts // 20
+            # precincts that will be calculated in each thread.
+            thread_precincts = [
+                precincts[i:i + precincts_per_thread] for i in
+                range(0, n_precincts - (n_precincts % 20), precincts_per_thread)
+            ]
+            thread_precincts.append(precincts[n_precincts % 20 : n_precincts])
+
+            for precinct_group in thread_precincts:
+                def thread_func():
+                    for precinct in precinct_group:
+                        if get_if_bordering(precinct.coords, self.coords):
+                            bordering_precincts.add(precinct.vote_id)
+                thread = threading.Thread(target=thread_func)
+                thread.run()
         else:
             bordering_precincts = set(unchosen_precincts.precincts.keys())
         return bordering_precincts

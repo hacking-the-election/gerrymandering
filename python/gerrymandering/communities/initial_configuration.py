@@ -28,7 +28,8 @@ from utils.initial_configuration import (
     get_closest_precinct,
     get_precinct_link_pair,
     group_by_islands,
-    LoopBreakException
+    LoopBreakException,
+    CommunityFillCompleteException
 )
 
 
@@ -67,10 +68,8 @@ def create_initial_configuration(island_precinct_groups, n_districts,
         [len(island) for island in island_precinct_groups]
     print(f"{island_available_precincts=}")
 
-    # island_borders = [clip([p.coords for p in il], UNION)
-    #                   for il in island_precinct_groups]
-    with open("../data/test/python/alaska_island_borders.pickle", "rb") as f:
-        island_borders = pickle.load(f)
+    island_borders = [clip([p.coords for p in il], UNION)
+                      for il in island_precinct_groups]
 
     # vote_ids of precincts in chains
     linked_precinct_chains = []
@@ -266,9 +265,17 @@ def create_initial_configuration(island_precinct_groups, n_districts,
                         and first_chain_island in list(community.islands.values())
                         ):
                     for island_index in community.islands.keys():
-                        added_precincts = \
-                            community.fill(island_precinct_groups[island_index],
-                                           all_linked_precincts, island_index)
+                        try:
+                            community.fill(
+                                island_precinct_groups[island_index],
+                                all_linked_precincts,
+                                island_index,
+                                island_borders[island_index]
+                            )
+                        except CommunityFillCompleteException as e:
+                            added_precincts = e.added_precincts
+                            unchosen_precincts_border = \
+                                e.unchosen_precincts_border
 
                         # Remove these precincts from being listed as in
                         # island. When other communities fill using this
@@ -278,6 +285,8 @@ def create_initial_configuration(island_precinct_groups, n_districts,
                             if precinct.vote_id in added_precincts:
                                 island_precinct_groups[island_index].remove(
                                     precinct)
+                        # Update border of island
+                        island_borders[island_index] = unchosen_precincts_border
                         print(f"community {community.id} has been given "
                               f"{community.islands[island_index]} precincts "
                               f"from island {island_index}")
@@ -286,14 +295,21 @@ def create_initial_configuration(island_precinct_groups, n_districts,
         for community in communities:
             if len(community.precincts) == 0:
                 island_index = list(community.islands.keys())[0]
-                added_precincts = community.fill(
-                    island_precinct_groups[island_index],
-                    all_linked_precincts, island_index
-                )
+                try:
+                    community.fill(
+                        island_precinct_groups[island_index],
+                        all_linked_precincts,
+                        island_index,
+                        island_borders[island_index]
+                    )
+                except CommunityFillCompleteException as e:
+                    added_precincts = e.added_precincts
+                    unchosen_precincts_border = e.unchosen_precincts_border
                 for precinct in island_precinct_groups[island_index][:]:
                     if precinct.vote_id in added_precincts:
                         island_precinct_groups[island_index].remove(
                             precinct)
+                island_borders[island_index] = unchosen_precincts_border
                 print(f"community {community.id} completely filled")
 
     except Exception as e:
