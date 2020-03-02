@@ -21,6 +21,7 @@ from .geometry import (
     shapely_to_polygon,
     UNION
 )
+from funcs import print_time
 
 
 # ===================================================
@@ -113,6 +114,7 @@ class Community:
                 total_sum += r_sum + precinct.d_election_sum
         self.partisanship = rep_sum / total_sum
 
+    @print_time
     def give_precinct(self, other, precinct_id, coords=True,
                       partisanship=True, standard_deviation=True,
                       population=True, compactness=True):
@@ -137,7 +139,7 @@ class Community:
         # Update borders
         if coords:
             self.coords = clip([self.coords, precinct.coords],
-                               DIFFERENCE)
+                            DIFFERENCE)
             other.coords = clip([p.coords for p in other.precincts.values()],
                                 UNION)
 
@@ -274,6 +276,7 @@ class Community:
         raise CommunityFillCompleteException(added_precincts,
                                              unchosen_precincts.coords)
 
+    @print_time
     def get_bordering_precincts(self, unchosen_precincts):
         """
         Returns list of precincts bordering `self`
@@ -284,9 +287,27 @@ class Community:
         """
         bordering_precincts = set()
         if self.precincts != {}:
-            for vote_id, precinct in unchosen_precincts.precincts.items():
-                if get_if_bordering(precinct.coords, self.coords):
-                    bordering_precincts.add(precinct.vote_id)
+            # create 20 threads that will simeltaneously calculate
+            # whether or not a certain number of precincts are
+            # bordering self.coords
+
+            precincts = list(unchosen_precincts.precincts.values())
+            n_precincts = len(precincts)
+            precincts_per_thread = n_precincts // 20
+            # precincts that will be calculated in each thread.
+            thread_precincts = [
+                precincts[i:i + precincts_per_thread] for i in
+                range(0, n_precincts - (n_precincts % 20), precincts_per_thread)
+            ]
+            thread_precincts.append(precincts[n_precincts % 20 : n_precincts])
+
+            for precinct_group in thread_precincts:
+                def thread_func():
+                    for precinct in precinct_group:
+                        if get_if_bordering(precinct.coords, self.coords):
+                            bordering_precincts.add(precinct.vote_id)
+                thread = threading.Thread(target=thread_func)
+                thread.run()
         else:
             bordering_precincts = set(unchosen_precincts.precincts.keys())
         return bordering_precincts
