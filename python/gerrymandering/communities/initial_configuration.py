@@ -7,20 +7,29 @@ precincts.
 """
 
 import logging
+from os.path import dirname
 import pickle
 import random
-from os.path import abspath, dirname
 import sys
 
 sys.path.append(dirname(dirname(abspath(__file__))))
 
 from shapely.geometry import MultiPolygon, Polygon
 
-from utils.initial_configuration import (Community, get_closest_precinct,
-                                         get_precinct_link_pair, group_by_islands,
-                                         LoopBreakException)
-from utils.geometry import              (clip, UNION, shapely_to_polygon,
-                                         polygon_to_shapely, get_if_bordering)
+from utils.geometry import (
+    clip,
+    get_if_bordering,
+    polygon_to_shapely,
+    shapely_to_polygon,
+    UNION
+)
+from utils.initial_configuration import (
+    Community,
+    get_closest_precinct,
+    get_precinct_link_pair,
+    group_by_islands,
+    LoopBreakException
+)
 
 
 logging.basicConfig(filename="precincts.log", level=logging.DEBUG)
@@ -177,6 +186,9 @@ def create_initial_configuration(island_precinct_groups, n_districts,
                             island_borders[:]
                         )
                     linked_precinct_chains[-1].append(precinct1)
+                    link_community.precincts[precinct1.vote_id] = precinct1
+                    link_community.coords = \
+                        clip([link_community.coords, precinct1.coords], UNION)
                 else:
                     precinct2, new_island = \
                         get_closest_precinct(
@@ -197,13 +209,16 @@ def create_initial_configuration(island_precinct_groups, n_districts,
                 print(f"got {island_available_precincts[new_island]} more precincts.")
                 print(f"number of precincts in community so far is {sum(link_community.islands.values())}")
                 linked_precinct_chains[-1].append(precinct2)
+                link_community.precincts[precinct2.vote_id] = precinct2
+                link_community.coords = \
+                    clip([link_community.coords, precinct2.coords], UNION)
                 last_island_used = new_island
                 link_community.islands[new_island] = \
                     island_available_precincts[new_island]
                 island_available_precincts[new_island] = 0
                 try:
                     eligible_islands.remove(new_island)
-                except ValueError as  ve:
+                except ValueError as ve:
                     print(eligible_islands)
                     raise ve
 

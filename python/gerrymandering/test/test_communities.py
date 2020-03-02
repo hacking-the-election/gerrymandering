@@ -11,11 +11,17 @@ from shapely.geometry import Polygon, MultiPolygon
 
 sys.path.append(abspath(dirname(dirname(dirname(__file__)))))
 
-from gerrymandering import communities
-from gerrymandering.utils import Community
-from utils import *
+from gerrymandering.communities.initial_configuration import \
+    create_initial_configuration
+from gerrymandering.utils.initial_configuration import Community
 from serialization.load_precincts import load
 from serialization.save_precincts import Precinct
+from funcs import (
+    multipolygon_to_list,
+    polygon_to_list,
+    convert_to_json,
+    print_time
+)
 
 
 VERMONT = load("../data/test/python/vermont.pickle")
@@ -32,7 +38,7 @@ class TestInitialConfiguration(unittest.TestCase):
         @print_time
         def test_initial_configuration_speed(precincts, n_districts,
                                             state_border):
-            return communities.create_initial_configuration(
+            return create_initial_configuration(
                 precincts, n_districts, state_border)
 
         vermont_output = test_initial_configuration_speed(

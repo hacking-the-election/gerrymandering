@@ -6,10 +6,9 @@ standard deviation below a certain threshold.
 """
 
 
-from os.path import dirname, abspath
+from os.path import dirname
 import sys
 import pickle
-sys.path.append(dirname(dirname(dirname(abspath(__file__)))))
 
 from gerrymandering.utils.initial_configuration import Community
 from gerrymandering.utils.partisanship import get_bordering_precincts
@@ -160,7 +159,7 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold):
     return communities_list
 
 # just for testing, will delete later
-with open('../../../../test_communities.pickle', 'rb') as f:
-    x = pickle.load(f)
+# with open('../../../../test_communities.pickle', 'rb') as f:
+#     x = pickle.load(f)
 
-modify_for_partisanship(x, [], 0.1)
+# modify_for_partisanship(x, [], 0.1)

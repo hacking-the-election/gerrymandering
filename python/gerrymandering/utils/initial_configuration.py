@@ -4,15 +4,22 @@ Functions specific to initial configuration step in communities algorithm
 
 
 import math
-import random
 import pickle
+import random
 
 from shapely.geometry import MultiPolygon, Polygon
 
-from .geometry import (clip, UNION, DIFFERENCE, get_distance,
-                       get_if_bordering, get_point_in_polygon,
-                       get_area_intersection, polygon_to_shapely,
-                       shapely_to_polygon)
+from .geometry import (
+    clip,
+    DIFFERENCE,
+    get_area_intersection,
+    get_distance,
+    get_if_bordering,
+    get_point_in_polygon,
+    polygon_to_shapely,
+    shapely_to_polygon,
+    UNION
+)
 
 
 # ===================================================

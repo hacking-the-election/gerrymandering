@@ -93,5 +93,5 @@ int rand_num(int start, int end) {
     std::random_device rd; 
     std::mt19937 eng(rd()); 
     uniform_int_distribution<> distr(start, end);
-    return distr(eng) - 1;
+    return distr(eng);
 }

@@ -285,7 +285,6 @@ void State::generate_initial_communities(int num_communities) {
 
                 do {
                     for (p_index p : get_inner_boundary_precincts(islands[fractional_islands[n_fractional_island_i]], *this)) {
-                        cout << "iter" << endl;
                         coordinate p_center = precincts[p].get_center();
                         double distc = get_distance(p_center, min_island_center);
 
@@ -299,22 +298,6 @@ void State::generate_initial_communities(int num_communities) {
                     ignore_p.push_back(link);
 
                 } while (creates_island(islands[fractional_islands[n_fractional_island_i]], min_link, *this));
-
-                // //==================================================
-                // // reset variables
-
-                // // find the precinct closest to the center of the island
-                // for (p_index p : islands[fractional_islands[n_fractional_island_i]]) {
-                //     coordinate p_center = precincts[p].get_center();
-                //     double distc = get_distance(p_center, min_island_center);
-
-                //     if (distc < min_p_distance) {
-                //         min_p_distance = distc;
-                //         min_link = i;
-                //     }
-                //     i++;
-                // }
-                // //===========================================================
 
 
                 if (DEBUG_COMMUNITIES) cout << "linking precinct " << link << " on " << n_fractional_island_i << " with " << min_link << " on " << min_index << endl;
@@ -366,9 +349,12 @@ void State::generate_initial_communities(int num_communities) {
 
     if (VERBOSE) cout << "filling communities with real precincts..." << endl;
 
-    for (Community community : c) {
+    for (int c_index = 0; c_index < c.size(); c_index++) {
         // fill linked communities with generation method
+        cout << "filling new community..." << endl;
+        Community community = c[c_index];
         for (int i = 0; i < community.location.size(); i++) {
+            cout << "on size " << community.size[i] << endl;
             // get information about the current community
             int size  = community.size[i];
             int island_i = community.location[i];
@@ -379,8 +365,15 @@ void State::generate_initial_communities(int num_communities) {
             if (community.link_position.size() > 0)
                 // need to start on the linked precinct
                 start_precinct = community.link_position[i][0][1];
-            else
-                start_precinct = rand_num(0, size - 1);
+            else {
+                vector<p_index> tried_precincts;
+                do {
+                    start_precinct = rand_num(0, size - 1);
+                } while (creates_island(island_available_precincts, start_precinct, *this));
+            }
+
+            cout << "adding precinct " << start_precinct << " to community " << c_index << endl;
+            community.add_precinct(precincts[start_precinct]);
 
             for (int x = 0; x < size; x++) {
                 int precinct = -1;
@@ -389,7 +382,27 @@ void State::generate_initial_communities(int num_communities) {
 
                 do {
                     // calculate border, avoid multipoly
+                    cout << "calculating ext_border..." << endl;
+                    p_index_set bordering_precincts = get_ext_bordering_precincts(community, *this);
+                    cout << bordering_precincts.size() << " bordering pres" << endl;
+                    int selected;
+
+                    do {
+                        selected = rand_num(0, bordering_precincts.size() - 1);
+                        cout << "selected " << selected << " of val " << bordering_precincts[selected] << endl;
+                    } while (std::find(tried_precincts.begin(), tried_precincts.end(), selected) != tried_precincts.end());
+
+                    cout << "selected " << bordering_precincts[selected] << endl;
+
+                    if (creates_island(island_available_precincts, selected, *this)) {
+                        tried_precincts.push_back(selected);
+                        cout << "creates island, got to go back to beginning..." << endl;
+                    }
+                    else precinct = bordering_precincts[selected];
+
                 } while (precinct == -1);
+
+                cout << "adding precinct " << precinct << endl;
 
                 community.add_precinct(precincts[precinct]);
             }
