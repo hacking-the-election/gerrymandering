@@ -5,9 +5,9 @@
       - format all docstrings properly. (with args and all). separate args with 2 newlines. Change 'Args' to 'Params'
       - Make all imports alphabetical
     - update __main__.py in gerrymandering
+    - make it a package so we can install it and all the imports will come from hacking_the_election
    Later:
     - Predict errors and create custom exceptions to throw in those cases
-    - Fill __init__.pys with __version__s and make pypi package
     - speed up with cython and c++ extensions (may have to be done before fair if code is too slow)
     - update unit tests and make them actually pass
 
