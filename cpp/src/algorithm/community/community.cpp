@@ -384,15 +384,13 @@ void State::generate_initial_communities(int num_communities) {
 
                 do {
                     // calculate border, avoid multipoly
-                    cout << "calculating ext_border..." << endl;
+                    cout << "calculating bordering precincts..." << endl;
                     p_index_set bordering_precincts = get_ext_bordering_precincts(community, *this);
-                    cout << "calculated ext_border" << endl;
 
                     int selected;
 
                     do {
                         selected = rand_num(0, bordering_precincts.size() - 1);
-                        cout << "selected " << selected << " of val " << bordering_precincts[selected] << endl;
                     } while (
                             std::find(tried_precincts.begin(), tried_precincts.end(), bordering_precincts[selected]) != tried_precincts.end()
                             && std::find(island_available_precincts.begin(), island_available_precincts.end(), selected) == island_available_precincts.end()
@@ -404,6 +402,8 @@ void State::generate_initial_communities(int num_communities) {
                         cout << "creates island, got to go back to beginning..." << endl;
                     }
                     else precinct = bordering_precincts[selected];
+
+                    cout << "selected precinct " << precinct << endl;
 
                 } while (precinct == -1);
 
