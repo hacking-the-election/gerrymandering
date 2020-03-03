@@ -377,48 +377,41 @@ void State::generate_initial_communities(int num_communities) {
             cout << "adding precinct " << start_precinct << " to community " << c_index << endl;
             community.add_precinct(precincts[start_precinct]);
 
-            for (int x = 0; x < size; x++) {
+            int precincts_to_add = size;
+            int precincts_added = 0;
+
+            while (precincts_added < precincts_to_add) {
                 int precinct = -1;
                 p_index_set tried_precincts; // precincts that will create islands
                 p_index start; // random precinct in border thats not linked
 
-                do {
-                    // calculate border, avoid multipoly
-                    cout << "calculating bordering precincts..." << endl;
-                    p_index_set bordering_precincts = get_ext_bordering_precincts(community, *this);
+                // calculate border, avoid multipoly
+                cout << "calculating bordering precincts..." << endl;
+                p_index_set bordering_precincts = get_ext_bordering_precincts(community, *this);
+                for (p_index pre : bordering_precincts) {
+                    cout << pre << ", ";
+                }
+                cout << endl;
 
-                    int selected;
+                for (p_index pre : bordering_precincts) {
+                    if (!creates_island(island_available_precincts, pre, *this) ) {
+                            
+                        cout << "adding precinct " << pre << endl;
+                        island_available_precincts.erase(
+                                std::remove(
+                                    island_available_precincts.begin(),
+                                    island_available_precincts.end(),
+                                    pre
+                                ),
+                                island_available_precincts.end()
+                            );
 
-                    do {
-                        selected = rand_num(0, bordering_precincts.size() - 1);
-                    } while (
-                            std::find(tried_precincts.begin(), tried_precincts.end(), bordering_precincts[selected]) != tried_precincts.end()
-                            && std::find(island_available_precincts.begin(), island_available_precincts.end(), selected) == island_available_precincts.end()
-                        ); // while not in available_precincts
-
-
-                    if (creates_island(island_available_precincts, selected, *this)) {
-                        tried_precincts.push_back(bordering_precincts[selected]);
-                        cout << "creates island, got to go back to beginning..." << endl;
+                        community.add_precinct(precincts[pre]);
+                        writef(community.to_json(), "c.json");
+                        precincts_added++;
                     }
-                    else precinct = bordering_precincts[selected];
-
-                    cout << "selected precinct " << precinct << endl;
-
-                } while (precinct == -1);
-
-                cout << "adding precinct " << precinct << endl;
-                island_available_precincts.erase(
-                        std::remove(
-                            island_available_precincts.begin(),
-                            island_available_precincts.end(),
-                            precinct
-                        ),
-                        island_available_precincts.end()
-                    );
-
-                community.add_precinct(precincts[precinct]);
-                writef(community.to_json(), "c.json");
+                    else cout << "creates island, refraining..." << endl;
+                }
             }
         }
     }
