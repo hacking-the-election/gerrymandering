@@ -118,7 +118,7 @@ GeoGerry::coordinate_set connect_dots(GeoGerry::coordinate_set shape) {
         double y = y0;
 
         for (int i = 0; i <= steps; i++) {
-            newShape.push_back({(long long int)x, (long long int)y});
+            newShape.push_back({(long int)x, (long int)y});
             x += xinc;
             y += yinc;
         }
@@ -292,11 +292,11 @@ GeoGerry::coordinate_set connect_dots(std::vector<GeoGerry::Shape> shapes) {
 
             for (int n = 0; n <= steps; n++) {
                 if (j == 0) {
-                    newShape.push_back({(long long int)x + 1, (long long int)y});
-                    newShape.push_back({(long long int)x, (long long int)y + 1});
-                    newShape.push_back({(long long int)x + 1, (long long int)y + 1});
+                    newShape.push_back({(long int)x + 1, (long int)y});
+                    newShape.push_back({(long int)x, (long int)y + 1});
+                    newShape.push_back({(long int)x + 1, (long int)y + 1});
                 }
-                newShape.push_back({(long long int)x, (long long int)y});
+                newShape.push_back({(long int)x, (long int)y});
                 x += xinc;
                 y += yinc;
             }
@@ -460,7 +460,7 @@ GeoGerry::coordinate_set connect_dots(std::vector<GeoGerry::Precinct> shapes) {
             float y = y0;
 
             for (int i = 0; i <= steps; i++) {
-                newShape.push_back({(long long int)x, (long long int)y});
+                newShape.push_back({(long int)x, (long int)y});
                 x += xinc;
                 y += yinc;
             }
