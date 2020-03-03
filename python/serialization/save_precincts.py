@@ -35,7 +35,8 @@ import warnings
 from shapely.geometry import Polygon
 
 sys.path.insert(-1, dirname(dirname(abspath(__file__))))
-from gerrymandering.utils.geometry import (get_point_in_polygon as gpip, clip, UNION)
+from gerrymandering.utils.geometry import (get_point_in_polygon as gpip,
+                                           clip, UNION)
 from gerrymandering.utils.initial_configuration import group_by_islands
 
 
@@ -46,16 +47,6 @@ def customwarn(message, category, filename, lineno, file=None, line=None):
     logging.warning(warnings.formatwarning(message, category, filename, lineno))
 
 warnings.showwarning = customwarn
-
-
-def polygon_to_shapely(polygon):
-    """
-    Converts list-type polygon `shape` to
-    `shapely.geometry.Polygon`
-    """
-    tuple_polygon = [[tuple(coord) for coord in linear_ring]
-                     for linear_ring in polygon]
-    return Polygon(tuple_polygon[0], tuple_polygon[1:])
 
 
 def save(state, precinct_dict, district_dict, objects_dir):
@@ -441,6 +432,8 @@ class Precinct:
                     total_area += polygon_area
                     # Creates variables polygon0_area, polygon1_area, ... depending 
                     # on number of polygons in multipolygon
+                    # change from just appending number to appending "_s" and then number
+                    # e.g. 0001524326_s1
                     exec('polygon' + str(num) + '_area = polygon_area')
                 for num, precinct_polygon in enumerate(precinct_coords[precinct]):
                     polygon_id = str(precinct) + str(num)

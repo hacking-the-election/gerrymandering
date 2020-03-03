@@ -5,8 +5,14 @@ Functions for partisanship refinement step in communities algorithm
 
 import math
 
-from .geometry import (shapely_to_polygon, polygon_to_shapely, clip, UNION,
-                       get_area_intersection, get_point_in_polygon)
+from .geometry import (
+    clip,
+    get_area_intersection,
+    get_point_in_polygon,
+    polygon_to_shapely,
+    shapely_to_polygon,
+    UNION
+)
 
 
 def average(number_list):

@@ -20,5 +20,7 @@
     - use threading during community filling process
     - do something about 372 in utils.py throwing a valueerror
     - continue working on partisanship test
+    - alphabetize functions in utils package
+    - write make_communities function in __init__.py
    Later:
     - Add formal psuedo-code to communities package docstring
