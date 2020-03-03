@@ -60,5 +60,4 @@ def get_bordering_precincts(community1, community2):
                 border_precincts[community1.id].append(precinct)
             else:
                 border_precincts[community2.id].append(precinct)
-        print(precinct)
     return border_precincts

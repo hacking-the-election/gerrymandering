@@ -123,6 +123,8 @@ class Community:
         All parameters with default value of `True` indicate whether or
         not to update that attribute after the community is given.
         """
+        if self == other:
+            raise KeyError("Giving precinct to itself.")
 
         if not isinstance(other, Community):
             raise TypeError(f"Invalid type {type(other)}.\n"

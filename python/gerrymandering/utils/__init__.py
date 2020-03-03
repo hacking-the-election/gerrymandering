@@ -12,5 +12,9 @@ polygon.
 "shape" refers to an object that can be either a polygon or a
 multipolygon (list of polygons).
 """
-
+import sys
+from os.path import abspath, dirname
+sys.path.append(dirname(dirname(dirname(abspath(__file__)))))
+from gerrymandering.test import funcs
+sys.modules['funcs'] = funcs
 from .initial_configuration import Community
