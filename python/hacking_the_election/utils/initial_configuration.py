@@ -10,7 +10,7 @@ import threading
 
 from shapely.geometry import MultiPolygon, Polygon
 
-from .geometry import (
+from hacking_the_election.utils.geometry import (
     clip,
     DIFFERENCE,
     get_area_intersection,
@@ -21,7 +21,7 @@ from .geometry import (
     shapely_to_polygon,
     UNION
 )
-from funcs import convert_to_json, polygon_to_list
+from hacking_the_election.test.funcs import convert_to_json, polygon_to_list
 
 
 # ===================================================

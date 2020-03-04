@@ -19,10 +19,9 @@
 # Communities:
    Now:
     - add all bordering precincts checking each time if they create an island.
+    - update step 1 to only start communities with a precinct that is touching both the state border and a community border (if possible)
     - continue working on partisanship test
     - EPIC stdout manipulation with incrementing number of precincts in a community and PROGRESS BAR
     - Real-time drawings of communities bewing formed.
     - alphabetize functions in utils package
     - write make_communities function in __init__.py
-   Later:
-    - Add formal psuedo-code to communities package docstring

@@ -28,16 +28,13 @@ python3 save_precincts.py [election_data_file] [geo_data_file] [district_file] [
 import json
 import logging
 import pickle
-import sys
-from os.path import dirname, abspath
 import warnings
 
 from shapely.geometry import Polygon
 
-sys.path.insert(-1, dirname(dirname(abspath(__file__))))
-from gerrymandering.utils.geometry import (get_point_in_polygon as gpip,
+from hacking_the_election.utils.geometry import (get_point_in_polygon as gpip,
                                            clip, UNION)
-from gerrymandering.utils.initial_configuration import group_by_islands
+from hacking_the_election.utils.initial_configuration import group_by_islands
 
 
 logging.basicConfig(level=logging.INFO, filename="precincts.log")

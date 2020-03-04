@@ -2,21 +2,17 @@
 Unit tests for communities.py
 """
 
-import sys
-from os.path import abspath, dirname
 import unittest
 import pickle
 
 from shapely.geometry import Polygon, MultiPolygon
 
-sys.path.append(abspath(dirname(dirname(dirname(__file__)))))
-
 from gerrymandering.communities.initial_configuration import \
     create_initial_configuration
-from gerrymandering.utils.initial_configuration import Community
-from serialization.load_precincts import load
-from serialization.save_precincts import Precinct
-from funcs import (
+from hacking_the_election.utils.initial_configuration import Community
+from hacking_the_election.serialization.load_precincts import load
+from hacking_the_election.serialization.save_precincts import Precinct
+from hacking_the_election.test.funcs import (
     multipolygon_to_list,
     polygon_to_list,
     convert_to_json,

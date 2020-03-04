@@ -1,6 +1,6 @@
 import sys
 
-import communities
+from hacking_the_election import communities
 
 
 if __name__ == "__main__":

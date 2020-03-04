@@ -10,20 +10,17 @@ import logging
 from os.path import dirname
 import pickle
 import random
-import sys
-
-sys.path.append(dirname(dirname(__file__)))
 
 from shapely.geometry import (MultiPolygon, Polygon)
 
-from utils.geometry import (
+from hacking_the_election.utils.geometry import (
     clip,
     get_if_bordering,
     polygon_to_shapely,
     shapely_to_polygon,
     UNION
 )
-from utils.initial_configuration import (
+from hacking_the_election.utils.initial_configuration import (
     Community,
     get_closest_precinct,
     get_precinct_link_pair,
@@ -31,7 +28,11 @@ from utils.initial_configuration import (
     LoopBreakException,
     CommunityFillCompleteException
 )
-from funcs import convert_to_json, polygon_to_list, multipolygon_to_list
+from hacking_the_election.test.funcs import (
+    convert_to_json,
+    polygon_to_list,
+    multipolygon_to_list
+)
 
 
 logging.basicConfig(filename="precincts.log", level=logging.DEBUG)

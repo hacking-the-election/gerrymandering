@@ -5,11 +5,8 @@ usage: python3 load_precincts.py [state_file]
 
 import json
 import pickle
-from os.path import abspath, dirname
-import sys
 
-sys.path.append(abspath(dirname(__file__)))
-from gerrymandering.utils.geometry import shapely_to_polygon
+from hacking_the_election.utils.geometry import shapely_to_polygon
 
 def load(state_file):
     """
