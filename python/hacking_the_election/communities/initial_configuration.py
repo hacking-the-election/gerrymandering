@@ -10,26 +10,28 @@ import logging
 from os.path import dirname
 import pickle
 import random
-import sys
-
-sys.path.append(dirname(dirname(abspath(__file__))))
 
 from shapely.geometry import (MultiPolygon, Polygon)
 
-from utils.geometry import (
+from hacking_the_election.utils.geometry import (
     clip,
     get_if_bordering,
     polygon_to_shapely,
     shapely_to_polygon,
     UNION
 )
-from utils.initial_configuration import (
+from hacking_the_election.utils.initial_configuration import (
     Community,
     get_closest_precinct,
     get_precinct_link_pair,
     group_by_islands,
     LoopBreakException,
     CommunityFillCompleteException
+)
+from hacking_the_election.test.funcs import (
+    convert_to_json,
+    polygon_to_list,
+    multipolygon_to_list
 )
 
 
@@ -303,18 +305,14 @@ def create_initial_configuration(island_precinct_groups, n_districts,
                         island_borders[island_index]
                     )
                 except CommunityFillCompleteException as e:
-                    added_precincts = e.added_precincts
+                    unchosen_precincts = e.unchosen_precincts
                     unchosen_precincts_border = e.unchosen_precincts_border
-                for precinct in island_precinct_groups[island_index][:]:
-                    if precinct.vote_id in added_precincts:
-                        island_precinct_groups[island_index].remove(
-                            precinct)
+                island_precinct_groups[island_index] = unchosen_precincts
                 island_borders[island_index] = unchosen_precincts_border
                 print(f"community {community.id} completely filled")
 
     except Exception as e:
         # Save your progress!
-        logging.info(unchosen_precincts.precincts)
         with open("test_communities.pickle", "wb+") as f:
             pickle.dump([communities, linked_precinct_chains], f)
         raise e

@@ -9,6 +9,7 @@ precincts.log
 test*.json
 test*.pickle
 test*.txt
+hacking_the_election.egg-info
 
 # vscode
 settings.json

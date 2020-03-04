@@ -5,9 +5,9 @@
       - format all docstrings properly. (with args and all). separate args with 2 newlines. Change 'Args' to 'Params'
       - Make all imports alphabetical
     - update __main__.py in gerrymandering
+    - use numpy arrays within shapely objects
    Later:
     - Predict errors and create custom exceptions to throw in those cases
-    - Fill __init__.pys with __version__s and make pypi package
     - speed up with cython and c++ extensions (may have to be done before fair if code is too slow)
     - update unit tests and make them actually pass
 
@@ -17,10 +17,8 @@
 
 # Communities:
    Now:
-    - use threading during community filling process
-    - do something about 372 in utils.py throwing a valueerror
+    - update step 1 to only start communities with a precinct that is touching both the state border and a community border (if possible)
     - continue working on partisanship test
-    - alphabetize functions in utils package
+    - EPIC stdout manipulation with incrementing number of precincts in a community and PROGRESS BAR
+    - Real-time drawings of communities being formed.
     - write make_communities function in __init__.py
-   Later:
-    - Add formal psuedo-code to communities package docstring

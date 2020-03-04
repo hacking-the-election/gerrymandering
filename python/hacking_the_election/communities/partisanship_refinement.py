@@ -5,18 +5,14 @@ Alters a set of communities such that their precincts all have a
 standard deviation below a certain threshold.
 """
 
-
-from os.path import dirname, abspath
 import sys
 import pickle
 
-sys.path.append(dirname(dirname(dirname(abspath(__file__)))))
-
-from gerrymandering.utils.initial_configuration import Community
-from gerrymandering.utils.partisanship import get_bordering_precincts
-from gerrymandering.utils.stats import average, stdev
-from gerrymandering.utils.geometry import shapely_to_polygon, polygon_to_shapely, get_if_bordering, communities_to_json
-from serialization import save_precincts
+from hacking_the_election.utils.initial_configuration import Community
+from hacking_the_election.utils.partisanship import get_bordering_precincts
+from hacking_the_election.utils.stats import average, stdev
+from hacking_the_election.utils.geometry import shapely_to_polygon, polygon_to_shapely, get_if_bordering, communities_to_json
+from hacking_the_election.serialization import save_precincts
 sys.modules['save_precincts'] = save_precincts
 
 def modify_for_partisanship(communities_list, precinct_corridors, threshold):

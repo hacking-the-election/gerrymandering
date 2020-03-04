@@ -1,8 +1,12 @@
 import sys
 from os.path import abspath, dirname
 
-from save_precincts import Precinct
-from load_precincts import load, print_stats, convert_to_json
+from hacking_the_election.serialization.save_precincts import Precinct
+from hacking_the_election.serialization.load_precincts import (
+    load,
+    print_stats,
+    convert_to_json
+)
 
 
 if __name__ == "__main__":

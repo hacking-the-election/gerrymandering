@@ -15,10 +15,9 @@ from shapely.geometry import Polygon, MultiPolygon
 sys.path.append(dirname(dirname(dirname(abspath(__file__)))))
 print(dirname(abspath((__file__))))
 
-from utils import *
-from serialization.load_precincts import load
-from serialization.save_precincts import Precinct, polygon_to_shapely
-from gerrymandering.utils import *
+from hacking_the_election.utils import *
+from hacking_the_election.serialization.load_precincts import load
+from hacking_the_election.serialization.save_precincts import Precinct, polygon_to_shapely
 
 
 DATA_DIR = abspath("../../../../data/bin/python")
