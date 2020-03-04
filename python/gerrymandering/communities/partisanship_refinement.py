@@ -108,7 +108,6 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold):
                             if precinct in community1.precincts.values():
                                 border_precincts[community1] = pair[:].remove(precinct)
                                 other_commmunities_dict[most_stdev_community].append(precinct)
-        print(other_commmunities_dict)
         # remove duplicate border precincts from list to consider
         no_duplicate_list = []
         for id, precinct_list in border_precincts.items():
@@ -157,7 +156,15 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold):
             for community1, precinct_list in other_commmunities_dict.items():
                 if high_precinct in precinct_list:
                     other_community = community1
-            print(other_community.id, most_stdev_id)
+            # find not involved community
+            for community1 in communities_list:
+                if community1 != other_community:
+                    if community1 != most_stdev_community:
+                        not_involved_community = community1
+            try:
+                print(not_involved_community.id, other_community.id, most_stdev_id)
+            except:
+                print('missing community')
             # for community_id, precincts_list in border_precincts.items():
             #     if high_precinct in precincts_list:
             #         # find the community with the corresponding id
@@ -176,9 +183,11 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold):
                 most_stdev_community.update_partisanship()
                 most_stdev_community.update_standard_deviation()
                 most_stdev_community.update_compactness()
+                most_stdev_community.update_coords()
                 other_community.update_partisanship()
                 other_community.update_standard_deviation()
                 other_community.update_compactness()
+                other_community.update_coords()
                 # update number of precincts changed on this iteration
                 num_of_changed_iteration += 1
                 # most_stdev_community.give_precinct(other_community, high_precinct.vote_id)
@@ -198,9 +207,11 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold):
                 most_stdev_community.update_partisanship()
                 most_stdev_community.update_standard_deviation()
                 most_stdev_community.update_compactness()
+                most_stdev_community.update_coords()
                 other_community.update_partisanship()
                 other_community.update_standard_deviation()
                 other_community.update_compactness()
+                other_community.update_coords()
                 # update number of precincts changed on this iteration
                 num_of_changed_iteration += 1
                 # other_community.give_precinct(polygon_to_shapely(most_stdev_community), high_precinct.vote_id)
@@ -232,7 +243,9 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold):
             print(community.standard_deviation)
         # save number_of_changed_precincts_this_iteration to running list
         num_of_changed_precincts.append(num_of_changed_iteration)
-
+        # create new communities list
+        community_change_snapshot = [other_community, most_stdev_community, not_involved_community]
+        communities_to_json(community_change_snapshot, str('../../../../partisanship_after' + str(count) + '.json'))
     communities_to_json(communities_list, '../../../../partisanship_after.json')
     return communities_list, count, standard_deviations, num_of_changed_precincts, average_stdev
 

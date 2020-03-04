@@ -6,7 +6,7 @@ Geometric functions
 import math
 import json
 
-from shapely.geometry import MultiLineString, Point, Polygon
+from shapely.geometry import MultiLineString, Point, Polygon, MultiPolygon
 from shapely.ops import unary_union
 
 
@@ -102,24 +102,31 @@ def shapely_to_polygon(polygon):
     # if input is already in correct form
     if isinstance(polygon, list):
         return polygon
-    try:
-        coordinates = list(polygon.exterior.coords)
-    except AttributeError:
-        try: 
-            x = polygon[0]
-        except:
+    elif isinstance(polygon, MultiPolygon):
+        coordinates = [polygon.exterior.coords for polygon in polygon.geoms]
+        multi_polygon = []
+        for polygon in coordinates:
+            linear_ring = []
+            for tuple1 in polygon:
+                x = tuple1[0]
+                y = tuple1[1]
+                point_list = [x, y]
+                linear_ring.append(point_list)
+            print(linear_ring)
+            multi_polygon.append([linear_ring])
+            return multi_polygon
+    else:
+        try:
+            coordinates = list(polygon.exterior.coords)
+            linear_ring = []
+            for tuple1 in coordinates:
+                x = tuple1[0]
+                y = tuple1[1]
+                point_list = [x, y]
+                linear_ring.append(point_list)
+            return [linear_ring]
+        except AttributeError:
             raise Exception('Incorrect input, not a shapely polygon')
-        else:
-            raise Exception('Incorrect input, a json polygon was inputted, \
-                            switch to shapely')
-    linear_ring = []
-    for tuple1 in coordinates:
-        x = tuple1[0]
-        y = tuple1[1]
-        point_list = [x, y]
-        linear_ring.append(point_list)
-    # return polygon
-    return [linear_ring]
 
 
 def get_area_intersection(polygon1, polygon2):
@@ -149,7 +156,11 @@ def communities_to_json(communities_list, output_path):
     features = []
     for community in communities_list:
         coords = shapely_to_polygon(community.coords)
-        features.append({"geometry": {"type":"Polygon", "coordinates":coords}, "type":"Feature", "properties":{"ID":community.id}})
+        try: 
+            _ = coords[0][0][0][0]
+            features.append({"geometry": {"type":"MultiPolygon", "coordinates":coords}, "type":"Feature", "properties":{"ID":community.id}})
+        except:
+            features.append({"geometry": {"type":"Polygon", "coordinates":coords}, "type":"Feature", "properties":{"ID":community.id}})
     completed_json = {"type":"FeatureCollection", "features":features}
     with open(output_path, 'w') as f:
         json.dump(completed_json, f)
