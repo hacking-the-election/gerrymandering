@@ -28,6 +28,7 @@ python3 save_precincts.py [election_data_file] [geo_data_file] [district_file] [
 import json
 import logging
 import pickle
+import sys
 import warnings
 
 from shapely.geometry import Polygon

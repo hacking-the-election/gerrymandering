@@ -5,7 +5,7 @@ Alters a set of communities such that their precincts all have a
 standard deviation below a certain threshold.
 """
 
-
+import sys
 import pickle
 
 from hacking_the_election.utils.initial_configuration import Community

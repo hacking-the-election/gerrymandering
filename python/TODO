@@ -5,7 +5,6 @@
       - format all docstrings properly. (with args and all). separate args with 2 newlines. Change 'Args' to 'Params'
       - Make all imports alphabetical
     - update __main__.py in gerrymandering
-    - make it a package so we can install it and all the imports will come from hacking_the_election
     - use numpy arrays within shapely objects
    Later:
     - Predict errors and create custom exceptions to throw in those cases
@@ -18,10 +17,8 @@
 
 # Communities:
    Now:
-    - add all bordering precincts checking each time if they create an island.
     - update step 1 to only start communities with a precinct that is touching both the state border and a community border (if possible)
     - continue working on partisanship test
     - EPIC stdout manipulation with incrementing number of precincts in a community and PROGRESS BAR
-    - Real-time drawings of communities bewing formed.
-    - alphabetize functions in utils package
+    - Real-time drawings of communities being formed.
     - write make_communities function in __init__.py
