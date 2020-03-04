@@ -17,7 +17,7 @@
 #define VERBOSE 1  // print progress messages
 using namespace rapidjson;
 
-const int c = pow(10, 8);
+const long int c = pow(2, 16);
 
 // constant id strings
 //ndv	nrv	geoid10	GEOID10	POP100
@@ -150,7 +150,7 @@ GeoGerry::Shape string_to_vector(std::string str) {
         double x = mp[0][i][0].GetDouble() * c;
         double y = mp[0][i][1].GetDouble() * c;
 
-        hull.border.push_back({(long long int) x, (long long int) y});
+        hull.border.push_back({(long int) x, (long int) y});
     }
 
     if (mp[0][0][0] != mp[0][mp[0].Size() - 1][0] || 
@@ -163,7 +163,7 @@ GeoGerry::Shape string_to_vector(std::string str) {
     for (int i = 1; i < mp.Size(); i++) {
         GeoGerry::LinearRing hole;
         for (int j = 0; j < mp[i].Size(); j++) {
-            hole.border.push_back({(long long int) mp[i][j][0].GetDouble() * c, (long long int) mp[i][j][1].GetDouble() * c});
+            hole.border.push_back({(long int) mp[i][j][0].GetDouble() * c, (long int) mp[i][j][1].GetDouble() * c});
         }
         if (mp[i][0][0] != mp[i][mp[i].Size() - 1][0] || 
             mp[i][0][1] != mp[i][mp[i].Size() - 1][1]) {       
@@ -260,12 +260,14 @@ std::vector<GeoGerry::Shape> parse_precinct_coordinates(std::string geoJSON) {
             double total_area = geo.get_area();
 
             // create many shapes with the same ID, add them to the array
+            int append = 0;
             for (GeoGerry::Shape s : geo.border) {
-                GeoGerry::Shape shape(s.hull, s.holes, id);
+                GeoGerry::Shape shape(s.hull, s.holes, id + "_s" + std::to_string(append));
                 shape.is_part_of_multi_polygon = true;
                 double fract = shape.get_area() / total_area;
                 shape.pop = (int) round(pop * fract);
                 shapes_vector.push_back(shape);
+                append++;
             }
         }
     }
@@ -550,5 +552,6 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
     if (VERBOSE) std::cout << "sorting precincts into islands from exterior state border..." << std::endl;
     state.islands = sort_precincts(border, pre_group);
     if (VERBOSE) std::cout << "state serialized!" << std::endl;
+    writef(state.to_json(), "test.json");
     return state; // return the state object
 }

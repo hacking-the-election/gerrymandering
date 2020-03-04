@@ -90,16 +90,16 @@ class Community:
         Updates the `standard_deviation` attribute.
         """
 
+        rep_percentages = [
+            p.r_election_sum / (p.r_election_sum + p.d_election_sum) * 100
+            for p in self.precincts.values() if (p.r_election_sum + p.d_election_sum) != 0]
         try:
-            rep_percentages = [
-                p.r_election_sum / (p.r_election_sum + p.d_election_sum) * 100
-                for p in self.precincts.values()]
             mean = sum(rep_percentages) / len(rep_percentages)
-            
-            self.standard_deviation = math.sqrt(sum([(p - mean) ** 2 
-                                      for p in rep_percentages]))
         except ZeroDivisionError:
             self.standard_deviation = 0.0
+        else:
+            self.standard_deviation = math.sqrt(sum([(p - mean) ** 2 
+                                      for p in rep_percentages]))
 
     def update_partisanship(self):
         """
@@ -123,6 +123,8 @@ class Community:
         All parameters with default value of `True` indicate whether or
         not to update that attribute after the community is given.
         """
+        if self == other:
+            raise KeyError("Giving precinct to itself.")
 
         if not isinstance(other, Community):
             raise TypeError(f"Invalid type {type(other)}.\n"

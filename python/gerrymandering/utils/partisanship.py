@@ -12,6 +12,8 @@ from .geometry import (
     UNION
 )
 
+from shapely.geometry import LineString
+
 
 def get_bordering_precincts(community1, community2):
     """
@@ -24,7 +26,6 @@ def get_bordering_precincts(community1, community2):
     coords2 = community2.coords
     combined_precincts = {**community1.precincts, **community2.precincts}
     area_intersection = clip([coords1, coords2], 3).area
-    print(area_intersection)
     # if area_intersection is positive, something's wrong
     if area_intersection > 0:
         raise Exception('Communities intersect!')
@@ -33,8 +34,6 @@ def get_bordering_precincts(community1, community2):
     to_combine = shapely_to_polygon(coords2)[0]
     for coord in to_combine:
         combined_coords.append(coord)
-    # at this point, combined_coords is a linear ring of points
-    combined_coords = combined_coords
     # find union of two communities
     combined_union = clip([coords1, coords2], 1)
     combined_union = shapely_to_polygon(combined_union)
@@ -47,23 +46,18 @@ def get_bordering_precincts(community1, community2):
         if point in union_points:
             border_coords.append(point)
     if border_coords == []:
-        return []
+        return {community1.id:[], community2.id:[]}
     # check all precincts in either commmunity to see if 
     # they fall along border line 
     # keys: ids of the two communities in question
     # values: list of ids of border precincts in respective communities
     border_precincts = {community1.id : [], community2.id : []}
     for precinct in combined_precincts.values():
-        print(precinct)
-        for point in border_coords:
-            # if precinct is already in border_precincts, there's
-            # no need to check it again
-            if precinct in border_precincts.values():
-                break
-            if get_point_in_polygon(precinct.coords, point):
-                if precinct in community1.precincts.values():
-                    border_precincts[community1.id].append(precinct)
-                else:
-                    border_precincts[community2.id].append(precinct)
-    print(border_precincts)
+        if precinct in border_precincts.values():
+            break
+        if precinct.coords.touches(LineString([(point[0], point[1]) for point in border_coords])):
+            if precinct in community1.precincts.values():
+                border_precincts[community1.id].append(precinct)
+            else:
+                border_precincts[community2.id].append(precinct)
     return border_precincts

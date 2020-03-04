@@ -14,7 +14,7 @@ import sys
 
 sys.path.append(dirname(dirname(__file__)))
 
-from shapely.geometry import MultiPolygon, Polygon
+from shapely.geometry import (MultiPolygon, Polygon)
 
 from utils.geometry import (
     clip,
