@@ -31,6 +31,7 @@ from utils.initial_configuration import (
     LoopBreakException,
     CommunityFillCompleteException
 )
+from funcs import convert_to_json, polygon_to_list, multipolygon_to_list
 
 
 logging.basicConfig(filename="precincts.log", level=logging.DEBUG)
@@ -303,18 +304,14 @@ def create_initial_configuration(island_precinct_groups, n_districts,
                         island_borders[island_index]
                     )
                 except CommunityFillCompleteException as e:
-                    added_precincts = e.added_precincts
+                    unchosen_precincts = e.unchosen_precincts
                     unchosen_precincts_border = e.unchosen_precincts_border
-                for precinct in island_precinct_groups[island_index][:]:
-                    if precinct.vote_id in added_precincts:
-                        island_precinct_groups[island_index].remove(
-                            precinct)
+                island_precinct_groups[island_index] = unchosen_precincts
                 island_borders[island_index] = unchosen_precincts_border
                 print(f"community {community.id} completely filled")
 
     except Exception as e:
         # Save your progress!
-        logging.info(unchosen_precincts.precincts)
         with open("test_communities.pickle", "wb+") as f:
             pickle.dump([communities, linked_precinct_chains], f)
         raise e

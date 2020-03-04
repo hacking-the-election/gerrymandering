@@ -6,6 +6,7 @@
       - Make all imports alphabetical
     - update __main__.py in gerrymandering
     - make it a package so we can install it and all the imports will come from hacking_the_election
+    - use numpy arrays within shapely objects
    Later:
     - Predict errors and create custom exceptions to throw in those cases
     - speed up with cython and c++ extensions (may have to be done before fair if code is too slow)
@@ -17,9 +18,10 @@
 
 # Communities:
    Now:
-    - use threading during community filling process
-    - do something about 372 in utils.py throwing a valueerror
+    - add all bordering precincts checking each time if they create an island.
     - continue working on partisanship test
+    - EPIC stdout manipulation with incrementing number of precincts in a community and PROGRESS BAR
+    - Real-time drawings of communities bewing formed.
     - alphabetize functions in utils package
     - write make_communities function in __init__.py
    Later:

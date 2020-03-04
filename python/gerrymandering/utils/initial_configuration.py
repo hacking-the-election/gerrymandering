@@ -21,6 +21,7 @@ from .geometry import (
     shapely_to_polygon,
     UNION
 )
+from funcs import convert_to_json, polygon_to_list
 
 
 # ===================================================
@@ -38,8 +39,8 @@ class CommunityFillCompleteException(Exception):
     Used to break out of all levels of recursion when a community is filled.
     """
 
-    def __init__(self, added_precincts, unchosen_precincts_border):
-        self.added_precincts = added_precincts
+    def __init__(self, unchosen_precincts, unchosen_precincts_border):
+        self.unchosen_precincts = unchosen_precincts
         self.unchosen_precincts_border = unchosen_precincts_border
         Exception.__init__(self)
 
@@ -160,25 +161,6 @@ class Community:
             if compactness:
                 community.update_compactness
 
-    def try_precinct(self, unchosen_precincts, tried_precincts,
-                     linked_precincts, island_index, island_border):
-        """
-        Tries to select a random precinct. If that doesnt work, raises a 
-        """
-        try:
-            eligible_precincts = \
-                self.get_bordering_precincts(unchosen_precincts) \
-                - tried_precincts - linked_precincts
-            # Give random precinct to `community`
-            random_precinct = random.sample(
-                eligible_precincts, 1)[0]
-            return random_precinct
-        except ValueError:
-            # No precincts can be added without creating island.
-            print(f"restarting filling of community {self.id}")
-            self.fill(precincts, linked_precincts,
-                      island_index, Polygon(island_border))
-
     def fill(self, precincts, linked_precincts, island_index, island_border):
         """
         Fills a community up with precincts.
@@ -198,7 +180,7 @@ class Community:
         community.
         """
 
-        added_precincts = []
+        added_precincts = set()
         kwargs = {
             "partisanship": False,
             "standard_deviation": False,
@@ -213,50 +195,50 @@ class Community:
             coords=Polygon(island_border)  # copy
         )
 
-        for p in range(self.islands[island_index]):
+        # Add first precinct to community.
+        initial_precinct = \
+            random.sample(set(unchosen_precincts.precincts.keys()), 1)[0]
+        unchosen_precincts.give_precinct(self, initial_precinct, **kwargs)
+        print(
+            f"community {self.id} started off with precinct {initial_precinct}")
 
-            # Set of precincts that have been tried
-            tried_precincts = set()
+        while True:
+            
+            bordering_precincts = \
+                self.get_bordering_precincts(unchosen_precincts)
 
-            random_precinct = self.try_precinct(
-                unchosen_precincts,
-                tried_precincts,
-                linked_precincts,
-                island_index,
-                island_border
-            )
-            unchosen_precincts.give_precinct(
-                self, random_precinct, **kwargs
-            )
+            n_added_precincts = 0
+            for precinct in bordering_precincts - linked_precincts:
+                if len(self.precincts) >= self.islands[island_index]:
+                    # Use this instead of returning to break from all levels
+                    # of recursion.
+                    convert_to_json([polygon_to_list(self.coords)], "test_communities42.json")
+                    raise CommunityFillCompleteException(
+                        list(unchosen_precincts.precincts.values()),
+                        unchosen_precincts.coords)
+                else:
+                    unchosen_precincts.give_precinct(self, precinct, **kwargs)
+                    if isinstance(unchosen_precincts.coords, MultiPolygon):
+                        self.give_precinct(unchosen_precincts, precinct, **kwargs)
+                        print(f"{precinct} added to and removed from {self.id} "
+                            "because it made an island.")
+                    else:
+                        print(f"{precinct} added to community {self.id}. "
+                              f"{len(self.precincts)} in community {self.id}.")
+                        n_added_precincts += 1
+                        added_precincts.add(precinct)
+                        if len(self.precincts) == 20 and self.id == 2:
+                            convert_to_json([polygon_to_list(self.coords)], "test_communities42.json")
+            if n_added_precincts == 0:
+                # No precincts can be added without making an island.
+                print(f"restarting filling of community {self.id}")
+                # Remove all precincts added during this fill session.
+                self.precincts = {
+                    p: self.precincts[p] for p in
+                    set(self.precincts.keys()) - added_precincts
+                }
+                self.fill(precincts, linked_precincts, island_index, island_border)
 
-            # Keep trying other precincts until one of them
-            # doesn't make an island.
-            while isinstance(unchosen_precincts.coords, MultiPolygon):
-                # Give it back
-                self.give_precinct(
-                    unchosen_precincts, random_precinct, **kwargs)
-                print(f"precinct {random_precinct} added to and removed "
-                      f"from community {self.id} because it created an "
-                      "island")
-                # Random precinct that hasn't already been
-                # tried and also borders community.
-                random_precinct = self.try_precinct(
-                    unchosen_precincts,
-                    tried_precincts,
-                    linked_precincts,
-                    island_index,
-                    island_border
-                )
-                unchosen_precincts.give_precinct(
-                    self, random_precinct, **kwargs)
-                tried_precincts.add(random_precinct)
-
-            added_precincts.append(self.precincts[random_precinct])
-            print(f"precinct {random_precinct} added to community {self.id}. "
-                  f"Number of precincts is now {len(self.precincts)}")
-
-        raise CommunityFillCompleteException(added_precincts,
-                                             unchosen_precincts.coords)
 
     def get_bordering_precincts(self, unchosen_precincts):
         """
