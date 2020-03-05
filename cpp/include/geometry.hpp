@@ -20,6 +20,7 @@
 GeoGerry::segment coords_to_seg(GeoGerry::coordinate c1, GeoGerry::coordinate c2);
 
 double get_distance(GeoGerry::coordinate c1, GeoGerry::coordinate c2);
+double get_distance(std::array<long long int, 2> c1, std::array<long long int, 2> c2);
 double get_distance(GeoGerry::segment s);
 
 // coordinate manipulation for gui draw methods
@@ -35,6 +36,7 @@ GeoGerry::p_index_set get_inner_boundary_precincts(GeoGerry::p_index_set precinc
 
 GeoGerry::p_index_set get_bordering_precincts(GeoGerry::Precinct_Group shape, int p_index);
 GeoGerry::p_index_set get_ext_bordering_precincts(GeoGerry::Precinct_Group precincts, GeoGerry::State state);
+GeoGerry::p_index_set get_ext_bordering_precincts(GeoGerry::Precinct_Group precincts, GeoGerry::p_index_set available_pre, GeoGerry::State state);
 
 bool get_bordering(GeoGerry::Shape s0, GeoGerry::Shape s1);
 

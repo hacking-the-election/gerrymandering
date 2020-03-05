@@ -34,7 +34,9 @@ int main(int argc, char* argv[]) {
     cout << "generating communities from given parameters..." << endl;
     int districts_in_state = 2;  // state.state_districts.size();
     state.generate_communities(districts_in_state, 0.5, 0.2, 0.15);
+    // state.read_communities("community_test_vt");
 
+    // state.refine_partisan(0.2);
     // write as binary
     return 0;
 }

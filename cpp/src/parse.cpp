@@ -17,24 +17,27 @@
 #define VERBOSE 1  // print progress messages
 using namespace rapidjson;
 
-const long int c = pow(2, 16);
+const long int c = pow(2, 18);
 
 // constant id strings
 //ndv	nrv	geoid10	GEOID10	POP100
 const std::string election_id_header = "geoid10";
-const std::vector<std::string> d_head = {"PRS08DEM"};
-const std::vector<std::string> r_head = {"PRS08REP"};
+const std::vector<std::string> d_head = {"ndv"};
+const std::vector<std::string> r_head = {"nrv"};
 const std::string geodata_id = "GEOID10";
-const std::string population_id = "TOTPOP";
+const std::string population_id = "POP100";
 
 std::vector<std::vector<std::string > > parse_sv(std::string, std::string);
 bool check_column(std::vector<std::vector<std::string> >, int);
 
 std::vector<std::vector<std::string> > parse_sv(std::string tsv, std::string delimiter) {
-    
     /*
-        takes a tsv file as string, returns
-        two dimensional array of cells and rows
+        @desc: takes a tsv file as string, returns two dimensional array of cells and rows
+        @params:
+            `string` tsv: A delimiter separated file
+            `string` delimiter: A delimiter to split by
+        
+        @return: `vector<vector<string> >` parsed array of data
     */
 
     std::stringstream file(tsv);
@@ -58,10 +61,12 @@ std::vector<std::vector<std::string> > parse_sv(std::string tsv, std::string del
 }
 
 bool check_column(std::vector<std::vector<std::string> > data_list, int index) {
-   
     /*
-        returns whether or not a given column in a two
-        dimensional vector is empty at any given point
+        @desc:
+            returns whether or not a given column in a two
+            dimensional vector is empty at any given point
+
+
     */
 
     for (int i = 0; i < data_list.size(); i++)
@@ -262,8 +267,8 @@ std::vector<GeoGerry::Shape> parse_precinct_coordinates(std::string geoJSON) {
             // create many shapes with the same ID, add them to the array
             int append = 0;
             for (GeoGerry::Shape s : geo.border) {
-                GeoGerry::Shape shape(s.hull, s.holes, id + "_s" + std::to_string(append));
-                shape.is_part_of_multi_polygon = true;
+                GeoGerry::Shape shape(s.hull, s.holes, id);
+                shape.is_part_of_multi_polygon = append;
                 double fract = shape.get_area() / total_area;
                 shape.pop = (int) round(pop * fract);
                 shapes_vector.push_back(shape);
@@ -345,7 +350,7 @@ std::vector<GeoGerry::Precinct> merge_data( std::vector<GeoGerry::Shape> precinc
         }
 
         // create a precinct object and add it to the array
-        if (precinct_shape.is_part_of_multi_polygon) {
+        if (precinct_shape.is_part_of_multi_polygon != -1) {
             double total_area = precinct_shape.get_area();
 
             for (int i = 0; i < precinct_shapes.size(); i++) {
@@ -357,7 +362,8 @@ std::vector<GeoGerry::Precinct> merge_data( std::vector<GeoGerry::Shape> precinc
             int ratio = precinct_shape.get_area() / total_area;
             
             GeoGerry::Precinct precinct =
-                GeoGerry::Precinct(precinct_shape.hull, precinct_shape.holes, p_data[0] * ratio, p_data[1] * ratio, p_id);
+                GeoGerry::Precinct(precinct_shape.hull, precinct_shape.holes, p_data[0] * ratio, p_data[1] * ratio,
+                                   p_id + "_s" + std::to_string(precinct_shape.is_part_of_multi_polygon));
             
             precinct.pop = precinct_shape.pop;
             precincts.push_back(precinct);
