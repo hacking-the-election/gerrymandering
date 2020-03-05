@@ -139,18 +139,24 @@ void GeoDraw::Canvas::scale(double scale_factor) {
 
     for (int i = 0; i < outlines.size(); i++) {
         for (int j = 0; j < outlines[i].border.size(); j++) {
-            outlines[i].border[j][0] += x;
-            outlines[i].border[j][1] += y;
+            outlines[i].border[j][0] *= scale_factor;
+            outlines[i].border[j][1] *= scale_factor;
         }
     }
 
     for (int i = 0; i < holes.size(); i++) {
         for (int j = 0; j < holes[i].border.size(); j++) {
-            holes[i].border[j][0] += x;
-            holes[i].border[j][1] += y;
+            holes[i].border[j][0] *= scale_factor;
+            holes[i].border[j][1] *= scale_factor;
         }
     }
 }
+
+
+void connect_shapes() {
+    return;
+}
+
 
 void GeoDraw::Canvas::rasterize_shapes() {
     /*
@@ -163,24 +169,12 @@ void GeoDraw::Canvas::rasterize_shapes() {
         @return: void
     */
 
-    double ratioTop = ceil((double) box[0]) / (double) (x);   // the rounded ratio of top:top
-    double ratioRight = ceil((double) box[3]) / (double) (y); // the rounded ratio of side:side
+    double ratio_top = ceil((double) box[0]) / (double) (x);   // the rounded ratio of top:top
+    double ratio_right = ceil((double) box[3]) / (double) (y); // the rounded ratio of side:side
     
     // find out which is larger and assign its reciporical to the scale factor
-    double scaleFactor = floor(1 / ((ratioTop > ratioRight) ? ratioTop : ratioRight)); 
-
-    // dilate each coordinate in the shape
-    for ( int i = 0; i < shape.size(); i++ ) {
-        shape[i][0] *= scaleFactor;
-        shape[i][1] *= scaleFactor;        
-    }
-
-    // return scaled coordinates
-    return shape;
-}
-
-
-void connect_shapes() {
+    double scale_factor = floor(1 / ((ratio_top > ratio_right) ? ratio_top : ratio_right)); 
+    scale(scale_factor);
     return;
 }
 
@@ -195,4 +189,29 @@ void GeoDraw::Canvas::draw() {
     // size and position coordinates in the right wuat
     GeoGerry::bounding_box box = get_bounding_box();
     translate(-box[1], -box[2]);
+    rasterize_shapes();
+
+    // initialize window
+    SDL_Event event;
+    SDL_Window* window = SDL_CreateWindow("Drawing", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, x, y, 0);
+    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 0);
+    SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, x, y);
+    SDL_SetWindowResizable(window, SDL_TRUE);
+
+    bool quit = false;
+
+    while (!quit) {
+        SDL_UpdateTexture(texture, NULL, pixels, x * sizeof(Uint32));
+        SDL_WaitEvent(&event);
+        if (event.type == SDL_QUIT) quit = true;
+        SDL_RenderClear(renderer);
+        SDL_RenderCopy(renderer, texture, NULL, NULL);
+        SDL_RenderPresent(renderer);
+    }
+
+    // destroy arrays and SDL objects
+    SDL_DestroyTexture(texture);
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow( window );
+    SDL_Quit();
 }

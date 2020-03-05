@@ -79,53 +79,6 @@ void destroy_window(SDL_Window* window) {
     SDL_Quit();
 }
 
-void GeoGerry::Shape::draw() {
-    /*
-        open an SDL window, create a pixel array 
-        with the shape's geometry, and print it to the window
-    */
-
-    int dim[2] = {900, 900}; // the size of the SDL window
-
-    // prepare array of coordinates to be drawn
-    bounding_box box = normalize_coordinates(this);
-    coordinate_set shape = resize_coordinates(box, this->hull.border, dim[0], dim[1]);
-    shape = connect_dots(shape);
-
-    // write coordinates to pixel array
-    Uint32 * pixels = pix_array(shape, dim[0], dim[1]);
-
-    // initialize window
-    SDL_Event event;
-    SDL_Window * window = SDL_CreateWindow("Shape", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, dim[0], dim[1], 0);
-    SDL_Renderer * renderer = SDL_CreateRenderer(window, -1, 0);
-    SDL_Texture * texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, dim[0], dim[1]);
-    SDL_SetWindowResizable(window, SDL_TRUE);
-    bool quit = false;
-
-    while (!quit) {
-
-        // write current array to screen
-        SDL_UpdateTexture(texture, NULL, pixels, dim[0] * sizeof(Uint32));
-
-        // wait for screen to quit
-        SDL_WaitEvent(&event);
-
-        if (event.type == SDL_QUIT)
-            quit = true;
-
-        // update the SDL renderer
-        SDL_RenderClear(renderer);
-        SDL_RenderCopy(renderer, texture, NULL, NULL);
-        SDL_RenderPresent(renderer);
-    }
-
-    // destroy arrays and SDL objects
-    delete[] pixels;
-    SDL_DestroyTexture(texture);
-    SDL_DestroyRenderer(renderer);
-    destroy_window(window);
-}
 
 GeoGerry::bounding_box normalize_coordinates(GeoGerry::Multi_Shape* multi_shape) {
     // set dummy extremes
@@ -250,48 +203,6 @@ GeoGerry::coordinate_set connect_dots(std::vector<GeoGerry::Shape> shapes) {
     return newShape;
 }
 
-void GeoGerry::Multi_Shape::draw() {
-    // combine precincts into single array, draw array
-
-    int dim[2] = {900, 900}; // the size of the SDL window
-    // prepare array of coordinates to be drawn
-    GeoGerry::bounding_box box = normalize_coordinates(this);
-    std::vector<GeoGerry::Shape> shapes = resize_coordinates(box, this->border, dim[0], dim[1]);
-
-    GeoGerry::coordinate_set shape = connect_dots(shapes);
-    // write coordinates to pixel array
-    Uint32 * pixels = pix_array(shape, dim[0], dim[1]);
-
-    // initialize window
-    SDL_Event event;
-    SDL_Window * window = SDL_CreateWindow("Shape", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, dim[0], dim[1], 0);
-    SDL_Renderer * renderer = SDL_CreateRenderer(window, -1, 0);
-    SDL_Texture * texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, dim[0], dim[1]);
-    SDL_SetWindowResizable(window, SDL_TRUE);
-    bool quit = false;
-
-    while (!quit) {
-        // write current array to screen
-        SDL_UpdateTexture(texture, NULL, pixels, dim[0] * sizeof(Uint32));
-        // wait for screen to quit
-        SDL_WaitEvent(&event);
-        
-        if (event.type == SDL_QUIT)
-            quit = true;
-
-        // update the SDL renderer
-        SDL_RenderClear(renderer);
-        SDL_RenderCopy(renderer, texture, NULL, NULL);
-        SDL_RenderPresent(renderer);
-    }
-
-    // destroy arrays and SDL objects
-    delete[] pixels;
-    SDL_DestroyTexture(texture);
-    SDL_DestroyRenderer(renderer);
-    destroy_window(window);
-}
-
 GeoGerry::bounding_box normalize_coordinates(GeoGerry::State* state) {
     /*
         returns a normalized bounding box, and modifies 
@@ -412,44 +323,4 @@ GeoGerry::coordinate_set connect_dots(std::vector<GeoGerry::Precinct> shapes) {
     }
 
     return newShape;
-}
-
-void GeoGerry::State::draw() {
-    // combine precincts into single array, draw array
-    int dim[2] = {900, 900}; // the size of the SDL window
-    // prepare array of coordinates to be drawn
-    GeoGerry::bounding_box box = normalize_coordinates(this);
-    std::vector<GeoGerry::Precinct> shapes = resize_coordinates(box, this->precincts, dim[0], dim[1]);
-    GeoGerry::coordinate_set shape = connect_dots(shapes);
-
-    // write coordinates to pixel array
-    Uint32 * pixels = pix_array(shape, dim[0], dim[1]);
-    // initialize window
-    SDL_Event event;
-    SDL_Window * window = SDL_CreateWindow("Shape", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, dim[0], dim[1], 0);
-    SDL_Renderer * renderer = SDL_CreateRenderer(window, -1, 0);
-    SDL_Texture * texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, dim[0], dim[1]);
-    SDL_SetWindowResizable(window, SDL_TRUE);
-    bool quit = false;
-
-    while (!quit) {
-        // write current array to screen
-        SDL_UpdateTexture(texture, NULL, pixels, dim[0] * sizeof(Uint32));
-        // wait for screen to quit
-        SDL_WaitEvent(&event);
-        
-        if (event.type == SDL_QUIT)
-            quit = true;
-
-        // update the SDL renderer
-        SDL_RenderClear(renderer);
-        SDL_RenderCopy(renderer, texture, NULL, NULL);
-        SDL_RenderPresent(renderer);
-    }
-
-    // destroy arrays and SDL objects
-    delete[] pixels;
-    SDL_DestroyTexture(texture);
-    SDL_DestroyRenderer(renderer);
-    destroy_window(window);
 }
