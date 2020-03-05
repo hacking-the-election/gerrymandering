@@ -10,62 +10,6 @@
 #include "../include/gui.hpp"
 #include "../include/geometry.hpp"
 
-GeoGerry::bounding_box normalize_coordinates(GeoGerry::Shape* shape) {
-
-    /*
-        returns a normalized bounding box, and modifies 
-        shape object's coordinates to move it to Quadrant I
-    */
-
-    // set dummy extremes
-    int top = shape->hull.border[0][1], 
-        bottom = shape->hull.border[0][1], 
-        left = shape->hull.border[0][0], 
-        right = shape->hull.border[0][0];
-
-    // loop through and find actual corner using ternary assignment
-    for (GeoGerry::coordinate coord : shape->hull.border) {
-        top = (coord[1] > top)? coord[1] : top;
-        bottom = (coord[1] < bottom)? coord[1] : bottom;
-        left = (coord[0] < left)? coord[0] : left;
-        right = (coord[0] > right)? coord[0] : right;
-    }
-
-    // add to each coordinate to move it to quadrant 1
-    for (int i = 0; i < shape->hull.border.size(); i++) {
-        shape->hull.border[i][0] += (0 - left);
-        shape->hull.border[i][1] += (0 - bottom);
-    }
-
-    // normalize the bounding box too
-    top += (0 - bottom);
-    right += (0 - left);
-    bottom = 0;
-    left = 0;
-
-    return {top, bottom, left, right}; // return bounding box
-}
-
-GeoGerry::coordinate_set resize_coordinates(GeoGerry::bounding_box box, GeoGerry::coordinate_set shape, int screenX, int screenY) {
-    // scales an array of coordinates to fit 
-    // on a screen of dimensions {screenX, screenY}
-    
-    double ratioTop = ceil((float) box[0]) / (float) (screenX);   // the rounded ratio of top:top
-    double ratioRight = ceil((float) box[3]) / (float) (screenY); // the rounded ratio of side:side
-    
-    // find out which is larger and assign its reciporical to the scale factor
-    double scaleFactor = floor(1 / ((ratioTop > ratioRight) ? ratioTop : ratioRight)); 
-
-    // dilate each coordinate in the shape
-    for ( int i = 0; i < shape.size(); i++ ) {
-        shape[i][0] *= scaleFactor;
-        shape[i][1] *= scaleFactor;        
-    }
-
-    // return scaled coordinates
-    return shape;
-}
-
 Uint32* pix_array(GeoGerry::coordinate_set shape, int x, int y) {
 
     /* 
