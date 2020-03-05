@@ -1,33 +1,38 @@
 #include "../include/canvas.hpp"
 
-void GeoDraw::Canvas::add_shape(GeoGerry::LinearRing s) {
+void GeoDraw::Canvas::add_shape(GeoGerry::LinearRing s, bool f, Color c, int t) {
     /*
         @desc: Add a LinearRing object to the screen
         @params: `LinearRing` s: LinearRing object to add
         @return: void
     */
 
-    outlines.push_back(s);
+    Outline outline(s, c, t, f);
+    outlines.push_back(outline);
     return;
 }
 
 
-void GeoDraw::Canvas::add_shape(GeoGerry::Shape s) {
+void GeoDraw::Canvas::add_shape(GeoGerry::Shape s, bool f, Color c, int t) {
     /*
         @desc: Add a shape object to the screen
         @params: `Shape` s: Shape object to add
         @return: void
     */
 
-    outlines.push_back(s.hull);
-    for (GeoGerry::LinearRing l : s.holes)
-        holes.push_back(l);
+    Outline outline(s.hull, c, t, f);
+    outlines.push_back(outline);
+
+    for (GeoGerry::LinearRing l : s.holes) {
+        Outline hole(l, c, t, f);
+        holes.push_back(hole);
+    }
 
     return;
 }
 
 
-void GeoDraw::Canvas::add_shape(GeoGerry::Multi_Shape s) {
+void GeoDraw::Canvas::add_shape(GeoGerry::Multi_Shape s, bool f, Color c, int t) {
     /*
         @desc: Add a shape object to the screen
         @params: `Shape` s: Shape object to add
@@ -35,9 +40,12 @@ void GeoDraw::Canvas::add_shape(GeoGerry::Multi_Shape s) {
     */
 
     for (GeoGerry::Shape shape : s.border) {
-        outlines.push_back(shape.hull);
+        Outline outline(shape.hull, c, t, f);
+        outlines.push_back(outline);
+
         for (GeoGerry::LinearRing l : shape.holes) {
-            holes.push_back(l);
+            Outline hole(l, c, t, f);
+            holes.push_back(hole);
         }
     }
 
@@ -45,7 +53,7 @@ void GeoDraw::Canvas::add_shape(GeoGerry::Multi_Shape s) {
 }
 
 
-void GeoDraw::Canvas::add_shape(GeoGerry::Precinct_Group s) {
+void GeoDraw::Canvas::add_shape(GeoGerry::Precinct_Group s, bool f, Color c, int t) {
     /*
         @desc: Add a shape object to the screen
         @params: `Shape` s: Shape object to add
@@ -53,9 +61,11 @@ void GeoDraw::Canvas::add_shape(GeoGerry::Precinct_Group s) {
     */
 
     for (GeoGerry::Precinct shape : s.precincts) {
-        outlines.push_back(shape.hull);
+            Outline outline(shape.hull, c, t, f);
+            outlines.push_back(outline);
         for (GeoGerry::LinearRing l : shape.holes) {
-            holes.push_back(l);
+            Outline hole(l, c, t, f);
+            holes.push_back(hole);
         }
     }
 }
@@ -78,14 +88,14 @@ GeoGerry::bounding_box GeoDraw::Canvas::get_bounding_box() {
     */
 
     // set dummy extremes
-    int top = outlines[0].border[0][1], 
-        bottom = outlines[0].border[0][1], 
-        left = outlines[0].border[0][0], 
-        right = outlines[0].border[0][0];
+    int top = outlines[0].border.border[0][1], 
+        bottom = outlines[0].border.border[0][1], 
+        left = outlines[0].border.border[0][0], 
+        right = outlines[0].border.border[0][0];
 
     // loop through and find actual corner using ternary assignment
-    for (GeoGerry::LinearRing ring : outlines) {
-        for (GeoGerry::coordinate coord : ring.border) {
+    for (Outline ring : outlines) {
+        for (GeoGerry::coordinate coord : ring.border.border) {
             if (coord[1] > top) top = coord[1];
             if (coord[1] < bottom) bottom = coord[1];
             if (coord[0] < left) left = coord[0];
@@ -93,6 +103,7 @@ GeoGerry::bounding_box GeoDraw::Canvas::get_bounding_box() {
         }
     }
 
+    box = {top, bottom, left, right};
     return {top, bottom, left, right}; // return bounding box
 }
 
@@ -111,16 +122,16 @@ void GeoDraw::Canvas::translate(long int x, long int y) {
     */
 
     for (int i = 0; i < outlines.size(); i++) {
-        for (int j = 0; j < outlines[i].border.size(); j++) {
-            outlines[i].border[j][0] += x;
-            outlines[i].border[j][1] += y;
+        for (int j = 0; j < outlines[i].border.border.size(); j++) {
+            outlines[i].border.border[j][0] += x;
+            outlines[i].border.border[j][1] += y;
         }
     }
 
     for (int i = 0; i < holes.size(); i++) {
-        for (int j = 0; j < holes[i].border.size(); j++) {
-            holes[i].border[j][0] += x;
-            holes[i].border[j][1] += y;
+        for (int j = 0; j < holes[i].border.border.size(); j++) {
+            holes[i].border.border[j][0] += x;
+            holes[i].border.border[j][1] += y;
         }
     }
 }
@@ -138,16 +149,16 @@ void GeoDraw::Canvas::scale(double scale_factor) {
     */
 
     for (int i = 0; i < outlines.size(); i++) {
-        for (int j = 0; j < outlines[i].border.size(); j++) {
-            outlines[i].border[j][0] *= scale_factor;
-            outlines[i].border[j][1] *= scale_factor;
+        for (int j = 0; j < outlines[i].border.border.size(); j++) {
+            outlines[i].border.border[j][0] *= scale_factor;
+            outlines[i].border.border[j][1] *= scale_factor;
         }
     }
 
     for (int i = 0; i < holes.size(); i++) {
-        for (int j = 0; j < holes[i].border.size(); j++) {
-            holes[i].border[j][0] *= scale_factor;
-            holes[i].border[j][1] *= scale_factor;
+        for (int j = 0; j < holes[i].border.border.size(); j++) {
+            holes[i].border.border[j][0] *= scale_factor;
+            holes[i].border.border[j][1] *= scale_factor;
         }
     }
 }
@@ -157,6 +168,43 @@ void connect_shapes() {
     return;
 }
 
+void GeoDraw::Canvas::rasterize_edges() {
+    /*
+        @desc:
+            Converts coordinates into pixel array, writes
+            to the pixels array contained in the object
+            
+        @params: none
+        @return: void
+    */
+
+    int dx, dy, p, x, y, x0, x1, y0, y1;
+
+    for (Outline o : outlines) {
+        for (GeoGerry::segment s : o.border.get_segments()) {
+            x0 = (int) s[0];
+            y0 = (int) s[1];
+
+            dx = x1 - x0;
+            dy = y1 - y0;
+
+            int steps = abs(dx) > abs(dy) ? abs(dx) : abs(dy);
+
+            double xinc = (double) dx / (double) steps;
+            double yinc = (double) dy / (double) steps;
+
+            int x = x0;
+            int y = y0;
+
+            for (int i = 0; i <= steps; i++) {
+                Pixel p(x, y, o.color);
+                this->pixels.push_back(p);
+                x += (int) xinc;
+                y += (int) yinc;
+            }
+        }
+    }
+}
 
 void GeoDraw::Canvas::rasterize_shapes() {
     /*
@@ -175,6 +223,8 @@ void GeoDraw::Canvas::rasterize_shapes() {
     // find out which is larger and assign its reciporical to the scale factor
     double scale_factor = floor(1 / ((ratio_top > ratio_right) ? ratio_top : ratio_right)); 
     scale(scale_factor);
+    rasterize_edges();
+
     return;
 }
 
@@ -187,25 +237,30 @@ void GeoDraw::Canvas::draw() {
     */
 
     // size and position coordinates in the right wuat
-    GeoGerry::bounding_box box = get_bounding_box();
+    get_bounding_box();
     translate(-box[1], -box[2]);
     rasterize_shapes();
+
+    Uint32* background = new Uint32[x * y];
+
+    SDL_Init(SDL_INIT_VIDEO);
 
     // initialize window
     SDL_Event event;
     SDL_Window* window = SDL_CreateWindow("Drawing", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, x, y, 0);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 0);
     SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, x, y);
-    SDL_SetWindowResizable(window, SDL_TRUE);
 
+    SDL_SetWindowResizable(window, SDL_TRUE);
+    SDL_UpdateTexture(texture, NULL, background, x * sizeof(Uint32));
+    SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+    
+    SDL_RenderDrawPoint(renderer, 25, 25);
     bool quit = false;
 
     while (!quit) {
-        SDL_UpdateTexture(texture, NULL, pixels, x * sizeof(Uint32));
         SDL_WaitEvent(&event);
         if (event.type == SDL_QUIT) quit = true;
-        SDL_RenderClear(renderer);
-        SDL_RenderCopy(renderer, texture, NULL, NULL);
         SDL_RenderPresent(renderer);
     }
 
