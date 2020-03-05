@@ -206,8 +206,16 @@ class Community:
         )
 
         # Add first precinct to community.
-        initial_precinct = \
-            random.sample(set(unchosen_precincts.precincts.keys()), 1)[0]
+        all_bordering_precincts = set(unchosen_precincts.precincts.keys())
+        island_bordering_precincts = {
+            p.vote_id for p in unchosen_precincts.precincts.values()
+            if get_if_bordering(p.coords, island_border)
+        }
+        eligible_precincts = island_bordering_precincts & all_bordering_precincts
+        if eligible_precincts != set():
+            initial_precinct = random.sample(eligible_precincts, 1)[0]
+        else:
+            initial_precinct = random.sample(all_bordering_precincts, 1)[0]
         unchosen_precincts.give_precinct(self, initial_precinct, **kwargs)
         sys.stdout.write(f"\r000 precincts in community {self.id}")
         sys.stdout.flush()
@@ -222,6 +230,7 @@ class Community:
                 if len(self.precincts) >= self.islands[island_index]:
                     # Use this instead of returning to break from all levels
                     # of recursion.
+                    del self.islands[island_index]
                     raise CommunityFillCompleteException(
                         list(unchosen_precincts.precincts.values()),
                         unchosen_precincts.coords)

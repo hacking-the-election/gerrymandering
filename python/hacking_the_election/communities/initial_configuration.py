@@ -255,6 +255,9 @@ def create_initial_configuration(island_precinct_groups, n_districts,
         [p for pair in linked_precinct_chains for p in pair])
 
     try:
+        # Indices of communities that have been
+        # given all the precincts they need.
+        full_communities = 0
         # First fill communities with links with the rest of their precincts
         for chain in linked_precinct_chains:
             first_chain_island = [i for i, il in enumerate(island_precinct_groups)
@@ -287,6 +290,8 @@ def create_initial_configuration(island_precinct_groups, n_districts,
                             if precinct.vote_id in added_precincts:
                                 island_precinct_groups[island_index].remove(
                                     precinct)
+                        if community.islands == {}:
+                            full_communities += 1
                         # Update border of island
                         island_borders[island_index] = unchosen_precincts_border
                         print(f"community {community.id} has been given "
@@ -295,8 +300,14 @@ def create_initial_configuration(island_precinct_groups, n_districts,
 
         # Then fill communities that are on only one island
         for community in communities:
+            island_index = list(community.islands.keys())[0]
+            if full_communities == len(communities) - 1:
+                community.coords = island_borders[island_index]
+                community.precincts = {
+                    p.vote_id: p for p in island_precinct_groups[island_index]
+                }
+                break
             if len(community.precincts) == 0:
-                island_index = list(community.islands.keys())[0]
                 try:
                     community.fill(
                         island_precinct_groups[island_index],
@@ -309,6 +320,7 @@ def create_initial_configuration(island_precinct_groups, n_districts,
                     unchosen_precincts_border = e.unchosen_precincts_border
                 island_precinct_groups[island_index] = unchosen_precincts
                 island_borders[island_index] = unchosen_precincts_border
+                full_communities += 1
                 print(f"\ncommunity {community.id} completely filled")
 
     except Exception as e:
