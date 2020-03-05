@@ -309,7 +309,7 @@ def create_initial_configuration(island_precinct_groups, n_districts,
                     unchosen_precincts_border = e.unchosen_precincts_border
                 island_precinct_groups[island_index] = unchosen_precincts
                 island_borders[island_index] = unchosen_precincts_border
-                print(f"community {community.id} completely filled")
+                print(f"\ncommunity {community.id} completely filled")
 
     except Exception as e:
         # Save your progress!

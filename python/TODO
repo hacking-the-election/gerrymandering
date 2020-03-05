@@ -18,7 +18,7 @@
 # Communities:
    Now:
     - update step 1 to only start communities with a precinct that is touching both the state border and a community border (if possible)
+    - use remaining precincts on last community
     - continue working on partisanship test
-    - EPIC stdout manipulation with incrementing number of precincts in a community and PROGRESS BAR
     - Real-time drawings of communities being formed.
     - write make_communities function in __init__.py

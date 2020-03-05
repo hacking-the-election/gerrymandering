@@ -7,7 +7,7 @@ import pickle
 
 from shapely.geometry import Polygon, MultiPolygon
 
-from gerrymandering.communities.initial_configuration import \
+from hacking_the_election.communities.initial_configuration import \
     create_initial_configuration
 from hacking_the_election.utils.initial_configuration import Community
 from hacking_the_election.serialization.load_precincts import load

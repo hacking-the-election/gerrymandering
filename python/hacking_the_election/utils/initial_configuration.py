@@ -6,6 +6,7 @@ Functions specific to initial configuration step in communities algorithm
 import math
 import pickle
 import random
+import sys
 import threading
 
 from shapely.geometry import MultiPolygon, Polygon
@@ -21,7 +22,11 @@ from hacking_the_election.utils.geometry import (
     shapely_to_polygon,
     UNION
 )
-from hacking_the_election.test.funcs import convert_to_json, polygon_to_list
+from hacking_the_election.test.funcs import (
+    convert_to_json,
+    multipolygon_to_list,
+    polygon_to_list
+)
 
 
 # ===================================================
@@ -201,39 +206,36 @@ class Community:
         initial_precinct = \
             random.sample(set(unchosen_precincts.precincts.keys()), 1)[0]
         unchosen_precincts.give_precinct(self, initial_precinct, **kwargs)
-        print(
-            f"community {self.id} started off with precinct {initial_precinct}")
+        sys.stdout.write(f"\r000 precincts in community {self.id}")
+        sys.stdout.flush()
 
         while True:
             
             bordering_precincts = \
                 self.get_bordering_precincts(unchosen_precincts)
-
             n_added_precincts = 0
+            now_added_precincts = set()
             for precinct in bordering_precincts - linked_precincts:
                 if len(self.precincts) >= self.islands[island_index]:
                     # Use this instead of returning to break from all levels
                     # of recursion.
-                    convert_to_json([polygon_to_list(self.coords)], "test_communities42.json")
                     raise CommunityFillCompleteException(
                         list(unchosen_precincts.precincts.values()),
                         unchosen_precincts.coords)
                 else:
                     unchosen_precincts.give_precinct(self, precinct, **kwargs)
                     if isinstance(unchosen_precincts.coords, MultiPolygon):
+                        # Taking this precinct created an island, return it.
                         self.give_precinct(unchosen_precincts, precinct, **kwargs)
-                        print(f"{precinct} added to and removed from {self.id} "
-                            "because it made an island.")
                     else:
-                        print(f"{precinct} added to community {self.id}. "
-                              f"{len(self.precincts)} in community {self.id}.")
+                        sys.stdout.write(f"\r{add_leading_zeroes(len(self.precincts))}")
+                        sys.stdout.flush()
                         n_added_precincts += 1
+                        now_added_precincts.add(precinct)
                         added_precincts.add(precinct)
-                        if len(self.precincts) == 20 and self.id == 2:
-                            convert_to_json([polygon_to_list(self.coords)], "test_communities42.json")
             if n_added_precincts == 0:
                 # No precincts can be added without making an island.
-                print(f"restarting filling of community {self.id}")
+                print(f"\nrestarting filling of community {self.id}")
                 # Remove all precincts added during this fill session.
                 self.precincts = {
                     p: self.precincts[p] for p in
@@ -252,27 +254,33 @@ class Community:
         """
         bordering_precincts = set()
         if self.precincts != {}:
-            # create 20 threads that will simeltaneously calculate
-            # whether or not a certain number of precincts are
-            # bordering self.coords
+            try:
+                # create 20 threads that will simeltaneously calculate
+                # whether or not a certain number of precincts are
+                # bordering self.coords
 
-            precincts = list(unchosen_precincts.precincts.values())
-            n_precincts = len(precincts)
-            precincts_per_thread = n_precincts // 20
-            # precincts that will be calculated in each thread.
-            thread_precincts = [
-                precincts[i:i + precincts_per_thread] for i in
-                range(0, n_precincts - (n_precincts % 20), precincts_per_thread)
-            ]
-            thread_precincts.append(precincts[n_precincts % 20 : n_precincts])
+                precincts = list(unchosen_precincts.precincts.values())
+                n_precincts = len(precincts)
+                precincts_per_thread = n_precincts // 20
+                # precincts that will be calculated in each thread.
+                thread_precincts = [
+                    precincts[i:i + precincts_per_thread] for i in
+                    range(0, n_precincts - (n_precincts % 20), precincts_per_thread)
+                ]
+                thread_precincts.append(precincts[n_precincts % 20 : n_precincts])
 
-            for precinct_group in thread_precincts:
-                def thread_func():
-                    for precinct in precinct_group:
-                        if get_if_bordering(precinct.coords, self.coords):
-                            bordering_precincts.add(precinct.vote_id)
-                thread = threading.Thread(target=thread_func)
-                thread.run()
+                for precinct_group in thread_precincts:
+                    def thread_func():
+                        for precinct in precinct_group:
+                            if get_if_bordering(precinct.coords, self.coords):
+                                bordering_precincts.add(precinct.vote_id)
+                    thread = threading.Thread(target=thread_func)
+                    thread.run()
+            except ValueError:
+                # There are less than 20 precincts left.
+                for precinct in unchosen_precincts.values():
+                    if get_if_bordering(self.coords, precinct.coords):
+                        bordering_precincts.add(precinct.vote_id)
         else:
             bordering_precincts = set(unchosen_precincts.precincts.keys())
         return bordering_precincts
@@ -439,3 +447,14 @@ def get_precinct_link_pair(island, island_precinct_groups,
         )
 
     return precinct1, precinct2, closest_precinct_island_index
+
+
+def add_leading_zeroes(n):
+    """
+    Takes an integer and returns a string with 3 characters.
+    Adds leading zeroes if integer has less than 3 digits.
+    """
+    n_chars = list(str(n))
+    while len(n_chars) != 3:
+        n_chars.insert(0, "0")
+    return "".join(n_chars)
