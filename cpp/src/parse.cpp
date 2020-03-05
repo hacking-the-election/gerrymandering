@@ -551,12 +551,12 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
     // generate state data from files
     if (VERBOSE) std::cout << "generating state with precinct and district arrays..." << std::endl;
     State state = State(district_shapes, pre_group.precincts, state_shape_v);
-    Multi_Shape border = generate_exterior_border(state);
-    state.border = border.border;
-
+    Multi_Shape sborder = generate_exterior_border(state);
+    state.border = sborder.border;
+    std::cout << sborder.border.size() << std::endl;
     // sort files into
     if (VERBOSE) std::cout << "sorting precincts into islands from exterior state border..." << std::endl;
-    state.islands = sort_precincts(border, pre_group);
+    state.islands = sort_precincts(sborder, pre_group);
     if (VERBOSE) std::cout << "state serialized!" << std::endl;
     writef(state.to_json(), "test.json");
     return state; // return the state object
