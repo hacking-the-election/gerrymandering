@@ -912,6 +912,33 @@ p_index_set get_ext_bordering_precincts(Precinct_Group precincts, State state) {
     return bordering_pre;
 }
 
+GeoGerry::p_index_set get_ext_bordering_precincts(GeoGerry::Precinct_Group precincts, GeoGerry::p_index_set available_pre, GeoGerry::State state) {
+    /*
+        @desc: a method for getting the precincts in a state that
+               border a precinct group. This is used in the communities
+               algorithm.
+
+        @params
+            `precincts`: The precinct group to find borders of
+            `state`: A state object with lists of precincts to look through
+
+        @return: `p_index_set` a set of precinct indices that border `precincts`
+    */
+
+    p_index_set bordering_pre;
+    Multi_Shape border = generate_exterior_border(precincts);
+
+    for (int i = 0; i < state.precincts.size(); i++) {
+        if (std::find(available_pre.begin(), available_pre.end(), i) != available_pre.end()) {
+            if (!(std::find(precincts.precincts.begin(), precincts.precincts.end(), state.precincts[i]) != precincts.precincts.end())) {
+                if (get_bordering(border, state.precincts[i])) bordering_pre.push_back(i);
+            }
+        }
+    }
+
+    return bordering_pre;
+}
+
 
 bool creates_island(GeoGerry::Precinct_Group set, GeoGerry::p_index remove) {
     /*
@@ -954,8 +981,8 @@ bool creates_island(GeoGerry::p_index_set set, GeoGerry::p_index remove, GeoGerr
 
     // calculate initial number of islands in set
     Precinct_Group pg_before;
-    for (int i = 0; i < set.size(); i++)
-        pg_before.add_precinct(precincts.precincts[i]);
+    for (p_index p : set)
+        pg_before.add_precinct(precincts.precincts[p]);
 
     int islands_before = generate_exterior_border(pg_before).border.size();
 
@@ -964,8 +991,8 @@ bool creates_island(GeoGerry::p_index_set set, GeoGerry::p_index remove, GeoGerr
     
     // calculate new number of islands
     Precinct_Group pg_after;
-    for (int i = 0; i < set.size(); i++)
-        pg_after.add_precinct(precincts.precincts[i]);
+    for (p_index p : set)
+        pg_after.add_precinct(precincts.precincts[p]);
 
     int islands_after = generate_exterior_border(pg_after).border.size();
 
