@@ -10,6 +10,7 @@
 #include "../include/shape.hpp"
 #include "../include/term_disp.hpp"
 #include <boost/filesystem.hpp>
+#include "../include/util.hpp"
 
 namespace fs = boost::filesystem;
 
@@ -291,40 +292,19 @@ void GeoGerry::State::save_communities(std::string write_path) {
     */
 
     int c_index = 0;
-    boost::filesystem::create_directory(write_path);
     std::string file = "";
 
     for (Community c : state_communities) {
         file += c.save_frame() + "\n";
         c_index++;
     }
+
+    writef(file, write_path);
 }
 
 void GeoGerry::State::read_communities(std::string read_path) {
-
-    fs::path full_path( fs::initial_path<fs::path>() );
-    full_path = fs::system_complete(fs::path(read_path));
-
-    if (!fs::exists(full_path)) {
-        std::cout << "Input real path." << std::endl;
-        return;
-    }
-
-    if (fs::is_directory(full_path)) {
-        fs::directory_iterator end_iter;
-        for ( fs::directory_iterator dir_itr(full_path); dir_itr != end_iter; ++dir_itr) {
-            if ( fs::is_regular_file(dir_itr->status())) {
-                this->state_communities = Community::load_frame(dir_itr->path().filename().string(), *this);
-            }
-            else {
-                std::cout << "Something weird happened" << std::endl;
-            }
-        }
-    }
-    else {
-        std::cout << "Input a directory of community files" << std::endl;    
-        return;
-    }
+    this->state_communities = Community::load_frame(read_path, *this);
+    return;
 }
 
 void GeoGerry::State::playback_communities(std::string read_path) {

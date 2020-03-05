@@ -147,6 +147,7 @@ void State::generate_initial_communities(int num_communities) {
         island_index++;
     }
 
+    writef(this->to_json(), "vt.json");
     vector<p_index> ignore_fractionals; // fractional islands to be ignored, not removed
     if (VERBOSE) cout << "linking fractional communities..." << endl;
 
@@ -350,8 +351,8 @@ void State::generate_initial_communities(int num_communities) {
 
     if (VERBOSE) cout << "filling communities with real precincts..." << endl;
 
-    // for (int c_index = 0; c_index < c.size(); c_index++) {
-    for (int c_index = 0; c_index < 1; c_index++) {
+    for (int c_index = 0; c_index < c.size() - 1; c_index++) {
+    // for (int c_index = 0; c_index < 1; c_index++) {
         // fill linked communities with generation method
         cout << "filling new community..." << endl;
         Community community = c[c_index];
@@ -371,7 +372,10 @@ void State::generate_initial_communities(int num_communities) {
                 vector<p_index> tried_precincts;
                 do {
                     start_precinct = rand_num(0, size - 1);
-                } while (creates_island(island_available_precincts, start_precinct, *this));
+                } while (
+                        creates_island(island_available_precincts, start_precinct, *this) 
+                        && std::find(island_available_precincts.begin(), island_available_precincts.end(), start_precinct) == island_available_precincts.end()
+                    );
             }
 
             cout << "adding precinct " << start_precinct << " to community " << c_index << endl;
@@ -387,15 +391,15 @@ void State::generate_initial_communities(int num_communities) {
 
                 // calculate border, avoid multipoly
                 cout << "calculating bordering precincts..." << endl;
-                p_index_set bordering_precincts = get_ext_bordering_precincts(community, *this);
-                for (p_index pre : bordering_precincts) {
-                    cout << pre << ", ";
-                }
+                p_index_set bordering_precincts = get_ext_bordering_precincts(community, island_available_precincts, *this);
+                for (p_index pre : bordering_precincts) cout << pre << ", ";
                 cout << endl;
 
+                bool can_do_one = false;
+
                 for (p_index pre : bordering_precincts) {
-                    if (!creates_island(island_available_precincts, pre, *this) ) {
-                            
+                    if (!creates_island(island_available_precincts, pre, *this) && precincts_added < precincts_to_add) {
+                        can_do_one = true;
                         cout << "adding precinct " << pre << endl;
                         island_available_precincts.erase(
                                 std::remove(
@@ -407,16 +411,29 @@ void State::generate_initial_communities(int num_communities) {
                             );
 
                         community.add_precinct(precincts[pre]);
-                        writef(community.to_json(), "c.json");
+                        writef(community.to_json(), "c" + std::to_string(c_index) + ".json");
                         precincts_added++;
                     }
                     else cout << "creates island, refraining..." << endl;
                 }
+
+                if (!can_do_one) cout << "No precinct exchanges work!!" << endl;
             }
+            available_precincts[i] = island_available_precincts; 
+        }
+        c[c_index] = community;
+    }
+
+    for (p_index_set p : available_precincts) {
+        for (p_index pi : p ) {
+            c[c.size() - 1].add_precinct(precincts[pi]);
         }
     }
-    
+
+    writef(c[c.size() - 1].to_json(), "c" + std::to_string(c.size() - 1) + ".json");
     this->state_communities = c; // assign state communities to generated array
+    this->save_communities("community_test_vt");
+    return;
 }
 
 p_index State::get_next_community(double tolerance, int process) {
@@ -769,7 +786,7 @@ string Community::save_frame() {
     }
 
     line = line.substr(0, line.size() - 2);
-    cout << line << endl;
+    // cout << line << endl;
     return line;
 }
 
