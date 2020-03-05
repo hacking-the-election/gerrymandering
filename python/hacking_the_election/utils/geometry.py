@@ -112,7 +112,6 @@ def shapely_to_polygon(polygon):
                 y = tuple1[1]
                 point_list = [x, y]
                 linear_ring.append(point_list)
-            print(linear_ring)
             multi_polygon.append([linear_ring])
             return multi_polygon
     else:
