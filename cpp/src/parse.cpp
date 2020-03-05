@@ -17,7 +17,7 @@
 #define VERBOSE 1  // print progress messages
 using namespace rapidjson;
 
-const long int c = pow(2, 16);
+const long int c = pow(2, 18);
 
 // constant id strings
 //ndv	nrv	geoid10	GEOID10	POP100

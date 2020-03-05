@@ -35,6 +35,7 @@ GeoGerry::p_index_set get_inner_boundary_precincts(GeoGerry::p_index_set precinc
 
 GeoGerry::p_index_set get_bordering_precincts(GeoGerry::Precinct_Group shape, int p_index);
 GeoGerry::p_index_set get_ext_bordering_precincts(GeoGerry::Precinct_Group precincts, GeoGerry::State state);
+GeoGerry::p_index_set get_ext_bordering_precincts(GeoGerry::Precinct_Group precincts, GeoGerry::p_index_set available_pre, GeoGerry::State state);
 
 bool get_bordering(GeoGerry::Shape s0, GeoGerry::Shape s1);
 

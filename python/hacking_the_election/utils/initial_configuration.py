@@ -119,6 +119,9 @@ class Community:
                 total_sum += r_sum + precinct.d_election_sum
         self.partisanship = rep_sum / total_sum
 
+    def update_coords(self):
+        self.coords = clip([precinct.coords for precinct in self.precincts.values()], UNION)
+
     def give_precinct(self, other, precinct_id, coords=True,
                       partisanship=True, standard_deviation=True,
                       population=True, compactness=True):
