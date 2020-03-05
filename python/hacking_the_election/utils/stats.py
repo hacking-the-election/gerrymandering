@@ -5,7 +5,7 @@ Functions for partisanship refinement step in communities algorithm
 
 import math
 
-from .geometry import (
+from hacking_the_election.utils.geometry import (
     clip,
     get_area_intersection,
     get_point_in_polygon,
