@@ -19,7 +19,6 @@ using namespace geos::operation;
 
 #include "../../include/geometry.hpp"
 #include "../../include/shape.hpp"   // class definitions
-#include "../../include/gui.hpp"     // for the draw function
 
 Multi_Shape generate_exterior_border(Precinct_Group precinct_group) {
     /*

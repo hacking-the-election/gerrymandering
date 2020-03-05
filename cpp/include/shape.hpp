@@ -196,7 +196,7 @@ class Shape {
         template<class Archive> void serialize(Archive & ar, const unsigned int version);
 
         int pop = 0; // total population
-        bool is_part_of_multi_polygon = false; // for parsing rules
+        int is_part_of_multi_polygon = -1; // for parsing rules
 };
 
 class Precinct : public Shape {

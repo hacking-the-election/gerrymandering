@@ -20,6 +20,7 @@
 GeoGerry::segment coords_to_seg(GeoGerry::coordinate c1, GeoGerry::coordinate c2);
 
 double get_distance(GeoGerry::coordinate c1, GeoGerry::coordinate c2);
+double get_distance(std::array<long long int, 2> c1, std::array<long long int, 2> c2);
 double get_distance(GeoGerry::segment s);
 
 // coordinate manipulation for gui draw methods

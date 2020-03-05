@@ -7,7 +7,6 @@
  visualizations.
 ========================================*/
 
-#include "../include/gui.hpp"
 #include "../include/geometry.hpp"
 
 Uint32* pix_array(GeoGerry::coordinate_set shape, int x, int y) {
