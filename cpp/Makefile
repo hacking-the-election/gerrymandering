@@ -2,7 +2,7 @@
 
 CC = g++
 BINDIR = bin
-STATE_FILES = src/algorithm/community/community.cpp src/parse.cpp src/shape.cpp src/geometry.cpp src/serialize.cpp src/util.cpp
+STATE_FILES = src/algorithm/community/community.cpp src/parse.cpp src/shape.cpp src/geometry.cpp src/serialize.cpp src/util.cpp src/canvas.cpp
 BOOST = -lboost_serialization -lboost_filesystem
 SDL = -lSDL2 -lSDL2main
 V = 11

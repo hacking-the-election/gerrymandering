@@ -23,13 +23,13 @@ using namespace std;
 // }
 
 int main(int argc, char* argv[]) {
-    GeoDraw::Canvas c(900, 480);
+    GeoDraw::Canvas c(640, 900);
     
-    GeoGerry::coordinate_set border = {{0,0}, {1,0}, {0,1}};
+    GeoGerry::coordinate_set border = {{0,0}, {1,2}, {2,1}, {3,3}};
     GeoGerry::LinearRing ring(border);
     GeoGerry::Shape shape(ring);
-
-    c.add_shape(shape);
+    GeoDraw::Color co(0, 108, 180);  
+    c.add_shape(shape, true, co, 1);
     c.draw();
     // assert_equal("checking area function", area(shape), 0.5);
     // assert_equal("testing center coord 1", center(shape)[0], 0.333333);

@@ -4,9 +4,8 @@
 namespace GeoDraw {
     
     class Color {
-        int r, g, b;
-
         public:
+        int r, g, b;
 
         void set_color(int rx, int gx, int bx) {
             r = rx;
@@ -21,11 +20,12 @@ namespace GeoDraw {
 
     class Pixel {
         Color color;
-        int x, y;
 
         public:
+        int x, y;
+        Uint32 get_uint();
         Pixel(int ax, int ay, Color c) : x(ax), y(ay), color(c) {}
-        void draw();
+        void draw(SDL_Renderer* renderer);
     };
 
     class Outline {
