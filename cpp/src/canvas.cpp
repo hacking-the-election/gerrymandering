@@ -189,10 +189,15 @@ void GeoDraw::Canvas::rasterize_edges() {
 
     for (Outline o : outlines) {
         for (GeoGerry::segment s : o.border.get_segments()) {
+            
             x0 = s[0];
             y0 = s[1];
             x1 = s[2];
             y1 = s[3];
+
+            std::cout << "from: " << x0 << ", " << y0 << std::endl;
+            std::cout << "to: " << x1 << ", " << y1 << std::endl;
+
             Pixel p0(x0, y0, o.color);
             this->pixels.push_back(p0);
             dx = x1 - x0;
@@ -203,14 +208,14 @@ void GeoDraw::Canvas::rasterize_edges() {
             double xinc = (double) dx / (double) steps;
             double yinc = (double) dy / (double) steps;
 
-            int xv = x0;
-            int yv = y0;
+            double xv = (double) x0;
+            double yv = (double) y0;
 
             for (int i = 0; i <= steps; i++) {
-                Pixel p(xv, yv, o.color);
+                Pixel p((int)xv, (int)yv, o.color);
                 this->pixels.push_back(p);
-                xv += (int) xinc;
-                yv += (int) yinc;
+                xv += xinc;
+                yv += yinc;
             }
         }
     }

@@ -9,27 +9,6 @@
 
 #include "../include/geometry.hpp"
 
-Uint32* pix_array(GeoGerry::coordinate_set shape, int x, int y) {
-
-    /* 
-        creates and returns a pixel array 
-        from an vector of floating point coordinates
-    */
-
-    Uint32 * pixels = new Uint32[x * y];           // new blank pixel array
-    memset(pixels, 255, x * y * sizeof(Uint32));   // fill pixel array with white
-    int total = (x * y) - 1;                       // last index in pixel array;
-
-    for (GeoGerry::coordinate coords : shape) {
-        // locate the coordinate, set it to black
-        int start = (int)((int)coords[1] * x - (int)coords[0]);
-        pixels[total - start] = 0;
-    }
-
-    // return array
-    return pixels;
-}
-
 GeoGerry::coordinate_set connect_dots(GeoGerry::coordinate_set shape) {
     GeoGerry::coordinate_set newShape;
 
