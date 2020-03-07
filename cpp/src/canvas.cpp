@@ -171,9 +171,45 @@ void GeoDraw::Canvas::scale(double scale_factor) {
 }
 
 
-void connect_shapes() {
+void GeoDraw::Canvas::fill_shapes() {
+
+    bool is_filling = false;
+    Color fill_color = Color();
+    bool has_filled = true;
+
+    for (int i = 0; i < x; i++) {
+        for (int j = 0; j < y; j++) {
+            for (Pixel p : pixels) {
+                if (p.x == i && p.y == j) {
+                    if (is_filling && p.color == fill_color) { 
+                        is_filling = false;
+                        // has_filled = false;
+                    }
+                    else {
+                        // if (is_filling) has_filled = true;
+                        is_filling = true;
+                        fill_color = p.color;
+                    }
+                    // std::cout << "pixel at location" << std::endl;
+                }
+            }
+
+            if (is_filling) {
+                // std::cout << "adding pixel at " << i << ", " << j << std::endl;
+                // int total = (x * y) - 1;
+                // int start = j * x - i;
+                // std::cout << i * x + j << std::endl;
+                // ;
+                this->background[((y - j - 1) * x) + i - 1] = fill_color.get_uint();
+                // std::cout << "added pixel at " << i << ", " << j << std::endl;
+            }
+        }
+
+        is_filling = false;
+    }
     return;
 }
+
 
 void GeoDraw::Canvas::rasterize_edges() {
     /*
@@ -189,14 +225,11 @@ void GeoDraw::Canvas::rasterize_edges() {
 
     for (Outline o : outlines) {
         for (GeoGerry::segment s : o.border.get_segments()) {
-            
             x0 = s[0];
             y0 = s[1];
             x1 = s[2];
             y1 = s[3];
 
-            std::cout << "from: " << x0 << ", " << y0 << std::endl;
-            std::cout << "to: " << x1 << ", " << y1 << std::endl;
 
             Pixel p0(x0, y0, o.color);
             this->pixels.push_back(p0);
@@ -234,23 +267,39 @@ void GeoDraw::Canvas::rasterize_shapes() {
 
     double ratio_top = ceil((double) this->box[0]) / (double) (x);   // the rounded ratio of top:top
     double ratio_right = ceil((double) this->box[3]) / (double) (y); // the rounded ratio of side:side
-    std::cout << ratio_top << ", " << ratio_right << std::endl;
 
     // find out which is larger and assign its reciporical to the scale factor
     double scale_factor = 1 / ((ratio_top > ratio_right) ? ratio_top : ratio_right); 
     scale(scale_factor);
-    std::cout << scale_factor << std::endl;
-    std::cout << outlines[0].border.border[0][0] << ", " << outlines[0].border.border[0][1] << std::endl;
-
-
     rasterize_edges();
+
+    for (Pixel p : pixels) {
+        int total = (x * y) - 1;
+        int start = p.y * x - p.x;
+        this->background[total - start] = p.get_uint();
+    }
+
+
+    fill_shapes();
 
     return;
 }
 
 
 Uint32 GeoDraw::Pixel::get_uint() {
-    Uint32 rgba = color.r <<24 + color.g<<16 + color.b<<8 + 0;
+    Uint32 rgba = (0 << 24) +
+         (color.r << 16) +
+         (color.g << 8)  +
+         color.b;
+    return rgba;
+}
+
+
+Uint32 GeoDraw::Color::get_uint() {
+    Uint32 rgba = (0 << 24) +
+         (r << 16) +
+         (g << 8)  +
+         b;
     return rgba;
 }
 
@@ -263,15 +312,12 @@ void GeoDraw::Canvas::draw() {
     */
 
     // size and position coordinates in the right wuat
-    get_bounding_box();
-    std::cout << outlines[0].border.border[0][0] << ", " << outlines[0].border.border[0][1] << std::endl;
-    translate(-box[2], -box[1]);
-    // std::cout << "bounding box " << box[1] << ", " << box[2] << std::endl;
-    std::cout << outlines[0].border.border[0][0] << ", " << outlines[0].border.border[0][1] << std::endl;
-    rasterize_shapes();
-
-    Uint32* background = new Uint32[x * y];
+    background = new Uint32[x * y];
     memset(background, 255, x * y * sizeof(Uint32));
+
+    get_bounding_box();
+    translate(-box[2], -box[1]);
+    rasterize_shapes();
 
     SDL_Init(SDL_INIT_VIDEO);
 
@@ -284,11 +330,6 @@ void GeoDraw::Canvas::draw() {
     SDL_SetWindowResizable(window, SDL_TRUE);
     SDL_UpdateTexture(texture, NULL, background, x * sizeof(Uint32));
 
-    for (Pixel p : pixels) {
-        int total = (x * y) - 1;
-        int start = p.y * x - p.x;
-        background[total - start] = p.get_uint();
-    }
 
     bool quit = false;
 

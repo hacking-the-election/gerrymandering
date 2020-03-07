@@ -6,6 +6,7 @@ namespace GeoDraw {
     class Color {
         public:
         int r, g, b;
+        Uint32 get_uint();
 
         void set_color(int rx, int gx, int bx) {
             r = rx;
@@ -13,15 +14,23 @@ namespace GeoDraw {
             b = bx;
         }
 
-        Color();
+        friend bool operator!= (Color c1, Color c2) {
+            return (c1.r != c2.r || c1.g != c2.g || c1.b != c2.b);
+        }
+
+        friend bool operator== (Color c1, Color c2) {
+            return (c1.r == c2.r && c1.g == c2.g && c1.b == c2.b);
+        }
+
+        Color() {};
         Color(std::string hex);
         Color(int rx, int gx, int bx) : r(rx), g(gx), b(bx) {};
     };
 
     class Pixel {
-        Color color;
-
         public:
+
+        Color color;
         int x, y;
         Uint32 get_uint();
         Pixel(int ax, int ay, Color c) : x(ax), y(ay), color(c) {}
@@ -56,11 +65,13 @@ namespace GeoDraw {
         void scale(double scale_factor);             // scale the shapes by scale factor
         void rasterize_shapes();                     // determine pixel positions and values for coordiantes
         void rasterize_edges();                      // generate edges
+        void fill_shapes();                          // fill shapes with solid color
 
         // meta information
         int x, y;                         // dimensions of the screen
         std::vector<Pixel> pixels;        // the pixel array to write to screen
         GeoGerry::bounding_box box;       // the outer bounding box
+        Uint32* background;               
 
         public:
         Canvas(int dx, int dy) : x(dx), y(dy) {};
