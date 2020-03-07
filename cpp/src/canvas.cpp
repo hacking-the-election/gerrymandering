@@ -8,6 +8,7 @@
 ========================================*/
 
 #include "../include/canvas.hpp"
+#include "../include/geometry.hpp"
 
 void GeoDraw::Pixel::draw(SDL_Renderer* renderer) {
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, 255);
@@ -81,6 +82,13 @@ void GeoDraw::Canvas::add_shape(GeoGerry::Precinct_Group s, bool f, Color c, int
             Outline hole(l, c, t, f);
             holes.push_back(hole);
         }
+    }
+}
+
+
+void GeoDraw::Canvas::add_shape(GeoGerry::Communities s, bool f, GeoDraw::Color c, int t) {
+    for (GeoGerry::Community c : s) {
+        this->add_shape(generate_exterior_border(c));
     }
 }
 

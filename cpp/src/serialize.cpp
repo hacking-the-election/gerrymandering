@@ -279,7 +279,7 @@ template<class Archive> void GeoGerry::Shape::serialize(Archive & ar, const unsi
 }
 
 
-void GeoGerry::State::save_communities(std::string write_path) {
+void GeoGerry::State::save_communities(std::string write_path, Communities communities) {
     /*
         Saves a community to a file at a specific point in the
         pipeline. Useful for visualization and checks.
@@ -294,7 +294,7 @@ void GeoGerry::State::save_communities(std::string write_path) {
     int c_index = 0;
     std::string file = "";
 
-    for (Community c : state_communities) {
+    for (Community c : communities) {
         file += c.save_frame() + "\n";
         c_index++;
     }

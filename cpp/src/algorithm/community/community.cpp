@@ -32,9 +32,11 @@
 #include <math.h>    // for rounding functions
 #include <numeric>   // include std::iota
 #include <algorithm> // sorting, seeking algorithms
+#include <boost/filesystem.hpp>
 
 using namespace std;
 using namespace GeoGerry;
+using namespace boost::filesystem;
 
 #define VERBOSE 1
 #define WRITE 0
@@ -414,7 +416,6 @@ void State::generate_initial_communities(int num_communities) {
                             );
 
                         community.add_precinct(precincts[pre]);
-                        writef(community.to_json(), "c" + std::to_string(c_index) + ".json");
                         precincts_added++;
                     }
                     else cout << "creates island, refraining..." << endl;
@@ -427,15 +428,11 @@ void State::generate_initial_communities(int num_communities) {
         c[c_index] = community;
     }
 
-    for (p_index_set p : available_precincts) {
-        for (p_index pi : p ) {
+    for (p_index_set p : available_precincts)
+        for (p_index pi : p )
             c[c.size() - 1].add_precinct(precincts[pi]);
-        }
-    }
 
-    writef(c[c.size() - 1].to_json(), "c" + std::to_string(c.size() - 1) + ".json");
     this->state_communities = c; // assign state communities to generated array
-    this->save_communities("community_test_vt");
     return;
 }
 
