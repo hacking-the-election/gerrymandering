@@ -1,3 +1,12 @@
+/*=======================================
+ canvas.cpp:                    k-vernooy
+ last modified:               Tue, Feb 18
+ 
+ A file for all the canvas functions for
+ various gui apps, tests, functions and
+ visualizations.
+========================================*/
+
 #include "../include/canvas.hpp"
 
 void GeoDraw::Pixel::draw(SDL_Renderer* renderer) {
@@ -181,12 +190,11 @@ void GeoDraw::Canvas::fill_shapes() {
         for (int j = 0; j < y; j++) {
             for (Pixel p : pixels) {
                 if (p.x == i && p.y == j) {
-                    if (is_filling && p.color == fill_color) { 
+                    if (is_filling && p.color == fill_color && has_filled) { 
                         is_filling = false;
-                        // has_filled = false;
+                        has_filled = false;
                     }
                     else {
-                        // if (is_filling) has_filled = true;
                         is_filling = true;
                         fill_color = p.color;
                     }
@@ -196,11 +204,16 @@ void GeoDraw::Canvas::fill_shapes() {
 
             if (is_filling) {
                 // std::cout << "adding pixel at " << i << ", " << j << std::endl;
+                // std::cout << ((y - j - 1) * x) + i - 1 << std::endl;
                 // int total = (x * y) - 1;
                 // int start = j * x - i;
                 // std::cout << i * x + j << std::endl;
                 // ;
-                this->background[((y - j - 1) * x) + i - 1] = fill_color.get_uint();
+                if (fill_color.get_uint() != background[((y - j) * x) + i - 1])
+                    has_filled = true;
+
+                // std::cout << "adding pixel" << std::endl;
+                this->background[((y - j) * x) + i - 1] = fill_color.get_uint();
                 // std::cout << "added pixel at " << i << ", " << j << std::endl;
             }
         }
@@ -280,7 +293,7 @@ void GeoDraw::Canvas::rasterize_shapes() {
     }
 
 
-    fill_shapes();
+    // fill_shapes();
 
     return;
 }
@@ -335,6 +348,64 @@ void GeoDraw::Canvas::draw() {
 
     while (!quit) {
         SDL_UpdateTexture(texture, NULL, background, x * sizeof(Uint32));
+        SDL_WaitEvent(&event);
+        if (event.type == SDL_QUIT) quit = true;
+
+        SDL_RenderClear(renderer);
+        SDL_RenderCopy(renderer, texture, NULL, NULL);
+        SDL_RenderPresent(renderer);
+    }
+
+    // destroy arrays and SDL objects
+    SDL_DestroyTexture(texture);
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow( window );
+    SDL_Quit();
+}
+
+
+void GeoDraw::Anim::playback() {
+    /*
+        Play back an animation object
+    */
+    
+    std::vector<Uint32*> backgrounds;
+    for (Canvas c : frames) {
+        GeoGerry::bounding_box b = c.get_bounding_box();
+        c.translate(-b[2], -b[1]);
+        c.rasterize_shapes();
+        backgrounds.push_back(c.background);
+    }
+
+    Uint32* background = new Uint32[frames[0].x * frames[0].y];
+    memset(background, 255, frames[0].x * frames[0].y * sizeof(Uint32));
+
+    SDL_Init(SDL_INIT_VIDEO);
+
+    // initialize window
+    SDL_Event event;
+    SDL_Window* window = SDL_CreateWindow("Drawing", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, frames[0].x, frames[0].y, 0);
+    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 0);
+    SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, frames[0].x, frames[0].y);
+
+    SDL_SetWindowResizable(window, SDL_TRUE);
+    SDL_UpdateTexture(texture, NULL, background, frames[0].x * sizeof(Uint32));
+    std::cout << "a" << std::endl;
+
+    for (int i = 0; i < backgrounds.size() - 1; i++) {
+        Uint32* bg = backgrounds[i];
+        SDL_UpdateTexture(texture, NULL, bg, frames[0].x * sizeof(Uint32));
+        SDL_RenderClear(renderer);
+        SDL_RenderCopy(renderer, texture, NULL, NULL);
+        SDL_RenderPresent(renderer);
+        SDL_Delay(5000);
+    }
+
+    bool quit = false;
+    std::cout << "a" << std::endl;
+
+    while (!quit) {
+        SDL_UpdateTexture(texture, NULL, backgrounds[backgrounds.size() - 1], frames[0].x * sizeof(Uint32));
         SDL_WaitEvent(&event);
         if (event.type == SDL_QUIT) quit = true;
 

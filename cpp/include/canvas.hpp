@@ -1,3 +1,12 @@
+/*=======================================
+ canvas.hpp:                    k-vernooy
+ last modified:               Fri, Mar 6
+ 
+ A file for all the canvas classes and
+ declarations for various gui apps, tests,
+ functions and visualizations.
+========================================*/
+
 #include "shape.hpp"
 #include <SDL2/SDL.h>
 
@@ -58,7 +67,16 @@ namespace GeoDraw {
         // contents of the canvas
         std::vector<Outline> outlines;               // shapes to be drawn individually
         std::vector<Outline> holes;                  // shapes to be drawn individually
+
+        // meta information
+        std::vector<Pixel> pixels;        // the pixel array to write to screen
+
+        public:
+
+        GeoGerry::bounding_box box;       // the outer bounding box
         GeoGerry::bounding_box get_bounding_box();   // calculate bounding box of coordinates
+        Uint32* background;
+        int x, y;                         // dimensions of the screen
 
         // modify canvas attributes
         void translate(long int x, long int y);      // move the outlines by x and y
@@ -67,13 +85,6 @@ namespace GeoDraw {
         void rasterize_edges();                      // generate edges
         void fill_shapes();                          // fill shapes with solid color
 
-        // meta information
-        int x, y;                         // dimensions of the screen
-        std::vector<Pixel> pixels;        // the pixel array to write to screen
-        GeoGerry::bounding_box box;       // the outer bounding box
-        Uint32* background;               
-
-        public:
         Canvas(int dx, int dy) : x(dx), y(dy) {};
 
         // add shape to the canvas
@@ -87,6 +98,7 @@ namespace GeoDraw {
     };
 
     class Anim {
+        public:
         std::vector<Canvas> frames;
         int delay;
 
