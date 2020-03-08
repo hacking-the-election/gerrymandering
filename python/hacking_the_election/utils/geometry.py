@@ -6,7 +6,7 @@ Geometric functions
 import math
 import json
 
-from shapely.geometry import MultiLineString, Point, Polygon, MultiPolygon
+from shapely.geometry import Point, Polygon, MultiPolygon
 from shapely.ops import unary_union
 
 
@@ -26,7 +26,7 @@ def get_if_bordering(shape1, shape2):
     """
     Returns whether or not two shapes (shapely polygons) are bordering as a bool
     """
-    return isinstance(clip([shape1, shape2], INTERSECTION), MultiLineString)
+    return isinstance(clip([shape1, shape2], UNION), Polygon)
 
 
 def get_point_in_polygon(polygon, point):

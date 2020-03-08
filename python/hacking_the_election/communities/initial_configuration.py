@@ -54,7 +54,7 @@ def create_initial_configuration(island_precinct_groups, n_districts,
     for i in range(n_precincts % n_districts):
         community_sizes[i] += 1
 
-    print(community_sizes)
+    print(f"{community_sizes=}")
 
     # Find which islands are capable of containing a whole number of
     # communities to start with.
@@ -278,22 +278,18 @@ def create_initial_configuration(island_precinct_groups, n_districts,
                                 island_borders[island_index]
                             )
                         except CommunityFillCompleteException as e:
-                            added_precincts = e.added_precincts
-                            unchosen_precincts_border = \
-                                e.unchosen_precincts_border
+                            unchosen_precincts = e.unchosen_precincts
+                            unchosen_precincts_border = e.unchosen_precincts_border
 
                         # Remove these precincts from being listed as in
                         # island. When other communities fill using this
                         # island, they should not have the precincts
                         # added to this community available to them.
-                        for precinct in island_precinct_groups[island_index][:]:
-                            if precinct.vote_id in added_precincts:
-                                island_precinct_groups[island_index].remove(
-                                    precinct)
-                        if community.islands == {}:
-                            full_communities += 1
+                        island_precinct_groups[island_index] = unchosen_precincts
                         # Update border of island
                         island_borders[island_index] = unchosen_precincts_border
+                        if community.islands == {}:
+                            full_communities += 1
                         print(f"community {community.id} has been given "
                               f"{community.islands[island_index]} precincts "
                               f"from island {island_index}")
@@ -313,7 +309,9 @@ def create_initial_configuration(island_precinct_groups, n_districts,
                         island_precinct_groups[island_index],
                         all_linked_precincts,
                         island_index,
-                        island_borders[island_index]
+                        island_borders[island_index],
+                        [c.coords for c in communities
+                         if island_index in c.islands.keys()]
                     )
                 except CommunityFillCompleteException as e:
                     unchosen_precincts = e.unchosen_precincts

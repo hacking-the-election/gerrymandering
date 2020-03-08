@@ -171,19 +171,27 @@ class Community:
             if compactness:
                 community.update_compactness
 
-    def fill(self, precincts, linked_precincts, island_index, island_border):
+    def fill(self, precincts, linked_precincts, island_index, 
+             island_border, community_borders, used_starting_precincts=set()):
         """
         Fills a community up with precincts.
 
         Args:
-            `precincts`:        List of Precinct objects in the island the
-                                community is on.
-            `linked_precincts`: Set of precincts that are meant to be part
-                                of communities that span islands, therefore
-                                making them untouchable during this step.
-            `island_index`    : Index of island that corresponds to
-                                a key in `self.islands`.
-            `island_border`   : Border of island with index `island_index`
+            `precincts`:               List of Precinct objects in the
+                                       island the community is on.
+            `linked_precincts`:        Set of precincts that are meant
+                                       to be part of communities that
+                                       span islands, therefore making
+                                       them untouchable during this step.
+            `island_index`    :        Index of island that corresponds
+                                       to a key in `self.islands`.
+            `island_border`   :        Border of island with `island_index`
+            `community_borders`:       List of borders of all
+                                       communities on island.
+            `used_starting_precincts`: Set of precinct ids that have
+                                       already been tried for this
+                                       community and led to the
+                                       inevitable creation of an island.
 
         Returns list of added precincts and Polygon that is outer border
         of group of precincts on island that have not been added to a
@@ -206,16 +214,34 @@ class Community:
         )
 
         # Add first precinct to community.
-        all_bordering_precincts = set(unchosen_precincts.precincts.keys())
+        all_bordering_precincts = \
+            self.get_bordering_precincts(unchosen_precincts)
         island_bordering_precincts = {
             p.vote_id for p in unchosen_precincts.precincts.values()
             if get_if_bordering(p.coords, island_border)
         }
-        eligible_precincts = island_bordering_precincts & all_bordering_precincts
-        if eligible_precincts != set():
-            initial_precinct = random.sample(eligible_precincts, 1)[0]
-        else:
-            initial_precinct = random.sample(all_bordering_precincts, 1)[0]
+        community_bordering_precincts = {
+            p.vote_id for p in unchosen_precincts.precincts.values()
+            if True in [get_if_bordering(p.coords, c)
+                        for c in community_borders]
+        }
+        # precincts that border a community and the island border
+        eligible_precincts = (
+            island_bordering_precincts
+          & community_bordering_precincts
+          & all_bordering_precincts)
+        if eligible_precincts == set():
+            eligible_precincts = \
+                island_bordering_precincts & all_bordering_precincts
+        if eligible_precincts == set():
+            eligible_precincts = all_bordering_precincts
+        try:
+            initial_precinct = random.sample(
+                eligible_precincts - used_starting_precincts, 1)[0]
+        except ValueError as ve:
+            print(eligible_precincts)
+            print(used_starting_precincts)
+            raise ve
         unchosen_precincts.give_precinct(self, initial_precinct, **kwargs)
         sys.stdout.write(f"\r000 precincts in community {self.id}")
         sys.stdout.flush()
@@ -240,11 +266,11 @@ class Community:
                         # Taking this precinct created an island, return it.
                         self.give_precinct(unchosen_precincts, precinct, **kwargs)
                     else:
-                        sys.stdout.write(f"\r{add_leading_zeroes(len(self.precincts))}")
-                        sys.stdout.flush()
-                        n_added_precincts += 1
                         now_added_precincts.add(precinct)
                         added_precincts.add(precinct)
+                        n_added_precincts += 1
+                        sys.stdout.write(f"\r{add_leading_zeroes(len(self.precincts))}")
+                        sys.stdout.flush()
             if n_added_precincts == 0:
                 # No precincts can be added without making an island.
                 print(f"\nrestarting filling of community {self.id}")
@@ -253,7 +279,9 @@ class Community:
                     p: self.precincts[p] for p in
                     set(self.precincts.keys()) - added_precincts
                 }
-                self.fill(precincts, linked_precincts, island_index, island_border)
+                self.fill(precincts, linked_precincts, island_index,
+                          island_border, community_borders,
+                          used_starting_precincts | {initial_precinct})
 
 
     def get_bordering_precincts(self, unchosen_precincts):

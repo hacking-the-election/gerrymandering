@@ -36,6 +36,7 @@ from shapely.geometry import Polygon
 from hacking_the_election.utils.geometry import (get_point_in_polygon as gpip,
                                            clip, UNION)
 from hacking_the_election.utils.initial_configuration import group_by_islands
+from hacking_the_election.test.funcs import polygon_to_shapely
 
 
 logging.basicConfig(level=logging.INFO, filename="precincts.log")
@@ -529,7 +530,10 @@ class Precinct:
 
         # save precinct list to state file
         try:
-            save(precinct_dict[0].state, group_by_islands(precinct_dict),
+            print(len(precinct_dict))
+            precinct_dict = group_by_islands(precinct_dict)
+            print(len(precinct_dict))
+            save(precinct_dict[0][0].state, precinct_dict,
                  district_dict, objects_dir)
         except IndexError:
             raise Exception("No precincts saved to precinct list.")

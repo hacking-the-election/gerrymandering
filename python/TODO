@@ -17,8 +17,8 @@
 
 # Communities:
    Now:
-    - update step 1 to only start communities with a precinct that is touching both the state border and a community border (if possible)
-    - use remaining precincts on last community
+    - finish step 1
+    - compactness refinement
     - continue working on partisanship test
     - Real-time drawings of communities being formed.
     - write make_communities function in __init__.py

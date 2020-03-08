@@ -38,8 +38,8 @@ class TestInitialConfiguration(unittest.TestCase):
     def test_state(state):
         state_output = \
             TestInitialConfiguration.test_initial_configuration_speed(
-                state[0], 3, state[2])
-        with open("test_communities.pickle", "wb") as f:
+                state[0], 10, state[2])
+        with open("test_3_communities.pickle", "wb") as f:
             pickle.dump(state_output, f)
         state_output_coords = []
         for community in state_output:
@@ -48,7 +48,7 @@ class TestInitialConfiguration(unittest.TestCase):
             elif isinstance(community.coords, Polygon):
                 state_output_coords.append(polygon_to_list(community.coords))
 
-        convert_to_json(state_output_coords, "test_communities.json")
+        convert_to_json(state_output_coords, "test_communities3.json")
     
     def test_vermont(self):
         TestInitialConfiguration.test_state(VERMONT)
