@@ -93,7 +93,7 @@ namespace GeoDraw {
         void add_shape(GeoGerry::Multi_Shape s, bool = true, Color = Color(0,0,0), int = 1);
         void add_shape(GeoGerry::Precinct_Group s, bool = true, Color = Color(0,0,0), int = 1);
         void add_shape(GeoGerry::Communities s, bool = true, Color = Color(0,0,0), int = 1);
-        
+        void clear();
         void resize_window(int x, int y);
         void draw();
     };

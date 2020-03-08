@@ -9,6 +9,7 @@
 
 #include "../include/shape.hpp"
 #include "../include/term_disp.hpp"
+#include "../include/geometry.hpp"
 #include <boost/filesystem.hpp>
 #include "../include/util.hpp"
 
@@ -244,7 +245,7 @@ template<class Archive> void GeoGerry::Multi_Shape::serialize(Archive & ar, cons
 }
 
 /*
-    The following are mirror serialization methods 
+    The following are serialization methods written
     to make sure that each sub-nested shape is actually
     written to the binary file
 
@@ -304,6 +305,9 @@ void GeoGerry::State::save_communities(std::string write_path, Communities commu
 
 void GeoGerry::State::read_communities(std::string read_path) {
     this->state_communities = Community::load_frame(read_path, *this);
+    for (int i = 0; i < state_communities.size(); i++)
+        state_communities[i].border = generate_exterior_border(state_communities[i]).border;
+
     return;
 }
 

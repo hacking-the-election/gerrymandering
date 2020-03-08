@@ -43,6 +43,7 @@ bool get_bordering(GeoGerry::Shape s0, GeoGerry::Shape s1);
 // overload get_bordering_shapes for vector inheritance problem
 GeoGerry::p_index_set get_bordering_shapes(std::vector<GeoGerry::Shape> shapes, GeoGerry::Shape shape);
 GeoGerry::p_index_set get_bordering_shapes(std::vector<GeoGerry::Precinct_Group> shapes, GeoGerry::Shape shape);
+GeoGerry::p_index_set get_bordering_shapes(std::vector<GeoGerry::Community> shapes, GeoGerry::Community shape);
 GeoGerry::p_index_set get_bordering_shapes(std::vector<GeoGerry::Community> shapes, GeoGerry::Shape shape);
 
 // for clipper conversions
@@ -51,6 +52,7 @@ GeoGerry::LinearRing path_to_ring(ClipperLib::Path path);
 ClipperLib::Paths shape_to_paths(GeoGerry::Shape shape);
 GeoGerry::Multi_Shape paths_to_multi_shape(ClipperLib::Paths paths);
 
+GeoGerry::p_index_set get_exchangeable_precincts(GeoGerry::Community c, GeoGerry::Communities cs);
 // geos::geom::LinearRing* create_linearring(GeoGerry::coordinate_set coords);
 // geos::geom::Point* create_point(double x, double y);
 // geos::geom::Geometry* shape_to_poly(GeoGerry::LinearRing shape);

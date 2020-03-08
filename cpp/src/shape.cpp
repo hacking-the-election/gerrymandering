@@ -13,8 +13,11 @@
 
 double GeoGerry::Precinct::get_ratio() {
     // retrieve ratio from precinct
+    if (rep == 0 && dem == 0)
+        return 1;
+
     #ifdef REP
-        return rep / (dem + rep);
+        return (double) rep / ((double) dem + (double) rep);
     #endif
     #ifndef REP
         return dem / (dem + rep);
