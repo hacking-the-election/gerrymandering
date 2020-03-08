@@ -5,7 +5,7 @@ so that they are compact within a threshold.
 
 
 from hacking_the_election.utils.compactness import get_average_compactness
-from hacking_the_election.utils.initial_configuration import LoopBreakException
+from hacking_the_election.utils.exceptions import LoopBreakException
 
 
 def refine_for_compactness(communities, minimum_compactness):

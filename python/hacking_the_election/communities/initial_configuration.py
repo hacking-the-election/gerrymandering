@@ -13,6 +13,10 @@ import random
 
 from shapely.geometry import (MultiPolygon, Polygon)
 
+from hacking_the_election.utils.exceptions import (
+    LoopBreakException,
+    CommunityFillCompleteException
+)
 from hacking_the_election.utils.geometry import (
     clip,
     DIFFERENCE,
@@ -27,8 +31,6 @@ from hacking_the_election.utils.initial_configuration import (
     get_precinct_link_pair,
     GIVE_PRECINCT_COORDS_ONLY_KWARGS,
     group_by_islands,
-    LoopBreakException,
-    CommunityFillCompleteException,
 )
 from hacking_the_election.test.funcs import (
     convert_to_json,
