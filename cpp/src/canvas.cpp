@@ -206,23 +206,14 @@ void GeoDraw::Canvas::fill_shapes() {
                         is_filling = true;
                         fill_color = p.color;
                     }
-                    // std::cout << "pixel at location" << std::endl;
                 }
             }
 
             if (is_filling) {
-                // std::cout << "adding pixel at " << i << ", " << j << std::endl;
-                // std::cout << ((y - j - 1) * x) + i - 1 << std::endl;
-                // int total = (x * y) - 1;
-                // int start = j * x - i;
-                // std::cout << i * x + j << std::endl;
-                // ;
                 if (fill_color.get_uint() != background[((y - j) * x) + i - 1])
                     has_filled = true;
-
-                // std::cout << "adding pixel" << std::endl;
+                
                 this->background[((y - j) * x) + i - 1] = fill_color.get_uint();
-                // std::cout << "added pixel at " << i << ", " << j << std::endl;
             }
         }
 
@@ -251,9 +242,8 @@ void GeoDraw::Canvas::rasterize_edges() {
             x1 = s[2];
             y1 = s[3];
 
-
-            Pixel p0(x0, y0, o.color);
-            this->pixels.push_back(p0);
+            // Pixel p0(x0, y0, o.color);
+            // this->pixels.push_back(p0);
             dx = x1 - x0;
             dy = y1 - y0;
 
@@ -369,6 +359,15 @@ void GeoDraw::Canvas::draw() {
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow( window );
     SDL_Quit();
+}
+
+
+void GeoDraw::Canvas::clear() {
+    while (outlines.size() > 0)
+        outlines.pop_back();
+
+    while (holes.size() > 0)
+        holes.pop_back();
 }
 
 
