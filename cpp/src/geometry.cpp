@@ -9,6 +9,7 @@
 ========================================*/
 
 #include "../include/geometry.hpp"
+#include "../include/canvas.hpp"
 #include "../include/shape.hpp"   // class definitions
 #include "../include/util.hpp"
 #include <iomanip>
@@ -446,7 +447,7 @@ bool get_bordering(Multi_Shape s0, Shape s1) {
         @return: `bool` shapes are boording
     */
 
-        // create paths array from polygon
+    // create paths array from polygon
 	ClipperLib::Paths subj;
     for (Shape s : s0.border)
         subj.push_back(ring_to_path(s.hull));
@@ -454,20 +455,20 @@ bool get_bordering(Multi_Shape s0, Shape s1) {
     ClipperLib::Paths clip;
     clip.push_back(ring_to_path(s1.hull));
 
-    ClipperLib::Paths solutions;
+    ClipperLib::Paths usolutions;
+    ClipperLib::Paths xsolutions;
     ClipperLib::Clipper c; // the executor
 
     // execute union on paths array
     c.AddPaths(subj, ClipperLib::ptSubject, true);
     c.AddPaths(clip, ClipperLib::ptClip, true);
-    // cout << "a " << endl;
-    c.Execute(ClipperLib::ctUnion, solutions, ClipperLib::pftNonZero);
-    // cout << "b " << endl;
+    c.Execute(ClipperLib::ctXor, xsolutions, ClipperLib::pftNonZero);
+    c.Execute(ClipperLib::ctUnion, usolutions, ClipperLib::pftNonZero);
 
-    Multi_Shape ms = paths_to_multi_shape(solutions);
-    return (ms.border.size() == s0.border.size());
+    Multi_Shape msx = paths_to_multi_shape(xsolutions);
+    Multi_Shape msu = paths_to_multi_shape(usolutions);
 
-    return false;
+    return (msu.border.size() == s0.border.size() && msx.holes.size() == 0);
 }
 
 
@@ -478,14 +479,27 @@ bool get_bordering(Multi_Shape s0, Multi_Shape s1) {
         @return: `bool` shapes are boording
     */
 
-    cout << "r" << endl;
+    // create paths array from polygon
+	ClipperLib::Paths subj;
+    for (Shape s : s0.border)
+        subj.push_back(ring_to_path(s.hull));
 
-    for (segment seg0 : s0.get_segments())
-        for (segment seg1 : s1.get_segments())
-            if (get_colinear(seg0, seg1) && get_overlap(seg0, seg1))
-                return true;
+    ClipperLib::Paths clip;
+    for (Shape s : s1.border)
+        clip.push_back(ring_to_path(s.hull));
 
-    return false;
+    ClipperLib::Paths solutions;
+    ClipperLib::Clipper c; // the executor
+
+    // execute union on paths array
+    c.AddPaths(subj, ClipperLib::ptSubject, true);
+    c.AddPaths(clip, ClipperLib::ptClip, true);
+    c.Execute(ClipperLib::ctUnion, solutions, ClipperLib::pftNonZero);
+    Multi_Shape ms = paths_to_multi_shape(solutions);
+
+    cout << ms.border.size() << ", " << s0.border.size() + s1.border.size() << endl;
+
+    return (ms.border.size() < s0.border.size() + s1.border.size());
 }
 
 
@@ -657,6 +671,23 @@ p_index_set get_bordering_shapes(vector<Precinct_Group> shapes, Shape shape) {
     return vec;
 }
 
+p_index_set get_bordering_shapes(vector<Community> shapes, Community shape) {
+    /*
+        returns set of indices corresponding to the Precinct_Groups that
+        border with the Precinct_Group[index] shape.
+    */
+
+    p_index_set vec;
+    
+    for (p_index i = 0; i < shapes.size(); i++) {
+        if ((shapes[i].border != shape.border) && get_bordering(shapes[i], shape)) vec.push_back(i);
+        else cout << "do not border..." << endl;
+    }
+    
+    return vec;
+}
+
+
 p_index_set get_bordering_shapes(vector<Community> shapes, Shape shape) {
     /*
         returns set of indices corresponding to the Precinct_Groups that
@@ -665,8 +696,9 @@ p_index_set get_bordering_shapes(vector<Community> shapes, Shape shape) {
 
     p_index_set vec;
     
-    for (p_index i = 0; i < shapes.size(); i++)
+    for (p_index i = 0; i < shapes.size(); i++) {
         if ( ( shapes[i] != shape ) && get_bordering(shapes[i], shape)) vec.push_back(i);
+    }
     
     return vec;
 }
@@ -720,20 +752,19 @@ double get_standard_deviation_partisanship(Precinct_Group pg) {
         Returns the standard deviation of the partisanship
         ratio for a given array of precincts
     */
-    cout << "a" << endl;
+
     vector<Precinct> p = pg.precincts;
     double mean = p[0].get_ratio();
 
-    for (int i = 1; i < pg.precincts.size(); i++)
+    for (int i = 1; i < p.size(); i++) {
         mean += p[i].get_ratio();
+    }
 
     mean /= p.size();
     double dev_mean = pow(p[0].get_ratio() - mean, 2);
 
     for (int i = 1; i < p.size(); i++)
         dev_mean += pow(p[i].get_ratio() - mean, 2);
-
-    cout << "b" << endl;
 
     return (sqrt(dev_mean));
 }
@@ -754,10 +785,8 @@ double get_median_partisanship(Precinct_Group pg) {
     sort(ratios.begin(), ratios.end()); // sort array
 
     // get median from array of ratios
-    if (s % 2 == 0)
-        median = (ratios[(s - 1) / 2] + ratios[s / 2]) / 2.0;
-    else
-        median = ratios[s / 2];
+    if (s % 2 == 0) median = (ratios[(s - 1) / 2] + ratios[s / 2]) / 2.0;
+    else median = ratios[s / 2];
 
     return median;
 }
@@ -864,20 +893,20 @@ GeoGerry::Multi_Shape paths_to_multi_shape(ClipperLib::Paths paths) {
     ReversePaths(paths);
 
     for (ClipperLib::Path path : paths) {
-        // if (ClipperLib::Orientation(path)) {
-        GeoGerry::LinearRing border = path_to_ring(path);
-        if (border.border[0] != border.border[border.border.size() - 1])
-            border.border.insert(border.border.begin(), border.border[border.border.size() - 1]);
+        if (!ClipperLib::Orientation(path)) {
+            GeoGerry::LinearRing border = path_to_ring(path);
+            if (border.border[0] != border.border[border.border.size() - 1])
+                border.border.insert(border.border.begin(), border.border[border.border.size() - 1]);
 
-        GeoGerry::Shape s(border);
-        ms.border.push_back(s);
-        // }
-        // else {
-        //     std::cout << "hole" << std::endl;
-        //     ReversePath(path);
-        //     GeoGerry::LinearRing hole = path_to_ring(path);
-        //     ms.border[ms.border.size() - 1].holes.push_back(hole);
-        // }
+            GeoGerry::Shape s(border);
+            ms.border.push_back(s);
+        }
+        else {
+            // std::cout << "hole" << std::endl;
+            ReversePath(path);
+            GeoGerry::LinearRing hole = path_to_ring(path);
+            ms.holes.push_back(hole);
+        }
     }
 
     return ms;
@@ -967,19 +996,15 @@ bool creates_island(GeoGerry::Precinct_Group set, GeoGerry::p_index remove) {
 
         @return: `bool` exchange creates an island
     */
-
-    // calculate initial number of islands in set
-    int islands_before = generate_exterior_border(set).border.size();
     
     // remove precinct from set
     set.precincts.erase(set.precincts.begin() + remove);
-
-    // calculate new number of islands
     int islands_after = generate_exterior_border(set).border.size();
 
     // return whether exchange has created an island
-    return (islands_after > islands_before);
+    return (islands_after > 1);
 }
+
 
 bool creates_island(GeoGerry::p_index_set set, GeoGerry::p_index remove, GeoGerry::State precincts) {
     /*
@@ -1013,6 +1038,35 @@ bool creates_island(GeoGerry::p_index_set set, GeoGerry::p_index remove, GeoGerr
     int islands_after = generate_exterior_border(pg_after).border.size();
 
     return (islands_after > islands_before);
+}
+
+
+p_index_set get_exchangeable_precincts(Community c, Communities cs) {
+    /*
+        @desc:
+            Gets precincts that can be exchanged with another
+            community - can never return null for geometric reasons
+    */
+    p_index_set borders = get_inner_boundary_precincts(c);
+    p_index_set exchangeable_precincts;
+
+    Multi_Shape ms(c.border);
+    GeoDraw::Canvas canvas(900, 900);
+
+    for (p_index p : borders) {
+        for (Community c_p : cs) {
+            if ((c_p != c) && get_bordering(c_p, c.precincts[p]) && !creates_island(c, p)) {
+                exchangeable_precincts.push_back(p);
+                canvas.add_shape(c.precincts[p]);
+                break;
+            }
+        }
+    }
+
+    canvas.add_shape(ms);
+    canvas.draw();
+
+    return exchangeable_precincts;
 }
 
 // geos::geom::GeometryFactory::Ptr global_factory;
