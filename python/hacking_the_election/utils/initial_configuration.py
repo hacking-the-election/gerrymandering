@@ -29,6 +29,15 @@ from hacking_the_election.test.funcs import (
 )
 
 
+GIVE_PRECINCT_COORDS_ONLY_KWARGS = {
+    "partisanship": False,
+    "standard_deviation": False,
+    "population": False, 
+    "compactness": False, 
+    "coords": True
+}
+
+
 # ===================================================
 # custom exceptions
 
@@ -199,13 +208,6 @@ class Community:
         """
 
         added_precincts = set()
-        kwargs = {
-            "partisanship": False,
-            "standard_deviation": False,
-            "population": False, 
-            "compactness": False, 
-            "coords": True
-        }
         unchosen_precincts = Community(
             precincts[:],  # copy
             0,
@@ -214,17 +216,21 @@ class Community:
         )
 
         # Add first precinct to community.
-        all_bordering_precincts = \
-            self.get_bordering_precincts(unchosen_precincts)
+
+        # All the precincts are "bordering" because this community has
+        # no precincts on this island yet.
+        all_bordering_precincts = {p.vote_id for p in precincts}
         island_bordering_precincts = {
             p.vote_id for p in unchosen_precincts.precincts.values()
             if get_if_bordering(p.coords, island_border)
         }
-        community_bordering_precincts = {
-            p.vote_id for p in unchosen_precincts.precincts.values()
-            if True in [get_if_bordering(p.coords, c)
-                        for c in community_borders]
-        }
+        # Community objects to store the coords.
+        communities = [Community([], i, {}, coords=border)
+                       for i, border in enumerate(community_borders)]
+        community_bordering_precincts = set()
+        for c in communities:
+            for p in c.get_bordering_precincts(unchosen_precincts):
+                community_bordering_precincts.add(p)
         # precincts that border a community and the island border
         eligible_precincts = (
             island_bordering_precincts
@@ -235,14 +241,11 @@ class Community:
                 island_bordering_precincts & all_bordering_precincts
         if eligible_precincts == set():
             eligible_precincts = all_bordering_precincts
-        try:
-            initial_precinct = random.sample(
-                eligible_precincts - used_starting_precincts, 1)[0]
-        except ValueError as ve:
-            print(eligible_precincts)
-            print(used_starting_precincts)
-            raise ve
-        unchosen_precincts.give_precinct(self, initial_precinct, **kwargs)
+        initial_precinct = random.sample(
+            eligible_precincts - used_starting_precincts, 1)[0]
+
+        unchosen_precincts.give_precinct(self, initial_precinct,
+                                         **GIVE_PRECINCT_COORDS_ONLY_KWARGS)
         sys.stdout.write(f"\r000 precincts in community {self.id}")
         sys.stdout.flush()
 
@@ -261,10 +264,13 @@ class Community:
                         list(unchosen_precincts.precincts.values()),
                         unchosen_precincts.coords)
                 else:
-                    unchosen_precincts.give_precinct(self, precinct, **kwargs)
+                    unchosen_precincts.give_precinct(
+                        self, precinct, **GIVE_PRECINCT_COORDS_ONLY_KWARGS)
                     if isinstance(unchosen_precincts.coords, MultiPolygon):
                         # Taking this precinct created an island, return it.
-                        self.give_precinct(unchosen_precincts, precinct, **kwargs)
+                        self.give_precinct(
+                            unchosen_precincts, precinct,
+                            **GIVE_PRECINCT_COORDS_ONLY_KWARGS)
                     else:
                         now_added_precincts.add(precinct)
                         added_precincts.add(precinct)
@@ -318,7 +324,7 @@ class Community:
                     thread.run()
             except ValueError:
                 # There are less than 20 precincts left.
-                for precinct in unchosen_precincts.values():
+                for precinct in unchosen_precincts.precincts.values():
                     if get_if_bordering(self.coords, precinct.coords):
                         bordering_precincts.add(precinct.vote_id)
         else:
