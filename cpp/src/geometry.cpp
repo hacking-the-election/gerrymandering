@@ -10,7 +10,6 @@
 
 #include "../include/geometry.hpp"
 #include "../include/shape.hpp"   // class definitions
-#include "../include/gui.hpp"     // for the draw function
 #include "../include/util.hpp"
 #include <iomanip>
 
@@ -35,6 +34,7 @@ double round_d(double value) {
     return round(value * d) / d;
 }
 
+
 segment coords_to_seg(coordinate c1, coordinate c2) {
     /*
         @desc: combines coordinates into a segment array
@@ -46,6 +46,7 @@ segment coords_to_seg(coordinate c1, coordinate c2) {
     return s;
 }
 
+
 double get_distance(segment s) {
     /* 
         @desc: Distance formula on a segment array
@@ -56,6 +57,18 @@ double get_distance(segment s) {
     return sqrt(pow((s[2] - s[0]), 2) + pow((s[3] - s[1]), 2));
 }
 
+
+double get_distance(std::array<long long int, 2> c1, std::array<long long int, 2> c2) {
+    /* 
+        @desc: Distance formula on a segment array
+        @params: `c1`, `c2`: coordinates to get the distance of
+        @return: `double` the distance of the segment
+    */
+
+    return sqrt(pow((c2[0] - c1[0]), 2) + pow((c2[1] - c1[1]), 2));
+}
+
+
 double get_distance(coordinate c0, coordinate c1) {
     /*
         @desc: Distance formula on two separate points
@@ -65,6 +78,7 @@ double get_distance(coordinate c0, coordinate c1) {
 
     return get_distance(coords_to_seg(c0, c1));
 }
+
 
 vector<long int> get_equation(segment s) {
     /*
@@ -87,10 +101,11 @@ vector<long int> get_equation(segment s) {
     else
         m = l;
 
-    long int b = (m * s[0]) - s[1]; // @warn - multiply by -1 for value
+    long int b = -1 * ((m * s[0]) - s[1]); // @warn - multiply by -1 for value
 
     return {m, b};
 }
+
 
 bool get_colinear(segment s0, segment s1) {
     /*
@@ -101,6 +116,7 @@ bool get_colinear(segment s0, segment s1) {
 
     return (get_equation(s0) == get_equation(s1));
 }
+
 
 bool point_on_segment(coordinate c, segment s) {
     /*
@@ -132,6 +148,7 @@ bool point_on_segment(coordinate c, segment s) {
     return true;
 }
 
+
 bool get_overlap(segment s0, segment s1) {
     /*
         @desc:
@@ -145,9 +162,9 @@ bool get_overlap(segment s0, segment s1) {
         @warn: This function is untested!
     */
     
-    // s0[2], s0[3] is within the other segment
     long int s0min = s0[0];
     long int s0max = s0[2];
+
     if (s0[2] < s0min) {
         s0min = s0[2];
         s0max = s0[0];
@@ -155,18 +172,13 @@ bool get_overlap(segment s0, segment s1) {
 
     long int s1min = s1[0];
     long int s1max = s1[2];
+
     if (s1[2] < s1min) {
         s1min = s1[2];
         s1max = s1[0];
     }
 
     return (s0min <= s1max && s1min <= s0max);
-    
-    // coordinate c1, c2;
-    // c1 = {s0[0], s0[1]};
-    // c2 = {s0[2], s0[3]};
-
-    // return (point_on_segment(c1, s1) || point_on_segment(c2, s1));
 }
 
 
@@ -201,6 +213,7 @@ segments GeoGerry::LinearRing::get_segments() {
     return segs;
 }
 
+
 segments GeoGerry::Shape::get_segments() {
     /*
         @desc: get list of all segments in a shape, including hole LinearRings array
@@ -216,6 +229,7 @@ segments GeoGerry::Shape::get_segments() {
 
     return segs;
 }
+
 
 segments GeoGerry::Multi_Shape::get_segments() {
     /*
@@ -706,7 +720,7 @@ double get_standard_deviation_partisanship(Precinct_Group pg) {
         Returns the standard deviation of the partisanship
         ratio for a given array of precincts
     */
-
+    cout << "a" << endl;
     vector<Precinct> p = pg.precincts;
     double mean = p[0].get_ratio();
 
@@ -718,6 +732,8 @@ double get_standard_deviation_partisanship(Precinct_Group pg) {
 
     for (int i = 1; i < p.size(); i++)
         dev_mean += pow(p[i].get_ratio() - mean, 2);
+
+    cout << "b" << endl;
 
     return (sqrt(dev_mean));
 }

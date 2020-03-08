@@ -32,9 +32,11 @@
 #include <math.h>    // for rounding functions
 #include <numeric>   // include std::iota
 #include <algorithm> // sorting, seeking algorithms
+#include <boost/filesystem.hpp>
 
 using namespace std;
 using namespace GeoGerry;
+using namespace boost::filesystem;
 
 #define VERBOSE 1
 #define WRITE 0
@@ -48,7 +50,7 @@ using namespace GeoGerry;
 */
 
 const int CHANGED_PRECINT_TOLERANCE = 10; // percent of precincts that can change from iteration
-const int MAX_ITERATIONS = 3; // max number of times we can change a community
+const int MAX_ITERATIONS = 5; // max number of times we can change a community
 
 // ids for processes:
 const int PARTISANSHIP = 0;
@@ -92,6 +94,7 @@ void State::generate_initial_communities(int num_communities) {
             communities, add it to
         */
 
+        cout << "island 1" << endl;
         map<int, array<int, 2> > vals; // to hold possible size combinations
 
         for (int x = 1; x <= large_sizes.size(); x++) {
@@ -149,15 +152,17 @@ void State::generate_initial_communities(int num_communities) {
 
     writef(this->to_json(), "vt.json");
     vector<p_index> ignore_fractionals; // fractional islands to be ignored, not removed
-    if (VERBOSE) cout << "linking fractional communities..." << endl;
 
     for (p_index fractional_island_i = 0; fractional_island_i < fractional_islands.size(); fractional_island_i++) {
         /*
             Loop through all ƒractional islands - those that need precincts
             from other islands to create communities - and create community
             objects with links
+
+            Have fun trying to understand this code tomorrow
         */
 
+        if (VERBOSE) cout << "linking fractional communities... " << fractional_islands.size() << endl;
         int n_fractional_island_i = fractional_island_i;
 
         if (!(std::find(ignore_fractionals.begin(), ignore_fractionals.end(), fractional_islands[fractional_island_i]) != ignore_fractionals.end())) {
@@ -168,7 +173,7 @@ void State::generate_initial_communities(int num_communities) {
             p_index_set island = islands[island_i];
 
             // get average center of island from precinct centers
-            coordinate island_center = {0,0};
+            array<long long int, 2> island_center = {0,0};
 
             for (p_index p : island) {
                 coordinate p_center = precincts[p].get_center();
@@ -176,8 +181,8 @@ void State::generate_initial_communities(int num_communities) {
                 island_center[1] += p_center[1];
             }
 
-            island_center[0] = (long int) island_center[0] / (long int) island.size();
-            island_center[1] = (long int) island_center[1] / (long int) island.size();
+            island_center[0] = island_center[0] / island.size();
+            island_center[1] = island_center[1] / island.size();
 
             int island_leftover = islands[fractional_islands[fractional_island_i]].size();
 
@@ -212,7 +217,7 @@ void State::generate_initial_communities(int num_communities) {
                 // find the closest fractional island that can be linked
                 double min_distance = pow(10, 80); // arbitrarily high number (easy min)
                 p_index min_index = -1;
-                coordinate min_island_center = {0,0};
+                array<long long int, 2> min_island_center = {0,0};
 
                 for (int compare_island = 0; compare_island < fractional_islands.size(); compare_island++) {
                     // find closest fractional community to link
@@ -220,7 +225,7 @@ void State::generate_initial_communities(int num_communities) {
                         !(std::find(ignore_fractionals.begin(), ignore_fractionals.end(), fractional_islands[compare_island]) != ignore_fractionals.end())) {
                         // get average center of island from precinct centers
                         p_index_set island_c = islands[fractional_islands[compare_island]];
-                        coordinate island_center_c = {0,0};
+                        array<long long int, 2> island_center_c = {0,0};  
 
                         for (p_index p : island_c) {
                             coordinate p_center = precincts[p].get_center();
@@ -263,7 +268,7 @@ void State::generate_initial_communities(int num_communities) {
                     do {
                         for (p_index p : get_inner_boundary_precincts(islands[fractional_islands[min_index]], *this)) {
                         // for (p_index p : islands[fractional_islands[min_index]]) {
-                            coordinate p_center = precincts[p].get_center();
+                            array<long long int, 2> p_center = {(long long int) precincts[p].get_center()[0], (long long int) precincts[p].get_center()[1]};
                             double dist = get_distance(p_center, island_center);
 
                             if (dist < min_p_distance && (std::find(ignore_p.begin(), ignore_p.end(), p) == ignore_p.end())) {
@@ -287,7 +292,7 @@ void State::generate_initial_communities(int num_communities) {
 
                 do {
                     for (p_index p : get_inner_boundary_precincts(islands[fractional_islands[n_fractional_island_i]], *this)) {
-                        coordinate p_center = precincts[p].get_center();
+                        array<long long int, 2> p_center = {(long long int) precincts[p].get_center()[0], (long long int) precincts[p].get_center()[1]};
                         double distc = get_distance(p_center, min_island_center);
 
                         if (distc < min_p_distance && (std::find(ignore_p.begin(), ignore_p.end(), p) == ignore_p.end())) {
@@ -411,7 +416,6 @@ void State::generate_initial_communities(int num_communities) {
                             );
 
                         community.add_precinct(precincts[pre]);
-                        writef(community.to_json(), "c" + std::to_string(c_index) + ".json");
                         precincts_added++;
                     }
                     else cout << "creates island, refraining..." << endl;
@@ -424,15 +428,11 @@ void State::generate_initial_communities(int num_communities) {
         c[c_index] = community;
     }
 
-    for (p_index_set p : available_precincts) {
-        for (p_index pi : p ) {
+    for (p_index_set p : available_precincts)
+        for (p_index pi : p )
             c[c.size() - 1].add_precinct(precincts[pi]);
-        }
-    }
 
-    writef(c[c.size() - 1].to_json(), "c" + std::to_string(c.size() - 1) + ".json");
     this->state_communities = c; // assign state communities to generated array
-    this->save_communities("community_test_vt");
     return;
 }
 
@@ -606,12 +606,14 @@ void State::refine_partisan(double partisanship_tolerance) {
         @params: `double` partisanship_tolerance: tolerance for partisanship
         @return: void
     */
-    
+    cout << "Refining for partisanship..." << endl;
+
     p_index worst_community = get_next_community(partisanship_tolerance, PARTISANSHIP);
     bool is_done = (worst_community == -1);
     vector<int> num_changes(state_communities.size());
 
     while (!is_done) {
+        cout << "Refining again..." << endl;
         Community c = state_communities[worst_community];
         
         double median = get_median_partisanship(c);

@@ -7,85 +7,7 @@
  visualizations.
 ========================================*/
 
-#include "../include/gui.hpp"
 #include "../include/geometry.hpp"
-
-GeoGerry::bounding_box normalize_coordinates(GeoGerry::Shape* shape) {
-
-    /*
-        returns a normalized bounding box, and modifies 
-        shape object's coordinates to move it to Quadrant I
-    */
-
-    // set dummy extremes
-    int top = shape->hull.border[0][1], 
-        bottom = shape->hull.border[0][1], 
-        left = shape->hull.border[0][0], 
-        right = shape->hull.border[0][0];
-
-    // loop through and find actual corner using ternary assignment
-    for (GeoGerry::coordinate coord : shape->hull.border) {
-        top = (coord[1] > top)? coord[1] : top;
-        bottom = (coord[1] < bottom)? coord[1] : bottom;
-        left = (coord[0] < left)? coord[0] : left;
-        right = (coord[0] > right)? coord[0] : right;
-    }
-
-    // add to each coordinate to move it to quadrant 1
-    for (int i = 0; i < shape->hull.border.size(); i++) {
-        shape->hull.border[i][0] += (0 - left);
-        shape->hull.border[i][1] += (0 - bottom);
-    }
-
-    // normalize the bounding box too
-    top += (0 - bottom);
-    right += (0 - left);
-    bottom = 0;
-    left = 0;
-
-    return {top, bottom, left, right}; // return bounding box
-}
-
-GeoGerry::coordinate_set resize_coordinates(GeoGerry::bounding_box box, GeoGerry::coordinate_set shape, int screenX, int screenY) {
-    // scales an array of coordinates to fit 
-    // on a screen of dimensions {screenX, screenY}
-    
-    double ratioTop = ceil((float) box[0]) / (float) (screenX);   // the rounded ratio of top:top
-    double ratioRight = ceil((float) box[3]) / (float) (screenY); // the rounded ratio of side:side
-    
-    // find out which is larger and assign its reciporical to the scale factor
-    double scaleFactor = floor(1 / ((ratioTop > ratioRight) ? ratioTop : ratioRight)); 
-
-    // dilate each coordinate in the shape
-    for ( int i = 0; i < shape.size(); i++ ) {
-        shape[i][0] *= scaleFactor;
-        shape[i][1] *= scaleFactor;        
-    }
-
-    // return scaled coordinates
-    return shape;
-}
-
-Uint32* pix_array(GeoGerry::coordinate_set shape, int x, int y) {
-
-    /* 
-        creates and returns a pixel array 
-        from an vector of floating point coordinates
-    */
-
-    Uint32 * pixels = new Uint32[x * y];           // new blank pixel array
-    memset(pixels, 255, x * y * sizeof(Uint32));   // fill pixel array with white
-    int total = (x * y) - 1;                       // last index in pixel array;
-
-    for (GeoGerry::coordinate coords : shape) {
-        // locate the coordinate, set it to black
-        int start = (int)((int)coords[1] * x - (int)coords[0]);
-        pixels[total - start] = 0;
-    }
-
-    // return array
-    return pixels;
-}
 
 GeoGerry::coordinate_set connect_dots(GeoGerry::coordinate_set shape) {
     GeoGerry::coordinate_set newShape;
@@ -135,53 +57,6 @@ void destroy_window(SDL_Window* window) {
     SDL_Quit();
 }
 
-void GeoGerry::Shape::draw() {
-    /*
-        open an SDL window, create a pixel array 
-        with the shape's geometry, and print it to the window
-    */
-
-    int dim[2] = {900, 900}; // the size of the SDL window
-
-    // prepare array of coordinates to be drawn
-    bounding_box box = normalize_coordinates(this);
-    coordinate_set shape = resize_coordinates(box, this->hull.border, dim[0], dim[1]);
-    shape = connect_dots(shape);
-
-    // write coordinates to pixel array
-    Uint32 * pixels = pix_array(shape, dim[0], dim[1]);
-
-    // initialize window
-    SDL_Event event;
-    SDL_Window * window = SDL_CreateWindow("Shape", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, dim[0], dim[1], 0);
-    SDL_Renderer * renderer = SDL_CreateRenderer(window, -1, 0);
-    SDL_Texture * texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, dim[0], dim[1]);
-    SDL_SetWindowResizable(window, SDL_TRUE);
-    bool quit = false;
-
-    while (!quit) {
-
-        // write current array to screen
-        SDL_UpdateTexture(texture, NULL, pixels, dim[0] * sizeof(Uint32));
-
-        // wait for screen to quit
-        SDL_WaitEvent(&event);
-
-        if (event.type == SDL_QUIT)
-            quit = true;
-
-        // update the SDL renderer
-        SDL_RenderClear(renderer);
-        SDL_RenderCopy(renderer, texture, NULL, NULL);
-        SDL_RenderPresent(renderer);
-    }
-
-    // destroy arrays and SDL objects
-    delete[] pixels;
-    SDL_DestroyTexture(texture);
-    SDL_DestroyRenderer(renderer);
-    destroy_window(window);
-}
 
 GeoGerry::bounding_box normalize_coordinates(GeoGerry::Multi_Shape* multi_shape) {
     // set dummy extremes
@@ -306,48 +181,6 @@ GeoGerry::coordinate_set connect_dots(std::vector<GeoGerry::Shape> shapes) {
     return newShape;
 }
 
-void GeoGerry::Multi_Shape::draw() {
-    // combine precincts into single array, draw array
-
-    int dim[2] = {900, 900}; // the size of the SDL window
-    // prepare array of coordinates to be drawn
-    GeoGerry::bounding_box box = normalize_coordinates(this);
-    std::vector<GeoGerry::Shape> shapes = resize_coordinates(box, this->border, dim[0], dim[1]);
-
-    GeoGerry::coordinate_set shape = connect_dots(shapes);
-    // write coordinates to pixel array
-    Uint32 * pixels = pix_array(shape, dim[0], dim[1]);
-
-    // initialize window
-    SDL_Event event;
-    SDL_Window * window = SDL_CreateWindow("Shape", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, dim[0], dim[1], 0);
-    SDL_Renderer * renderer = SDL_CreateRenderer(window, -1, 0);
-    SDL_Texture * texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, dim[0], dim[1]);
-    SDL_SetWindowResizable(window, SDL_TRUE);
-    bool quit = false;
-
-    while (!quit) {
-        // write current array to screen
-        SDL_UpdateTexture(texture, NULL, pixels, dim[0] * sizeof(Uint32));
-        // wait for screen to quit
-        SDL_WaitEvent(&event);
-        
-        if (event.type == SDL_QUIT)
-            quit = true;
-
-        // update the SDL renderer
-        SDL_RenderClear(renderer);
-        SDL_RenderCopy(renderer, texture, NULL, NULL);
-        SDL_RenderPresent(renderer);
-    }
-
-    // destroy arrays and SDL objects
-    delete[] pixels;
-    SDL_DestroyTexture(texture);
-    SDL_DestroyRenderer(renderer);
-    destroy_window(window);
-}
-
 GeoGerry::bounding_box normalize_coordinates(GeoGerry::State* state) {
     /*
         returns a normalized bounding box, and modifies 
@@ -468,44 +301,4 @@ GeoGerry::coordinate_set connect_dots(std::vector<GeoGerry::Precinct> shapes) {
     }
 
     return newShape;
-}
-
-void GeoGerry::State::draw() {
-    // combine precincts into single array, draw array
-    int dim[2] = {900, 900}; // the size of the SDL window
-    // prepare array of coordinates to be drawn
-    GeoGerry::bounding_box box = normalize_coordinates(this);
-    std::vector<GeoGerry::Precinct> shapes = resize_coordinates(box, this->precincts, dim[0], dim[1]);
-    GeoGerry::coordinate_set shape = connect_dots(shapes);
-
-    // write coordinates to pixel array
-    Uint32 * pixels = pix_array(shape, dim[0], dim[1]);
-    // initialize window
-    SDL_Event event;
-    SDL_Window * window = SDL_CreateWindow("Shape", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, dim[0], dim[1], 0);
-    SDL_Renderer * renderer = SDL_CreateRenderer(window, -1, 0);
-    SDL_Texture * texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, dim[0], dim[1]);
-    SDL_SetWindowResizable(window, SDL_TRUE);
-    bool quit = false;
-
-    while (!quit) {
-        // write current array to screen
-        SDL_UpdateTexture(texture, NULL, pixels, dim[0] * sizeof(Uint32));
-        // wait for screen to quit
-        SDL_WaitEvent(&event);
-        
-        if (event.type == SDL_QUIT)
-            quit = true;
-
-        // update the SDL renderer
-        SDL_RenderClear(renderer);
-        SDL_RenderCopy(renderer, texture, NULL, NULL);
-        SDL_RenderPresent(renderer);
-    }
-
-    // destroy arrays and SDL objects
-    delete[] pixels;
-    SDL_DestroyTexture(texture);
-    SDL_DestroyRenderer(renderer);
-    destroy_window(window);
 }

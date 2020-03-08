@@ -173,8 +173,6 @@ class Shape {
         std::string shape_id;                 // the shape's ID, if applicable
         virtual std::string to_json();
 
-        virtual void draw();             // prints to an SDL window
-
         // geometric methods, overwritten in Shape class
 
         virtual double get_area();            // return (area of shape - area of holes)
@@ -198,7 +196,7 @@ class Shape {
         template<class Archive> void serialize(Archive & ar, const unsigned int version);
 
         int pop = 0; // total population
-        bool is_part_of_multi_polygon = false; // for parsing rules
+        int is_part_of_multi_polygon = -1; // for parsing rules
 };
 
 class Precinct : public Shape {
@@ -265,15 +263,12 @@ class Precinct : public Shape {
 
 
 class Multi_Shape : public Shape {
-    /*
-        A class containing a vector of shapes
-        and methods for drawing said vector
-    */
+
+    // A class containing a vector of shapes
 
     public: 
 
         Multi_Shape(){}; // default constructor
-
         Multi_Shape(std::vector<Shape> s) {
             // constructor with assignment
             border = s;
@@ -315,9 +310,6 @@ class Multi_Shape : public Shape {
         friend bool operator!= (Multi_Shape& s1, Multi_Shape& s2) {
             return (s1.border != s2.border);
         }
-
-        // gui methods
-        virtual void draw(); // prints to an SDL window
 };
 
 
@@ -432,11 +424,9 @@ class State : public Precinct_Group {
         p_index get_addable_precinct(p_index_set available_precincts, p_index current_precinct);
 
         // write out communities at a certain point in time
-        void save_communities(std::string write_path);
+        void save_communities(std::string write_path, Communities communities);
         void read_communities(std::string write_path);
         void playback_communities(std::string read_path);
-
-        virtual void draw();
 
         // name of state
         std::string name = "no_name";

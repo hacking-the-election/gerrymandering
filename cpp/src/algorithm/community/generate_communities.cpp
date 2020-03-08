@@ -10,8 +10,11 @@
 #include "../../../include/shape.hpp"
 #include "../../../include/util.hpp"
 #include "../../../include/geometry.hpp"
+#include "../../../include/canvas.hpp"
 #include <chrono> 
+#include <boost/filesystem.hpp>
 
+using namespace boost::filesystem;
 using namespace std;
 using namespace chrono;
 using namespace GeoGerry;
@@ -31,15 +34,15 @@ int main(int argc, char* argv[]) {
     // read binary file from path
     string read_path = string(argv[1]);
     State state = State::read_binary(read_path);
+
     cout << "generating communities from given parameters..." << endl;
     int districts_in_state = 2;  // state.state_districts.size();
     // state.generate_communities(districts_in_state, 0.5, 0.2, 0.15);
     state.read_communities("community_test_vt");
-    cout << state.state_communities.size() << endl;
-    for (int i = 0; i < state.state_communities.size(); i++) {
-        writef(state.state_communities[i].to_json(), "c" + to_string(i) + ".json");
-        cout << state.state_communities[i].precincts.size() << endl;
-    }
+    GeoDraw::Canvas c(800, 800);
+    c.add_shape(state.state_communities);
+    c.draw();
+    // state.refine_partisan(0.2);
     // write as binary
     return 0;
 }

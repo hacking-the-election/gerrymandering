@@ -8,6 +8,7 @@
 ========================================*/
 
 #include "../include/shape.hpp"       // class definitions
+#include "../include/canvas.hpp"       // class definitions
 #include "../include/util.hpp"        // array modification functions
 #include "../include/geometry.hpp"    // exterior border generation
 #include <algorithm>                  // for std::find and std::distance
@@ -22,19 +23,22 @@ const long int c = pow(2, 18);
 // constant id strings
 //ndv	nrv	geoid10	GEOID10	POP100
 const std::string election_id_header = "geoid10";
-const std::vector<std::string> d_head = {"PRS08DEM"};
-const std::vector<std::string> r_head = {"PRS08REP"};
+const std::vector<std::string> d_head = {"ndv"};
+const std::vector<std::string> r_head = {"nrv"};
 const std::string geodata_id = "GEOID10";
-const std::string population_id = "TOTPOP";
+const std::string population_id = "POP100";
 
 std::vector<std::vector<std::string > > parse_sv(std::string, std::string);
 bool check_column(std::vector<std::vector<std::string> >, int);
 
 std::vector<std::vector<std::string> > parse_sv(std::string tsv, std::string delimiter) {
-    
     /*
-        takes a tsv file as string, returns
-        two dimensional array of cells and rows
+        @desc: takes a tsv file as string, returns two dimensional array of cells and rows
+        @params:
+            `string` tsv: A delimiter separated file
+            `string` delimiter: A delimiter to split by
+        
+        @return: `vector<vector<string> >` parsed array of data
     */
 
     std::stringstream file(tsv);
@@ -58,10 +62,12 @@ std::vector<std::vector<std::string> > parse_sv(std::string tsv, std::string del
 }
 
 bool check_column(std::vector<std::vector<std::string> > data_list, int index) {
-   
     /*
-        returns whether or not a given column in a two
-        dimensional vector is empty at any given point
+        @desc:
+            returns whether or not a given column in a two
+            dimensional vector is empty at any given point
+
+
     */
 
     for (int i = 0; i < data_list.size(); i++)
@@ -262,8 +268,8 @@ std::vector<GeoGerry::Shape> parse_precinct_coordinates(std::string geoJSON) {
             // create many shapes with the same ID, add them to the array
             int append = 0;
             for (GeoGerry::Shape s : geo.border) {
-                GeoGerry::Shape shape(s.hull, s.holes, id + "_s" + std::to_string(append));
-                shape.is_part_of_multi_polygon = true;
+                GeoGerry::Shape shape(s.hull, s.holes, id);
+                shape.is_part_of_multi_polygon = append;
                 double fract = shape.get_area() / total_area;
                 shape.pop = (int) round(pop * fract);
                 shapes_vector.push_back(shape);
@@ -345,7 +351,7 @@ std::vector<GeoGerry::Precinct> merge_data( std::vector<GeoGerry::Shape> precinc
         }
 
         // create a precinct object and add it to the array
-        if (precinct_shape.is_part_of_multi_polygon) {
+        if (precinct_shape.is_part_of_multi_polygon != -1) {
             double total_area = precinct_shape.get_area();
 
             for (int i = 0; i < precinct_shapes.size(); i++) {
@@ -357,7 +363,8 @@ std::vector<GeoGerry::Precinct> merge_data( std::vector<GeoGerry::Shape> precinc
             int ratio = precinct_shape.get_area() / total_area;
             
             GeoGerry::Precinct precinct =
-                GeoGerry::Precinct(precinct_shape.hull, precinct_shape.holes, p_data[0] * ratio, p_data[1] * ratio, p_id);
+                GeoGerry::Precinct(precinct_shape.hull, precinct_shape.holes, p_data[0] * ratio, p_data[1] * ratio,
+                                   p_id + "_s" + std::to_string(precinct_shape.is_part_of_multi_polygon));
             
             precinct.pop = precinct_shape.pop;
             precincts.push_back(precinct);
@@ -545,13 +552,18 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
     // generate state data from files
     if (VERBOSE) std::cout << "generating state with precinct and district arrays..." << std::endl;
     State state = State(district_shapes, pre_group.precincts, state_shape_v);
-    Multi_Shape border = generate_exterior_border(state);
-    state.border = border.border;
-
+    Multi_Shape sborder = generate_exterior_border(state);
+    state.border = sborder.border;
+    std::cout << sborder.border.size() << std::endl;
     // sort files into
     if (VERBOSE) std::cout << "sorting precincts into islands from exterior state border..." << std::endl;
-    state.islands = sort_precincts(border, pre_group);
+    state.islands = sort_precincts(sborder, pre_group);
     if (VERBOSE) std::cout << "state serialized!" << std::endl;
+    
+    GeoDraw::Canvas c(500, 500);
+    c.add_shape(state);
+    c.draw();
+
     writef(state.to_json(), "test.json");
     return state; // return the state object
 }
