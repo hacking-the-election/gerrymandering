@@ -6,6 +6,7 @@
       - Make all imports alphabetical
     - update __main__.py in gerrymandering
     - use numpy arrays within shapely objects
+    - move custom exceptions to exceptions.py
    Later:
     - Predict errors and create custom exceptions to throw in those cases
     - speed up with cython and c++ extensions (may have to be done before fair if code is too slow)
@@ -18,7 +19,6 @@
 # Communities:
    Now:
     - finish step 1
-    - compactness refinement
     - continue working on partisanship test
     - Real-time drawings of communities being formed.
     - write make_communities function in __init__.py
