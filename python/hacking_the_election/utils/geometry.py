@@ -159,9 +159,12 @@ def communities_to_json(communities_list, output_path):
         coords = shapely_to_polygon(community.coords)
         try: 
             _ = coords[0][0][0][0]
-            features.append({"geometry": {"type":"MultiPolygon", "coordinates":coords}, "type":"Feature", "properties":{"ID":community.id}})
+            features.append({"geometry": {"type":"MultiPolygon", "coordinates":coords}, 
+                             "type":"Feature", "properties":{"ID":community.id}})
         except:
-            features.append({"geometry": {"type":"Polygon", "coordinates":coords}, "type":"Feature", "properties":{"ID":community.id}})
+            features.append({"geometry": {"type":"Polygon", "coordinates":coords}, 
+                             "type":"Feature", "properties":{"ID":community.id}})
     completed_json = {"type":"FeatureCollection", "features":features}
     with open(output_path, 'w') as f:
         json.dump(completed_json, f)
+         
