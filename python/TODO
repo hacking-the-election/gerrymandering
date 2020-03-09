@@ -18,12 +18,10 @@
 
 # Communities:
    Now:
-    - finish step 1
+    - add compactness check for making holes and non-contiguous and one-precinct communities.
     - continue working on partisanship test
     - Real-time drawings of communities being formed.
     - write make_communities function in __init__.py
     - add much datas to return in partisanship
     - figure out how to overhaul standard deviation so it makes sense in partisanship
     - update communities_to_json so it creates new json at every precinct change or literally whatever
-    - start working on compactness and population
-
