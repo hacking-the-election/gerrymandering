@@ -98,8 +98,7 @@ class Community:
         except ZeroDivisionError:
             self.standard_deviation = 0.0
         else:
-            self.standard_deviation = math.sqrt(sum([(p - mean) ** 2 
-                                      for p in rep_percentages]))
+            self.standard_deviation = math.sqrt(sum([(p - mean) ** 2 for p in rep_percentages])/ len(rep_percentages))
 
     def update_partisanship(self):
         """

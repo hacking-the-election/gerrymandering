@@ -554,7 +554,7 @@ class Precinct:
         self.r_election_sum = sum(self.r_election_data.values())
         
         try:
-            self.dem_rep_ratio = self.d_election_sum / self.r_election_sum
+            self.rep_total_ratio = self.d_election_sum / (self.r_election_sum + self.d_election_data)
         except ZeroDivisionError:
             # it won't get a ratio as an attribute so we can
             # decide what to do with the dem and rep sums later.

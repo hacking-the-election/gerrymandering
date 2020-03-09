@@ -35,9 +35,8 @@ def stdev(number_list, weight_list=None):
     average_int = average(number_list)
     squared_sum = 0
     for num, integer in enumerate(number_list):
-        difference = average_int - integer
         if weight_list:
-            squared_sum += (difference * difference) * weight_list[num]
+            squared_sum += ((average_int - integer) ** 2) * weight_list[num]
         else:
-            squared_sum += (difference * difference)
+            squared_sum += (average_int - integer) ** 2
     return math.sqrt(squared_sum / len(number_list))
