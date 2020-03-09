@@ -38,18 +38,19 @@ int main(int argc, char* argv[]) {
     cout << "generating communities from given parameters..." << endl;
     int districts_in_state = 2;  // state.state_districts.size();
     // state.generate_communities(districts_in_state, 0.5, 0.2, 0.15);
-    state.read_communities("community_test_vt");
 
-    GeoDraw::Canvas c(800, 800);
-    c.add_shape(state.state_communities);
+    state.read_communities("community_vt");
+    double sum = 0;
+    for (Precinct p : state.precincts)
+        sum += p.get_ratio();
+
+    cout << sum << endl;
+    // GeoDraw::Canvas c(800, 800);
+    // c.add_shape(state.state_communities);
     // c.draw();
 
-    state.refine_partisan(0.2);
+    state.refine_partisan(0);
 
-    c.clear();
-    c.add_shape(state.state_communities);
-    c.draw();
-    // c.clear();
 
     // write as binary
     return 0;

@@ -9,12 +9,12 @@
 ========================================*/
 
 #include "../include/shape.hpp"   // class definitions
-#define REP true                  // use rep / (dem + rep) as ratio
+#define REP                  // use rep / (dem + rep) as ratio
 
 double GeoGerry::Precinct::get_ratio() {
     // retrieve ratio from precinct
     if (rep == 0 && dem == 0)
-        return 1;
+        return -1;
 
     #ifdef REP
         return (double) rep / ((double) dem + (double) rep);
