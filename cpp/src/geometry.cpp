@@ -497,8 +497,6 @@ bool get_bordering(Multi_Shape s0, Multi_Shape s1) {
     c.Execute(ClipperLib::ctUnion, solutions, ClipperLib::pftNonZero);
     Multi_Shape ms = paths_to_multi_shape(solutions);
 
-    cout << ms.border.size() << ", " << s0.border.size() + s1.border.size() << endl;
-
     return (ms.border.size() < s0.border.size() + s1.border.size());
 }
 
@@ -595,7 +593,6 @@ p_index_set get_inner_boundary_precincts(Precinct_Group shape) {
 
     p_index_set boundary_precincts;
     Multi_Shape exterior_border = generate_exterior_border(shape);
-    writef(exterior_border.to_json(), "border.json");
 
     int i = 0;
     
@@ -681,7 +678,6 @@ p_index_set get_bordering_shapes(vector<Community> shapes, Community shape) {
     
     for (p_index i = 0; i < shapes.size(); i++) {
         if ((shapes[i].border != shape.border) && get_bordering(shapes[i], shape)) vec.push_back(i);
-        else cout << "do not border..." << endl;
     }
     
     return vec;
@@ -697,9 +693,16 @@ p_index_set get_bordering_shapes(vector<Community> shapes, Shape shape) {
     p_index_set vec;
     
     for (p_index i = 0; i < shapes.size(); i++) {
-        if ( ( shapes[i] != shape ) && get_bordering(shapes[i], shape)) vec.push_back(i);
+        if (get_bordering(shapes[i], shape)) vec.push_back(i);
+        else {
+            GeoDraw::Canvas c(900, 900);
+            c.add_shape(generate_exterior_border(shapes[i]));
+            c.add_shape(shape);
+            cout << "do not border..." << endl;
+            c.draw();
+        }
     }
-    
+
     return vec;
 }
 
@@ -753,12 +756,14 @@ double get_standard_deviation_partisanship(Precinct_Group pg) {
         ratio for a given array of precincts
     */
 
-    vector<Precinct> p = pg.precincts;
+    vector<Precinct> p;
+    for (Precinct pre : pg.precincts)
+        if (pre.get_ratio() != -1) p.push_back(pre);
+
     double mean = p[0].get_ratio();
 
-    for (int i = 1; i < p.size(); i++) {
+    for (int i = 1; i < p.size(); i++)
         mean += p[i].get_ratio();
-    }
 
     mean /= p.size();
     double dev_mean = pow(p[0].get_ratio() - mean, 2);
@@ -766,6 +771,7 @@ double get_standard_deviation_partisanship(Precinct_Group pg) {
     for (int i = 1; i < p.size(); i++)
         dev_mean += pow(p[i].get_ratio() - mean, 2);
 
+    dev_mean /= p.size();
     return (sqrt(dev_mean));
 }
 
@@ -1021,11 +1027,11 @@ bool creates_island(GeoGerry::p_index_set set, GeoGerry::p_index remove, GeoGerr
    
 
     // calculate initial number of islands in set
-    Precinct_Group pg_before;
-    for (p_index p : set)
-        pg_before.add_precinct(precincts.precincts[p]);
+    // Precinct_Group pg_before;
+    // for (p_index p : set)
+    //     pg_before.add_precinct(precincts.precincts[p]);
 
-    int islands_before = generate_exterior_border(pg_before).border.size();
+    // int islands_before = generate_exterior_border(pg_before).border.size();
 
     // remove precinct from set
     set.erase(std::remove(set.begin(), set.end(), remove), set.end());
@@ -1037,7 +1043,7 @@ bool creates_island(GeoGerry::p_index_set set, GeoGerry::p_index remove, GeoGerr
 
     int islands_after = generate_exterior_border(pg_after).border.size();
 
-    return (islands_after > islands_before);
+    return (islands_after > 1);
 }
 
 
@@ -1050,21 +1056,21 @@ p_index_set get_exchangeable_precincts(Community c, Communities cs) {
     p_index_set borders = get_inner_boundary_precincts(c);
     p_index_set exchangeable_precincts;
 
-    Multi_Shape ms(c.border);
-    GeoDraw::Canvas canvas(900, 900);
+    // Multi_Shape ms(c.border);
+    // GeoDraw::Canvas canvas(900, 900);
 
     for (p_index p : borders) {
         for (Community c_p : cs) {
             if ((c_p != c) && get_bordering(c_p, c.precincts[p]) && !creates_island(c, p)) {
                 exchangeable_precincts.push_back(p);
-                canvas.add_shape(c.precincts[p]);
+                // canvas.add_shape(c.precincts[p]);
                 break;
             }
         }
     }
 
-    canvas.add_shape(ms);
-    canvas.draw();
+    // canvas.add_shape(ms);
+    // canvas.draw();
 
     return exchangeable_precincts;
 }

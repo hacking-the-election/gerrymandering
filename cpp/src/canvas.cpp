@@ -87,8 +87,16 @@ void GeoDraw::Canvas::add_shape(GeoGerry::Precinct_Group s, bool f, Color c, int
 
 
 void GeoDraw::Canvas::add_shape(GeoGerry::Communities s, bool f, GeoDraw::Color c, int t) {
-    for (GeoGerry::Community c : s) {
-        this->add_shape(generate_exterior_border(c));
+    for (GeoGerry::Community community : s) {
+        for (GeoGerry::Shape shape : community.border) {
+            Outline outline(shape.hull, c, t, f);
+            outlines.push_back(outline);
+
+            for (GeoGerry::LinearRing l : shape.holes) {
+                Outline hole(l, c, t, f);
+                holes.push_back(hole);
+            }
+        }
     }
 }
 
@@ -291,6 +299,7 @@ void GeoDraw::Canvas::rasterize_shapes() {
     }
 
 
+
     // fill_shapes();
 
     return;
@@ -323,7 +332,6 @@ void GeoDraw::Canvas::draw() {
     */
 
     // size and position coordinates in the right wuat
-    background = new Uint32[x * y];
     memset(background, 255, x * y * sizeof(Uint32));
 
     get_bounding_box();
@@ -384,6 +392,7 @@ void GeoDraw::Anim::playback() {
         backgrounds.push_back(c.background);
     }
 
+
     Uint32* background = new Uint32[frames[0].x * frames[0].y];
     memset(background, 255, frames[0].x * frames[0].y * sizeof(Uint32));
 
@@ -397,7 +406,7 @@ void GeoDraw::Anim::playback() {
 
     SDL_SetWindowResizable(window, SDL_TRUE);
     SDL_UpdateTexture(texture, NULL, background, frames[0].x * sizeof(Uint32));
-    std::cout << "a" << std::endl;
+    SDL_RenderPresent(renderer);
 
     for (int i = 0; i < backgrounds.size() - 1; i++) {
         Uint32* bg = backgrounds[i];
@@ -405,7 +414,7 @@ void GeoDraw::Anim::playback() {
         SDL_RenderClear(renderer);
         SDL_RenderCopy(renderer, texture, NULL, NULL);
         SDL_RenderPresent(renderer);
-        SDL_Delay(5000);
+        SDL_Delay(500);
     }
 
     bool quit = false;
