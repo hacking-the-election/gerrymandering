@@ -32,9 +32,11 @@
 #include <math.h>    // for rounding functions
 #include <numeric>   // include std::iota
 #include <algorithm> // sorting, seeking algorithms
+#include <boost/filesystem.hpp>
 
 using namespace std;
 using namespace GeoGerry;
+using namespace boost::filesystem;
 
 #define VERBOSE 1
 #define WRITE 0
@@ -414,7 +416,6 @@ void State::generate_initial_communities(int num_communities) {
                             );
 
                         community.add_precinct(precincts[pre]);
-                        writef(community.to_json(), "c" + std::to_string(c_index) + ".json");
                         precincts_added++;
                     }
                     else cout << "creates island, refraining..." << endl;
@@ -427,15 +428,11 @@ void State::generate_initial_communities(int num_communities) {
         c[c_index] = community;
     }
 
-    for (p_index_set p : available_precincts) {
-        for (p_index pi : p ) {
+    for (p_index_set p : available_precincts)
+        for (p_index pi : p )
             c[c.size() - 1].add_precinct(precincts[pi]);
-        }
-    }
 
-    writef(c[c.size() - 1].to_json(), "c" + std::to_string(c.size() - 1) + ".json");
     this->state_communities = c; // assign state communities to generated array
-    this->save_communities("community_test_vt");
     return;
 }
 
@@ -461,6 +458,7 @@ p_index State::get_next_community(double tolerance, int process) {
             Find community with standard deviation of partisanship
             ratios that are most outside range of tolerance
         */
+
         double max = 0;
         p_index x = 0;
 
@@ -526,14 +524,17 @@ void State::give_precinct(p_index precinct, p_index community, int t_type) {
     */
 
     Precinct precinct_shape = this->state_communities[community].precincts[precinct];
-     
+
     // get communities that border the current community
     p_index_set bordering_communities_i = get_bordering_shapes(this->state_communities, this->state_communities[community]);
+    cout << bordering_communities_i.size() << " bordering communities" << endl;
+
     // convert to actual shape array
     Communities bordering_communities;
     for (p_index i : bordering_communities_i)
         bordering_communities.push_back(this->state_communities[i]);
 
+    cout << bordering_communities.size() << endl;
     // of those communities, get the ones that also border the precinct
     p_index_set exchangeable_communities_i = get_bordering_shapes(bordering_communities, precinct_shape);
     // convert to shape array
@@ -609,6 +610,7 @@ void State::refine_partisan(double partisanship_tolerance) {
         @params: `double` partisanship_tolerance: tolerance for partisanship
         @return: void
     */
+
     cout << "Refining for partisanship..." << endl;
 
     p_index worst_community = get_next_community(partisanship_tolerance, PARTISANSHIP);
@@ -618,20 +620,26 @@ void State::refine_partisan(double partisanship_tolerance) {
     while (!is_done) {
         cout << "Refining again..." << endl;
         Community c = state_communities[worst_community];
-        
+
         double median = get_median_partisanship(c);
         p_index worst_precinct = 0, x = 0;
         double diff = 0;
 
-        for (Precinct p : c.precincts) {
-            double t_diff = abs(median - p.get_ratio());
-            if (t_diff > diff) diff = t_diff;
-            worst_precinct = x;
+        for (p_index p : get_exchangeable_precincts(c, state_communities)) {
+            cout << p << " is an axhcnale" << endl;
+            double t_diff = abs(median - c.precincts[p].get_ratio());
+            if (t_diff > diff) {
+                diff = t_diff;
+                worst_precinct = x;
+            }
+            
             x++;
         }
 
+        cout << "need to give precinct " << worst_precinct << endl;
         give_precinct(worst_precinct, worst_community, PARTISANSHIP);
         num_changes[worst_community] += 1; // update the changelist
+
         // update worst_community, check stop condition
         worst_community = get_next_community(partisanship_tolerance, PARTISANSHIP);
         // if the community is within the tolerance, or if it has been modified too many times

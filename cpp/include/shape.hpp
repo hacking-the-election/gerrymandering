@@ -424,7 +424,7 @@ class State : public Precinct_Group {
         p_index get_addable_precinct(p_index_set available_precincts, p_index current_precinct);
 
         // write out communities at a certain point in time
-        void save_communities(std::string write_path);
+        void save_communities(std::string write_path, Communities communities);
         void read_communities(std::string write_path);
         void playback_communities(std::string read_path);
 

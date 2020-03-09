@@ -6,7 +6,7 @@ Geometric functions
 import math
 import json
 
-from shapely.geometry import MultiLineString, Point, Polygon, MultiPolygon
+from shapely.geometry import Point, Polygon, MultiPolygon, MultiLineString
 from shapely.ops import unary_union
 
 
@@ -26,7 +26,9 @@ def get_if_bordering(shape1, shape2):
     """
     Returns whether or not two shapes (shapely polygons) are bordering as a bool
     """
+    # return isinstance(clip([shape1, shape2], UNION), Polygon)
     return isinstance(clip([shape1, shape2], INTERSECTION), MultiLineString)
+
 
 
 def get_point_in_polygon(polygon, point):
@@ -161,3 +163,4 @@ def communities_to_json(communities_list, output_path):
     completed_json = {"type":"FeatureCollection", "features":features}
     with open(output_path, 'w') as f:
         json.dump(completed_json, f)
+         

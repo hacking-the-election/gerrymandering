@@ -5,8 +5,14 @@ usage: python3 load_precincts.py [state_file]
 
 import json
 import pickle
+import sys
 
 from hacking_the_election.utils.geometry import shapely_to_polygon
+from hacking_the_election.serialization import save_precincts
+
+
+sys.modules["save_precincts"] = save_precincts
+
 
 def load(state_file):
     """

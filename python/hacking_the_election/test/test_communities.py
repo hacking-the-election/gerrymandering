@@ -7,7 +7,7 @@ import pickle
 
 from shapely.geometry import Polygon, MultiPolygon
 
-from gerrymandering.communities.initial_configuration import \
+from hacking_the_election.communities.initial_configuration import \
     create_initial_configuration
 from hacking_the_election.utils.initial_configuration import Community
 from hacking_the_election.serialization.load_precincts import load
@@ -28,27 +28,34 @@ class TestInitialConfiguration(unittest.TestCase):
     """
     Tests for first step in communities algorithm
     """
-    
-    def test_initial_configuration(self):
 
-        @print_time
-        def test_initial_configuration_speed(precincts, n_districts,
-                                            state_border):
-            return create_initial_configuration(
-                precincts, n_districts, state_border)
+    @staticmethod
+    @print_time
+    def test_initial_configuration_speed(precincts, n_districts, state_border):
+        return create_initial_configuration(precincts, n_districts, state_border)
 
-        vermont_output = test_initial_configuration_speed(
-            VERMONT[0], 2, VERMONT[2])
-        with open("test_communities.pickle", "wb") as f:
-            pickle.dump(vermont_output, f)
-        vermont_output_coords = []
-        for community in vermont_output:
+    @staticmethod
+    def test_state(state):
+        state_output = \
+            TestInitialConfiguration.test_initial_configuration_speed(
+                state[0], 2, state[2])
+        with open("test_2_communities.pickle", "wb") as f:
+            pickle.dump(state_output, f)
+        state_output_coords = []
+        for community in state_output[0]:
             if isinstance(community.coords, MultiPolygon):
-                vermont_output_coords.append(multipolygon_to_list(community.coords))
+                state_output_coords.append(multipolygon_to_list(community.coords))
             elif isinstance(community.coords, Polygon):
-                vermont_output_coords.append(polygon_to_list(community.coords))
+                state_output_coords.append(polygon_to_list(community.coords))
 
-        convert_to_json(vermont_output_coords, "test_communities.json")
+        convert_to_json(state_output_coords, "test_communities2.json")
+    
+    def test_vermont(self):
+        TestInitialConfiguration.test_state(VERMONT)
+
+    def test_alaska(self):
+        TestInitialConfiguration.test_state(ALASKA)
+
 
 if __name__ == "__main__":
     unittest.main()

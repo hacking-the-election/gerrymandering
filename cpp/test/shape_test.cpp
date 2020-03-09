@@ -8,6 +8,7 @@
 
 // #include "../include/shape.hpp"
 #include "../include/geometry.hpp"
+#include "../include/canvas.hpp"
 // #include "../include/term_disp.hpp"
 
 using namespace std;
@@ -22,15 +23,14 @@ using namespace std;
 // }
 
 int main(int argc, char* argv[]) {
-    GeoGerry::coordinate_set border = {{0,0}, {1,0}, {0,1}};
+    GeoDraw::Canvas c(640, 900);
+    
+    GeoGerry::coordinate_set border = {{0,0}, {1,2}, {2,1}, {3,3}};
     GeoGerry::LinearRing ring(border);
     GeoGerry::Shape shape(ring);
-
-    GeoGerry::coordinate_set border2 = {{1,0}, {1,1}, {0,1}};
-    GeoGerry::LinearRing ring2(border2);
-    GeoGerry::Shape shape2(ring2);
-
-    cout << get_bordering(shape, shape2) << endl;
+    GeoDraw::Color co(0, 108, 180);  
+    c.add_shape(shape, true, co, 1);
+    c.draw();
     // assert_equal("checking area function", area(shape), 0.5);
     // assert_equal("testing center coord 1", center(shape)[0], 0.333333);
     // assert_equal("testing center coord 2", center(shape)[1], 0.333333);
