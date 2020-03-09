@@ -19,6 +19,7 @@ from hacking_the_election.utils.exceptions import LoopBreakException
 from hacking_the_election.utils.geometry import (
     clip,
     DIFFERENCE,
+    get_if_bordering,
     INTERSECTION
 )
 
@@ -43,7 +44,11 @@ def refine_for_compactness(communities, minimum_compactness):
 
                 # Find precincts that need to be added to this community.
                 inside_circle = set()
-                for precinct in (precincts - set(community.precincts.values())):
+                bordering_communities = \
+                    [c for c in communities
+                     if get_if_bordering(c.coords, community.coords)]
+                for precinct in [p for c in bordering_communities
+                                 for p in c.precincts.values()]:
                     # Section of precinct that is inside of circle.
                     circle_intersection = \
                         clip([circle, precinct.coords], INTERSECTION)
