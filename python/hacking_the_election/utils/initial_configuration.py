@@ -95,8 +95,9 @@ class Community:
         except ZeroDivisionError:
             self.standard_deviation = 0.0
         else:
-            self.standard_deviation = math.sqrt(sum([(p - mean) ** 2 
-                                      for p in rep_percentages]))
+            self.standard_deviation = \
+                math.sqrt(sum([(p - mean) ** 2 for p in rep_percentages])
+                        / len(rep_percentages))
 
     def update_partisanship(self):
         """
@@ -229,7 +230,7 @@ class Community:
 
         unchosen_precincts.give_precinct(self, initial_precinct,
                                          **GIVE_PRECINCT_COORDS_ONLY_KWARGS)
-        sys.stdout.write(f"\r000 precincts in community {self.id}")
+        sys.stdout.write(f"\r{add_leading_zeroes(len(self.precincts))} precincts in community {self.id}")
         sys.stdout.flush()
 
         while True:
@@ -240,8 +241,12 @@ class Community:
             now_added_precincts = set()
             for precinct in bordering_precincts - linked_precincts:
                 if len(self.precincts) >= self.islands[island_index]:
-                    # Use this instead of returning to break from all levels
-                    # of recursion.
+                    # Use this instead of returning to break from all
+                    # levels of recursion.
+
+                    # Move to new line so later print statements don't
+                    # write over current line.
+                    print()
                     del self.islands[island_index]
                     raise CommunityFillCompleteException(
                         list(unchosen_precincts.precincts.values()),
