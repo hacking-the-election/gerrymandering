@@ -6,6 +6,7 @@
       - Make all imports alphabetical
     - update __main__.py in gerrymandering
     - use numpy arrays within shapely objects
+    - move custom exceptions to exceptions.py
    Later:
     - Predict errors and create custom exceptions to throw in those cases
     - speed up with cython and c++ extensions (may have to be done before fair if code is too slow)
@@ -17,13 +18,9 @@
 
 # Communities:
    Now:
-    - update step 1 to only start communities with a precinct that is touching both the state border and a community border (if possible)
     - continue working on partisanship test
-    - EPIC stdout manipulation with incrementing number of precincts in a community and PROGRESS BAR
     - Real-time drawings of communities being formed.
     - write make_communities function in __init__.py
     - add much datas to return in partisanship
     - figure out how to overhaul standard deviation so it makes sense in partisanship
     - update communities_to_json so it creates new json at every precinct change or literally whatever
-    - start working on compactness and population
-

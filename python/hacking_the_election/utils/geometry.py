@@ -6,7 +6,7 @@ Geometric functions
 import math
 import json
 
-from shapely.geometry import MultiLineString, Point, Polygon, MultiPolygon
+from shapely.geometry import Point, Polygon, MultiPolygon, MultiLineString
 from shapely.ops import unary_union
 
 
@@ -26,7 +26,9 @@ def get_if_bordering(shape1, shape2):
     """
     Returns whether or not two shapes (shapely polygons) are bordering as a bool
     """
+    # return isinstance(clip([shape1, shape2], UNION), Polygon)
     return isinstance(clip([shape1, shape2], INTERSECTION), MultiLineString)
+
 
 
 def get_point_in_polygon(polygon, point):
@@ -89,8 +91,7 @@ def polygon_to_shapely(polygon):
     # if input is already in correct form
     if isinstance(polygon, Polygon):
         return polygon
-    tuple_polygon = [[tuple(coord) for coord in linear_ring]
-                     for linear_ring in polygon]
+    tuple_polygon = [[tuple(coord) for coord in linear_ring] for linear_ring in polygon]
     return Polygon(tuple_polygon[0], tuple_polygon[1:])
 
 
@@ -117,13 +118,10 @@ def shapely_to_polygon(polygon):
     else:
         try:
             coordinates = list(polygon.exterior.coords)
-            linear_ring = []
+            polygon1 = []
             for tuple1 in coordinates:
-                x = tuple1[0]
-                y = tuple1[1]
-                point_list = [x, y]
-                linear_ring.append(point_list)
-            return [linear_ring]
+                polygon1.append(list(tuple1))
+            return [polygon1]
         except AttributeError:
             raise Exception('Incorrect input, not a shapely polygon')
 
@@ -157,9 +155,12 @@ def communities_to_json(communities_list, output_path):
         coords = shapely_to_polygon(community.coords)
         try: 
             _ = coords[0][0][0][0]
+            coords[0][0].append(coords[0][0][0])
             features.append({"geometry": {"type":"MultiPolygon", "coordinates":coords}, "type":"Feature", "properties":{"ID":community.id}})
         except:
+            coords[0].append(coords[0][0])
             features.append({"geometry": {"type":"Polygon", "coordinates":coords}, "type":"Feature", "properties":{"ID":community.id}})
     completed_json = {"type":"FeatureCollection", "features":features}
     with open(output_path, 'w') as f:
         json.dump(completed_json, f)
+         

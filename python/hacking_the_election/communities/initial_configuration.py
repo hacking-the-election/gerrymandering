@@ -13,8 +13,13 @@ import random
 
 from shapely.geometry import (MultiPolygon, Polygon)
 
+from hacking_the_election.utils.exceptions import (
+    LoopBreakException,
+    CommunityFillCompleteException
+)
 from hacking_the_election.utils.geometry import (
     clip,
+    DIFFERENCE,
     get_if_bordering,
     polygon_to_shapely,
     shapely_to_polygon,
@@ -24,9 +29,8 @@ from hacking_the_election.utils.initial_configuration import (
     Community,
     get_closest_precinct,
     get_precinct_link_pair,
+    GIVE_PRECINCT_COORDS_ONLY_KWARGS,
     group_by_islands,
-    LoopBreakException,
-    CommunityFillCompleteException
 )
 from hacking_the_election.test.funcs import (
     convert_to_json,
@@ -54,7 +58,7 @@ def create_initial_configuration(island_precinct_groups, n_districts,
     for i in range(n_precincts % n_districts):
         community_sizes[i] += 1
 
-    print(community_sizes)
+    print(f"{community_sizes=}")
 
     # Find which islands are capable of containing a whole number of
     # communities to start with.
@@ -227,6 +231,7 @@ def create_initial_configuration(island_precinct_groups, n_districts,
                 sum(link_community.islands.values()) - community_sizes[0]
             island_available_precincts[last_island_used] = extra_precincts_added
             link_community.islands[last_island_used] -= extra_precincts_added
+            communities.append(link_community)
             print(f"removed {extra_precincts_added} precincts from island {last_island_used}.")
             community_sizes.pop(0)
             print(f"chain completed using islands {link_community.islands}. "
@@ -236,7 +241,6 @@ def create_initial_configuration(island_precinct_groups, n_districts,
     except Exception as e:
         # Save as much information about what happened in the program as possible.
         with open("test_communities_debug.pickle", "wb+") as f:
-            # ADD MORE TO THIS LIST AS YOU DEBUG
             pickle.dump(
                 [
                     island_available_precincts,
@@ -246,15 +250,16 @@ def create_initial_configuration(island_precinct_groups, n_districts,
                 ],
                 f)
         raise e
-    
-    print(linked_precinct_chains)
+
     print([[p.vote_id for p in chain] for chain in linked_precinct_chains])
-    print(island_available_precincts)
 
     all_linked_precincts = set(
         [p for pair in linked_precinct_chains for p in pair])
 
     try:
+        # Indices of communities that have been
+        # given all the precincts they need.
+        full_communities = 0
         # First fill communities with links with the rest of their precincts
         for chain in linked_precinct_chains:
             first_chain_island = [i for i, il in enumerate(island_precinct_groups)
@@ -262,58 +267,113 @@ def create_initial_configuration(island_precinct_groups, n_districts,
             for community in communities:
                 # Community spans multiple islands and one of them is
                 # `first_chain_island`
+                print(community.islands)
                 if (
                         len(community.islands) > 1
-                        and first_chain_island in list(community.islands.values())
+                        and first_chain_island in list(community.islands.keys())
                         ):
-                    for island_index in community.islands.keys():
-                        try:
-                            community.fill(
-                                island_precinct_groups[island_index],
-                                all_linked_precincts,
-                                island_index,
-                                island_borders[island_index]
-                            )
-                        except CommunityFillCompleteException as e:
-                            added_precincts = e.added_precincts
-                            unchosen_precincts_border = \
-                                e.unchosen_precincts_border
+                    while community.islands != {}:
+                        island_index = list(community.islands.keys())[0]
+                        print(island_index)
+                        added_precincts = community.islands[island_index]
 
-                        # Remove these precincts from being listed as in
-                        # island. When other communities fill using this
-                        # island, they should not have the precincts
-                        # added to this community available to them.
-                        for precinct in island_precinct_groups[island_index][:]:
-                            if precinct.vote_id in added_precincts:
-                                island_precinct_groups[island_index].remove(
-                                    precinct)
-                        # Update border of island
-                        island_borders[island_index] = unchosen_precincts_border
-                        print(f"community {community.id} has been given "
-                              f"{community.islands[island_index]} precincts "
-                              f"from island {island_index}")
+                        # If community needs all the precincts on an island.
+                        if (community.islands[island_index]
+                                == (n_precincts  # number of precincts on island
+                                    := len(island_precinct_groups[island_index]))):
+                            island_precincts = \
+                                Community(
+                                    island_precinct_groups[island_index],
+                                    0,
+                                    {island_index: n_precincts},
+                                    coords=island_borders[island_index]
+                                )
+                            while island_precincts.precincts != {}:
+                                island_precincts.give_precinct(
+                                    community,
+                                    list(island_precincts.precincts.keys())[0],
+                                    **GIVE_PRECINCT_COORDS_ONLY_KWARGS
+                                )
+
+                            island_borders[island_index] = Polygon()
+                            island_precinct_groups[island_index] = []
+                            del community.islands[island_index]
+                        else:
+                            try:
+                                community.fill(
+                                    island_precinct_groups[island_index],
+                                    all_linked_precincts,
+                                    island_index,
+                                    island_borders[island_index],
+                                    [c.coords for c in communities
+                                     if island_index in c.islands.keys()]
+                                )
+                            except CommunityFillCompleteException as e:
+                                unchosen_precincts = e.unchosen_precincts
+                                unchosen_precincts_border = e.unchosen_precincts_border
+
+                            # Remove these precincts from being listed as in
+                            # island. When other communities fill using this
+                            # island, they should not have the precincts
+                            # added to this community available to them.
+                            island_precinct_groups[island_index] = unchosen_precincts
+                            # Update border of island
+                            island_borders[island_index] = unchosen_precincts_border
+
+                            try:
+                                # Add linked precinct
+                                linked_precinct = \
+                                    [p for p in island_precinct_groups[island_index]
+                                    if p in chain][0]
+                                community.precincts[linked_precinct.vote_id] = \
+                                    linked_precinct
+                                community.coords = clip(
+                                    [community.coords, linked_precinct.coords], UNION)
+                                island_precinct_groups[island_index].remove(linked_precinct)
+                                island_borders[island_index] = \
+                                    clip([island_borders[island_index],
+                                        linked_precinct.coords], DIFFERENCE)
+                            except IndexError:
+                                print(chain)
+                                print(island_precinct_groups[island_index])
+
+                            print(f"community {community.id} has been given "
+                                  f"{added_precincts} precincts from island "
+                                  f"{island_index}")
+
+                    full_communities += 1
 
         # Then fill communities that are on only one island
         for community in communities:
+            island_index = list(community.islands.keys())[0]
+            # If only one community left to fill
+            if full_communities == len(communities) - 1:
+                community.coords = island_borders[island_index]
+                community.precincts = {
+                    p.vote_id: p for p in island_precinct_groups[island_index]
+                }
+                break
             if len(community.precincts) == 0:
-                island_index = list(community.islands.keys())[0]
                 try:
                     community.fill(
                         island_precinct_groups[island_index],
                         all_linked_precincts,
                         island_index,
-                        island_borders[island_index]
+                        island_borders[island_index],
+                        [c.coords for c in communities
+                         if island_index in c.islands.keys()]
                     )
                 except CommunityFillCompleteException as e:
                     unchosen_precincts = e.unchosen_precincts
                     unchosen_precincts_border = e.unchosen_precincts_border
                 island_precinct_groups[island_index] = unchosen_precincts
                 island_borders[island_index] = unchosen_precincts_border
-                print(f"community {community.id} completely filled")
+                full_communities += 1
+                print(f"\ncommunity {community.id} completely filled")
 
     except Exception as e:
         # Save your progress!
         with open("test_communities.pickle", "wb+") as f:
-            pickle.dump([communities, linked_precinct_chains], f)
+            pickle.dump([communities, island_borders, island_precinct_groups], f)
         raise e
-    return communities
+    return communities, linked_precinct_chains

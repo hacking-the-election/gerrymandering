@@ -36,6 +36,7 @@ from shapely.geometry import Polygon
 from hacking_the_election.utils.geometry import (get_point_in_polygon as gpip,
                                            clip, UNION)
 from hacking_the_election.utils.initial_configuration import group_by_islands
+from hacking_the_election.test.funcs import polygon_to_shapely
 
 
 logging.basicConfig(level=logging.INFO, filename="precincts.log")
@@ -529,7 +530,10 @@ class Precinct:
 
         # save precinct list to state file
         try:
-            save(precinct_dict[0].state, group_by_islands(precinct_dict),
+            print(len(precinct_dict))
+            precinct_dict = group_by_islands(precinct_dict)
+            print(len(precinct_dict))
+            save(precinct_dict[0][0].state, precinct_dict,
                  district_dict, objects_dir)
         except IndexError:
             raise Exception("No precincts saved to precinct list.")
@@ -554,7 +558,7 @@ class Precinct:
         self.r_election_sum = sum(self.r_election_data.values())
         
         try:
-            self.dem_rep_ratio = self.d_election_sum / self.r_election_sum
+            self.rep_total_ratio = self.d_election_sum / (self.r_election_sum + self.d_election_data)
         except ZeroDivisionError:
             # it won't get a ratio as an attribute so we can
             # decide what to do with the dem and rep sums later.
