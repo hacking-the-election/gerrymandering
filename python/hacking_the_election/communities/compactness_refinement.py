@@ -22,6 +22,7 @@ from hacking_the_election.utils.compactness import (
 )
 from hacking_the_election.utils.exceptions import (
     CreatesMultiPolygonException,
+    ExitException,
     LoopBreakException,
     ZeroPrecinctCommunityException
 )
@@ -34,7 +35,7 @@ from hacking_the_election.utils.geometry import (
 
 
 def signal_handler(sig, frame):
-    raise Exception
+    raise ExitException
 
 
 def refine_for_compactness(communities, minimum_compactness):
@@ -81,7 +82,7 @@ def refine_for_compactness(communities, minimum_compactness):
                         
                         # Find precincts that need to be removed from this community.
                         outside_circle = set()
-                        for precinct in community.precincts.values():
+                        for precinct in community.get_outside_precincts():
                             # Section of precinct that is outside of circle.
                             circle_difference = clip([precinct.coords, circle],
                                                      DIFFERENCE)
@@ -101,7 +102,9 @@ def refine_for_compactness(communities, minimum_compactness):
                                 try:
                                     add_precinct(
                                         communities, community, precinct, True)
-                                    print(f"Removed {precinct.vote_id} from community {community.id}. Compactness: {round(community.compactness, 3)}")
+                                    print(f"Removed {precinct.vote_id} from "
+                                          f"community {community.id}. Compactness: "
+                                          f"{round(community.compactness, 3)}")
                                 except IndexError:
                                     # Precinct was outside of circle but not
                                     # bordering any other community.
@@ -112,18 +115,22 @@ def refine_for_compactness(communities, minimum_compactness):
                                 precinct = random.sample(inside_circle, 1)[0]
                                 add_precinct(
                                     communities, community, precinct, False)
-                                print(f"Added {precinct.vote_id} to community {community.id}. Compactness: {round(community.compactness, 3)}")
+                                print(f"Added {precinct.vote_id} to community "
+                                      f"{community.id}. Compactness: "
+                                      f"{round(community.compactness, 3)}")
                                 inside_circle.discard(precinct)
 
                             if (get_average_compactness(communities)
                                     > minimum_compactness):
                                 raise LoopBreakException
                             if community.compactness > minimum_compactness:
-                                print(f"Community {community.id} has compactness above threshold.")
+                                print(f"Community {community.id} has "
+                                       "compactness above threshold.")
                                 raise LoopBreakException(1)
 
-                        print(f"Community {community.id} failed to get below threshold after adding and removing all precincts in and out of circle respectively.")
-                        raise Exception
+                        print(f"Community {community.id} failed to get below "
+                               "threshold after adding and removing all "
+                               "precincts in and out of circle.")
                         
                     except LoopBreakException as e:
                         if e.level == 1:

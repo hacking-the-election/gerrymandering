@@ -35,3 +35,9 @@ class CreatesMultiPolygonException(Exception):
     Used when a precinct transaction turns
     either community into a MultiPolygon.
     """
+
+
+class ExitException(Exception):
+    """
+    Used to exit a program.
+    """
