@@ -6,7 +6,7 @@ Geometric functions
 import math
 import json
 
-from shapely.geometry import Point, Polygon, MultiPolygon, MultiLineString
+from shapely.geometry import Point, Polygon, MultiPolygon, MultiLineString, GeometryCollection
 from shapely.ops import unary_union
 
 
@@ -115,6 +115,18 @@ def shapely_to_polygon(polygon):
                 linear_ring.append(point_list)
             multi_polygon.append([linear_ring])
             return multi_polygon
+    elif isinstance(polygon, GeometryCollection):
+        multi_list = []
+        for polygon2 in list(polygon.geoms):
+            x = shapely_to_polygon(polygon2)
+            try: 
+                _ = x[0][0][0][0]
+            except:
+                multi_list.append(x)
+            else:
+                for inside_poly in x:
+                    multi_list.append(inside_poly)
+        return multi_list
     else:
         try:
             coordinates = list(polygon.exterior.coords)
@@ -155,10 +167,10 @@ def communities_to_json(communities_list, output_path):
         coords = shapely_to_polygon(community.coords)
         try: 
             _ = coords[0][0][0][0]
-            coords[0][0].append(coords[0][0][0])
+            # coords[0][0].append(coords[0][0][0])
             features.append({"geometry": {"type":"MultiPolygon", "coordinates":coords}, "type":"Feature", "properties":{"ID":community.id}})
         except:
-            coords[0].append(coords[0][0])
+            # coords[0].append(coords[0][0])
             features.append({"geometry": {"type":"Polygon", "coordinates":coords}, "type":"Feature", "properties":{"ID":community.id}})
     completed_json = {"type":"FeatureCollection", "features":features}
     with open(output_path, 'w') as f:
