@@ -290,6 +290,7 @@ class Multi_Shape : public Shape {
         }
 
         double get_perimeter();               // total perimeter of border array
+        coordinate get_center();              // total perimeter of border array
         double get_compactness();             // average compactenss of each shape
         double get_area();                    // total area of the border shape array
         virtual segments get_segments();      // return a segment list with shape's segments

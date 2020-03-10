@@ -41,15 +41,12 @@ int main(int argc, char* argv[]) {
 
     state.read_communities("community_vt");
     double sum = 0;
-    for (Precinct p : state.precincts)
-        sum += p.get_ratio();
 
-    cout << sum << endl;
     // GeoDraw::Canvas c(800, 800);
     // c.add_shape(state.state_communities);
     // c.draw();
 
-    state.refine_partisan(0);
+    state.refine_compactness(0);
 
 
     // write as binary

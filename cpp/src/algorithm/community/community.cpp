@@ -28,6 +28,7 @@
 #include "../../../include/shape.hpp"    // class definitions
 #include "../../../include/util.hpp"     // array modification functions
 #include "../../../include/geometry.hpp" // geometry modification, border functions
+#include "../../../include/canvas.hpp" // geometry modification, border functions
 
 #include <math.h>    // for rounding functions
 #include <numeric>   // include std::iota
@@ -36,6 +37,7 @@
 
 using namespace std;
 using namespace GeoGerry;
+using namespace GeoDraw;
 using namespace boost::filesystem;
 
 #define VERBOSE 1
@@ -487,12 +489,13 @@ p_index State::get_next_community(double tolerance, int process) {
 
         for (Community c : state_communities) {
             unit_interval t_compactness = c.get_compactness();
-            if (t_compactness < min && t_compactness < tolerance) {
+            if (t_compactness < min && t_compactness > tolerance) {
                 min = t_compactness;
                 i = x;
             }
             x++;
         }
+
     }
     else if (process == POPULATION) {
         /*
@@ -550,8 +553,7 @@ void State::give_precinct(p_index precinct, p_index community, int t_type) {
         exchangeable_communities.push_back(this->state_communities[i]);
 
     p_index exchange_choice;
-
-    cout << exchangeable_communities.size() << endl;
+    
     if (t_type == PARTISANSHIP) {
         // get closest average to precinct
         double min = abs(get_median_partisanship(exchangeable_communities[0]) - precinct_shape.get_ratio());
@@ -567,6 +569,24 @@ void State::give_precinct(p_index precinct, p_index community, int t_type) {
                 choice = index;
             }
         }
+        exchange_choice = choice;
+    }
+    else if (t_type == COMPACTNESS) {
+        // get highest compactness score
+        double min = exchangeable_communities[0].get_compactness();
+        p_index choice = 0;
+        p_index index = 0;
+
+        for (int i = 1; i < exchangeable_communities.size(); i++) {
+            index++;
+            Community c = exchangeable_communities[i];
+            double n_compactness = c.get_compactness();
+            if (n_compactness < min) {
+                min = n_compactness;
+                choice = index;
+            }
+        }
+
         exchange_choice = choice;
     }
 
@@ -585,6 +605,7 @@ void State::give_precinct(p_index precinct, p_index community, int t_type) {
     return;
 }
 
+
 void State::refine_compactness(double compactness_tolerance) {
     /* 
         @desc:
@@ -598,10 +619,33 @@ void State::refine_compactness(double compactness_tolerance) {
     p_index worst_community = get_next_community(compactness_tolerance, COMPACTNESS);
     bool is_done = (worst_community == -1);
     vector<int> num_changes(state_communities.size());
+    cout << "refining for compactness..." << endl;
 
     while (!is_done) {
         cout << "modifying community " << worst_community << endl;
-        cout << "current worst compactness is " << state_communities[worst_community].get_compactness();
+        cout << "current worst compactness is " << state_communities[worst_community].get_compactness() << endl;
+        Community community = state_communities[worst_community];
+        coordinate center = community.get_center();
+        cout << center[0] << ", " << center[1] << endl;
+        Shape circle = generate_gon(center, sqrt(community.get_area() / PI), 30);
+        // LinearRing p({{center[0], center[1]}, {center[0] + 1, center[1] + 1}, {center[0] - 1, center[1] - 1}});
+        // Shape point(p);
+
+        Canvas canvas(900, 900);
+        canvas.add_shape(circle);
+        canvas.add_shape(community.border[0]);
+        canvas.draw();
+
+        // for  each precinct in edge of community;
+        for (p_index p : get_inner_boundary_precincts(community)) {
+            cout << "checking precinct..." << endl;
+            Precinct pre = community.precincts[p];
+            if (community.get_compactness() > compactness_tolerance && get_inside(pre.hull, circle.hull) ) {
+                cout << "Precinct inside circle" << endl;
+                give_precinct(p, worst_community, COMPACTNESS);
+            }
+        }
+
         num_changes[worst_community] += 1; // update the changelist
         // update worst_community, check stop condition
         worst_community = get_next_community(compactness_tolerance, COMPACTNESS);
@@ -609,6 +653,7 @@ void State::refine_compactness(double compactness_tolerance) {
         is_done = (worst_community == -1 || num_changes[worst_community] == MAX_ITERATIONS);
     }
 }
+
 
 void State::refine_partisan(double partisanship_tolerance) {
     /*

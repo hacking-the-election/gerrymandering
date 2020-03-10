@@ -298,8 +298,6 @@ void GeoDraw::Canvas::rasterize_shapes() {
         this->background[total - start] = p.get_uint();
     }
 
-
-
     // fill_shapes();
 
     return;
