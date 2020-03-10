@@ -404,6 +404,17 @@ def get_closest_precinct_on_island(island_centroid,
 
     return closest_precinct, closest_precinct_distance
 
+    def get_outside_precincts(self):
+        """
+        Returns set of precincts that all touch
+        the outside border of this community.
+        """
+        outside_precincts = set()
+        for precinct in self.precincts.values():
+            if get_if_bordering(precinct.coords, self.coords):
+                outside_precincts.add(precinct)
+        return outside_precincts
+
 
 def get_closest_precinct(island, island_precinct_groups,
                          island_borders, island_border,
