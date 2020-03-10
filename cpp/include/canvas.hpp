@@ -85,7 +85,10 @@ namespace GeoDraw {
         void rasterize_edges();                      // generate edges
         void fill_shapes();                          // fill shapes with solid color
 
-        Canvas(int dx, int dy) : x(dx), y(dy) {};
+        Canvas(int dx, int dy) : x(dx), y(dy) {
+            background = new Uint32[dx * dy];
+            memset(background, 255, dx * dy * sizeof(Uint32));
+        }
 
         // add shape to the canvas
         void add_shape(GeoGerry::Shape s, bool = true, Color = Color(0,0,0), int = 1);

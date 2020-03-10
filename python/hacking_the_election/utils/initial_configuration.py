@@ -12,8 +12,10 @@ import threading
 from shapely.geometry import MultiPolygon, Polygon
 
 from hacking_the_election.utils.exceptions import (
+    CommunityFillCompleteException,
+    CreatesMultiPolygonException,
     LoopBreakException,
-    CommunityFillCompleteException
+    ZeroPrecinctCommunityException
 )
 from hacking_the_election.utils.geometry import (
     clip,
@@ -123,7 +125,19 @@ class Community:
 
         All parameters with default value of `True` indicate whether or
         not to update that attribute after the community is given.
+
+        If giving this precinct causes one of the communities to become
+        a multipolygon, or makes of the communities have zero precincts,
+        raises respective exceptions.
         """
+
+        if len(self.precincts) == 1:
+            other.give_precinct(
+                self, precinct_id, coords=coords, partisanship=partisanship,
+                standard_deviation=standard_deviation,
+                population=population, compactness=compactness)
+            raise ZeroPrecinctCommunityException
+
         if self == other:
             raise KeyError("Giving precinct to itself.")
 
@@ -151,18 +165,27 @@ class Community:
             thread_1.run()
             thread_2.run()
 
+            if (
+                    isinstance(other.coords, MultiPolygon)
+                 or isinstance(other.coords, MultiPolygon)):
+                other.give_precinct(
+                    self, precinct_id, coords=coords, partisanship=partisanship,
+                    standard_deviation=standard_deviation,
+                    population=population, compactness=compactness)
+                raise CreatesMultiPolygonException
+
         # Update other attributes that are dependent on precincts attribute
         for community in [self, other]:
             if partisanship:
-                community.update_partisanship
+                community.update_partisanship()
             if standard_deviation:
-                community.update_standard_deviation
+                community.update_standard_deviation()
             if population:
                 community.population = sum(
                     [precinct.population for precinct in
                      community.precincts.values()])
             if compactness:
-                community.update_compactness
+                community.update_compactness()
 
     def fill(self, precincts, linked_precincts, island_index, 
              island_border, community_borders, used_starting_precincts=set()):

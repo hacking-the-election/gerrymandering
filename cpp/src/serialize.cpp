@@ -7,11 +7,16 @@
  researches. See specification for guide.
 ========================================*/
 
+#include <iterator>
+
 #include "../include/shape.hpp"
 #include "../include/term_disp.hpp"
+#include "../include/canvas.hpp"
 #include "../include/geometry.hpp"
-#include <boost/filesystem.hpp>
 #include "../include/util.hpp"
+
+#include <boost/range/iterator_range.hpp>
+#include <boost/filesystem.hpp>
 
 namespace fs = boost::filesystem;
 
@@ -312,5 +317,23 @@ void GeoGerry::State::read_communities(std::string read_path) {
 }
 
 void GeoGerry::State::playback_communities(std::string read_path) {
+    GeoDraw::Anim animation;
+
+    fs::path p(read_path);
+    std::vector<fs::directory_entry> v;
+
+    if (fs::is_directory(p)) {
+        std::copy(fs::directory_iterator(p), fs::directory_iterator(), std::back_inserter(v));
+        for (std::vector<fs::directory_entry>::const_iterator it = v.begin(); it != v.end();  ++ it ){
+            GeoDraw::Canvas canvas(900, 900);
+            Communities cs = Community::load_frame((*it).path().string(), *this);
+            for (Community c : cs)
+                canvas.add_shape(generate_exterior_border(c));
+            animation.frames.push_back(canvas);
+        }
+    }
+
+    animation.playback();
+    
     return;
 }

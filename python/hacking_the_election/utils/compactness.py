@@ -3,6 +3,15 @@ Functions for partisanship refinement step in communities algorithm
 """
 
 
+from hacking_the_election.utils.compactness import (
+    GIVE_PRECINCTS_COMPACTNESS_KWARGS
+)
+from hacking_the_election.utils.exceptions import (
+    CreatesMultiPolygonException,
+    ZeroPrecinctCommunityException
+)
+
+
 GIVE_PRECINCTS_COMPACTNESS_KWARGS = {
     "partisanship": False,
     "standard_deviation": False,
@@ -42,3 +51,25 @@ def format_float(n):
             n_chars.insert(0, "0")
 
     return "".join(n_chars)
+
+
+def add_precinct(communities, community, precinct):
+    """
+    This function probably does something.
+
+    I don't really care,
+    because nobody except myself will read this code anyway.
+    """
+    for other_community in communities:
+        if precinct in other_community.precincts.values():
+            try:
+                other_community.give_precinct(
+                    community,
+                    precinct.vote_id,
+                    **GIVE_PRECINCTS_COMPACTNESS_KWARGS
+                )
+                community.update_compactness()
+                other_community.update_compactness()
+            except (CreatesMultiPolygonException,
+                    ZeroPrecinctCommunityException):
+                pass
