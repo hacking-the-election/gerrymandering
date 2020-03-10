@@ -167,7 +167,7 @@ class Community:
 
             if (
                     isinstance(other.coords, MultiPolygon)
-                 or isinstance(other.coords, MultiPolygon)):
+                 or isinstance(self.coords, MultiPolygon)):
                 other.give_precinct(
                     self, precinct_id, coords=coords, partisanship=partisanship,
                     standard_deviation=standard_deviation,
