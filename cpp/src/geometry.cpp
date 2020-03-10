@@ -13,9 +13,9 @@
 #include "../include/shape.hpp"   // class definitions
 #include "../include/util.hpp"
 #include <iomanip>
+#include <math.h>
 
 // define geometric constants
-#define PI 3.14159265358979323846
 const long int c = pow(10, 18);
 const long int d = pow(10, 9);
 const long int l = pow(2, 6);
@@ -257,26 +257,33 @@ coordinate GeoGerry::LinearRing::get_center() {
     */
 
     coordinate centroid = {0, 0};
-    double x0, y0, x1, y1;
 
-    for (int i = 0; i < border.size() - 1; i++) {
+    long long int sumx, sumy;
+    // long long int x0, y0, x1, y1;
+
+    for (int i = 0; i < border.size(); i++) {
         // assign coordinates to variables
-        x0 = border[i][0];
-        y0 = border[i][1];
-        x1 = border[i + 1][0];
-        y1 = border[i + 1][1];
+        // x0 = border[i][0];
+        // y0 = border[i][1];
+        // x1 = border[i + 1][0];
+        // y1 = border[i + 1][1];
 
+        sumx += border[i][0];
+        sumy += border[i][1];
         // get first factor in centroid formula
-        double factor = ((x0 * y1) - (x1 * y0));
+        // double factor = ((x0 * y1) - (x1 * y0));
         
-        // calculate current coordinate
-        centroid[0] += (x0 + x1) * factor;
-        centroid[1] += (y0 + y1) * factor;
+        // // calculate current coordinate
+        // centroid[0] += (x0 + x1) * factor;
+        // centroid[1] += (y0 + y1) * factor;
     }
 
     // divide to find centroid
-    centroid[0] /= (6 * this->get_area());
-    centroid[1] /= (6 * this->get_area());
+    // centroid[0] /= (6 * this->get_area());
+    // centroid[1] /= (6 * this->get_area());
+
+    centroid[0] = sumx / border.size();
+    centroid[1] = sumy / border.size();
 
     return centroid;
 }
@@ -331,7 +338,7 @@ coordinate GeoGerry::Shape::get_center() {
     */
 
     coordinate center = hull.get_center();
-    
+
     for (GeoGerry::LinearRing lr : holes) {
         coordinate nc = lr.get_center();
         center[0] += nc[0];
@@ -340,6 +347,38 @@ coordinate GeoGerry::Shape::get_center() {
 
     int size = 1 + holes.size();
     return {center[0] / size, center[1] / size};
+}
+
+
+coordinate GeoGerry::Multi_Shape::get_center() {
+    /*
+        @desc:
+            returns average centroid from list of `holes`
+            and `hull` by calling `LinearRing::get_center`
+
+        @params: none
+        @return: `coordinate` average centroid of shape
+    */
+
+    coordinate average = {0,0};
+
+    for (Shape s : border) {
+        cout <<"border" << endl;
+        coordinate center = s.hull.get_center();
+        cout << center[0] << ", " << center[1] << endl;
+
+        for (GeoGerry::LinearRing lr : s.holes) {
+            coordinate nc = lr.get_center();
+            center[0] += nc[0];
+            center[1] += nc[1];
+        }
+
+        int size = 1 + s.holes.size();
+        average[0] += center[0] / size;
+        average[1] += center[1] / size;
+    }
+
+    return {(int)(average[0] / border.size()), (int)(average[1] / border.size())};
 }
 
 
@@ -1073,6 +1112,26 @@ p_index_set get_exchangeable_precincts(Community c, Communities cs) {
     // canvas.draw();
 
     return exchangeable_precincts;
+}
+
+
+Shape generate_gon(coordinate c, double radius, int n) {
+    /*
+        Takes a radius, center, and number of sides to generate
+        a regular polygon around that center with that radius
+    */
+
+    double angle = 360 / n;
+    coordinate_set coords;
+
+    for (int i = 0; i < n; i++) {
+        double x = radius * std::cos((angle * i) * PI/180);
+        double y = radius * std::sin((angle * i) * PI/180);
+        coords.push_back({(int)x + c[0], (int)y + c[1]});
+    }
+
+    LinearRing lr(coords);
+    return Shape(lr);
 }
 
 // geos::geom::GeometryFactory::Ptr global_factory;

@@ -14,8 +14,9 @@
 #include <cmath>
 #include <iostream>
 #include <string>
-
 #include "../lib/clipper/clipper.hpp"
+
+#define PI 3.14159265358979323846
 
 GeoGerry::segment coords_to_seg(GeoGerry::coordinate c1, GeoGerry::coordinate c2);
 
@@ -70,3 +71,5 @@ bool get_inside_first(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1);
 
 bool creates_island(GeoGerry::Precinct_Group set, GeoGerry::p_index remove);
 bool creates_island(GeoGerry::p_index_set set, GeoGerry::p_index remove, GeoGerry::State precincts);
+
+GeoGerry::Shape generate_gon(GeoGerry::coordinate c, double radius, int n);
