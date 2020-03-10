@@ -129,6 +129,7 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold):
         for precinct_list1 in border_precincts.values():
             for precinct1 in precinct_list1:
                 border_precincts_list.append(precinct1)
+        print('border precincts list, ', border_precincts_list)
         z = '../../../../border' + str(count) + '.json'
         with open(z, 'w') as f:
             try:
@@ -203,15 +204,21 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold):
             try:
                 highest_precinct_exchange = max(precinct_exchanges_dict.keys())
                 high_precinct = precinct_exchanges_dict[highest_precinct_exchange]
+            # no more precinct exchanges left
             except ValueError:
                 break
             # if there are no beneficial precinct exchanges left, stop
             if highest_precinct_exchange <= 0:
                 break
             # find other community to add/subtract from
-            for community1, precinct_list2 in other_commmunities_dict.items():
+            for community3, precinct_list2 in other_commmunities_dict.items():
                 if high_precinct in precinct_list2:
-                    other_community = community1
+                    if community3 == most_stdev_community:
+                        for community4, precinct_list4 in border_precincts.items():
+                            if high_precinct in precinct_list4:
+                                other_community = communities_dict[community4]
+                    else:
+                        other_community = community3
             print('other community, ', other_community.id, 'highest stdev community, ', most_stdev_id)
             # find precincts that can no longer be used now once a precinct has changed hands
             no_longer_applicable_precincts = []
@@ -253,7 +260,8 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold):
                             # precinct has no coordinates, which happens sometimes for some reason
                             pass
             # precinct is not in biggest stdev community
-            else:
+            elif high_precinct in other_community.precincts.values():
+                print(len(most_stdev_community.precincts))
                 del other_community.precincts[high_precinct.vote_id]
                 other_community.update_coords()
                 if isinstance(other_community.coords, MultiPolygon):
@@ -262,6 +270,7 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold):
                     continue
                 most_stdev_community.precincts[high_precinct.vote_id] = high_precinct
                 most_stdev_community.update_coords()
+                print(len(most_stdev_community.precincts))
                 if isinstance(most_stdev_community.coords, MultiPolygon):
                     del most_stdev_community.precincts[high_precinct.vote_id]
                     other_community.precincts[high_precinct.vote_id] = high_precinct
@@ -287,6 +296,8 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold):
                         except AttributeError:
                             # precinct has no coordinates, which happens sometimes for some reason
                             pass
+            # else:
+            #     print('WHAT THE HELL,', high_precinct, high_precinct.vote_id)
             # removes precincts that can't be added/removed now that a precinct has been added
             for id, precinct_list in border_precincts.items():
                 precinct_list_to_remove = []
@@ -302,9 +313,10 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold):
             community_change_snapshot = [other_community, most_stdev_community]
             for community3 in not_involved_community_list:
                 community_change_snapshot.append(community3)
-                communities_to_json([community3], str('../../../../partisanship_after' + str(precinct_count) + ' ' + str(num1) + '.json'))
+            communities_to_json(community_change_snapshot, str('../../../../partisanship_after' + str(precinct_count) + 'community'  + '.json'))
             precinct_count += 1
             print(time())
+            print('HELLO')
         stdev_stat = str([community.standard_deviation for community in communities_list])[1:-1]
         standard_deviations.append(stdev_stat)
         for community in communities_list:
