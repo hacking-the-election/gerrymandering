@@ -177,15 +177,15 @@ class Community:
         # Update other attributes that are dependent on precincts attribute
         for community in [self, other]:
             if partisanship:
-                community.update_partisanship
+                community.update_partisanship()
             if standard_deviation:
-                community.update_standard_deviation
+                community.update_standard_deviation()
             if population:
                 community.population = sum(
                     [precinct.population for precinct in
                      community.precincts.values()])
             if compactness:
-                community.update_compactness
+                community.update_compactness()
 
     def fill(self, precincts, linked_precincts, island_index, 
              island_border, community_borders, used_starting_precincts=set()):
