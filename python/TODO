@@ -24,3 +24,5 @@
     - add much datas to return in partisanship
     - figure out how to overhaul standard deviation so it makes sense in partisanship
     - update communities_to_json so it creates new json at every precinct change or literally whatever
+
+Add notebook entry for finishing compactness.
