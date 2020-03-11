@@ -535,6 +535,9 @@ void State::give_precinct(p_index precinct, p_index community, int t_type) {
 
         @return: void
     */
+    Canvas canvas(900, 900);
+    canvas.add_shape(this->state_communities);
+    canvas.draw();
 
     Precinct precinct_shape = this->state_communities[community].precincts[precinct];
 
@@ -545,7 +548,11 @@ void State::give_precinct(p_index precinct, p_index community, int t_type) {
     Communities bordering_communities;
     for (p_index i : bordering_communities_i)
         bordering_communities.push_back(this->state_communities[i]);
-
+    
+    canvas.clear();
+    canvas.add_shape(this->state_communities);
+    canvas.draw();
+    
     // of those communities, get the ones that also border the precinct
     p_index_set exchangeable_communities_i = get_bordering_shapes(bordering_communities, precinct_shape);
     Communities exchangeable_communities;
@@ -554,6 +561,11 @@ void State::give_precinct(p_index precinct, p_index community, int t_type) {
 
     p_index exchange_choice;
     
+    cout << exchangeable_communities.size() << endl;
+    canvas.clear();
+    canvas.add_shape(this->state_communities);
+    canvas.draw();
+
     if (t_type == PARTISANSHIP) {
         // get closest average to precinct
         double min = abs(get_median_partisanship(exchangeable_communities[0]) - precinct_shape.get_ratio());
@@ -591,8 +603,11 @@ void State::give_precinct(p_index precinct, p_index community, int t_type) {
     }
 
     Community chosen_c = exchangeable_communities[exchange_choice];
+    // cout << "exchange c " << exchange_choice << endl;
+
     // add precinct to new community
-    chosen_c.add_precinct(precinct_shape);
+    this->state_communities[exchange_choice].add_precinct(precinct_shape);
+
     // remove precinct from previous community
     this->state_communities[community].precincts.erase(this->state_communities[community].precincts.begin() + precinct);
 
@@ -626,23 +641,20 @@ void State::refine_compactness(double compactness_tolerance) {
         cout << "current worst compactness is " << state_communities[worst_community].get_compactness() << endl;
         Community community = state_communities[worst_community];
         coordinate center = community.get_center();
-        cout << center[0] << ", " << center[1] << endl;
         Shape circle = generate_gon(center, sqrt(community.get_area() / PI), 30);
-        // LinearRing p({{center[0], center[1]}, {center[0] + 1, center[1] + 1}, {center[0] - 1, center[1] - 1}});
-        // Shape point(p);
-
-        Canvas canvas(900, 900);
-        canvas.add_shape(circle);
-        canvas.add_shape(community.border[0]);
-        canvas.draw();
+        Color green = Color(17, 255, 0);
 
         // for  each precinct in edge of community;
         for (p_index p : get_inner_boundary_precincts(community)) {
             cout << "checking precinct..." << endl;
             Precinct pre = community.precincts[p];
-            if (community.get_compactness() > compactness_tolerance && get_inside(pre.hull, circle.hull) ) {
-                cout << "Precinct inside circle" << endl;
+            if (community.get_compactness() > compactness_tolerance && !get_inside(pre.hull, circle.hull) ) {
+                cout << "Precinct outside circle, removing..." << endl;
                 give_precinct(p, worst_community, COMPACTNESS);
+
+                Canvas canvas(900, 900);
+                canvas.add_shape(this->state_communities);
+                canvas.draw();
             }
         }
 

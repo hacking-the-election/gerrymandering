@@ -317,7 +317,7 @@ void GeoGerry::State::read_communities(std::string read_path) {
 }
 
 void GeoGerry::State::playback_communities(std::string read_path) {
-    GeoDraw::Anim animation;
+    GeoDraw::Anim animation(150);
 
     fs::path p(read_path);
     std::vector<fs::directory_entry> v;

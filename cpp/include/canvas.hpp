@@ -107,5 +107,6 @@ namespace GeoDraw {
         int delay;
 
         void playback();
+        Anim(int d) : delay(d) {};
     };
 }
