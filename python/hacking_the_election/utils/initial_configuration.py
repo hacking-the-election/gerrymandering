@@ -276,13 +276,12 @@ class Community:
                         list(unchosen_precincts.precincts.values()),
                         unchosen_precincts.coords)
                 else:
-                    unchosen_precincts.give_precinct(
-                        self, precinct, **GIVE_PRECINCT_COORDS_ONLY_KWARGS)
-                    if isinstance(unchosen_precincts.coords, MultiPolygon):
-                        # Taking this precinct created an island, return it.
-                        self.give_precinct(
-                            unchosen_precincts, precinct,
-                            **GIVE_PRECINCT_COORDS_ONLY_KWARGS)
+                    try:
+                        unchosen_precincts.give_precinct(
+                            self, precinct, **GIVE_PRECINCT_COORDS_ONLY_KWARGS)
+                    except (CreatesMultiPolygonException,
+                            ZeroPrecinctCommunityException):
+                        pass
                     else:
                         now_added_precincts.add(precinct)
                         added_precincts.add(precinct)
