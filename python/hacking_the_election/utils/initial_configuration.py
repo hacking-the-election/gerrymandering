@@ -138,8 +138,9 @@ class Community:
                 population=population, compactness=compactness)
             raise ZeroPrecinctCommunityException
 
-        if self == other:
-            raise KeyError("Giving precinct to itself.")
+        if self is other:
+            raise ValueError(
+                f"Precinct {precinct_id} already in community {self.id}.")
 
         if not isinstance(other, Community):
             raise TypeError(f"Invalid type {type(other)}.\n"
@@ -167,7 +168,7 @@ class Community:
 
             if (
                     isinstance(other.coords, MultiPolygon)
-                 or isinstance(other.coords, MultiPolygon)):
+                 or isinstance(self.coords, MultiPolygon)):
                 other.give_precinct(
                     self, precinct_id, coords=coords, partisanship=partisanship,
                     standard_deviation=standard_deviation,
@@ -341,6 +342,17 @@ class Community:
         else:
             bordering_precincts = set(unchosen_precincts.precincts.keys())
         return bordering_precincts
+
+    def get_outside_precincts(self):
+        """
+        Returns set of precincts that all touch
+        the outside border of this community.
+        """
+        outside_precincts = set()
+        for precinct in self.precincts.values():
+            if get_if_bordering(self.coords, precinct.coords, True):
+                outside_precincts.add(precinct)
+        return outside_precincts
 
 
 def group_by_islands(precincts):
