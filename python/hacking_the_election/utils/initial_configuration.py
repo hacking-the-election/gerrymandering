@@ -138,8 +138,9 @@ class Community:
                 population=population, compactness=compactness)
             raise ZeroPrecinctCommunityException
 
-        if self == other:
-            raise KeyError("Giving precinct to itself.")
+        if self is other:
+            raise ValueError(
+                f"Precinct {precinct_id} already in community {self.id}.")
 
         if not isinstance(other, Community):
             raise TypeError(f"Invalid type {type(other)}.\n"
