@@ -77,7 +77,7 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold):
         biggest_community_precincts = communities_precincts[most_stdev_id]
         # relates border precinct to community border it's from (not including most_stdev_community)
         border_precincts = {most_stdev_community.id: []}
-        other_commmunities_dict = {community: [] for community in communities_list}
+        other_commmunities_dict = {community9: [] for community9 in communities_list}
 
         print(time())
         # create dictionary of the precincts bordering it
@@ -91,48 +91,46 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold):
                 # the following result has first key: precincts ids inside most stdev community
                 # second key: precinct ids in other community
                 specific_border_precincts = get_bordering_precincts(most_stdev_community, community1)
-                print(specific_border_precincts)
                 for precinct in specific_border_precincts[most_stdev_id]:
                     border_precincts[most_stdev_id].append(precinct)
                     other_commmunities_dict[communities_dict[id1]].append(precinct)
                 if specific_border_precincts[id1] != 0: 
-                    for precinct in specific_border_precincts[id1]:
-                        other_commmunities_dict[most_stdev_community].append(precinct)
+                    for precinct5 in specific_border_precincts[id1]:
+                        other_commmunities_dict[most_stdev_community].append(precinct5)
                     try:
                         border_precincts[id1].extend(specific_border_precincts[id1])
                     except KeyError:
                         border_precincts[id1] = specific_border_precincts[id1]
         # add precinct corridors that have precincts inside community, but only one
-        for precinct in most_stdev_community.precincts:
+        for precinct6 in most_stdev_community.precincts:
             for pair in precinct_corridors:
-                if precinct in pair:
+                if precinct6 in pair:
                     # if both sides of a precinct corridor are in the community, 
                     # no need to be added
-                    if pair[:].remove(precinct)[0] in community.precincts:
+                    if pair[:].remove(precinct6)[0] in community.precincts:
                         continue
                     else:
                         for community6 in communities_list:
                             if precinct in community6.precincts.values():
-                                border_precincts[community6] = pair[:].remove(precinct)
-                                other_commmunities_dict[most_stdev_community].append(precinct)
+                                border_precincts[community6] = pair[:].remove(precinct6)
+                                other_commmunities_dict[most_stdev_community].append(precinct6)
         # remove duplicate border precincts from list to consider
         no_duplicate_list = []
         for id, precinct_list in border_precincts.items():
             no_duplicate_precinct_list = []
-            for precinct in precinct_list:
-                if precinct not in no_duplicate_list:
-                    no_duplicate_list.append(precinct)
-                    no_duplicate_precinct_list.append(precinct)
+            for precinct7 in precinct_list:
+                if precinct7 not in no_duplicate_list:
+                    no_duplicate_list.append(precinct7)
+                    no_duplicate_precinct_list.append(precinct7)
             border_precincts[id] = no_duplicate_precinct_list
         border_precincts_list = []
         for precinct_list1 in border_precincts.values():
             for precinct1 in precinct_list1:
                 border_precincts_list.append(precinct1)
-        print('border precincts list, ', border_precincts_list)
         z = '../../../../border' + str(count) + '.json'
         with open(z, 'w') as f:
             try:
-                _ = shapely_to_polygon(clip([precinct.coords for precinct in border_precincts_list], 1))[0][0][0][0]
+                _ = shapely_to_polygon(clip([precinct8.coords for precinct8 in border_precincts_list], 1))[0][0][0][0]
                 y = json.dumps({"type":"FeatureCollection", "features":[{"type": "Feature", "geometry": {"type":"MultiPolygon", "coordinates":shapely_to_polygon(clip([precinct.coords for precinct in border_precincts_list], 1)), "properties":{"ID":"border"}}}]})
             except:
                 y = json.dumps({"type":"FeatureCollection", "features":[{"type": "Feature", "geometry": {"type":"Polygon", "coordinates":shapely_to_polygon(clip([precinct.coords for precinct in border_precincts_list], 1)), "properties":{"ID":"border"}}}]})
@@ -149,19 +147,14 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold):
             del other_precinct_list[num]
             # check to make sure removing community from most_stdev_community
             # does not lead to non-contiguous communities
-            print('start', time())
             if isinstance(clip([most_stdev_community.coords, precinct3.coords], 2), MultiPolygon):
-                print('is multi', time())
                 continue
             # after new precincts are serialized use stdev(precinct.rep_total_ratio) instead of current
             else:
-                print('begin stdev', time())
                 precinct_stdev = stdev([(precinct3.r_election_sum * 100)/(precinct3.r_election_sum + precinct3.d_election_sum) 
                                         for precinct3 in other_precinct_list
                                         if (precinct3.r_election_sum + precinct3.d_election_sum) != 0])
-                print('end stdev', time())
                 precinct_exchanges_dict[(community_stdev_stat - precinct_stdev)] = precinct3 
-            print(time())
         print(time(), 'next one')
         # for border precincts outside the highest stdev community, find stdev with that precinct
         for key in list(border_precincts.keys())[1:]:
@@ -190,7 +183,6 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold):
                 to_remove.append(sta_dev)
         for sta_dev1 in to_remove:
             del precinct_exchanges_dict[sta_dev1]
-        print(precinct_exchanges_dict)
         # add or remove precincts from border_precincts until there are no more beneficial exchanges,
         # or until the community's standard deviation is below the threshold
         while most_stdev_community.standard_deviation > threshold:
@@ -267,48 +259,47 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold):
                 # other_community.give_precinct(polygon_to_shapely(most_stdev_community), high_precinct.vote_id)
                 del precinct_exchanges_dict[highest_precinct_exchange]
                 for precinct_list5 in border_precincts.values():
-                    for precinct in precinct_list5:
+                    for precinct9 in precinct_list5:
                         try:
-                            if not get_if_bordering(precinct.coords, other_community.coords):
-                                no_longer_applicable_precincts.append(precinct)
+                            if not get_if_bordering(precinct9.coords, other_community.coords):
+                                no_longer_applicable_precincts.append(precinct9)
                         except AttributeError:
                             # precinct has no coordinates, which happens sometimes for some reason
                             pass
             # removes precincts that can't be added/removed now that a precinct has been added
             for id, precinct_list6 in border_precincts.items():
                 precinct_list_to_remove = []
-                for precinct in precinct_list6:
-                    if precinct not in no_longer_applicable_precincts:
-                        precinct_list_to_remove.append(precinct)
+                for precinct10 in precinct_list6:
+                    if precinct10 not in no_longer_applicable_precincts:
+                        precinct_list_to_remove.append(precinct10)
                 border_precincts[id] = precinct_list_to_remove
             not_involved_community_list = []
-            for community3 in not_involved_community_list:
-                if community3 != other_community:
-                    if community3 != most_stdev_community:
-                        not_involved_community_list.append(community3)
+            for community13 in not_involved_community_list:
+                if community13 != other_community:
+                    if community13 != most_stdev_community:
+                        not_involved_community_list.append(community13)
             community_change_snapshot = [other_community, most_stdev_community]
-            for community3 in not_involved_community_list:
-                community_change_snapshot.append(community3)
+            for community14 in not_involved_community_list:
+                community_change_snapshot.append(community14)
             communities_to_json(community_change_snapshot, str('../../../../partisanship_after' + str(precinct_count) + 'community'  + '.json'))
             precinct_count += 1
-            print(time())
             print('HELLO')
-        stdev_stat = str([community.standard_deviation for community in communities_list])[1:-1]
+        stdev_stat = str([community10.standard_deviation for community10 in communities_list])[1:-1]
         standard_deviations.append(stdev_stat)
-        for community in communities_list:
-            print(community.standard_deviation)
+        for community11 in communities_list:
+            print(community11.standard_deviation)
         # save number_of_changed_precincts_this_iteration to running list
         num_of_changed_precincts.append(num_of_changed_iteration)
         # create new communities list
         not_involved_community_list = []
         # find not involved community
-        for community1 in communities_list:
-            if community1 != other_community:
-                if community1 != most_stdev_community:
-                    not_involved_community_list.append(community1)
+        for community12 in communities_list:
+            if community12 != other_community:
+                if community12 != most_stdev_community:
+                    not_involved_community_list.append(community12)
         community_change_snapshot = [other_community, most_stdev_community]
-        for community3 in not_involved_community_list:
-            community_change_snapshot.append(community3)
+        for community15 in not_involved_community_list:
+            community_change_snapshot.append(community15)
         communities_to_json(community_change_snapshot, str('../../../../partisanship_after boi' + str(count) + '.json'))
     communities_to_json(communities_list, '../../../../partisanship_after.json')
     print('completed!')
