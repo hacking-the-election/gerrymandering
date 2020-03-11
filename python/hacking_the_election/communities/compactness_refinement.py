@@ -6,6 +6,7 @@ so that they are compact within a threshold.
 import math
 import pickle
 import random
+import warnings
 
 from shapely.geometry import Point
 import matplotlib.pyplot as plt
@@ -51,6 +52,7 @@ def refine_for_compactness(communities, minimum_compactness):
         try:
             X = np.array([])
             Y = np.array([])
+
             i = 0
             while True:
                 print("Average community compactness: "
@@ -116,22 +118,25 @@ def refine_for_compactness(communities, minimum_compactness):
                             except ValueError:
                                 # No precincts left in `outside_circle`
                                 precinct = random.sample(inside_circle, 1)[0]
-                                add_precinct(
-                                    communities, community, precinct, False)
-                                print(f"Added {precinct.vote_id} to community "
-                                      f"{community.id}. Compactness: "
-                                      f"{round(community.compactness, 3)}")
+                                try:
+                                    add_precinct(
+                                        communities, community, precinct, False)
+                                    print(f"Added {precinct.vote_id} to community "
+                                          f"{community.id}. Compactness: "
+                                          f"{round(community.compactness, 3)}")
+                                except ValueError as e:
+                                    warnings.warn(str(e))
                                 inside_circle.discard(precinct)
 
-                            if (get_average_compactness(communities)
-                                    > minimum_compactness):
+                            if all([c.compactness > minimum_compactness
+                                    for c in communities]):
                                 raise LoopBreakException
                             if community.compactness > minimum_compactness:
                                 print(f"Community {community.id} has "
                                        "compactness above threshold.")
                                 raise LoopBreakException(1)
 
-                        print(f"Community {community.id} failed to get below "
+                        print(f"Community {community.id} failed to get above "
                                "threshold after adding and removing all "
                                "precincts in and out of circle.")
                        
@@ -179,4 +184,4 @@ if __name__ == "__main__":
     
     signal.signal(signal.SIGINT, signal_handler)
 
-    refine_for_compactness(communities, 0.75)
+    refine_for_compactness(communities, 0.5)
