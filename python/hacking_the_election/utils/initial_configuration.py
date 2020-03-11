@@ -349,7 +349,7 @@ class Community:
         """
         outside_precincts = set()
         for precinct in self.precincts.values():
-            if get_if_bordering(precinct.coords, self.coords):
+            if get_if_bordering(self.coords, precinct.coords, True):
                 outside_precincts.add(precinct)
         return outside_precincts
 

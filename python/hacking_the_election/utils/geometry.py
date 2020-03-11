@@ -6,7 +6,14 @@ Geometric functions
 import math
 import json
 
-from shapely.geometry import Point, Polygon, MultiPolygon, MultiLineString, GeometryCollection
+from shapely.geometry import (
+    Point,
+    Polygon,
+    MultiPolygon,
+    MultiLineString,
+    GeometryCollection,
+    LinearRing
+)
 from shapely.ops import unary_union
 
 
@@ -22,13 +29,20 @@ def get_distance(p1, p2):
     return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
 
 
-def get_if_bordering(shape1, shape2):
+def get_if_bordering(shape1, shape2, inside=False):
     """
     Returns whether or not two shapes (shapely polygons) are bordering as a bool
     """
-    # return isinstance(clip([shape1, shape2], UNION), Polygon)
-    return isinstance(clip([shape1, shape2], INTERSECTION), MultiLineString)
-
+    if inside:
+        difference = clip([shape1, shape2], DIFFERENCE)
+        try:
+            return isinstance(
+                LinearRing(difference.exterior.coords).difference(shape2),
+                MultiLineString)
+        except AttributeError:
+            return False
+    else:
+        return isinstance(clip([shape1, shape2], INTERSECTION), MultiLineString)
 
 
 def get_point_in_polygon(polygon, point):
