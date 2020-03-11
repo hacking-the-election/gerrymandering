@@ -39,7 +39,7 @@ def signal_handler(sig, frame):
     raise ExitException
 
 
-def refine_for_compactness(communities, minimum_compactness):
+def refine_for_compactness(communities, minimum_compactness, output_file):
     """
     Returns communities that are all below the minimum compactness.
     """
@@ -49,112 +49,119 @@ def refine_for_compactness(communities, minimum_compactness):
         community.update_compactness()
 
     try:
-        try:
-            X = np.array([])
-            Y = np.array([])
+        X = np.array([])
+        Y = np.array([])
+        i = 0
 
-            i = 0
-            while True:
+        community = random.choice(communities)
+        while True:
+            try:
                 print("Average community compactness: "
-                     f"{get_average_compactness(communities)}")
+                        f"{get_average_compactness(communities)}")
 
-                for community in communities:
+                # Find circle with same area as district.
+                radius = math.sqrt(community.coords.area / math.pi)
+                center = community.coords.centroid.coords[0]
+                circle = Point(*center).buffer(radius)
+
+                # Find precincts that need to be added to this community.
+                inside_circle = set()
+                bordering_communities = \
+                    [c for c in communities
+                    if get_if_bordering(c.coords, community.coords)
+                        and c != community]
+                for precinct in [p for c in bordering_communities
+                                    for p in c.precincts.values()]:
+                    if get_if_bordering(precinct.coords,
+                                        community.coords):
+                        # Section of precinct that is inside of circle.
+                        circle_intersection = \
+                            clip([circle, precinct.coords], INTERSECTION)
+                        # If precinct and circle are intersecting
+                        if not circle_intersection.is_empty:
+                            intersection_area = circle_intersection.area
+                            precinct_area = precinct.coords.area
+                            if intersection_area > (precinct_area / 2):
+                                inside_circle.add(precinct)
+                
+                # Find precincts that need to be removed from this community.
+                outside_circle = set()
+
+                outside_bordering_precincts = community.get_outside_precincts()
+                for precinct in outside_bordering_precincts:
+                    # Section of precinct that is outside of circle.
+                    circle_difference = clip([precinct.coords, circle],
+                                                DIFFERENCE)
+                    # If precinct is not entirely in circle
+                    if not circle_difference.is_empty:
+                        difference_area = circle_difference.area
+                        precinct_area = precinct.coords.area
+                        if difference_area > (precinct_area / 2):
+                            outside_circle.add(precinct)
+
+                while outside_circle != set() or inside_circle != set():
+                    # Add precincts one by one
                     try:
-                        # Find circle with same area as district.
-                        radius = math.sqrt(community.coords.area / math.pi)
-                        center = community.coords.centroid.coords[0]
-                        circle = Point(*center).buffer(radius)
+                        precinct = random.sample(outside_circle, 1)[0]
+                        try:
+                            add_precinct(
+                                communities, community, precinct, True)
+                            print(f"Removed {precinct.vote_id} from "
+                                    f"community {community.id}. Compactness: "
+                                    f"{round(community.compactness, 3)}")
+                        except IndexError:
+                            # Precinct was outside of circle but not
+                            # bordering any other community.
+                            pass
+                        outside_circle.discard(precinct)
+                    except ValueError:
+                        # No precincts left in `outside_circle`
+                        precinct = random.sample(inside_circle, 1)[0]
+                        try:
+                            add_precinct(
+                                communities, community, precinct, False)
+                            print(f"Added {precinct.vote_id} to community "
+                                    f"{community.id}. Compactness: "
+                                    f"{round(community.compactness, 3)}")
+                        except ValueError as e:
+                            warnings.warn(str(e))
+                        inside_circle.discard(precinct)
 
-                        # Find precincts that need to be added to this community.
-                        inside_circle = set()
-                        bordering_communities = \
-                            [c for c in communities
-                            if get_if_bordering(c.coords, community.coords)
-                                and c != community]
-                        for precinct in [p for c in bordering_communities
-                                         for p in c.precincts.values()]:
-                            if get_if_bordering(precinct.coords,
-                                                community.coords):
-                                # Section of precinct that is inside of circle.
-                                circle_intersection = \
-                                    clip([circle, precinct.coords], INTERSECTION)
-                                # If precinct and circle are intersecting
-                                if not circle_intersection.is_empty:
-                                    intersection_area = circle_intersection.area
-                                    precinct_area = precinct.coords.area
-                                    if intersection_area > (precinct_area / 2):
-                                        inside_circle.add(precinct)
-                        
-                        # Find precincts that need to be removed from this community.
-                        outside_circle = set()
+                    if all([c.compactness > minimum_compactness
+                            for c in communities]):
+                        raise LoopBreakException
+                    if community.compactness > minimum_compactness:
+                        print(f"Community {community.id} has "
+                                "compactness above threshold.")
+                        break
 
-                        outside_bordering_precincts = community.get_outside_precincts()
-                        for precinct in outside_bordering_precincts:
-                            # Section of precinct that is outside of circle.
-                            circle_difference = clip([precinct.coords, circle],
-                                                     DIFFERENCE)
-                            # If precinct is not entirely in circle
-                            if not circle_difference.is_empty:
-                                difference_area = circle_difference.area
-                                precinct_area = precinct.coords.area
-                                if difference_area > (precinct_area / 2):
-                                    outside_circle.add(precinct)
+                if community.compactness <= minimum_compactness:
+                    print(f"Community {community.id} failed to get above "
+                            "threshold after adding and removing all "
+                            "precincts in and out of circle.")
+                
+            except LoopBreakException:
+                break
 
-                        while outside_circle != set() or inside_circle != set():
-                            # Add precincts one by one
-                            try:
-                                precinct = random.sample(outside_circle, 1)[0]
-                                try:
-                                    add_precinct(
-                                        communities, community, precinct, True)
-                                    print(f"Removed {precinct.vote_id} from "
-                                          f"community {community.id}. Compactness: "
-                                          f"{round(community.compactness, 3)}")
-                                except IndexError:
-                                    # Precinct was outside of circle but not
-                                    # bordering any other community.
-                                    pass
-                                outside_circle.discard(precinct)
-                            except ValueError:
-                                # No precincts left in `outside_circle`
-                                precinct = random.sample(inside_circle, 1)[0]
-                                try:
-                                    add_precinct(
-                                        communities, community, precinct, False)
-                                    print(f"Added {precinct.vote_id} to community "
-                                          f"{community.id}. Compactness: "
-                                          f"{round(community.compactness, 3)}")
-                                except ValueError as e:
-                                    warnings.warn(str(e))
-                                inside_circle.discard(precinct)
+            i += 1
+            np.append(X, [i])
+            np.append(Y, [get_average_compactness(communities)])
 
-                            if all([c.compactness > minimum_compactness
-                                    for c in communities]):
-                                raise LoopBreakException
-                            if community.compactness > minimum_compactness:
-                                print(f"Community {community.id} has "
-                                       "compactness above threshold.")
-                                raise LoopBreakException(1)
+            # To stop endless recursion.
+            community = \
+                random.choice([c for c in communities if c != community])
 
-                        print(f"Community {community.id} failed to get above "
-                               "threshold after adding and removing all "
-                               "precincts in and out of circle.")
-                       
-                    except LoopBreakException as e:
-                        if e.level == 1:
-                            continue
-                        else:
-                            raise e
+        plt.scatter(X, Y)
+        plt.show()
 
-                i += 1
-                np.append(X, [i])
-                np.append(Y, [get_average_compactness(communities)])
+        with open("test_compactness_graph.pickle", "wb+") as f:
+            pickle.dump([X, Y], f)
 
-            plt.scatter(X, Y)
-            plt.show()
-
-        except LoopBreakException:
-            return communities
+        convert_to_json(
+            [polygon_to_list(c.coords) for c in communities],
+            output_file,
+            [{"ID": c.id} for c in communities]
+        )
     
     except Exception as e:
         with open("test_compactness.pickle", "wb+") as f:
@@ -164,7 +171,8 @@ def refine_for_compactness(communities, minimum_compactness):
             "test_compactness.json",
             [{"ID": c.id} for c in communities]
         )
-        print(get_average_compactness(communities))
+        with open("test_compactness_graph.pickle", "wb+") as f:
+            pickle.dump([X, Y], f)
         raise e
 
 
@@ -184,4 +192,4 @@ if __name__ == "__main__":
     
     signal.signal(signal.SIGINT, signal_handler)
 
-    refine_for_compactness(communities, 0.5)
+    refine_for_compactness(communities, 0.75, "test_compactness_output.json")
