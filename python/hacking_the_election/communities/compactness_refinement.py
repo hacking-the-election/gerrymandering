@@ -55,8 +55,6 @@ def refine_for_compactness(communities, minimum_compactness, output_file):
 
         while True:
             try:
-                community = min(communities, key=lambda c: c.compactness)
-
                 print("Average community compactness: "
                         f"{get_average_compactness(communities)}")
 
@@ -69,10 +67,10 @@ def refine_for_compactness(communities, minimum_compactness, output_file):
                 inside_circle = set()
                 bordering_communities = \
                     [c for c in communities
-                    if get_if_bordering(c.coords, community.coords)
+                     if get_if_bordering(c.coords, community.coords)
                         and c != community]
                 for precinct in [p for c in bordering_communities
-                                    for p in c.precincts.values()]:
+                                 for p in c.precincts.values()]:
                     if get_if_bordering(precinct.coords,
                                         community.coords):
                         # Section of precinct that is inside of circle.
@@ -105,11 +103,15 @@ def refine_for_compactness(communities, minimum_compactness, output_file):
                     try:
                         precinct = random.sample(outside_circle, 1)[0]
                         try:
-                            add_precinct(
-                                communities, community, precinct, True)
-                            print(f"Removed {precinct.vote_id} from "
-                                    f"community {community.id}. Compactness: "
-                                    f"{round(community.compactness, 3)}")
+                            try:
+                                add_precinct(
+                                    communities, community, precinct, True)
+                                print(f"Removed {precinct.vote_id} from "
+                                      f"community {community.id}. Compactness: "
+                                      f"{round(community.compactness, 3)}")
+                            except (CreatesMultiPolygonException,
+                                    ZeroPrecinctCommunityException):
+                                pass
                         except IndexError:
                             # Precinct was outside of circle but not
                             # bordering any other community.
@@ -119,11 +121,15 @@ def refine_for_compactness(communities, minimum_compactness, output_file):
                         # No precincts left in `outside_circle`
                         precinct = random.sample(inside_circle, 1)[0]
                         try:
-                            add_precinct(
-                                communities, community, precinct, False)
-                            print(f"Added {precinct.vote_id} to community "
-                                    f"{community.id}. Compactness: "
-                                    f"{round(community.compactness, 3)}")
+                            try:
+                                add_precinct(
+                                    communities, community, precinct, False)
+                                print(f"Added {precinct.vote_id} to community "
+                                      f"{community.id}. Compactness: "
+                                      f"{round(community.compactness, 3)}")
+                            except (CreatesMultiPolygonException,
+                                    ZeroPrecinctCommunityException):
+                                pass
                         except ValueError as e:
                             warnings.warn(str(e))
                         inside_circle.discard(precinct)
@@ -139,7 +145,7 @@ def refine_for_compactness(communities, minimum_compactness, output_file):
                         np.append(X, [i])
                         np.append(Y, [get_average_compactness(communities)])
                         print(f"Community {community.id} has "
-                                "compactness above threshold.")
+                               "compactness above threshold.")
                         break
 
                 if community.compactness <= minimum_compactness:
@@ -149,13 +155,12 @@ def refine_for_compactness(communities, minimum_compactness, output_file):
                     print(f"Community {community.id} failed to get above "
                             "threshold after adding and removing all "
                             "precincts in and out of circle.")
+
+                community = \
+                    random.choice([c for c in communities if c != community])
                 
             except LoopBreakException:
                 break
-
-            # To stop endless recursion.
-            community = \
-                random.choice([c for c in communities if c != community])
 
         plt.scatter(X, Y)
         plt.show()
