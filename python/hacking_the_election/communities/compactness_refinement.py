@@ -129,23 +129,28 @@ def refine_for_compactness(communities, minimum_compactness, output_file):
 
                     if all([c.compactness > minimum_compactness
                             for c in communities]):
+                        i += 1
+                        np.append(X, [i])
+                        np.append(Y, [get_average_compactness(communities)])
                         raise LoopBreakException
                     if community.compactness > minimum_compactness:
+                        i += 1
+                        np.append(X, [i])
+                        np.append(Y, [get_average_compactness(communities)])
                         print(f"Community {community.id} has "
                                 "compactness above threshold.")
                         break
 
                 if community.compactness <= minimum_compactness:
+                    i += 1
+                    np.append(X, [i])
+                    np.append(Y, [get_average_compactness(communities)])
                     print(f"Community {community.id} failed to get above "
                             "threshold after adding and removing all "
                             "precincts in and out of circle.")
                 
             except LoopBreakException:
                 break
-
-            i += 1
-            np.append(X, [i])
-            np.append(Y, [get_average_compactness(communities)])
 
             # To stop endless recursion.
             community = \
@@ -171,6 +176,8 @@ def refine_for_compactness(communities, minimum_compactness, output_file):
             "test_compactness.json",
             [{"ID": c.id} for c in communities]
         )
+        plt.scatter(X, Y)
+        plt.show()
         with open("test_compactness_graph.pickle", "wb+") as f:
             pickle.dump([X, Y], f)
         raise e
