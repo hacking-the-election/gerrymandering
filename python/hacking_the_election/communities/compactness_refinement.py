@@ -53,9 +53,10 @@ def refine_for_compactness(communities, minimum_compactness, output_file):
         Y = np.array([])
         i = 0
 
-        community = random.choice(communities)
         while True:
             try:
+                community = min(communities, key=lambda c: c.compactness)
+
                 print("Average community compactness: "
                         f"{get_average_compactness(communities)}")
 
