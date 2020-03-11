@@ -1,0 +1,4 @@
+# list of different arguments to build the data library
+
+serialize_state --set="var:15,var2:val" "../data/raw/new york/geodata.json" "../data/raw/new york/"
+# serialize_state ../data/raw/

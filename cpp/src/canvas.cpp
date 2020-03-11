@@ -290,12 +290,15 @@ void GeoDraw::Canvas::rasterize_shapes() {
     // find out which is larger and assign its reciporical to the scale factor
     double scale_factor = 1 / ((ratio_top > ratio_right) ? ratio_top : ratio_right); 
     scale(scale_factor);
+
     rasterize_edges();
 
     for (Pixel p : pixels) {
         int total = (x * y) - 1;
         int start = p.y * x - p.x;
-        this->background[total - start] = p.get_uint();
+
+        if (total - start < x * y)
+            this->background[total - start] = p.get_uint();
     }
 
     // fill_shapes();
@@ -390,7 +393,6 @@ void GeoDraw::Anim::playback() {
         backgrounds.push_back(c.background);
     }
 
-
     Uint32* background = new Uint32[frames[0].x * frames[0].y];
     memset(background, 255, frames[0].x * frames[0].y * sizeof(Uint32));
 
@@ -405,18 +407,20 @@ void GeoDraw::Anim::playback() {
     SDL_SetWindowResizable(window, SDL_TRUE);
     SDL_UpdateTexture(texture, NULL, background, frames[0].x * sizeof(Uint32));
     SDL_RenderPresent(renderer);
+    SDL_PollEvent(&event);
+    SDL_Delay(200);
 
     for (int i = 0; i < backgrounds.size() - 1; i++) {
         Uint32* bg = backgrounds[i];
         SDL_UpdateTexture(texture, NULL, bg, frames[0].x * sizeof(Uint32));
+        SDL_PollEvent(&event);
+        SDL_Delay(delay);
         SDL_RenderClear(renderer);
         SDL_RenderCopy(renderer, texture, NULL, NULL);
         SDL_RenderPresent(renderer);
-        SDL_Delay(500);
     }
 
     bool quit = false;
-    std::cout << "a" << std::endl;
 
     while (!quit) {
         SDL_UpdateTexture(texture, NULL, backgrounds[backgrounds.size() - 1], frames[0].x * sizeof(Uint32));
