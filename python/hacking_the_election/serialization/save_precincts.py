@@ -255,6 +255,9 @@ class Precinct:
 
             pop = {}
             # Conditionals for each state
+            if state == "new york":
+                for row in population_data_rows[1:]:
+                    pop[row[3]] = convert_to_int(row[15])
         else:
             is_population_data = False
             # Population is in geodata
@@ -558,7 +561,7 @@ class Precinct:
         self.r_election_sum = sum(self.r_election_data.values())
         
         try:
-            self.rep_total_ratio = self.d_election_sum / (self.r_election_sum + self.d_election_data)
+            self.rep_total_ratio = self.r_election_sum / (self.r_election_sum + self.d_election_sum)
         except ZeroDivisionError:
             # it won't get a ratio as an attribute so we can
             # decide what to do with the dem and rep sums later.
