@@ -255,36 +255,31 @@ coordinate GeoGerry::LinearRing::get_center() {
         @params: none
         @return: coordinate of centroid
     */
+    float centroidX = 0, centroidY = 0;
+    float det = 0, tempDet = 0;
+    unsigned int j = 0;
+    int nVertices = border.size();
 
-    coordinate centroid = {0, 0};
+    for (int i = 0; i < nVertices; i++) {
+        // closed polygon
+        if (i + 1 == nVertices)
+        	j = 0;
+		else
+			j = i + 1;
 
-    long long int sumx, sumy;
-    // long long int x0, y0, x1, y1;
+		// compute the determinant
+		tempDet = border[i][0] * border[j][1] - border[j][0] * border[i][1];
+		det += tempDet;
 
-    for (int i = 0; i < border.size(); i++) {
-        // assign coordinates to variables
-        // x0 = border[i][0];
-        // y0 = border[i][1];
-        // x1 = border[i + 1][0];
-        // y1 = border[i + 1][1];
+		centroidX += (border[i][0] + border[j][0]) * tempDet;
+		centroidY += (border[i][1] + border[j][1]) * tempDet;
+	}
 
-        sumx += border[i][0];
-        sumy += border[i][1];
-        // get first factor in centroid formula
-        // double factor = ((x0 * y1) - (x1 * y0));
-        
-        // // calculate current coordinate
-        // centroid[0] += (x0 + x1) * factor;
-        // centroid[1] += (y0 + y1) * factor;
-    }
+	// divide by the total mass of the polygon
+	centroidX /= 3*det;
+	centroidY /= 3*det;
 
-    // divide to find centroid
-    // centroid[0] /= (6 * this->get_area());
-    // centroid[1] /= (6 * this->get_area());
-
-    centroid[0] = sumx / border.size();
-    centroid[1] = sumy / border.size();
-
+    coordinate centroid = {(long int)centroidX, (long int)centroidY};
     return centroid;
 }
 
