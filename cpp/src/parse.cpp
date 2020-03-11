@@ -23,8 +23,8 @@ const long int c = pow(2, 18);
 
 // constant id strings
 const std::string election_id_header = "geoid10";
-const std::vector<std::string> d_head = {"ndv"};
-const std::vector<std::string> r_head = {"nrv"};
+const std::vector<std::string> d_head = {"NDV"};
+const std::vector<std::string> r_head = {"NRV"};
 const std::string geodata_id = "GEOID10";
 const std::string population_id = "POP100";
 
@@ -262,15 +262,27 @@ std::vector<GeoGerry::Precinct> parse_precinct_data(std::string geoJSON) {
         int repv = 0;
 
         for (std::string dem_head : d_head) {
-            if (shapes["features"][i]["properties"].HasMember(dem_head.c_str()))
-                demv += shapes["features"][i]["properties"][dem_head.c_str()].GetInt();
-            else std::cout << "\e[31merror: \e[0mNo population data" << std::endl;
+            if (shapes["features"][i]["properties"].HasMember(dem_head.c_str())) {
+                if (shapes["features"][i]["properties"][dem_head.c_str()].IsInt()) {
+                    demv += shapes["features"][i]["properties"][dem_head.c_str()].GetInt();
+                }
+                else if (shapes["features"][i]["properties"][dem_head.c_str()].IsDouble()) {
+                    demv += (int) shapes["features"][i]["properties"][dem_head.c_str()].GetDouble();
+                }
+            }
+            else std::cout << "\e[31merror: \e[0mNo democratic voter data" << std::endl;
         }
 
         for (std::string rep_head : r_head) {
-            if (shapes["features"][i]["properties"].HasMember(rep_head.c_str()))
-                demv += shapes["features"][i]["properties"][rep_head.c_str()].GetInt();
-            else std::cout << "\e[31merror: \e[0mNo population data" << std::endl;
+            if (shapes["features"][i]["properties"].HasMember(rep_head.c_str())) {
+                if (shapes["features"][i]["properties"][rep_head.c_str()].IsInt()) {
+                    repv += shapes["features"][i]["properties"][rep_head.c_str()].GetInt();
+                }
+                else if (shapes["features"][i]["properties"][rep_head.c_str()].IsDouble()) {
+                    repv += (int) shapes["features"][i]["properties"][rep_head.c_str()].GetDouble();
+                }
+            }
+            else std::cout << "\e[31merror: \e[0mNo republican voter data" << std::endl;
         }
 
         // get the population data from geodata
@@ -697,7 +709,6 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
     c.add_shape(state);
     c.draw();
 
-    writef(state.to_json(), "test.json");
     return state; // return the state object
 }
 
@@ -718,14 +729,12 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
 
     // generate shapes from coordinates
     if (VERBOSE) std::cout << "generating coordinate array from precinct file..." << std::endl;
-    std::vector<Shape> precinct_shapes = parse_precinct_coordinates(precinct_geoJSON);
+    std::vector<Precinct> precinct_shapes = parse_precinct_data(precinct_geoJSON);
     if (VERBOSE) std::cout << "generating coordinate array from district file..." << std::endl;
     std::vector<Multi_Shape> district_shapes = parse_district_coordinates(district_geoJSON);
 
     // create a vector of precinct objects from border and voter data
-    if (VERBOSE) std::cout << "merging parsed geodata with parsed voter data into precinct array..." << std::endl;
-    std::vector<Precinct> precincts = merge_data(precinct_shapes, precinct_voter_data);
-    Precinct_Group pre_group(precincts);
+    Precinct_Group pre_group(precinct_shapes);
 
     // remove holes from precinct data
     int before = pre_group.precincts.size();
@@ -752,6 +761,5 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
     c.add_shape(state);
     c.draw();
 
-    writef(state.to_json(), "test.json");
     return state; // return the state object
 }

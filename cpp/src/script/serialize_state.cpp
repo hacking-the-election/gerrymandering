@@ -30,21 +30,24 @@ int main(int argc, char* argv[]) {
     }
 
 
-    // read files into strings
-    string precinct_geoJSON = readf(argv[1]);
-    string district_geoJSON = readf(argv[3]);
-    
-    // path to write binary file to
-    string write_path = string(argv[4]);
     State state;
-    
+    string write_path = string(argv[3]);
+
     // generate state from files
     if (argc == 5) {
+        // read files into strings
+        string precinct_geoJSON = readf(argv[1]);
         string voter_data = readf(argv[2]);
+        string district_geoJSON = readf(argv[3]);
+
         state = State::generate_from_file(precinct_geoJSON, voter_data, district_geoJSON);
         state.write_binary(write_path); // write as binary
     }
     else {
+        // read files into strings
+        string precinct_geoJSON = readf(argv[1]);
+        string district_geoJSON = readf(argv[2]);
+
         state = State::generate_from_file(precinct_geoJSON, district_geoJSON);
         state.write_binary(write_path); // write as binary
     }
