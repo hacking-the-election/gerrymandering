@@ -535,10 +535,7 @@ void State::give_precinct(p_index precinct, p_index community, int t_type) {
 
         @return: void
     */
-    Canvas canvas(900, 900);
-    canvas.add_shape(this->state_communities);
-    canvas.draw();
-
+   
     Precinct precinct_shape = this->state_communities[community].precincts[precinct];
 
     // get communities that border the current community
@@ -549,22 +546,12 @@ void State::give_precinct(p_index precinct, p_index community, int t_type) {
     for (p_index i : bordering_communities_i)
         bordering_communities.push_back(this->state_communities[i]);
     
-    canvas.clear();
-    canvas.add_shape(this->state_communities);
-    canvas.draw();
-    
     // of those communities, get the ones that also border the precinct
     p_index_set exchangeable_communities_i = get_bordering_shapes(bordering_communities, precinct_shape);
     Communities exchangeable_communities;
     for (p_index i : exchangeable_communities_i)
         exchangeable_communities.push_back(this->state_communities[i]);
-
     p_index exchange_choice;
-    
-    cout << exchangeable_communities.size() << endl;
-    canvas.clear();
-    canvas.add_shape(this->state_communities);
-    canvas.draw();
 
     if (t_type == PARTISANSHIP) {
         // get closest average to precinct
@@ -612,8 +599,9 @@ void State::give_precinct(p_index precinct, p_index community, int t_type) {
     this->state_communities[community].precincts.erase(this->state_communities[community].precincts.begin() + precinct);
 
     // update relevant borders after transactions
-    for (Community c : bordering_communities)
-        c.border = generate_exterior_border(c).border;
+    for (p_index i : exchangeable_communities_i) {
+        this->state_communities[i].border = generate_exterior_border(this->state_communities[i]).border;
+    }
 
     this->state_communities[community].border = generate_exterior_border(this->state_communities[community]).border;
     
@@ -631,9 +619,11 @@ void State::refine_compactness(double compactness_tolerance) {
         @params: `double` compactness_tolerance: tolerance for compactness
         @return: void
     */
+
     p_index worst_community = get_next_community(compactness_tolerance, COMPACTNESS);
     bool is_done = (worst_community == -1);
     vector<int> num_changes(state_communities.size());
+    
     cout << "refining for compactness..." << endl;
 
     while (!is_done) {
@@ -643,18 +633,24 @@ void State::refine_compactness(double compactness_tolerance) {
         coordinate center = community.get_center();
         Shape circle = generate_gon(center, sqrt(community.get_area() / PI), 30);
         Color green = Color(17, 255, 0);
+        
+        p_index_set boundaries = get_inner_boundary_precincts(community);
 
         // for  each precinct in edge of community;
-        for (p_index p : get_inner_boundary_precincts(community)) {
-            cout << "checking precinct..." << endl;
+        for (p_index p : boundaries) {
             Precinct pre = community.precincts[p];
-            if (community.get_compactness() > compactness_tolerance && !get_inside(pre.hull, circle.hull) ) {
-                cout << "Precinct outside circle, removing..." << endl;
-                give_precinct(p, worst_community, COMPACTNESS);
-
-                Canvas canvas(900, 900);
-                canvas.add_shape(this->state_communities);
-                canvas.draw();
+            if (p != 0) {
+                if (community.get_compactness() > compactness_tolerance && !get_inside(pre.hull, circle.hull) ) {
+                    cout << "Precinct outside circle, removing..." << endl;
+                    int other = (worst_community == 1)? 0 : 1;
+                    Canvas canvas(900, 900);
+                    canvas.add_shape(this->state_communities);
+                    canvas.draw();
+                    give_precinct(p, worst_community, COMPACTNESS);
+                    canvas.clear();
+                    canvas.add_shape(this->state_communities);
+                    canvas.draw();
+                }
             }
         }
 
