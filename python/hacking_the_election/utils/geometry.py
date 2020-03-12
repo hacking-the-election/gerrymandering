@@ -38,7 +38,7 @@ def get_if_bordering(shape1, shape2, inside=False):
         try:
             return isinstance(
                 LinearRing(difference.exterior.coords).difference(shape2),
-                MultiLineString)
+                MultiLineString) != (shape1 == shape2)
         except AttributeError:
             return False
     else:

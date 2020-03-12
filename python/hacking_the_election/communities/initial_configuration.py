@@ -128,12 +128,8 @@ def create_initial_configuration(island_precinct_groups, n_districts,
                 # No configuration works out
 
                 # Find configuration closest to available precincts.
-                try:
-                    best_configuration = min(community_grouping_attempts,
-                                            key=lambda x: x[-1])
-                except ValueError as ve:
-                    print(community_sizes)
-                    raise ve
+                best_configuration = min(community_grouping_attempts,
+                                         key=lambda x: x[-1])
 
                 for _ in range(best_configuration[0]):
                     community_sizes.remove(small_community)
@@ -168,12 +164,12 @@ def create_initial_configuration(island_precinct_groups, n_districts,
             # All islands with extra precincts excluding current island.
             eligible_islands = \
                 [j for j, il in enumerate(island_available_precincts)
-                 if il != 0]
+                 if il != 0 and j != i]
             linked_precinct_chains.append([])
             last_island_used = i
 
             while sum(link_community.islands.values()) < community_sizes[0]:
-                
+
                 if linked_precinct_chains[-1] == []:
                     # First link in chain
                     precinct1, precinct2, new_island = \
@@ -212,7 +208,8 @@ def create_initial_configuration(island_precinct_groups, n_districts,
 
                 print(f"island {last_island_used} linked to island {new_island}")
                 print(f"got {island_available_precincts[new_island]} more precincts.")
-                print(f"number of precincts in community so far is {sum(link_community.islands.values())}")
+                print(f"number of precincts in community {link_community.id} "
+                      f"so far is {sum(link_community.islands.values())}")
                 linked_precinct_chains[-1].append(precinct2)
                 link_community.precincts[precinct2.vote_id] = precinct2
                 link_community.coords = \
@@ -292,7 +289,9 @@ def create_initial_configuration(island_precinct_groups, n_districts,
                                 island_precincts.give_precinct(
                                     community,
                                     list(island_precincts.precincts.keys())[0],
-                                    **GIVE_PRECINCT_COORDS_ONLY_KWARGS
+                                    **GIVE_PRECINCT_COORDS_ONLY_KWARGS,
+                                    allow_zero_precincts=True,
+                                    allow_multipolygons=True
                                 )
 
                             island_borders[island_index] = Polygon()
