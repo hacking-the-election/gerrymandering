@@ -6,7 +6,6 @@
       - Make all imports alphabetical
     - update __main__.py in gerrymandering
     - use numpy arrays within shapely objects
-    - move custom exceptions to exceptions.py
    Later:
     - Predict errors and create custom exceptions to throw in those cases
     - speed up with cython and c++ extensions (may have to be done before fair if code is too slow)
@@ -15,14 +14,12 @@
 # Serialization:
    Later (Possible after project):
     - update unit tests
+    - serialize all states
 
 # Communities:
    Now:
     - continue working on partisanship test
-    - Real-time drawings of communities being formed.
     - write make_communities function in __init__.py
     - add much datas to return in partisanship
     - figure out how to overhaul standard deviation so it makes sense in partisanship
     - update communities_to_json so it creates new json at every precinct change or literally whatever
-
-Add notebook entry for finishing compactness.

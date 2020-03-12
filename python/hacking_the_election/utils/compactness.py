@@ -67,24 +67,17 @@ def add_precinct(communities, community, precinct, give):
                  if (get_if_bordering(c.coords, precinct.coords)
                      and c != community)]
             )
-        try:
-            community.give_precinct(
-                other_community,
-                precinct.vote_id,
-                **GIVE_PRECINCTS_COMPACTNESS_KWARGS
-            )
-        except (CreatesMultiPolygonException,
-                ZeroPrecinctCommunityException):
-            pass
+        community.give_precinct(
+            other_community,
+            precinct.vote_id,
+            **GIVE_PRECINCTS_COMPACTNESS_KWARGS
+        )
     else:
         for other_community in communities:
             if precinct in other_community.precincts.values():
-                try:
-                    other_community.give_precinct(
-                        community,
-                        precinct.vote_id,
-                        **GIVE_PRECINCTS_COMPACTNESS_KWARGS
-                    )
-                except (CreatesMultiPolygonException,
-                        ZeroPrecinctCommunityException):
-                    pass
+                other_community.give_precinct(
+                    community,
+                    precinct.vote_id,
+                    **GIVE_PRECINCTS_COMPACTNESS_KWARGS
+                )
+                
