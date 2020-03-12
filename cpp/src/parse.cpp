@@ -757,9 +757,5 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
     state.islands = sort_precincts(sborder, pre_group);
     if (VERBOSE) std::cout << "state serialized!" << std::endl;
 
-    GeoDraw::Canvas c(500, 500);
-    c.add_shape(state);
-    c.draw();
-
     return state; // return the state object
 }
