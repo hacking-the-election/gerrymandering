@@ -9,7 +9,7 @@ from shapely.geometry import Polygon, MultiPolygon
 
 from hacking_the_election.communities.initial_configuration import \
     create_initial_configuration
-from hacking_the_election.utils.initial_configuration import Community
+from hacking_the_election.utils.community import Community
 from hacking_the_election.serialization.load_precincts import load
 from hacking_the_election.serialization.save_precincts import Precinct
 from hacking_the_election.test.funcs import (

@@ -27,7 +27,7 @@ from hacking_the_election.utils.geometry import (
 )
 from hacking_the_election.utils.stats import average, stdev
 from hacking_the_election.serialization import save_precincts
-from hacking_the_election.utils.initial_configuration import Community
+from hacking_the_election.utils.community import Community
 
 def quantify(communities_file, districts_file):
     '''

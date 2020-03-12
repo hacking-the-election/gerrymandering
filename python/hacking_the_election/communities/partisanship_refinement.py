@@ -9,7 +9,7 @@ import sys
 import pickle
 import json
 from time import time
-from hacking_the_election.utils.initial_configuration import Community
+from hacking_the_election.utils.community import Community
 from hacking_the_election.utils.partisanship import get_bordering_precincts
 from hacking_the_election.utils.stats import average, stdev
 from hacking_the_election.utils.geometry import shapely_to_polygon, polygon_to_shapely, get_if_bordering, communities_to_json, clip

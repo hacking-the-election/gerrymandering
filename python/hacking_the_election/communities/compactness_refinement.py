@@ -200,13 +200,13 @@ if __name__ == "__main__":
     import signal
     import sys
 
-    from hacking_the_election.utils.initial_configuration import Community
+    from hacking_the_election.utils.community import Community
     from hacking_the_election.serialization import save_precincts
 
 
     sys.modules["save_precincts"] = save_precincts
 
-    with open("test_vermont_communities.pickle", "rb") as f:
+    with open("test_vermont_initial_configuration.pickle", "rb") as f:
         communities, linked_precinct_chains = pickle.load(f)
     
     signal.signal(signal.SIGINT, signal_handler)
