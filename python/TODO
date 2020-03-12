@@ -12,15 +12,12 @@
     - update unit tests and make them actually pass
 
 # Serialization:
-   Now:
-    - serialize New York
    Later (Possible after project):
     - update unit tests
     - serialize all states
 
 # Communities:
    Now:
-    - move Community class to its own file in utils.py
     - continue working on partisanship test
     - write make_communities function in __init__.py
     - add much datas to return in partisanship
