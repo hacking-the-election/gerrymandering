@@ -1,35 +1,36 @@
 /*=======================================
  parse.cpp:                     k-vernooy
- last modified:               Web, Feb 19
+ last modified:               Web, Mar 11
 
  Definitions of state methods for parsing
  from geodata and election data (see data
  specs in root directory for information)
 ========================================*/
 
-#include "../include/shape.hpp"       // class definitions
-#include "../include/canvas.hpp"       // class definitions
-#include "../include/util.hpp"        // array modification functions
-#include "../include/geometry.hpp"    // exterior border generation
 #include <algorithm>                  // for std::find and std::distance
 #include <numeric>                    // include std::iota
-#include <iomanip>
+#include <iomanip>                    // setprecision for debug
+
+#include "../include/shape.hpp"       // class definitions
+#include "../include/canvas.hpp"      // class definitions
+#include "../include/util.hpp"        // array modification functions
+#include "../include/geometry.hpp"    // exterior border generation
 
 #define VERBOSE 1  // print progress messages
-using namespace rapidjson;
 
+using namespace rapidjson;
 const long int c = pow(2, 18);
 
 // constant id strings
-//ndv	nrv	geoid10	GEOID10	POP100
 const std::string election_id_header = "geoid10";
-const std::vector<std::string> d_head = {"ndv"};
-const std::vector<std::string> r_head = {"nrv"};
+const std::vector<std::string> d_head = {"NDV"};
+const std::vector<std::string> r_head = {"NRV"};
 const std::string geodata_id = "GEOID10";
 const std::string population_id = "POP100";
 
 std::vector<std::vector<std::string > > parse_sv(std::string, std::string);
 bool check_column(std::vector<std::vector<std::string> >, int);
+
 
 std::vector<std::vector<std::string> > parse_sv(std::string tsv, std::string delimiter) {
     /*
@@ -61,14 +62,20 @@ std::vector<std::vector<std::string> > parse_sv(std::string tsv, std::string del
     return data;
 }
 
+
 bool check_column(std::vector<std::vector<std::string> > data_list, int index) {
     /*
         @desc:
             returns whether or not a given column in a two
             dimensional vector is empty at any given point
 
+        @params:
+            `string` data_list: The two dimensional array of data
+            `int` index: The column index to check
 
+        @return: `bool` column `index` is not empty
     */
+
 
     for (int i = 0; i < data_list.size(); i++)
         if (data_list[i][index].size() == 0)
@@ -77,12 +84,16 @@ bool check_column(std::vector<std::vector<std::string> > data_list, int index) {
     return true;
 }
 
-std::map<std::string, std::vector<int> > parse_voter_data(std::string voter_data) {
 
+std::map<std::string, std::vector<int> > parse_voter_data(std::string voter_data) {
     /*
-        from a string in the specified format,
-        creates a map with the key of the precinct
-        name and vector as `"name": {dem_vote, rep vote}`
+        @desc:
+            from a string in the specified format,
+            creates a map with the key of the precinct
+            name and vector as `"name": {dem_vote, rep vote}`
+
+        @params: `string` voter_data: tab separated voting file
+        @return: `map<string, array<int, 2>>` parsed data
     */
 
     std::vector<std::vector<std::string> > data_list // two dimensional
@@ -144,8 +155,13 @@ std::map<std::string, std::vector<int> > parse_voter_data(std::string voter_data
     return parsed_data; // return the filled map
 }
 
+
 GeoGerry::Shape string_to_vector(std::string str) {
-    // takes a json array string and returns a parsed vector
+    /*
+        @desc: takes a json array string and returns a parsed shape object
+        @params: `string` str: data to be parsed
+        @return: `GeoGerry::Shape` parsed shape
+    */
 
     GeoGerry::Shape v;
     Document mp;
@@ -182,9 +198,14 @@ GeoGerry::Shape string_to_vector(std::string str) {
     return v;
 }
 
+
 GeoGerry::Multi_Shape multi_string_to_vector(std::string str) {
-    // takes a json array string and returns a parsed vector
-    
+    /*
+        @desc: takes a json array string and returns a parsed multishape
+        @params: `string` str: data to be parsed
+        @return: `GeoGerry::Shape` parsed multishape
+    */
+
     GeoGerry::Multi_Shape v;
 
     Document mp;
@@ -204,11 +225,126 @@ GeoGerry::Multi_Shape multi_string_to_vector(std::string str) {
     return v;
 }
 
+
+std::vector<GeoGerry::Precinct> parse_precinct_data(std::string geoJSON) {
+    /* 
+        @desc:
+            Parses a geoJSON file into an array of Shape
+            objects - finds ID using top-level defined constants,
+            and splits multipolygons into separate shapes (of the same id)
+    
+        @params: `string` geoJSON: geojson precincts to be parsed
+        @return: `vector<GeoGerry::Shape>` precinct objects with all data
+    */
+
+    Document shapes;
+    shapes.Parse(geoJSON.c_str()); // parse json
+
+    // vector of shapes to be returned
+    std::vector<GeoGerry::Precinct> shapes_vector;
+
+    for ( int i = 0; i < shapes["features"].Size(); i++ ) {
+        std::string coords;
+        std::string id = "";
+        int pop = 0;
+
+        // see if the geoJSON contains the shape id
+        if (shapes["features"][i]["properties"].HasMember(geodata_id.c_str())) {
+            id = shapes["features"][i]["properties"][geodata_id.c_str()].GetString();
+        }
+        else {
+            std::cout << "\e[31merror: \e[0mYou have no precinct id." << std::endl;
+            std::cout << "If future k-vernooy runs into this error, it means that GEOID10 in your geoJSON in your voter data is missing. To fix... maybe try a loose comparison of the names?" << std::endl;
+        }
+
+        // get voter data from geodata
+        int demv = 0;
+        int repv = 0;
+
+        for (std::string dem_head : d_head) {
+            if (shapes["features"][i]["properties"].HasMember(dem_head.c_str())) {
+                if (shapes["features"][i]["properties"][dem_head.c_str()].IsInt()) {
+                    demv += shapes["features"][i]["properties"][dem_head.c_str()].GetInt();
+                }
+                else if (shapes["features"][i]["properties"][dem_head.c_str()].IsDouble()) {
+                    demv += (int) shapes["features"][i]["properties"][dem_head.c_str()].GetDouble();
+                }
+            }
+            else std::cout << "\e[31merror: \e[0mNo democratic voter data" << std::endl;
+        }
+
+        for (std::string rep_head : r_head) {
+            if (shapes["features"][i]["properties"].HasMember(rep_head.c_str())) {
+                if (shapes["features"][i]["properties"][rep_head.c_str()].IsInt()) {
+                    repv += shapes["features"][i]["properties"][rep_head.c_str()].GetInt();
+                }
+                else if (shapes["features"][i]["properties"][rep_head.c_str()].IsDouble()) {
+                    repv += (int) shapes["features"][i]["properties"][rep_head.c_str()].GetDouble();
+                }
+            }
+            else std::cout << "\e[31merror: \e[0mNo republican voter data" << std::endl;
+        }
+
+        // get the population data from geodata
+        if (shapes["features"][i]["properties"].HasMember(population_id.c_str()))
+            pop = shapes["features"][i]["properties"][population_id.c_str()].GetInt();
+        else std::cout << "\e[31merror: \e[0mNo population data" << std::endl;
+        
+
+        // create empty string buffer
+        StringBuffer buffer;
+        buffer.Clear();
+        Writer<rapidjson::StringBuffer> writer(buffer);
+
+        // write the coordinate array to a string
+        shapes["features"][i]["geometry"]["coordinates"].Accept(writer);
+        coords = buffer.GetString();
+
+        if (shapes["features"][i]["geometry"]["type"] == "Polygon") {
+            // vector parsed from coordinate string
+            GeoGerry::Shape geo = string_to_vector(coords);
+            GeoGerry::Precinct precinct(geo.hull, demv, repv, pop, id);
+
+            for (int i = 0; i < geo.holes.size(); i++)
+                precinct.holes.push_back(geo.holes[i]);
+
+            shapes_vector.push_back(precinct);
+        }
+        else {
+            GeoGerry::Multi_Shape geo = multi_string_to_vector(coords);
+
+            // calculate area of multipolygon
+            double total_area = geo.get_area();
+            int append = 0;
+
+            for (GeoGerry::Shape s : geo.border) {
+                double fract = s.get_area() / total_area;
+                pop = round((double)pop * (double)fract);
+                demv = round((double) demv * (double) fract);
+                repv = round((double) repv * (double) fract);
+
+                GeoGerry::Precinct precinct(s.hull, demv, repv, pop, (id + "_s" + std::to_string(append)));
+                precinct.holes = s.holes;
+
+                shapes_vector.push_back(precinct);
+                append++;
+            }
+        }
+    }
+
+    return shapes_vector;
+}
+
+
 std::vector<GeoGerry::Shape> parse_precinct_coordinates(std::string geoJSON) {
     /* 
-        Parses a geoJSON file into an array of Shape
-        objects - finds ID using top-level defined constants,
-        and splits multipolygons into separate shapes (of the same id)
+        @desc:
+            Parses a geoJSON file into an array of Shape
+            objects - finds ID using top-level defined constants,
+            and splits multipolygons into separate shapes (of the same id)
+    
+        @params: `string` geoJSON: geojson precincts to be parsed
+        @return: `vector<GeoGerry::Shape>` precinct objects with coordinate data
     */
 
     Document shapes;
@@ -284,8 +420,9 @@ std::vector<GeoGerry::Shape> parse_precinct_coordinates(std::string geoJSON) {
 
 std::vector<GeoGerry::Multi_Shape> parse_district_coordinates(std::string geoJSON) {
     /* 
-        Parses a geoJSON file into an array of Multi_Shape
-        objects - finds ID using top-level defined constants
+        @desc: Parses a geoJSON file into an array of Multi_Shape district objects
+        @params: `string` geoJSON: geojson precincts to be parsed
+        @return: `vector<GeoGerry::Multi_Shape>` district objects with coordinate data
     */
 
     Document shapes;
@@ -319,16 +456,20 @@ std::vector<GeoGerry::Multi_Shape> parse_district_coordinates(std::string geoJSO
         }
     }
 
-    // std::cout << mptotal << " multipolygons found!" << std::endl;
     return shapes_vector;
 }
 
-std::vector<GeoGerry::Precinct> merge_data( std::vector<GeoGerry::Shape> precinct_shapes, std::map<std::string, std::vector<int> > voter_data) {
 
+std::vector<GeoGerry::Precinct> merge_data( std::vector<GeoGerry::Shape> precinct_shapes, std::map<std::string, std::vector<int> > voter_data) {
     /*
-        returns an array of precinct objects given
-        geodata (shape objects) and voter data
-        in the form of a map for a list of precincts
+        @desc:
+            returns an array of precinct objects given
+            geodata (shape objects) and voter data
+            in the form of a map for a list of precincts
+
+        @params:
+            `vector<Shape>` precinct_shapes: coordinate data with id's
+            `map<string, vector<int>>` voter_data: voting data with id's
     */
 
     std::vector<GeoGerry::Precinct> precincts;
@@ -381,6 +522,7 @@ std::vector<GeoGerry::Precinct> merge_data( std::vector<GeoGerry::Shape> precinc
 
     return precincts; // return precincts array
 }
+
 
 GeoGerry::Precinct_Group combine_holes(GeoGerry::Precinct_Group pg) {
     /*
@@ -443,6 +585,7 @@ GeoGerry::Precinct_Group combine_holes(GeoGerry::Precinct_Group pg) {
     return GeoGerry::Precinct_Group(new_pre);
 }
 
+
 std::vector<GeoGerry::p_index_set> sort_precincts(GeoGerry::Multi_Shape shape, GeoGerry::Precinct_Group pg) {
     /*
         @desc:
@@ -493,6 +636,7 @@ std::vector<GeoGerry::p_index_set> sort_precincts(GeoGerry::Multi_Shape shape, G
     return islands;
 }
 
+
 int hole_count(GeoGerry::Precinct_Group pg) {
     /*
         @desc: counts sum of holes in a given precinct group
@@ -507,6 +651,7 @@ int hole_count(GeoGerry::Precinct_Group pg) {
     
     return sum;
 }
+
 
 GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON, std::string voter_data, std::string district_geoJSON) {
     /*
@@ -564,6 +709,57 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
     c.add_shape(state);
     c.draw();
 
-    writef(state.to_json(), "test.json");
+    return state; // return the state object
+}
+
+
+GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON, std::string district_geoJSON) {
+        /*
+        @desc:
+            Parse precinct and district geojson, along with
+            precinct voter data, into a State object.
+    
+        @params:
+            `string` precinct_geoJSON: A string file with geodata for precincts
+            `string` voter_data: A string file with tab separated voter data
+            `string` district_geoJSON: A string file with geodata for districts
+
+        @return: `State` parsed state object
+    */
+
+    // generate shapes from coordinates
+    if (VERBOSE) std::cout << "generating coordinate array from precinct file..." << std::endl;
+    std::vector<Precinct> precinct_shapes = parse_precinct_data(precinct_geoJSON);
+    if (VERBOSE) std::cout << "generating coordinate array from district file..." << std::endl;
+    std::vector<Multi_Shape> district_shapes = parse_district_coordinates(district_geoJSON);
+
+    // create a vector of precinct objects from border and voter data
+    Precinct_Group pre_group(precinct_shapes);
+
+    // remove holes from precinct data
+    int before = pre_group.precincts.size();
+    if (VERBOSE) std::cout << "combining holes in precinct geodata..." << std::endl;
+    pre_group = combine_holes(pre_group);
+    int removed = before - pre_group.precincts.size();
+    if (VERBOSE) std::cout << "removed " << removed << " hole precincts from precinct geodata" << std::endl;
+
+    std::vector<Shape> state_shape_v;  // dummy exterior border
+
+    // generate state data from files
+    if (VERBOSE) std::cout << "generating state with precinct and district arrays..." << std::endl;
+    State state = State(district_shapes, pre_group.precincts, state_shape_v);
+    Multi_Shape sborder = generate_exterior_border(state);
+    state.border = sborder.border;
+    std::cout << sborder.border.size() << std::endl;
+
+    // sort files into
+    if (VERBOSE) std::cout << "sorting precincts into islands from exterior state border..." << std::endl;
+    state.islands = sort_precincts(sborder, pre_group);
+    if (VERBOSE) std::cout << "state serialized!" << std::endl;
+
+    GeoDraw::Canvas c(500, 500);
+    c.add_shape(state);
+    c.draw();
+
     return state; // return the state object
 }

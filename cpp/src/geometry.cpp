@@ -522,16 +522,20 @@ bool get_bordering(Multi_Shape s0, Multi_Shape s1) {
     for (Shape s : s1.border)
         clip.push_back(ring_to_path(s.hull));
 
-    ClipperLib::Paths solutions;
+    ClipperLib::Paths usolutions;
+    ClipperLib::Paths xsolutions;
     ClipperLib::Clipper c; // the executor
 
     // execute union on paths array
     c.AddPaths(subj, ClipperLib::ptSubject, true);
     c.AddPaths(clip, ClipperLib::ptClip, true);
-    c.Execute(ClipperLib::ctUnion, solutions, ClipperLib::pftNonZero);
-    Multi_Shape ms = paths_to_multi_shape(solutions);
+    c.Execute(ClipperLib::ctXor, xsolutions, ClipperLib::pftNonZero);
+    c.Execute(ClipperLib::ctUnion, usolutions, ClipperLib::pftNonZero);
 
-    return (ms.border.size() < s0.border.size() + s1.border.size());
+    Multi_Shape msx = paths_to_multi_shape(xsolutions);
+    Multi_Shape msu = paths_to_multi_shape(usolutions);
+
+    return (msu.border.size() < s0.border.size() + s1.border.size() && msx.holes.size() <= s0.holes.size() + s1.holes.size());
 }
 
 
@@ -721,7 +725,7 @@ p_index_set get_bordering_shapes(vector<Community> shapes, Community shape) {
 p_index_set get_bordering_shapes(vector<Community> shapes, Shape shape) {
     /*
         returns set of indices corresponding to the Precinct_Groups that
-        border with the Precinct_Group[index] shape.
+        border with the Precinct_Group[index] shape.xs
     */
 
     p_index_set vec;

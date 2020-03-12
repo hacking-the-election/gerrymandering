@@ -398,6 +398,7 @@ class State : public Precinct_Group {
 
         // generate a file from proper raw input
         static State generate_from_file(std::string precinct_geoJSON, std::string voter_data, std::string district_geoJSON);
+        static State generate_from_file(std::string precinct_geoJSON, std::string district_geoJSON);
 
         // serialize and read to and from binary, json
         void write_binary(std::string path);

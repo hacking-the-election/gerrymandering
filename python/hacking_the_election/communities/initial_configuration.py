@@ -13,6 +13,7 @@ import random
 
 from shapely.geometry import (MultiPolygon, Polygon)
 
+from hacking_the_election.utils.community import Community
 from hacking_the_election.utils.exceptions import (
     LoopBreakException,
     CommunityFillCompleteException
@@ -26,7 +27,6 @@ from hacking_the_election.utils.geometry import (
     UNION
 )
 from hacking_the_election.utils.initial_configuration import (
-    Community,
     get_closest_precinct,
     get_precinct_link_pair,
     GIVE_PRECINCT_COORDS_ONLY_KWARGS,

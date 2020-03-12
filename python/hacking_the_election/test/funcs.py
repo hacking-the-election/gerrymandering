@@ -19,23 +19,26 @@ def polygon_to_shapely(polygon):
     return Polygon(tuple_polygon[0], tuple_polygon[1:])
 
 
-def convert_to_json(coords, output_file):
+def convert_to_json(coords, output_file, properties=None):
     """
     Writes `coords` to `output_file` as geojson
 
     Args:
     `coords`: list of features (each a list of coords)
     """
+    if properties is None:
+        properties = [{} for _ in range(len(coords))]
 
     features = []
-    for feature in coords:
+    for i, feature in enumerate(coords):
         features.append({
             "type": "Feature",
             "geometry": {
                 "type": ("Polygon" if not isinstance(feature[0][0][0], list)
                          else "MultiPolygon"),
-                "coordinates": feature
-            }
+                "coordinates": feature,
+            },
+            "properties": properties[i]
         })
 
     with open(output_file, 'w+') as f:

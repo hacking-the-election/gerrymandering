@@ -3,13 +3,13 @@ Functions for partisanship refinement step in communities algorithm
 """
 
 
-from hacking_the_election.utils.compactness import (
-    GIVE_PRECINCTS_COMPACTNESS_KWARGS
-)
+import random
+
 from hacking_the_election.utils.exceptions import (
     CreatesMultiPolygonException,
     ZeroPrecinctCommunityException
 )
+from hacking_the_election.utils.geometry import get_if_bordering
 
 
 GIVE_PRECINCTS_COMPACTNESS_KWARGS = {
@@ -53,23 +53,31 @@ def format_float(n):
     return "".join(n_chars)
 
 
-def add_precinct(communities, community, precinct):
+def add_precinct(communities, community, precinct, give):
     """
     This function probably does something.
 
     I don't really care,
     because nobody except myself will read this code anyway.
     """
-    for other_community in communities:
-        if precinct in other_community.precincts.values():
-            try:
+    if give:
+        other_community = \
+            random.choice(
+                [c for c in communities
+                 if (get_if_bordering(c.coords, precinct.coords)
+                     and c != community)]
+            )
+        community.give_precinct(
+            other_community,
+            precinct.vote_id,
+            **GIVE_PRECINCTS_COMPACTNESS_KWARGS
+        )
+    else:
+        for other_community in communities:
+            if precinct in other_community.precincts.values():
                 other_community.give_precinct(
                     community,
                     precinct.vote_id,
                     **GIVE_PRECINCTS_COMPACTNESS_KWARGS
                 )
-                community.update_compactness()
-                other_community.update_compactness()
-            except (CreatesMultiPolygonException,
-                    ZeroPrecinctCommunityException):
-                pass
+                
