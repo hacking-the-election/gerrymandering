@@ -194,55 +194,6 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold):
             # if there is only one precinct left, just stop
             if len(most_stdev_community.precincts) == 1:
                 break
-            # find which precinct exchanges are the best
-            precinct_exchanges_dict = {}
-            # for border precincts within the highest stdev community, find stdev without that precinct
-            community_stdev_stat = most_stdev_community.standard_deviation
-            for num, precinct3 in enumerate(border_precincts[most_stdev_community.id]):
-                # check to make sure removing community from most_stdev_community
-                # does not lead to non-contiguous communities
-                # if isinstance(clip([most_stdev_community.coords, precinct3.coords], 2), MultiPolygon):
-                #     print('stuff eliminated')
-                #     continue
-                # after new precincts are serialized use stdev(precinct.rep_total_ratio) instead of current
-                # else:
-                other_precinct_list = list(most_stdev_community.precincts.values())[:]
-                del other_precinct_list[num]
-                precinct_stdev = stdev([(precinct3.r_election_sum * 100)/(precinct3.r_election_sum + precinct3.d_election_sum) 
-                                        for precinct3 in other_precinct_list
-                                        if (precinct3.r_election_sum + precinct3.d_election_sum) != 0])
-                precinct_exchanges_dict[(community_stdev_stat - precinct_stdev)] = precinct3 
-            print(len(precinct_exchanges_dict.keys()))
-            # for border precincts outside the highest stdev community, find stdev with that precinct
-            for key in list(border_precincts.keys())[1:]:
-                for precinct4 in border_precincts[key]:
-                    # check to make sure removing community from most_stdev_community
-                    # does not lead to non-contiguous communities
-                    # find community this precinct in precinct_list is from
-                    for community2 in communities_list:
-                        if precinct4 in community2.precincts.values():
-                            other_community_precinct_list1 = community2
-                    # if isinstance(clip([other_community_precinct_list1.coords, precinct4.coords], 2), MultiPolygon):
-                    #     print('stuff also eliminated')
-                    #     continue
-                    # else:
-                    added_precinct_list = list(most_stdev_community.precincts.values())[:]
-                    added_precinct_list.append(precinct4)
-                    precinct_stdev = stdev([(precinct4.r_election_sum * 100)/(precinct4.r_election_sum + precinct4.d_election_sum) 
-                    for precinct4 in added_precinct_list
-                    if (precinct4.r_election_sum + precinct4.d_election_sum) != 0])
-                    precinct_exchanges_dict[(community_stdev_stat - precinct_stdev)] = precinct4
-            print('before duplicate removal, ', len(precinct_exchanges_dict.keys()))
-            to_remove = []
-            for sta_dev in precinct_exchanges_dict.keys():
-                removed = list(precinct_exchanges_dict.keys())[:]
-                removed.remove(sta_dev)
-                if sta_dev in removed:
-                    to_remove.append(sta_dev)
-            for sta_dev1 in to_remove:
-                del precinct_exchanges_dict[sta_dev1]
-            print(len(precinct_exchanges_dict.keys()))
-            
             try:
                 highest_precinct_exchange = max(precinct_exchanges_dict.keys())
                 high_precinct = precinct_exchanges_dict[highest_precinct_exchange]
