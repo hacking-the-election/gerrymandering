@@ -38,7 +38,8 @@ def signal_handler(sig, frame):
     raise ExitException
 
 
-def refine_for_compactness(communities, minimum_compactness, output_file):
+def refine_for_compactness(communities, minimum_compactness,
+                           linked_precincts, output_file):
     """
     Returns communities that are all below the minimum compactness.
     """
@@ -70,32 +71,34 @@ def refine_for_compactness(communities, minimum_compactness, output_file):
                         and c != community]
                 for precinct in [p for c in bordering_communities
                                  for p in c.precincts.values()]:
-                    if get_if_bordering(precinct.coords,
-                                        community.coords):
-                        # Section of precinct that is inside of circle.
-                        circle_intersection = \
-                            clip([circle, precinct.coords], INTERSECTION)
-                        # If precinct and circle are intersecting
-                        if not circle_intersection.is_empty:
-                            intersection_area = circle_intersection.area
-                            precinct_area = precinct.coords.area
-                            if intersection_area > (precinct_area / 2):
-                                inside_circle.add(precinct)
+                    if precinct not in linked_precincts:
+                        if get_if_bordering(precinct.coords,
+                                            community.coords):
+                            # Section of precinct that is inside of circle.
+                            circle_intersection = \
+                                clip([circle, precinct.coords], INTERSECTION)
+                            # If precinct and circle are intersecting
+                            if not circle_intersection.is_empty:
+                                intersection_area = circle_intersection.area
+                                precinct_area = precinct.coords.area
+                                if intersection_area > (precinct_area / 2):
+                                    inside_circle.add(precinct)
                 
                 # Find precincts that need to be removed from this community.
                 outside_circle = set()
 
                 outside_bordering_precincts = community.get_outside_precincts()
                 for precinct in outside_bordering_precincts:
-                    # Section of precinct that is outside of circle.
-                    circle_difference = clip([precinct.coords, circle],
-                                                DIFFERENCE)
-                    # If precinct is not entirely in circle
-                    if not circle_difference.is_empty:
-                        difference_area = circle_difference.area
-                        precinct_area = precinct.coords.area
-                        if difference_area > (precinct_area / 2):
-                            outside_circle.add(precinct)
+                    if precinct not in linked_precincts:
+                        # Section of precinct that is outside of circle.
+                        circle_difference = clip([precinct.coords, circle],
+                                                    DIFFERENCE)
+                        # If precinct is not entirely in circle
+                        if not circle_difference.is_empty:
+                            difference_area = circle_difference.area
+                            precinct_area = precinct.coords.area
+                            if difference_area > (precinct_area / 2):
+                                outside_circle.add(precinct)
 
                 while outside_circle != set() or inside_circle != set():
                     # Add precincts one by one
@@ -184,7 +187,7 @@ def refine_for_compactness(communities, minimum_compactness, output_file):
             pickle.dump(communities, f)
         convert_to_json(
             [polygon_to_list(c.coords) for c in communities],
-            "test_compactness.json",
+            output_file,
             [{"ID": c.id} for c in communities]
         )
         for x, y in zip(X, Y):
@@ -206,9 +209,11 @@ if __name__ == "__main__":
 
     sys.modules["save_precincts"] = save_precincts
 
-    with open(sys.argv[1], "rb") as f:
-        communities, linked_precinct_chains = pickle.load(f)
-    
     signal.signal(signal.SIGINT, signal_handler)
 
-    refine_for_compactness(communities, float(sys.argv[2]), sys.argv[3])
+    with open(sys.argv[1], "rb") as f:
+        communities, linked_precinct_chains = pickle.load(f)
+    linked_precincts = {p for chain in linked_precinct_chains for p in chain}
+
+    refine_for_compactness(communities, float(sys.argv[2]),
+                           linked_precincts, sys.argv[3])
