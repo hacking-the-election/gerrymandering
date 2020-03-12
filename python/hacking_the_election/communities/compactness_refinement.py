@@ -206,9 +206,9 @@ if __name__ == "__main__":
 
     sys.modules["save_precincts"] = save_precincts
 
-    with open("test_vermont_initial_configuration.pickle", "rb") as f:
+    with open(sys.argv[1], "rb") as f:
         communities, linked_precinct_chains = pickle.load(f)
     
     signal.signal(signal.SIGINT, signal_handler)
 
-    refine_for_compactness(communities, 0.275, "test_compactness_output.json")
+    refine_for_compactness(communities, float(sys.argv[2]), sys.argv[3])
