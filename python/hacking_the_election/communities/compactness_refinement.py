@@ -10,7 +10,6 @@ import warnings
 
 from shapely.geometry import Point
 import matplotlib.pyplot as plt
-import numpy as np
 
 from hacking_the_election.test.funcs import (
     polygon_to_list,
@@ -49,8 +48,8 @@ def refine_for_compactness(communities, minimum_compactness, output_file):
         community.update_compactness()
 
     try:
-        X = np.array([])
-        Y = np.array([])
+        X = [[] for _ in communities]
+        Y = [[] for _ in communities]
         i = 0
 
         while True:
@@ -136,22 +135,27 @@ def refine_for_compactness(communities, minimum_compactness, output_file):
 
                     if all([c.compactness > minimum_compactness
                             for c in communities]):
+
+                        print([c.compactness for c in communities])
                         i += 1
-                        np.append(X, [i])
-                        np.append(Y, [get_average_compactness(communities)])
+                        for x, c in enumerate(communities):
+                            Y[x].append(c.compactness)
+                            X[x].append(i)
                         raise LoopBreakException
                     if community.compactness > minimum_compactness:
                         i += 1
-                        np.append(X, [i])
-                        np.append(Y, [get_average_compactness(communities)])
+                        for x, c in enumerate(communities):
+                            Y[x].append(c.compactness)
+                            X[x].append(i)
                         print(f"Community {community.id} has "
                                "compactness above threshold.")
                         break
 
                 if community.compactness <= minimum_compactness:
                     i += 1
-                    np.append(X, [i])
-                    np.append(Y, [get_average_compactness(communities)])
+                    for x, c in enumerate(communities):
+                        Y[x].append(c.compactness)
+                        X[x].append(i)
                     print(f"Community {community.id} failed to get above "
                             "threshold after adding and removing all "
                             "precincts in and out of circle.")
@@ -162,7 +166,8 @@ def refine_for_compactness(communities, minimum_compactness, output_file):
             except LoopBreakException:
                 break
 
-        plt.scatter(X, Y)
+        for x, y in zip(X, Y):
+            plt.plot(x, y)
         plt.show()
 
         with open("test_compactness_graph.pickle", "wb+") as f:
@@ -182,7 +187,8 @@ def refine_for_compactness(communities, minimum_compactness, output_file):
             "test_compactness.json",
             [{"ID": c.id} for c in communities]
         )
-        plt.scatter(X, Y)
+        for x, y in zip(X, Y):
+            plt.plot(x, y)
         plt.show()
         with open("test_compactness_graph.pickle", "wb+") as f:
             pickle.dump([X, Y], f)
@@ -205,4 +211,4 @@ if __name__ == "__main__":
     
     signal.signal(signal.SIGINT, signal_handler)
 
-    refine_for_compactness(communities, 0.75, "test_compactness_output.json")
+    refine_for_compactness(communities, 0.275, "test_compactness_output.json")
