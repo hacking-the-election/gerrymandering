@@ -53,5 +53,4 @@ def get_bordering_precincts(community1, community2):
     #     # point, e.x. -73.142 29.538
     #     if point in union_points:
     #         border_coords.append(point)
-    print(border_precincts)
     return border_precincts
