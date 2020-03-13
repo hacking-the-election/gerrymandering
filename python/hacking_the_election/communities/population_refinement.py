@@ -2,10 +2,11 @@
 Changes a set of communities so that they are within a population range.
 
 Usage:
-python3 compactness_refinement.py [initial_configuration] [population_percentage] [json_path] [pickle_path] [animation_dir] [state_name]
+python3 population_refinement.py [initial_configuration] [population_percentage] [json_path] [pickle_path] [animation_dir] [state_name]
 """
 
 
+import os
 import pickle
 import random
 
@@ -15,11 +16,17 @@ from hacking_the_election.test.funcs import (
     convert_to_json,
     polygon_to_list
 )
+from hacking_the_election.utils.animation import (
+    save_as_image
+)
 from hacking_the_election.utils.exceptions import (
     ExitException
 )
 from hacking_the_election.utils.geometry import (
     get_if_bordering
+)
+from hacking_the_election.utils.initial_configuration import (
+    add_leading_zeroes
 )
 from hacking_the_election.utils.population import (
     PopulationRange,
@@ -39,13 +46,19 @@ def refine_for_population(communities, population_percentage,
     Returns communities that are within the population range.
     """
 
+    try:
+        os.mkdir(animation_dir)
+    except FileExistsError:
+        pass
+
     for community in communities:
         community.update_population()
+    population_factor = float(population_percentage) / 100
     ideal_population = \
         sum([c.population for c in communities]) / len(communities)
     population_range = PopulationRange(
-        ideal_population - ideal_population * 0.05,
-        ideal_population + ideal_population * 0.05
+        ideal_population - ideal_population * population_factor,
+        ideal_population + ideal_population * population_factor
     )
     print(f"max population: {population_range.upper}")
     print(f"min population: {population_range.lower}")
@@ -53,6 +66,8 @@ def refine_for_population(communities, population_percentage,
     try:
         X = [[] for _ in communities]
         Y = [[] for _ in communities]
+
+        f = 0
 
         while True:
             try:
@@ -81,6 +96,17 @@ def refine_for_population(communities, population_percentage,
                         **POPULATION_GIVE_PRECINCT_KWARGS
                     )
                     i += 1
+                    f += 1
+                    drawing_shapes = \
+                        [c.coords for c in communities] + [precinct.coords]
+                    save_as_image(
+                        drawing_shapes,
+                        os.path.join(
+                            animation_dir,
+                            f"{add_leading_zeroes(f)}.png"
+                        ),
+                        red_outline=len(drawing_shapes) - 1
+                    )
             else:
                 bordering_communities = \
                     [c for c in communities if (
@@ -103,6 +129,17 @@ def refine_for_population(communities, population_percentage,
                         **POPULATION_GIVE_PRECINCT_KWARGS
                     )
                     i += 1
+                    f += 1
+                    drawing_shapes = \
+                        [c.coords for c in communities] + [precinct.coords]
+                    save_as_image(
+                        drawing_shapes,
+                        os.path.join(
+                            animation_dir,
+                            f"{add_leading_zeroes(f)}.png"
+                        ),
+                        red_outline=len(drawing_shapes) - 1
+                    )
             
     finally:
         with open(output_pickle, "wb+") as f:

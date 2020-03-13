@@ -20,9 +20,7 @@ from hacking_the_election.test.funcs import (
     convert_to_json
 )
 from hacking_the_election.utils.animation import (
-    draw,
-    save_as_image,
-    update_canvas
+    save_as_image
 )
 from hacking_the_election.utils.compactness import (
     add_precinct,

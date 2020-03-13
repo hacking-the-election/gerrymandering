@@ -94,7 +94,7 @@ def update_canvas(shape_ids, shapes, canvas, root):
     root.update()
 
 
-def save_as_image(shapes, filepath, red=False):
+def save_as_image(shapes, filepath, red=False, red_outline=False):
     """
     Saves `shapes` to file at `filepath`
     """
@@ -107,7 +107,13 @@ def save_as_image(shapes, filepath, red=False):
             fill = (255, 66, 66)
         else:
             fill = None
-        draw.polygon(shape, fill=fill, outline=(0, 0, 0))
+        if red_outline and i == red_outline:
+            width = 2
+            outline = (255, 66, 66)
+        else:
+            width = 1
+            outline = (0, 0, 0)
+        draw.polygon(shape, fill=fill, width=width, outline=outline)
     image.save(filepath)
 
 
