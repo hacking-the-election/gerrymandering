@@ -335,6 +335,7 @@ class Precinct_Group : public Multi_Shape {
 
         virtual void add_precinct(Precinct pre);
         virtual void remove_precinct(Precinct pre);
+        virtual void add_precinct_n(Precinct pre) {precincts.push_back(pre);};
 
         Precinct_Group(){};
         Precinct_Group(std::vector<Shape> shapes)
@@ -432,7 +433,8 @@ class State : public Precinct_Group {
         p_index get_next_community(double compactness_tolerance, int process);
         void refine_partisan(double partisanship_tolerance);
         void refine_population(double population_tolerance);
-
+        void refine_communities(double part, double popt, double compt);
+        
         // return precinct that can be added to the current precinct that won't create islands in the state
         p_index get_addable_precinct(p_index_set available_precincts, p_index current_precinct);
 

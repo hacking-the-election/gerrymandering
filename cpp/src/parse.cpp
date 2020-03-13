@@ -22,11 +22,12 @@ using namespace rapidjson;
 const long int c = pow(2, 18);
 
 // constant id strings
+// NDV	NDR	PERSONS
 const std::string election_id_header = "geoid10";
 const std::vector<std::string> d_head = {"NDV"};
-const std::vector<std::string> r_head = {"NRV"};
+const std::vector<std::string> r_head = {"NDR"};
 const std::string geodata_id = "GEOID10";
-const std::string population_id = "POP100";
+const std::string population_id = "PERSONS";
 
 std::vector<std::vector<std::string > > parse_sv(std::string, std::string);
 bool check_column(std::vector<std::vector<std::string> >, int);
@@ -704,7 +705,7 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
     if (VERBOSE) std::cout << "sorting precincts into islands from exterior state border..." << std::endl;
     state.islands = sort_precincts(sborder, pre_group);
     if (VERBOSE) std::cout << "state serialized!" << std::endl;
-    
+    std::cout << state.precincts.size() << std::endl;    
     GeoDraw::Canvas c(500, 500);
     c.add_shape(state);
     c.draw();

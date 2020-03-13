@@ -4,6 +4,9 @@ Random initial guess.
 
 Groups state into random communities that each have the same number of
 precincts.
+
+Usage:
+python3 initial_configuration.py [state_file] [n_districts] [pickle_output] [json_output]
 """
 
 import logging
@@ -375,19 +378,28 @@ def create_initial_configuration(island_precinct_groups, n_districts,
             pickle.dump([communities, island_borders, island_precinct_groups], f)
         raise e
         convert_to_json([polygon_to_list(c.coords) for c in communities], "test_initial_configuration.json")
-    return communities, linked_precinct_chains
+    
+    # pairs of precincts that are linked
+    precinct_corridors = []
+    for chain in linked_precinct_chains:
+        for i in range(len(chain)):
+            precinct_corridors.append([chain[i], chain[i + 1]])
+    return communities, precinct_corridors
 
 
 if __name__ == "__main__":
     
     import sys
 
-    from hacking_the_election.serialization import save_precincts
-
-    sys.modules["save_precincts"] = save_precincts
+    from hacking_the_election.serialization.save_precincts import Precinct
 
     with open(sys.argv[1], "rb") as f:
-        island_precinct_groups, _, state_border = pickle.load(f)
+        try:
+            island_precinct_groups, _, state_border = pickle.load(f)
+        except ModuleNotFoundError:
+            from hacking_the_election.serialization import save_precincts
+            sys.modules["save_precincts"] = save_precincts
+            island_precinct_groups, _, state_border = pickle.load(f)
 
     communities, linked_precinct_chains = create_initial_configuration(
         island_precinct_groups, int(sys.argv[2]), state_border

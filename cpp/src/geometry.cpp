@@ -1071,11 +1071,11 @@ bool creates_island(GeoGerry::p_index_set set, GeoGerry::p_index remove, GeoGerr
 
     // remove precinct from set
     set.erase(std::remove(set.begin(), set.end(), remove), set.end());
-    
+
     // calculate new number of islands
     Precinct_Group pg_after;
     for (p_index p : set)
-        pg_after.add_precinct(precincts.precincts[p]);
+        pg_after.add_precinct_n(precincts.precincts[p]);
 
     int islands_after = generate_exterior_border(pg_after).border.size();
 

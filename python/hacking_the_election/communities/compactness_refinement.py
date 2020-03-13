@@ -3,7 +3,7 @@ Refines a state broken into communities
 so that they are compact within a threshold.
 
 Usage:
-python3 compactness_refinement.py [initial_configuration] [compactness_threshold] [json_path] [pickle_path] [animation_dir]
+python3 compactness_refinement.py [initial_configuration] [compactness_threshold] [json_path] [pickle_path] [animation_dir] [state_name]
 """
 
 import math
@@ -19,7 +19,11 @@ from hacking_the_election.test.funcs import (
     polygon_to_list,
     convert_to_json
 )
-from hacking_the_election.utils.animation import save_as_image
+from hacking_the_election.utils.animation import (
+    draw,
+    save_as_image,
+    update_canvas
+)
 from hacking_the_election.utils.compactness import (
     add_precinct,
     format_float,
@@ -48,7 +52,8 @@ def signal_handler(sig, frame):
 
 def refine_for_compactness(communities, minimum_compactness,
                            linked_precincts, output_json,
-                           output_pickle, animation_dir):
+                           output_pickle, animation_dir,
+                           state_name):
     """
     Returns communities that are all below the minimum compactness.
     """
@@ -72,6 +77,8 @@ def refine_for_compactness(communities, minimum_compactness,
             try:
                 print("Average community compactness: "
                         f"{get_average_compactness(communities)}")
+
+                community = min(communities, key=lambda c: c.compactness)
 
                 # Find circle with same area as district.
                 radius = math.sqrt(community.coords.area / math.pi)
@@ -154,10 +161,12 @@ def refine_for_compactness(communities, minimum_compactness,
                             warnings.warn(str(e))
                         inside_circle.discard(precinct)
                     if community_changed:
+                        drawing_shapes = \
+                            [c.coords for c in communities] + [circle]
                         save_as_image(
-                            [c.coords for c in communities],
-                            os.path.join(animation_dir,
-                            f"{f}.png")
+                            drawing_shapes,
+                            os.path.join(animation_dir, f"{f}.png"),
+                            red=communities.index(community)
                         )
                         f += 1
 
@@ -187,9 +196,6 @@ def refine_for_compactness(communities, minimum_compactness,
                     print(f"Community {community.id} failed to get above "
                             "threshold after adding and removing all "
                             "precincts in and out of circle.")
-
-                community = \
-                    random.choice([c for c in communities if c != community])
                 
             except LoopBreakException:
                 break
