@@ -378,7 +378,13 @@ def create_initial_configuration(island_precinct_groups, n_districts,
             pickle.dump([communities, island_borders, island_precinct_groups], f)
         raise e
         convert_to_json([polygon_to_list(c.coords) for c in communities], "test_initial_configuration.json")
-    return communities, linked_precinct_chains
+    
+    # pairs of precincts that are linked
+    precinct_corridors = []
+    for chain in linked_precinct_chains:
+        for i in range(len(chain)):
+            precinct_corridors.append([chain[i], chain[i + 1]])
+    return communities, precinct_corridors
 
 
 if __name__ == "__main__":
