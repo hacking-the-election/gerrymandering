@@ -25,15 +25,14 @@
  at: hacking.the.election@gmail.com
 ===============================================*/
 
+#include <math.h>    // for rounding functions
+#include <numeric>   // include std::iota
+#include <boost/filesystem.hpp>
+
 #include "../../../include/shape.hpp"    // class definitions
 #include "../../../include/util.hpp"     // array modification functions
 #include "../../../include/geometry.hpp" // geometry modification, border functions
 #include "../../../include/canvas.hpp" // geometry modification, border functions
-
-#include <math.h>    // for rounding functions
-#include <numeric>   // include std::iota
-#include <algorithm> // sorting, seeking algorithms
-#include <boost/filesystem.hpp>
 
 using namespace std;
 using namespace GeoGerry;
@@ -53,11 +52,9 @@ using namespace boost::filesystem;
 
 const int CHANGED_PRECINT_TOLERANCE = 10; // percent of precincts that can change from iteration
 const int MAX_ITERATIONS = 10; // max number of times we can change a community
+int TOTAL_MOVED_PRECINCTS = 0;  // number of times a precinct has been given to another district
 
-// ids for processes:
-const int PARTISANSHIP = 0;
-const int COMPACTNESS = 1;
-const int POPULATION = 2;
+enum processes { PARTISANSHIP, COMPACTNESS, POPULATION };
 
 
 void State::generate_initial_communities(int num_communities) {
@@ -97,7 +94,7 @@ void State::generate_initial_communities(int num_communities) {
             communities, add it to
         */
 
-        cout << "island 1" << endl;
+        if (DEBUG_COMMUNITIES) cout << "checking new island" << endl;
         map<int, array<int, 2> > vals; // to hold possible size combinations
 
         for (int x = 1; x <= large_sizes.size(); x++) {
@@ -619,14 +616,10 @@ void State::give_precinct(p_index precinct, p_index community, int t_type) {
     this->state_communities[exchange_choice].add_precinct(precinct_shape);
 
     // remove precinct from previous community
-    this->state_communities[community].precincts.erase(this->state_communities[community].precincts.begin() + precinct);
-
-    // update relevant borders after transactions
-    for (p_index i : exchangeable_communities_i) {
-        this->state_communities[i].border = generate_exterior_border(this->state_communities[i]).border;
-    }
-
-    this->state_communities[community].border = generate_exterior_border(this->state_communities[community]).border;
+    this->state_communities[community].remove_precinct(precinct_shape);
+    TOTAL_MOVED_PRECINCTS++;
+    // this->state_communities[community].precincts.erase(this->state_communities[community].precincts.begin() + precinct);
+    // this->state_communities[community].border = generate_exterior_border(this->state_communities[community]).border;
     return;
 }
 
@@ -974,7 +967,6 @@ Communities Community::load_frame(std::string read_path, State precinct_list) {
             }
         }
 
-        c.border = generate_exterior_border(c).border;
         cs.push_back(c);
     }
 
