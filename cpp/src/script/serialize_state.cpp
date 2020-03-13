@@ -11,6 +11,7 @@
 ========================================*/
 
 #include "../../include/shape.hpp"
+#include "../../include/canvas.hpp"
 #include "../../include/util.hpp"
 
 using namespace std;
@@ -39,19 +40,17 @@ int main(int argc, char* argv[]) {
         string precinct_geoJSON = readf(argv[1]);
         string voter_data = readf(argv[2]);
         string district_geoJSON = readf(argv[3]);
-
         state = State::generate_from_file(precinct_geoJSON, voter_data, district_geoJSON);
-        state.write_binary(write_path); // write as binary
     }
     else {
         // read files into strings
         string precinct_geoJSON = readf(argv[1]);
         string district_geoJSON = readf(argv[2]);
-
         state = State::generate_from_file(precinct_geoJSON, district_geoJSON);
-        state.write_binary(write_path); // write as binary
     }
 
+    state.write_binary(write_path); // write as binary
+    
     cout << "State " << state.name << " successfully written to " << write_path << endl;
     cout << "Num of precincts: " << state.precincts.size() << endl;
     cout << "Num of districts: " << state.state_districts.size() << endl;

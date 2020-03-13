@@ -1,6 +1,6 @@
 /*=======================================
  shape.cpp:                     k-vernooy
- last modified:               Wed, Feb 19
+ last modified:                Thu Mar 12
  
  Definition of generic methods for shapes, 
  precincts, districts and states that do
@@ -8,8 +8,10 @@
  algorithms (see geometry.cpp).
 ========================================*/
 
-#include "../include/shape.hpp"   // class definitions
-#define REP                  // use rep / (dem + rep) as ratio
+#include "../include/shape.hpp"      // class definitions
+#include "../include/geometry.hpp"   // class definitions
+
+#define REP  // use rep / (dem + rep) as ratio
 
 double GeoGerry::Precinct::get_ratio() {
     // retrieve ratio from precinct
@@ -38,3 +40,53 @@ int GeoGerry::Precinct_Group::get_population() {
 
     return total;
 }
+
+void GeoGerry::Precinct_Group::remove_precinct(GeoGerry::Precinct pre) {
+    if (std::find(precincts.begin(), precincts.end(), pre) != precincts.end()) {
+        precincts.erase(std::remove(precincts.begin(), precincts.end(), pre), precincts.end());
+
+        ClipperLib::Paths subj;
+        for (Shape shape : border)
+            subj.push_back(ring_to_path(shape.hull));
+
+        ClipperLib::Paths clip;
+        clip.push_back(ring_to_path(pre.hull));
+
+        ClipperLib::Paths solutions;
+        ClipperLib::Clipper c; // the executor
+
+        // execute union on paths array
+        c.AddPaths(subj, ClipperLib::ptSubject, true);
+        c.AddPaths(clip, ClipperLib::ptClip, true);
+        c.Execute(ClipperLib::ctDifference, solutions, ClipperLib::pftNonZero);
+
+        this->border = paths_to_multi_shape(solutions).border;
+    }
+    else {
+        throw GeoGerry::Exceptions::PrecinctNotInGroup();
+    }
+}
+
+void GeoGerry::Precinct_Group::add_precinct(GeoGerry::Precinct pre) {
+    precincts.push_back(pre);
+    if (border.size() == 0)
+        border.push_back(pre.hull);
+    else {
+        ClipperLib::Paths subj;
+        for (Shape shape : border)
+            subj.push_back(ring_to_path(shape.hull));
+
+        ClipperLib::Paths clip;
+        clip.push_back(ring_to_path(pre.hull));
+
+        ClipperLib::Paths solutions;
+        ClipperLib::Clipper c; // the executor
+
+        // execute union on paths array
+        c.AddPaths(subj, ClipperLib::ptSubject, true);
+        c.AddPaths(clip, ClipperLib::ptClip, true);
+        c.Execute(ClipperLib::ctUnion, solutions, ClipperLib::pftNonZero);
+
+        this->border = paths_to_multi_shape(solutions).border;
+    }
+};

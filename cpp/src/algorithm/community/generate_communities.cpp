@@ -39,15 +39,14 @@ int main(int argc, char* argv[]) {
     int districts_in_state = 2;  // state.state_districts.size();
     // state.generate_communities(districts_in_state, 0.5, 0.2, 0.15);
 
+
+    
     state.read_communities("community_vt");
-    double sum = 0;
-
-    // GeoDraw::Canvas c(800, 800);
-    // c.add_shape(state.state_communities);
+    GeoDraw::Canvas c(900, 900);
+    c.add_shape(state.state_communities);
     // c.draw();
-
-    state.refine_compactness(0);
-
+    state.refine_population(0.02);
+    // state.refine_compactness(0.8);
 
     // write as binary
     return 0;

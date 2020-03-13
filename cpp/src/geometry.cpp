@@ -197,8 +197,8 @@ segments GeoGerry::LinearRing::get_segments() {
     vector<coordinate> border_x = border;
 
     // loop through segments
-    while (border_x[border_x.size() - 1] == border_x[0])
-        border_x.pop_back();
+    // while (border_x[border_x.size() - 1] == border_x[0])
+    //     border_x.pop_back();
 
     for (int i = 0; i < border_x.size(); i++) {
         coordinate c1 = border_x[i];  // starting coord
@@ -358,9 +358,7 @@ coordinate GeoGerry::Multi_Shape::get_center() {
     coordinate average = {0,0};
 
     for (Shape s : border) {
-        cout <<"border" << endl;
         coordinate center = s.hull.get_center();
-        cout << center[0] << ", " << center[1] << endl;
 
         for (GeoGerry::LinearRing lr : s.holes) {
             coordinate nc = lr.get_center();
@@ -715,7 +713,7 @@ p_index_set get_bordering_shapes(vector<Community> shapes, Community shape) {
     p_index_set vec;
     
     for (p_index i = 0; i < shapes.size(); i++) {
-        if ((shapes[i].border != shape.border) && get_bordering(shapes[i], shape)) vec.push_back(i);
+        if ((shapes[i] != shape) && get_bordering(shapes[i], shape)) vec.push_back(i);
     }
     
     return vec;
@@ -729,9 +727,9 @@ p_index_set get_bordering_shapes(vector<Community> shapes, Shape shape) {
     */
 
     p_index_set vec;
-    
+
     for (p_index i = 0; i < shapes.size(); i++) {
-        if (get_bordering(shapes[i], shape)) vec.push_back(i);
+        if (shapes[i] != shape && get_bordering(shapes[i], shape)) vec.push_back(i);
         else {
             GeoDraw::Canvas c(900, 900);
             c.add_shape(generate_exterior_border(shapes[i]));
@@ -1085,12 +1083,13 @@ bool creates_island(GeoGerry::p_index_set set, GeoGerry::p_index remove, GeoGerr
 }
 
 
-p_index_set get_exchangeable_precincts(Community c, Communities cs) {
+p_index_set get_giveable_precincts(Community c, Communities cs) {
     /*
         @desc:
-            Gets precincts that can be exchanged with another
+            Gets precincts that can be given to another
             community - can never return null for geometric reasons
     */
+   
     p_index_set borders = get_inner_boundary_precincts(c);
     p_index_set exchangeable_precincts;
 
@@ -1111,6 +1110,15 @@ p_index_set get_exchangeable_precincts(Community c, Communities cs) {
     // canvas.draw();
 
     return exchangeable_precincts;
+}
+
+p_index_set get_takeable_precincts(Community c, Communities cs) {
+    /*
+        @desc:
+            Gets precincts that can be taken from another
+            community - can never return null for geometric reasons
+    */
+
 }
 
 
