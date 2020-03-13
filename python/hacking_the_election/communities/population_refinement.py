@@ -7,6 +7,7 @@ python3 compactness_refinement.py [initial_configuration] [population_percentage
 
 
 import pickle
+import random
 
 import matplotlib.pyplot as plt
 
@@ -16,6 +17,13 @@ from hacking_the_election.test.funcs import (
 )
 from hacking_the_election.utils.exceptions import (
     ExitException
+)
+from hacking_the_election.utils.geometry import (
+    get_if_bordering
+)
+from hacking_the_election.utils.population import (
+    PopulationRange,
+    POPULATION_GIVE_PRECINCT_KWARGS
 )
 
 
@@ -31,9 +39,50 @@ def refine_for_population(communities, population_percentage,
     Returns communities that are within the population range.
     """
 
+    for community in communities:
+        community.update_population()
+    ideal_population = \
+        sum([c.population for c in communities]) / len(communities)
+    population_range = PopulationRange(
+        ideal_population - ideal_population * 0.05,
+        ideal_population + ideal_population * 0.05
+    )
+    print(f"max population: {population_range.upper}")
+    print(f"min population: {population_range.lower}")
+
     try:
         X = [[] for _ in communities]
         Y = [[] for _ in communities]
+
+        while True:
+            try:
+                community = random.choice(
+                    [c for c in communities
+                    if c.population not in population_range]
+                )
+            except ValueError:
+                # No communities above threshold.
+                print(
+                     "Finished. Populations: \n"
+                    f"{[c.population for c in communities]}"
+                )
+
+            if community.population > population_range.upper:
+                outside_border_precincts = community.get_outside_precincts()
+                i = 0
+                while community.population > population_range.upper:
+                    precinct = outside_border_precincts[i]
+                    bordering_communities = \
+                        [c for c in communities if (c != community
+                            and get_if_bordering(c.coords, precinct.coords))]
+                    community.give_precinct(
+                        random.choice(bordering_communities),
+                        precinct.vote_id,
+                        **POPULATION_GIVE_PRECINCT_KWARGS
+                    )
+                    i += 1
+           
+            
     finally:
         with open(output_pickle, "wb+") as f:
             pickle.dump(communities, f)
