@@ -18,7 +18,7 @@ from hacking_the_election.serialization import save_precincts
 from shapely.geometry import MultiPolygon
 sys.modules['save_precincts'] = save_precincts
 
-def modify_for_partisanship(communities_list, precinct_corridors, threshold):
+def modify_for_population(communities_list, precinct_corridors, threshold):
     '''
     Takes list of community objects, and returns a different list with the modified communities.,
     as well as the # of precincts that changed hands during this step.
@@ -40,7 +40,7 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold):
     # standard_deviations will store comma seperated standard deviations for communities, with rows 
     # being iterations
     standard_deviations = []
-    while success != "yes!":
+    while success != 'yes!':
         # update attribute values (in case this hasn't already been done)
         for community in communities_list:
             community.update_standard_deviation()
@@ -70,7 +70,6 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold):
         elif num_of_changed_precincts[-1] == 0:
             success = 'yes!'
             break
-
         # if all the code in this while loop below runs, then there must be a community
         # with greater than average standard deviation
         biggest_community_precincts = communities_precincts[most_stdev_id]
