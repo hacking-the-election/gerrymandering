@@ -377,8 +377,10 @@ void GeoDraw::Canvas::draw() {
 
 
 void GeoDraw::Canvas::clear() {
+    // @warn: reset background here
     this->outlines = {};
     this->holes = {};
+    memset(background, 255, x * y * sizeof(Uint32));
 }
 
 
