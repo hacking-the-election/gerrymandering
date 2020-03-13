@@ -1,9 +1,13 @@
 """
 Refines a state broken into communities
 so that they are compact within a threshold.
+
+Usage:
+python3 compactness_refinement.py [initial_configuration] [compactness_threshold] [json_path] [pickle_path] [animation_dir]
 """
 
 import math
+import os
 import pickle
 import random
 import warnings
@@ -15,6 +19,7 @@ from hacking_the_election.test.funcs import (
     polygon_to_list,
     convert_to_json
 )
+from hacking_the_election.utils.animation import save_as_image
 from hacking_the_election.utils.compactness import (
     add_precinct,
     format_float,
@@ -32,13 +37,18 @@ from hacking_the_election.utils.geometry import (
     get_if_bordering,
     INTERSECTION
 )
+from hacking_the_election.utils.initial_configuration import (
+    add_leading_zeroes
+)
 
 
 def signal_handler(sig, frame):
     raise ExitException
 
 
-def refine_for_compactness(communities, minimum_compactness, output_file):
+def refine_for_compactness(communities, minimum_compactness,
+                           linked_precincts, output_json,
+                           output_pickle, animation_dir):
     """
     Returns communities that are all below the minimum compactness.
     """
@@ -48,9 +58,15 @@ def refine_for_compactness(communities, minimum_compactness, output_file):
         community.update_compactness()
 
     try:
+        try:
+            os.mkdir(animation_dir)
+        except FileExistsError:
+            pass
+
         X = [[] for _ in communities]
         Y = [[] for _ in communities]
         i = 0
+        f = 1
 
         while True:
             try:
@@ -70,35 +86,38 @@ def refine_for_compactness(communities, minimum_compactness, output_file):
                         and c != community]
                 for precinct in [p for c in bordering_communities
                                  for p in c.precincts.values()]:
-                    if get_if_bordering(precinct.coords,
-                                        community.coords):
-                        # Section of precinct that is inside of circle.
-                        circle_intersection = \
-                            clip([circle, precinct.coords], INTERSECTION)
-                        # If precinct and circle are intersecting
-                        if not circle_intersection.is_empty:
-                            intersection_area = circle_intersection.area
-                            precinct_area = precinct.coords.area
-                            if intersection_area > (precinct_area / 2):
-                                inside_circle.add(precinct)
+                    if precinct not in linked_precincts:
+                        if get_if_bordering(precinct.coords,
+                                            community.coords):
+                            # Section of precinct that is inside of circle.
+                            circle_intersection = \
+                                clip([circle, precinct.coords], INTERSECTION)
+                            # If precinct and circle are intersecting
+                            if not circle_intersection.is_empty:
+                                intersection_area = circle_intersection.area
+                                precinct_area = precinct.coords.area
+                                if intersection_area > (precinct_area / 2):
+                                    inside_circle.add(precinct)
                 
                 # Find precincts that need to be removed from this community.
                 outside_circle = set()
 
                 outside_bordering_precincts = community.get_outside_precincts()
                 for precinct in outside_bordering_precincts:
-                    # Section of precinct that is outside of circle.
-                    circle_difference = clip([precinct.coords, circle],
-                                                DIFFERENCE)
-                    # If precinct is not entirely in circle
-                    if not circle_difference.is_empty:
-                        difference_area = circle_difference.area
-                        precinct_area = precinct.coords.area
-                        if difference_area > (precinct_area / 2):
-                            outside_circle.add(precinct)
+                    if precinct not in linked_precincts:
+                        # Section of precinct that is outside of circle.
+                        circle_difference = clip([precinct.coords, circle],
+                                                    DIFFERENCE)
+                        # If precinct is not entirely in circle
+                        if not circle_difference.is_empty:
+                            difference_area = circle_difference.area
+                            precinct_area = precinct.coords.area
+                            if difference_area > (precinct_area / 2):
+                                outside_circle.add(precinct)
 
                 while outside_circle != set() or inside_circle != set():
                     # Add precincts one by one
+                    community_changed = False
                     try:
                         precinct = random.sample(outside_circle, 1)[0]
                         try:
@@ -108,6 +127,7 @@ def refine_for_compactness(communities, minimum_compactness, output_file):
                                 print(f"Removed {precinct.vote_id} from "
                                       f"community {community.id}. Compactness: "
                                       f"{round(community.compactness, 3)}")
+                                community_changed = True
                             except (CreatesMultiPolygonException,
                                     ZeroPrecinctCommunityException):
                                 pass
@@ -126,12 +146,20 @@ def refine_for_compactness(communities, minimum_compactness, output_file):
                                 print(f"Added {precinct.vote_id} to community "
                                       f"{community.id}. Compactness: "
                                       f"{round(community.compactness, 3)}")
+                                community_changed = True
                             except (CreatesMultiPolygonException,
                                     ZeroPrecinctCommunityException):
                                 pass
                         except ValueError as e:
                             warnings.warn(str(e))
                         inside_circle.discard(precinct)
+                    if community_changed:
+                        save_as_image(
+                            [c.coords for c in communities],
+                            os.path.join(animation_dir,
+                            f"{f}.png")
+                        )
+                        f += 1
 
                     if all([c.compactness > minimum_compactness
                             for c in communities]):
@@ -165,26 +193,12 @@ def refine_for_compactness(communities, minimum_compactness, output_file):
                 
             except LoopBreakException:
                 break
-
-        for x, y in zip(X, Y):
-            plt.plot(x, y)
-        plt.show()
-
-        with open("test_compactness_graph.pickle", "wb+") as f:
-            pickle.dump([X, Y], f)
-
-        convert_to_json(
-            [polygon_to_list(c.coords) for c in communities],
-            output_file,
-            [{"ID": c.id} for c in communities]
-        )
-    
-    except Exception as e:
-        with open("test_compactness.pickle", "wb+") as f:
+    finally:
+        with open(output_pickle, "wb+") as f:
             pickle.dump(communities, f)
         convert_to_json(
             [polygon_to_list(c.coords) for c in communities],
-            "test_compactness.json",
+            output_json,
             [{"ID": c.id} for c in communities]
         )
         for x, y in zip(X, Y):
@@ -192,7 +206,6 @@ def refine_for_compactness(communities, minimum_compactness, output_file):
         plt.show()
         with open("test_compactness_graph.pickle", "wb+") as f:
             pickle.dump([X, Y], f)
-        raise e
 
 
 if __name__ == "__main__":
@@ -206,9 +219,11 @@ if __name__ == "__main__":
 
     sys.modules["save_precincts"] = save_precincts
 
-    with open("test_vermont_initial_configuration.pickle", "rb") as f:
-        communities, linked_precinct_chains = pickle.load(f)
-    
     signal.signal(signal.SIGINT, signal_handler)
 
-    refine_for_compactness(communities, 0.275, "test_compactness_output.json")
+    with open(sys.argv[1], "rb") as f:
+        communities, linked_precinct_chains = pickle.load(f)
+    linked_precincts = {p for chain in linked_precinct_chains for p in chain}
+
+    refine_for_compactness(communities, float(sys.argv[2]),
+                           linked_precincts, *sys.argv[3:])
