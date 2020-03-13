@@ -146,6 +146,21 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold):
         # for border precincts within the highest stdev community, find stdev without that precinct
         community_stdev_stat = most_stdev_community.standard_deviation
         for num, precinct3 in enumerate(border_precincts[most_stdev_community.id]):
+            # only these two communities need to be considered because others aren't affected
+            for community21, precinct_list13 in other_communities_dict.items():
+                if precinct3 in precinct_list13:
+                    other_community = community21
+            other_community_stdev_stat = other_community.standard_deviation
+            other_precinct_list = list(most_stdev_community.precincts.values())[:]
+            del other_precinct_list[num]
+            added_precinct_list = list(other_community.precincts.values())[:]
+            added_precinct_list.append(precinct3)
+            other_modification_stdev = stdev([(precinct12.r_election_sum * 100) / (precinct12.r_election_sum + precinct12.d_election_sum)
+                                                for precinct12 in added_precinct_list
+                                                if (precinct12.r_election_sum + precinct12.d_election_sum) != 0])
+            modification_stdev = stdev([(precinct3.r_election_sum * 100)/(precinct3.r_election_sum + precinct3.d_election_sum) 
+                                    for precinct3 in other_precinct_list
+                                    if (precinct3.r_election_sum + precinct3.d_election_sum) != 0])
             # check to make sure removing community from most_stdev_community
             # does not lead to non-contiguous communities
             # if isinstance(clip([most_stdev_community.coords, precinct3.coords], 2), MultiPolygon):
@@ -153,32 +168,38 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold):
             #     continue
             # after new precincts are serialized use stdev(precinct.rep_total_ratio) instead of current
             # else:
-            other_precinct_list = list(most_stdev_community.precincts.values())[:]
-            del other_precinct_list[num]
-            precinct_stdev = stdev([(precinct3.r_election_sum * 100)/(precinct3.r_election_sum + precinct3.d_election_sum) 
-                                    for precinct3 in other_precinct_list
-                                    if (precinct3.r_election_sum + precinct3.d_election_sum) != 0])
-            precinct_exchanges_dict[(community_stdev_stat - precinct_stdev)] = precinct3 
+            average_stdev1 = average([community_stdev_stat,other_community_stdev_stat])
+            modified_average_stdev = average([modification_stdev, other_modification_stdev])
+            precinct_exchanges_dict[(average_stdev1 - modified_average_stdev)] = precinct3 
         print(len(precinct_exchanges_dict.keys()))
         # for border precincts outside the highest stdev community, find stdev with that precinct
         for key in list(border_precincts.keys())[1:]:
-            for precinct4 in border_precincts[key]:
+            for num, precinct4 in enumerate(border_precincts[key]):
                 # check to make sure removing community from most_stdev_community
                 # does not lead to non-contiguous communities
                 # find community this precinct in precinct_list is from
                 for community2 in communities_list:
                     if precinct4 in community2.precincts.values():
-                        other_community_precinct_list1 = community2
-                # if isinstance(clip([other_community_precinct_list1.coords, precinct4.coords], 2), MultiPolygon):
+                        other_community = community2
+                other_community_stdev_stat = other_community.standard_deviation
+
+                other_precinct_list = list(other_community.precincts.values())
+                del other_precinct_list[num]
+                added_precinct_list = list(most_stdev_community.precincts.values())[:]
+                added_precinct_list.append(precinct4)
+                modification_stdev = stdev([(precinct4.r_election_sum * 100)/(precinct4.r_election_sum + precinct4.d_election_sum) 
+                                             for precinct4 in added_precinct_list
+                                             if (precinct4.r_election_sum + precinct4.d_election_sum) != 0])
+                other_modification_stdev = stdev([(precinct13.r_election_sum * 100)/(precinct13.r_election_sum + precinct13.d_election_sum)
+                                                   for precinct13 in other_precinct_list
+                                                   if (precinct13.r_election_sum + precinct13.d_election_sum) != 0])
+                # if isinstance(clip([other_community.coords, precinct4.coords], 2), MultiPolygon):
                 #     print('stuff also eliminated')
                 #     continue
                 # else:
-                added_precinct_list = list(most_stdev_community.precincts.values())[:]
-                added_precinct_list.append(precinct4)
-                precinct_stdev = stdev([(precinct4.r_election_sum * 100)/(precinct4.r_election_sum + precinct4.d_election_sum) 
-                for precinct4 in added_precinct_list
-                if (precinct4.r_election_sum + precinct4.d_election_sum) != 0])
-                precinct_exchanges_dict[(community_stdev_stat - precinct_stdev)] = precinct4
+                average_stdev1 = average([other_community_stdev_stat, community_stdev_stat])
+                modification_average_stdev = average([modification_stdev, other_modification_stdev])
+                precinct_exchanges_dict[(average_stdev1 - modification_average_stdev)] = precinct4
         print('before duplicate removal, ', len(precinct_exchanges_dict.keys()))
         to_remove = []
         for sta_dev in precinct_exchanges_dict.keys():
@@ -192,6 +213,7 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold):
         # add or remove precincts from border_precincts until there are no more beneficial exchanges,
         # or until the community's standard deviation is below the threshold
         precinct_count = 1
+        changing_stdev = []
         while most_stdev_community.standard_deviation > threshold:
             print(most_stdev_id, most_stdev_community.standard_deviation, threshold)
             # if there is only one precinct left, just stop
@@ -224,7 +246,6 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold):
                     else:
                         other_community = community16
             print('other community, ', other_community.id, 'highest stdev community, ', most_stdev_id)
-            print(highest_precinct_exchange)
             # find precincts that can no longer be used now once a precinct has changed hands
             no_longer_applicable_precincts = []
             # if precinct is in biggest stdev community:
@@ -308,6 +329,70 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold):
                     if precinct10 not in no_longer_applicable_precincts:
                         precinct_list_to_remove.append(precinct10)
                 border_precincts[id2] = precinct_list_to_remove
+            print(len(precinct_exchanges_dict))
+            # for precinct25 in no_longer_applicable_precincts:
+            #     for stdev3, precinct26 in precinct_exchanges_dict.items():
+            #         if precinct26 == precinct25:
+            #             del precinct_exchanges_dict[stdev3]
+            #             break
+            print(len(precinct_exchanges_dict))
+            to_replace = {}
+            community_stdev_stat = most_stdev_community.standard_deviation
+            other_community_stdev_stat = other_community.standard_deviation
+            for sta_dev2, precinct18 in enumerate(precinct_exchanges_dict.values()):
+                if precinct18 in most_stdev_community.precincts.values():
+                    other_precinct_list = list(most_stdev_community.precincts.values())[:]
+                    other_precinct_list.remove(precinct18)
+                    added_precinct_list = list(other_community.precincts.values())[:]
+                    added_precinct_list.append(precinct18)
+                    other_modification_stdev = stdev([(precinct19.r_election_sum * 100) / (precinct19.r_election_sum + precinct19.d_election_sum)
+                                                        for precinct19 in added_precinct_list
+                                                        if (precinct19.r_election_sum + precinct19.d_election_sum) != 0])
+                    modification_stdev = stdev([(precinct21.r_election_sum * 100)/(precinct21.r_election_sum + precinct21.d_election_sum) 
+                                            for precinct21 in other_precinct_list
+                                            if (precinct21.r_election_sum + precinct21.d_election_sum) != 0])
+                    # check to make sure removing community from most_stdev_community
+                    # does not lead to non-contiguous communities
+                    # if isinstance(clip([most_stdev_community.coords, precinct3.coords], 2), MultiPolygon):
+                    #     print('stuff eliminated')
+                    #     continue
+                    # after new precincts are serialized use stdev(precinct.rep_total_ratio) instead of current
+                    # else:
+                    average_stdev1 = average([community_stdev_stat,other_community_stdev_stat])
+                    modified_average_stdev = average([modification_stdev, other_modification_stdev])
+                    to_replace[(average_stdev1 - modified_average_stdev)] = precinct18
+                else:
+                    for community26, precinct_list12 in other_communities_dict.items():
+                        if precinct18 in precinct_list12:
+                            if community26.id == most_stdev_community.id:
+                                for community27 in communities_list:
+                                    if precinct18 in community27.precincts.values():
+                                        other_community1 = community27
+                            else:
+                                other_community1 = community16
+                # for border precincts outside the highest stdev community, find stdev with that precinct
+                    # check to make sure removing community from most_stdev_community
+                    # does not lead to non-contiguous communities
+                    other_precinct_list = list(other_community1.precincts.values())
+                    other_precinct_list.remove(precinct18)
+                    added_precinct_list = list(most_stdev_community.precincts.values())[:]
+                    added_precinct_list.append(precinct18)
+                    modification_stdev = stdev([(precinct23.r_election_sum * 100)/(precinct23.r_election_sum + precinct23.d_election_sum) 
+                                                for precinct23 in added_precinct_list
+                                                if (precinct23.r_election_sum + precinct23.d_election_sum) != 0])
+                    other_modification_stdev = stdev([(precinct24.r_election_sum * 100)/(precinct24.r_election_sum + precinct24.d_election_sum)
+                                                    for precinct24 in other_precinct_list
+                                                    if (precinct24.r_election_sum + precinct24.d_election_sum) != 0])
+                    # if isinstance(clip([other_community.coords, precinct4.coords], 2), MultiPolygon):
+                    #     print('stuff also eliminated')
+                    #     continue
+                    # else:
+                    average_stdev1 = average([other_community_stdev_stat, community_stdev_stat])
+                    modification_average_stdev = average([modification_stdev, other_modification_stdev])
+                    to_replace[(average_stdev1 - modification_average_stdev)] = precinct18
+            precinct_exchanges_dict = to_replace
+            print(len(precinct_exchanges_dict))
+
             not_involved_community_list = []
             for community13 in not_involved_community_list:
                 if community13 != other_community:
@@ -319,6 +404,7 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold):
             # communities_to_json(community_change_snapshot, str('../../../../partisanship_after' + str(precinct_count) + 'community'  + '.json'))
             print('HELLO', precinct_count)
             precinct_count += 1
+            changing_stdev.append(average([most_stdev_community.standard_deviation, other_community.standard_deviation]))
         stdev_stat = str([community10.standard_deviation for community10 in communities_list])[1:-1]
         standard_deviations.append(stdev_stat)
         for community11 in communities_list:
@@ -336,6 +422,8 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold):
         for community15 in not_involved_community_list:
             community_change_snapshot.append(community15)
         communities_to_json(community_change_snapshot, str('../../../../partisanship_after boi' + str(count) + '.json'))
+        with open('../../../../precinct_stdevs.txt', 'a') as f:
+            f.write(str(changing_stdev))
     communities_to_json(communities_list, '../../../../partisanship_after.json')
     print('completed!')
     return communities_list, count, standard_deviations, num_of_changed_precincts, average_stdev
