@@ -81,7 +81,28 @@ def refine_for_population(communities, population_percentage,
                         **POPULATION_GIVE_PRECINCT_KWARGS
                     )
                     i += 1
-           
+            else:
+                bordering_communities = \
+                    [c for c in communities if (
+                        c != community
+                        and get_if_bordering(c.coords, community.coords))
+                    ]
+                bordering_precincts = \
+                    {
+                        p.vote_id: c for c in bordering_communities
+                        for p in c if get_if_bordering(p.coords,
+                                          community.coords)
+                    }
+                bordering_precinct_ids = list(bordering_precincts.keys())
+                i = 0
+                while community.population < population_range.lower:
+                    precinct = bordering_precinct_ids[i]
+                    bordering_precincts[precinct].give_precinct(
+                        community,
+                        precinct,
+                        **POPULATION_GIVE_PRECINCT_KWARGS
+                    )
+                    i += 1
             
     finally:
         with open(output_pickle, "wb+") as f:
