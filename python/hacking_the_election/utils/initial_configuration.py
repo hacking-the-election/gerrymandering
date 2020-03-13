@@ -125,7 +125,10 @@ def fill(self, precincts, linked_precincts, island_index,
                     self, precinct, **GIVE_PRECINCT_COORDS_ONLY_KWARGS,
                     allow_zero_precincts=True,
                     allow_multipolygons=True)
-                if isinstance(unchosen_precincts.coords, MultiPolygon):
+                if (
+                        isinstance(unchosen_precincts.coords, MultiPolygon)
+                     or isinstance(self.coords, MultiPolygon)  # Not sure how this is possible, but apparently it is.
+                        ):
                     self.give_precinct(
                         unchosen_precincts,
                         precinct,

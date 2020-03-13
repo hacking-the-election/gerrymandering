@@ -35,7 +35,6 @@ from hacking_the_election.utils.initial_configuration import (
 from hacking_the_election.test.funcs import (
     convert_to_json,
     polygon_to_list,
-    multipolygon_to_list
 )
 
 
@@ -375,4 +374,26 @@ def create_initial_configuration(island_precinct_groups, n_districts,
         with open("test_communities.pickle", "wb+") as f:
             pickle.dump([communities, island_borders, island_precinct_groups], f)
         raise e
+        convert_to_json([polygon_to_list(c.coords) for c in communities], "test_initial_configuration.json")
     return communities, linked_precinct_chains
+
+
+if __name__ == "__main__":
+    
+    import sys
+
+    from hacking_the_election.serialization import save_precincts
+
+    sys.modules["save_precincts"] = save_precincts
+
+    with open(sys.argv[1], "rb") as f:
+        island_precinct_groups, _, state_border = pickle.load(f)
+
+    communities, linked_precinct_chains = create_initial_configuration(
+        island_precinct_groups, int(sys.argv[2]), state_border
+    )
+
+    with open(sys.argv[3], "wb+") as f:
+        pickle.dump((communities, linked_precinct_chains), f)
+
+    convert_to_json([polygon_to_list(c.coords) for c in communities], sys.argv[4])
