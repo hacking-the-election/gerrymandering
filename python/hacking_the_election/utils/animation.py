@@ -53,10 +53,10 @@ def modify_coords(shapes):
         )
 
     # Average x and average y
-    print(sum([c for shape in shape_coords for c in shape if c % 2 == 0])
-        / len(all_coords))
-    print(sum([c for shape in shape_coords for c in shape if c % 2 == 1])
-        / len(all_coords))
+    # print(sum([c for shape in shape_coords for c in shape if c % 2 == 0])
+    #     / len(all_coords))
+    # print(sum([c for shape in shape_coords for c in shape if c % 2 == 1])
+    #     / len(all_coords))
 
     return shape_coords
 

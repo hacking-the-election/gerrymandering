@@ -1,9 +1,13 @@
 """
 Refines a state broken into communities
 so that they are compact within a threshold.
+
+Usage:
+python3 compactness_refinement.py [initial_configuration] [compactness_threshold] [json_path] [pickle_path] [animation_dir]
 """
 
 import math
+import os
 import pickle
 import random
 import warnings
@@ -15,6 +19,7 @@ from hacking_the_election.test.funcs import (
     polygon_to_list,
     convert_to_json
 )
+from hacking_the_election.utils.animation import save_as_image
 from hacking_the_election.utils.compactness import (
     add_precinct,
     format_float,
@@ -32,6 +37,9 @@ from hacking_the_election.utils.geometry import (
     get_if_bordering,
     INTERSECTION
 )
+from hacking_the_election.utils.initial_configuration import (
+    add_leading_zeroes
+)
 
 
 def signal_handler(sig, frame):
@@ -39,7 +47,8 @@ def signal_handler(sig, frame):
 
 
 def refine_for_compactness(communities, minimum_compactness,
-                           linked_precincts, output_json, output_pickle):
+                           linked_precincts, output_json,
+                           output_pickle, animation_dir):
     """
     Returns communities that are all below the minimum compactness.
     """
@@ -49,9 +58,15 @@ def refine_for_compactness(communities, minimum_compactness,
         community.update_compactness()
 
     try:
+        try:
+            os.mkdir(animation_dir)
+        except FileExistsError:
+            pass
+
         X = [[] for _ in communities]
         Y = [[] for _ in communities]
         i = 0
+        f = 1
 
         while True:
             try:
@@ -102,6 +117,7 @@ def refine_for_compactness(communities, minimum_compactness,
 
                 while outside_circle != set() or inside_circle != set():
                     # Add precincts one by one
+                    community_changed = False
                     try:
                         precinct = random.sample(outside_circle, 1)[0]
                         try:
@@ -111,6 +127,7 @@ def refine_for_compactness(communities, minimum_compactness,
                                 print(f"Removed {precinct.vote_id} from "
                                       f"community {community.id}. Compactness: "
                                       f"{round(community.compactness, 3)}")
+                                community_changed = True
                             except (CreatesMultiPolygonException,
                                     ZeroPrecinctCommunityException):
                                 pass
@@ -129,12 +146,20 @@ def refine_for_compactness(communities, minimum_compactness,
                                 print(f"Added {precinct.vote_id} to community "
                                       f"{community.id}. Compactness: "
                                       f"{round(community.compactness, 3)}")
+                                community_changed = True
                             except (CreatesMultiPolygonException,
                                     ZeroPrecinctCommunityException):
                                 pass
                         except ValueError as e:
                             warnings.warn(str(e))
                         inside_circle.discard(precinct)
+                    if community_changed:
+                        save_as_image(
+                            [c.coords for c in communities],
+                            os.path.join(animation_dir,
+                            f"{f}.png")
+                        )
+                        f += 1
 
                     if all([c.compactness > minimum_compactness
                             for c in communities]):
@@ -201,4 +226,4 @@ if __name__ == "__main__":
     linked_precincts = {p for chain in linked_precinct_chains for p in chain}
 
     refine_for_compactness(communities, float(sys.argv[2]),
-                           linked_precincts, sys.argv[3], sys.argv[4])
+                           linked_precincts, *sys.argv[3:])
