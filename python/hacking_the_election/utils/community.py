@@ -91,7 +91,9 @@ class Community:
 
     def give_precinct(self, other, precinct_id, coords=True,
                       partisanship=True, standard_deviation=True,
-                      population=True, compactness=True):
+                      population=True, compactness=True,
+                      allow_zero_precincts=False,
+                      allow_multipolygons=False):
         """
         Gives precinct from self to other community.
 
@@ -103,12 +105,9 @@ class Community:
         raises respective exceptions.
         """
 
-        if len(self.precincts) == 1:
-            other.give_precinct(
-                self, precinct_id, coords=coords, partisanship=partisanship,
-                standard_deviation=standard_deviation,
-                population=population, compactness=compactness)
-            raise ZeroPrecinctCommunityException
+        if not allow_zero_precincts:
+            if len(self.precincts) == 1:
+                raise ZeroPrecinctCommunityException
 
         if self is other:
             raise ValueError(
@@ -138,14 +137,16 @@ class Community:
             thread_1.run()
             thread_2.run()
 
-            if (
-                    isinstance(other.coords, MultiPolygon)
-                 or isinstance(self.coords, MultiPolygon)):
-                other.give_precinct(
-                    self, precinct_id, coords=coords, partisanship=partisanship,
-                    standard_deviation=standard_deviation,
-                    population=population, compactness=compactness)
-                raise CreatesMultiPolygonException
+            if not allow_multipolygons:
+                if (
+                        isinstance(other.coords, MultiPolygon)
+                     or isinstance(self.coords, MultiPolygon)):
+                    other.give_precinct(
+                        self, precinct_id, coords=coords, partisanship=partisanship,
+                        standard_deviation=standard_deviation,
+                        population=population, compactness=compactness,
+                        allow_zero_precincts=True)
+                    raise CreatesMultiPolygonException
 
         # Update other attributes that are dependent on precincts attribute
         for community in [self, other]:
