@@ -382,9 +382,7 @@ if __name__ == "__main__":
     
     import sys
 
-    from hacking_the_election.serialization import save_precincts
-
-    sys.modules["save_precincts"] = save_precincts
+    from hacking_the_election.serialization.save_precincts import Precinct
 
     with open(sys.argv[1], "rb") as f:
         island_precinct_groups, _, state_border = pickle.load(f)

@@ -52,17 +52,11 @@ def modify_coords(shapes):
              for i, c in enumerate(shape)]
         )
 
-    # Average x and average y
-    # print(sum([c for shape in shape_coords for c in shape if c % 2 == 0])
-    #     / len(all_coords))
-    # print(sum([c for shape in shape_coords for c in shape if c % 2 == 1])
-    #     / len(all_coords))
-
     return shape_coords
 
 
 
-def draw(coords, state_name):
+def draw(shapes, state_name, block=True):
     """
     Creates tkinter drawing of shapes.
     """
@@ -71,16 +65,36 @@ def draw(coords, state_name):
     root.title(state_name)
     cv = Canvas(root, width=1000, height=1000, bd=0)
     cv.pack()
+
+    shape_ids = []
+    coords = modify_coords(shapes)
     for shape_coords in coords:
-        cv.create_polygon(
-            *shape_coords,
-            fill="white",
-            outline="black"
+        shape_ids.append(
+            cv.create_polygon(
+                *shape_coords,
+                fill="white",
+                outline="black"
+            )
         )
-    root.mainloop()
+    if block:
+        root.mainloop()
+    else:
+        root.update()
+        return root, cv, shape_ids
 
 
-def save_as_image(shapes, filepath):
+def update_canvas(shape_ids, shapes, canvas, root):
+    """
+    Updates coords for `shapes` on `canvas`
+    """
+
+    coords = modify_coords(shapes)
+    for shape, shape_coords in zip(shape_ids, coords):
+        canvas.coords(shape, *shape_coords)
+    root.update()
+
+
+def save_as_image(shapes, filepath, red=False):
     """
     Saves `shapes` to file at `filepath`
     """
@@ -88,8 +102,12 @@ def save_as_image(shapes, filepath):
     image = Image.new("RGB", (1000, 1000), (255, 255, 255))
     modified_coords = modify_coords(shapes)
     draw = ImageDraw.Draw(image)
-    for shape in modified_coords:
-        draw.polygon(shape, outline=(0, 0, 0))
+    for i, shape in enumerate(modified_coords):
+        if red and i == red:
+            fill = (255, 66, 66)
+        else:
+            fill = None
+        draw.polygon(shape, fill=fill, outline=(0, 0, 0))
     image.save(filepath)
 
 
