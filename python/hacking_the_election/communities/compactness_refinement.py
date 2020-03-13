@@ -39,7 +39,7 @@ def signal_handler(sig, frame):
 
 
 def refine_for_compactness(communities, minimum_compactness,
-                           linked_precincts, output_file):
+                           linked_precincts, output_json, output_pickle):
     """
     Returns communities that are all below the minimum compactness.
     """
@@ -168,26 +168,12 @@ def refine_for_compactness(communities, minimum_compactness,
                 
             except LoopBreakException:
                 break
-
-        for x, y in zip(X, Y):
-            plt.plot(x, y)
-        plt.show()
-
-        with open("test_compactness_graph.pickle", "wb+") as f:
-            pickle.dump([X, Y], f)
-
-        convert_to_json(
-            [polygon_to_list(c.coords) for c in communities],
-            output_file,
-            [{"ID": c.id} for c in communities]
-        )
-    
-    except Exception as e:
-        with open("test_compactness.pickle", "wb+") as f:
+    finally:
+        with open(output_pickle, "wb+") as f:
             pickle.dump(communities, f)
         convert_to_json(
             [polygon_to_list(c.coords) for c in communities],
-            output_file,
+            output_json,
             [{"ID": c.id} for c in communities]
         )
         for x, y in zip(X, Y):
@@ -195,7 +181,6 @@ def refine_for_compactness(communities, minimum_compactness,
         plt.show()
         with open("test_compactness_graph.pickle", "wb+") as f:
             pickle.dump([X, Y], f)
-        raise e
 
 
 if __name__ == "__main__":
@@ -216,4 +201,4 @@ if __name__ == "__main__":
     linked_precincts = {p for chain in linked_precinct_chains for p in chain}
 
     refine_for_compactness(communities, float(sys.argv[2]),
-                           linked_precincts, sys.argv[3])
+                           linked_precincts, sys.argv[3], sys.argv[4])
