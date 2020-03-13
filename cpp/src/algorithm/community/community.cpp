@@ -25,15 +25,14 @@
  at: hacking.the.election@gmail.com
 ===============================================*/
 
+#include <math.h>    // for rounding functions
+#include <numeric>   // include std::iota
+#include <boost/filesystem.hpp>
+
 #include "../../../include/shape.hpp"    // class definitions
 #include "../../../include/util.hpp"     // array modification functions
 #include "../../../include/geometry.hpp" // geometry modification, border functions
 #include "../../../include/canvas.hpp" // geometry modification, border functions
-
-#include <math.h>    // for rounding functions
-#include <numeric>   // include std::iota
-#include <algorithm> // sorting, seeking algorithms
-#include <boost/filesystem.hpp>
 
 using namespace std;
 using namespace GeoGerry;
@@ -52,12 +51,11 @@ using namespace boost::filesystem;
 */
 
 const int CHANGED_PRECINT_TOLERANCE = 10; // percent of precincts that can change from iteration
-const int MAX_ITERATIONS = 5; // max number of times we can change a community
+const int MAX_ITERATIONS = 10; // max number of times we can change a community
+int TOTAL_MOVED_PRECINCTS = 0;  // number of times a precinct has been given to another district
 
-// ids for processes:
-const int PARTISANSHIP = 0;
-const int COMPACTNESS = 1;
-const int POPULATION = 2;
+enum processes { PARTISANSHIP, COMPACTNESS, POPULATION };
+
 
 void State::generate_initial_communities(int num_communities) {
     /*
@@ -96,7 +94,7 @@ void State::generate_initial_communities(int num_communities) {
             communities, add it to
         */
 
-        cout << "island 1" << endl;
+        if (DEBUG_COMMUNITIES) cout << "checking new island" << endl;
         map<int, array<int, 2> > vals; // to hold possible size combinations
 
         for (int x = 1; x <= large_sizes.size(); x++) {
@@ -444,9 +442,10 @@ void State::generate_initial_communities(int num_communities) {
             c[c.size() - 1].add_precinct(precincts[pi]);
 
     this->state_communities = c; // assign state communities to generated array
-    save_communities("community_vt", this->state_communities);
+    save_communities("community_vt_2", this->state_communities);
     return;
 }
+
 
 p_index State::get_next_community(double tolerance, int process) {
     /*
@@ -484,12 +483,23 @@ p_index State::get_next_community(double tolerance, int process) {
         }
     }
     else if (process == COMPACTNESS) {
-        unit_interval min = 1;
+    unit_interval min = 1;
         p_index x = 0;
+        // int iter = 1;
+        // while (state_communities[x].get_compactness() > tolerance) {
+        //     x = rand_num(0, state_communities.size() - 1);
+        //     iter++;
+        //     if (iter == state_communities.size()) {
+        //         x = -1;
+        //         break;            
+        //     }
+        // }
 
+        // i = x;
+        
         for (Community c : state_communities) {
             unit_interval t_compactness = c.get_compactness();
-            if (t_compactness < min && t_compactness > tolerance) {
+            if (t_compactness < min && t_compactness < tolerance) {
                 min = t_compactness;
                 i = x;
             }
@@ -502,17 +512,18 @@ p_index State::get_next_community(double tolerance, int process) {
             Find community that is farthest away from the
             average of (total_pop / number_districts)
         */
-        int aim = get_population() / state_districts.size();
+
+        int aim = get_population() / state_communities.size();
         vector<int> range = {aim - (int)(tolerance * aim), aim + (int)(tolerance * aim)};
         int max = 0; // largest difference
+        int maxpop = 0;
         p_index x = 0; // keep track of iteration
         
         for (Community c : state_communities) {
-            int diff = abs(aim - c.get_population());
-            if ((diff > max) && (diff > (int)(tolerance * aim))) {
+            if (c.get_population() > maxpop && c.get_population() > range[1]) {
                 // community is outside range and more so than the previous one
                 i = x;
-                max = diff;
+                maxpop = c.get_population();
             }
             x++;
         }
@@ -535,36 +546,34 @@ void State::give_precinct(p_index precinct, p_index community, int t_type) {
 
         @return: void
     */
-    Canvas canvas(900, 900);
-    canvas.add_shape(this->state_communities);
-    canvas.draw();
 
     Precinct precinct_shape = this->state_communities[community].precincts[precinct];
 
+    // Canvas canvas(900, 900);
+    // canvas.add_shape(this->state_communities);
+    // canvas.add_shape(this->state_communities[community], true, Color(100,255,0), 1);
+    // canvas.add_shape(precinct_shape, true, Color(0,100,255), 2);
+    // canvas.draw();
+    
     // get communities that border the current community
     p_index_set bordering_communities_i = get_bordering_shapes(this->state_communities, this->state_communities[community]);
+    // {1,5} -> 1st and 5th hstate communities
 
     // convert to actual shape array
     Communities bordering_communities;
     for (p_index i : bordering_communities_i)
         bordering_communities.push_back(this->state_communities[i]);
     
-    canvas.clear();
-    canvas.add_shape(this->state_communities);
-    canvas.draw();
-    
     // of those communities, get the ones that also border the precinct
     p_index_set exchangeable_communities_i = get_bordering_shapes(bordering_communities, precinct_shape);
     Communities exchangeable_communities;
-    for (p_index i : exchangeable_communities_i)
-        exchangeable_communities.push_back(this->state_communities[i]);
+
+    for (int i = 0; i < exchangeable_communities_i.size(); i++) {
+        exchangeable_communities_i[i] = bordering_communities_i[exchangeable_communities_i[i]];
+        exchangeable_communities.push_back(this->state_communities[exchangeable_communities_i[i]]);
+    }
 
     p_index exchange_choice;
-    
-    cout << exchangeable_communities.size() << endl;
-    canvas.clear();
-    canvas.add_shape(this->state_communities);
-    canvas.draw();
 
     if (t_type == PARTISANSHIP) {
         // get closest average to precinct
@@ -587,36 +596,30 @@ void State::give_precinct(p_index precinct, p_index community, int t_type) {
         // get highest compactness score
         double min = exchangeable_communities[0].get_compactness();
         p_index choice = 0;
-        p_index index = 0;
 
         for (int i = 1; i < exchangeable_communities.size(); i++) {
-            index++;
             Community c = exchangeable_communities[i];
             double n_compactness = c.get_compactness();
             if (n_compactness < min) {
                 min = n_compactness;
-                choice = index;
+                choice = i;
             }
         }
 
         exchange_choice = choice;
     }
 
-    Community chosen_c = exchangeable_communities[exchange_choice];
-    // cout << "exchange c " << exchange_choice << endl;
+    exchange_choice = exchangeable_communities_i[exchange_choice];
+    Community chosen_c = state_communities[exchange_choice];
 
     // add precinct to new community
     this->state_communities[exchange_choice].add_precinct(precinct_shape);
 
     // remove precinct from previous community
-    this->state_communities[community].precincts.erase(this->state_communities[community].precincts.begin() + precinct);
-
-    // update relevant borders after transactions
-    for (Community c : bordering_communities)
-        c.border = generate_exterior_border(c).border;
-
-    this->state_communities[community].border = generate_exterior_border(this->state_communities[community]).border;
-    
+    this->state_communities[community].remove_precinct(precinct_shape);
+    TOTAL_MOVED_PRECINCTS++;
+    // this->state_communities[community].precincts.erase(this->state_communities[community].precincts.begin() + precinct);
+    // this->state_communities[community].border = generate_exterior_border(this->state_communities[community]).border;
     return;
 }
 
@@ -631,39 +634,61 @@ void State::refine_compactness(double compactness_tolerance) {
         @params: `double` compactness_tolerance: tolerance for compactness
         @return: void
     */
+
     p_index worst_community = get_next_community(compactness_tolerance, COMPACTNESS);
     bool is_done = (worst_community == -1);
     vector<int> num_changes(state_communities.size());
+
+    Anim animation(150);
     cout << "refining for compactness..." << endl;
+    Shape circle;
 
     while (!is_done) {
         cout << "modifying community " << worst_community << endl;
-        cout << "current worst compactness is " << state_communities[worst_community].get_compactness() << endl;
-        Community community = state_communities[worst_community];
-        coordinate center = community.get_center();
-        Shape circle = generate_gon(center, sqrt(community.get_area() / PI), 30);
-        Color green = Color(17, 255, 0);
+        cout << "current compactness is " << state_communities[0].get_compactness() + state_communities[1].get_compactness() << endl;
 
+        coordinate center = state_communities[worst_community].get_center();
+        circle = generate_gon(center, sqrt(state_communities[worst_community].get_area() / PI), 30);
+        
+        p_index_set giveable = get_giveable_precincts(state_communities[worst_community], state_communities);
+        
         // for  each precinct in edge of community;
-        for (p_index p : get_inner_boundary_precincts(community)) {
-            cout << "checking precinct..." << endl;
-            Precinct pre = community.precincts[p];
-            if (community.get_compactness() > compactness_tolerance && !get_inside(pre.hull, circle.hull) ) {
+        for (int x = 0; x < giveable.size(); x++) {
+            Precinct pre = state_communities[worst_community].precincts[giveable[x]];
+            if (state_communities[worst_community].get_compactness() < compactness_tolerance && !get_inside_first(pre.hull, circle.hull) ) {
                 cout << "Precinct outside circle, removing..." << endl;
-                give_precinct(p, worst_community, COMPACTNESS);
+                give_precinct(giveable[x], worst_community, COMPACTNESS);
+                Canvas c(900, 900);
+                c.add_shape(this->state_communities);
+                c.add_shape(this->state_communities[worst_community], true, Color(100,255,0), 1);
+                c.add_shape(pre, true, Color(0,100,255), 2);
+                animation.frames.push_back(c);
 
-                Canvas canvas(900, 900);
-                canvas.add_shape(this->state_communities);
-                canvas.draw();
+                for (int i = 0; i < giveable.size(); i++) giveable[i] = giveable[i] - 1;
+                // loop = false;
             }
         }
 
         num_changes[worst_community] += 1; // update the changelist
+        p_index old_c = worst_community;
+
         // update worst_community, check stop condition
         worst_community = get_next_community(compactness_tolerance, COMPACTNESS);
+        // if (worst_community != -1 && loop) {
+        //     while (worst_community == old_c) {
+        //         worst_community = get_next_community(compactness_tolerance, COMPACTNESS);
+        //     }
+        // }
         // if the community is within the tolerance, or if it has been modified too many times
         is_done = (worst_community == -1 || num_changes[worst_community] == MAX_ITERATIONS);
     }
+
+    Canvas canvas(900, 900);
+    canvas.add_shape(this->state_communities, true, Color(0,0,0), 1);
+    canvas.add_shape(circle, true, Color(100, 255, 0), 2);
+    canvas.draw();
+
+    animation.playback();
 }
 
 
@@ -693,7 +718,7 @@ void State::refine_partisan(double partisanship_tolerance) {
         double median = get_median_partisanship(c);
         p_index worst_precinct = 0;
         double diff = 0;
-        p_index_set exchangeable_precincts = get_exchangeable_precincts(c, state_communities);
+        p_index_set exchangeable_precincts = get_giveable_precincts(c, state_communities);
 
         for (p_index p : exchangeable_precincts) {
             // if precinct exchange decreases stdev, exchange
@@ -721,6 +746,7 @@ void State::refine_partisan(double partisanship_tolerance) {
     }
 }
 
+
 void State::refine_population(double population_tolerance) {
     /* 
         @desc:
@@ -738,14 +764,32 @@ void State::refine_population(double population_tolerance) {
     vector<int> num_changes(state_communities.size());
 
     // calculate the range each community's population should be within
-    int aim = get_population() / state_districts.size();
+    int aim = get_population() / state_communities.size();
     vector<int> ideal_range = {aim - (int)(population_tolerance * aim), aim + (int)(population_tolerance * aim)};
-    
+
+    Anim anim(120);
     // begin main iterative loop
     while (!is_done) {
+        cout << "modifying community " << worst_community << endl;
+
         Community c = state_communities[worst_community];
-        while (c.get_population() < ideal_range[0] || c.get_population() > ideal_range[1]) {
-            //! Figure out which method we're using for precinct exchange
+        p_index_set exchangeable_precincts = get_giveable_precincts(state_communities[worst_community], this->state_communities);
+        int index = 0;
+
+        while (index < exchangeable_precincts.size() &&
+              (state_communities[worst_community].get_population() < ideal_range[0] 
+              || state_communities[worst_community].get_population() > ideal_range[1])) {
+
+            p_index precinct = exchangeable_precincts[index];
+
+            Canvas canvas(900, 900);
+            canvas.add_shape(this->state_communities);
+            canvas.add_shape(state_communities[worst_community].precincts[precinct], true, Color(0,100,255), 2);
+            anim.frames.push_back(canvas);
+
+            give_precinct(precinct, worst_community, PARTISANSHIP);
+            for (int i = 0; i < exchangeable_precincts.size(); i++) exchangeable_precincts[i] = exchangeable_precincts[i] - 1;
+            index++;
         }
 
         // update the changelist
@@ -755,6 +799,11 @@ void State::refine_population(double population_tolerance) {
         worst_community = get_next_community(population_tolerance, POPULATION);
         is_done = (worst_community == -1 || num_changes[worst_community] == MAX_ITERATIONS);
     }
+
+    Canvas canvas(900, 900);
+    canvas.add_shape(this->state_communities);
+    canvas.draw();
+    anim.playback();
 }
 
 int measure_difference(Communities communities, Communities new_communities) {
@@ -867,6 +916,15 @@ void State::generate_communities(int num_communities, double compactness_toleran
 }
 
 string Community::save_frame() {
+    /*
+        @desc:
+            Saves a community configuration into a string by using
+            the precinct id's with a comma separated list.
+
+        @params: none
+        @return: `string` saved communities
+    */
+
     string line;
     for (Precinct p : precincts) {
         line += "\"" + p.shape_id + "\", ";
@@ -878,6 +936,18 @@ string Community::save_frame() {
 }
 
 Communities Community::load_frame(std::string read_path, State precinct_list) {
+    /*
+        @desc:
+            Given file path and precinct reference, reads a saved
+            community configuration into an array of communities
+
+        @params:
+            `string` read_path: path to the saved community frame
+            `GeoGerry::State` precinct_list: reference to get precinct geodata given id's
+
+        @return: `Communities` loaded community array
+    */
+
     Communities cs;
     string file = readf(read_path);
     std::stringstream fs(file);
@@ -897,7 +967,6 @@ Communities Community::load_frame(std::string read_path, State precinct_list) {
             }
         }
 
-        c.border = generate_exterior_border(c).border;
         cs.push_back(c);
     }
 

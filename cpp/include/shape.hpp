@@ -20,6 +20,7 @@
 #include <array> 
 #include <exception>
 #include <math.h>
+#include <algorithm>
 
 // for the rapidjson parser
 #include "../lib/rapidjson/include/rapidjson/document.h"
@@ -31,6 +32,8 @@
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/array.hpp>
+
+#include "../lib/clipper/clipper.hpp"
 
 /*
     structure of class definitions:
@@ -85,6 +88,12 @@ class Exceptions {
         struct CreatesIsland : public std::exception {
             const char* what() const throw() {
                 return "This precinct exchange would create an island";
+            }
+        };
+
+        struct PrecinctNotInGroup : public std::exception {
+            const char* what() const throw() {
+                return "There is no precinct in this group to remove matching the parameter.";
             }
         };
 };
@@ -323,7 +332,9 @@ class Precinct_Group : public Multi_Shape {
 
     public:
         std::vector<Precinct> precincts;  // array of precinct objects
-        virtual void add_precinct(Precinct pre) {precincts.push_back(pre);};  // adds precinct to list of precincts
+
+        virtual void add_precinct(Precinct pre);
+        virtual void remove_precinct(Precinct pre);
 
         Precinct_Group(){};
         Precinct_Group(std::vector<Shape> shapes)

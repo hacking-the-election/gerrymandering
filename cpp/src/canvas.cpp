@@ -264,8 +264,13 @@ void GeoDraw::Canvas::rasterize_edges() {
             double yv = (double) y0;
 
             for (int i = 0; i <= steps; i++) {
-                Pixel p((int)xv, (int)yv, o.color);
-                this->pixels.push_back(p);
+                for (int i = -(o.line_thickness - 1); i <= (o.line_thickness - 1); i++) {
+                    for (int j = -(o.line_thickness - 1); j <= (o.line_thickness - 1); j++) {
+                        Pixel p((int)xv + i, (int)yv + j, o.color);
+                        this->pixels.push_back(p);
+                    }
+                }
+
                 xv += xinc;
                 yv += yinc;
             }
@@ -372,11 +377,8 @@ void GeoDraw::Canvas::draw() {
 
 
 void GeoDraw::Canvas::clear() {
-    while (outlines.size() > 0)
-        outlines.pop_back();
-
-    while (holes.size() > 0)
-        holes.pop_back();
+    this->outlines = {};
+    this->holes = {};
 }
 
 
