@@ -18,6 +18,8 @@
 
 # Communities:
    Now:
+    - initial configuration why overlap?
+    - animation
     - continue working on partisanship test
     - write make_communities function in __init__.py
     - add much datas to return in partisanship
