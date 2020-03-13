@@ -396,4 +396,8 @@ if __name__ == "__main__":
     with open(sys.argv[3], "wb+") as f:
         pickle.dump((communities, linked_precinct_chains), f)
 
-    convert_to_json([polygon_to_list(c.coords) for c in communities], sys.argv[4])
+    convert_to_json(
+        [polygon_to_list(c.coords) for c in communities],
+        sys.argv[4],
+        [{"ID": c.id} for c in communities]
+    )
