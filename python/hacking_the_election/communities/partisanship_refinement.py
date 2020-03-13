@@ -18,7 +18,7 @@ from hacking_the_election.serialization import save_precincts
 from shapely.geometry import MultiPolygon
 sys.modules['save_precincts'] = save_precincts
 
-def modify_for_partisanship(communities_list, precinct_corridors, threshold):
+def modify_for_population(communities_list, precinct_corridors, threshold):
     '''
     Takes list of community objects, and returns a different list with the modified communities.,
     as well as the # of precincts that changed hands during this step.
@@ -66,11 +66,11 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold):
         most_stdev_community = list(most_stdev.values())[0] 
         if most_stdev_community.standard_deviation < threshold:
             success = 'yes!'
-            break       
-        elif num_of_changed_precincts[-1] == 0:
-            success = 'yes!'
-            break
-
+            break  
+        if len(num_of_changed_precincts) > 0:     
+            if num_of_changed_precincts[-1] == 0:
+                success = 'yes!'
+                break
         # if all the code in this while loop below runs, then there must be a community
         # with greater than average standard deviation
         biggest_community_precincts = communities_precincts[most_stdev_id]
@@ -366,6 +366,10 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold):
         communities_to_json(community_change_snapshot, str('../../../../partisanship_after boi' + str(count) + '.json'))
         with open('../../../../precinct_stdevs.txt', 'a') as f:
             f.write(str(changing_stdev))
+        with open('../../../../average_stdevs.txt', 'w') as f:
+            f.write(str(average_stdev))
+        with open('../../../../precincts_changed.txt', 'w') as f:
+            f.write(str(num_of_changed_precincts))    
     communities_to_json(communities_list, '../../../../partisanship_after.json')
     print('completed!')
     return communities_list, count, standard_deviations, num_of_changed_precincts, average_stdev
@@ -374,7 +378,7 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold):
 with open('../../../../test_vermont_initial_configuration.pickle', 'rb') as f:
     x = pickle.load(f)
 communities_to_json(x[0], '../../../../new_test_communities.json')
-b, count1, standard_deviations1, num_of_changed_precincts1, average_stdev1 = modify_for_partisanship(x[0], x[1], 5)
+b, count1, standard_deviations1, num_of_changed_precincts1, average_stdev1 = modify_for_population(x[0], x[1], 5)
 
 
 print('# of iterations:', count1)
