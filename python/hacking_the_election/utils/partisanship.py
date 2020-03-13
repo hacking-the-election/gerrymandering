@@ -22,7 +22,7 @@ def get_bordering_precincts(community1, community2):
     the border between them.
     If the two communities share no border, returns []
     """
-    # finds coordinates of the two communities
+    # finds coordinates of the two communities lol fu
     coords1 = community1.coords
     coords2 = community2.coords
     area_intersection = clip([coords1, coords2], 3).area
