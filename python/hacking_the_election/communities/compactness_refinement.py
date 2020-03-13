@@ -78,6 +78,8 @@ def refine_for_compactness(communities, minimum_compactness,
                 print("Average community compactness: "
                         f"{get_average_compactness(communities)}")
 
+                community = min(communities, key=lambda c: c.compactness)
+
                 # Find circle with same area as district.
                 radius = math.sqrt(community.coords.area / math.pi)
                 center = community.coords.centroid.coords[0]
@@ -194,9 +196,6 @@ def refine_for_compactness(communities, minimum_compactness,
                     print(f"Community {community.id} failed to get above "
                             "threshold after adding and removing all "
                             "precincts in and out of circle.")
-
-                community = \
-                    random.choice([c for c in communities if c != community])
                 
             except LoopBreakException:
                 break
