@@ -44,8 +44,9 @@ int main(int argc, char* argv[]) {
     state.read_communities("community_vt");
     GeoDraw::Canvas c(900, 900);
     c.add_shape(state.state_communities);
-    c.draw();
-    state.refine_compactness(0.8);
+    // c.draw();
+    state.refine_population(0.02);
+    // state.refine_compactness(0.8);
 
     // write as binary
     return 0;

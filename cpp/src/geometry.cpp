@@ -713,7 +713,7 @@ p_index_set get_bordering_shapes(vector<Community> shapes, Community shape) {
     p_index_set vec;
     
     for (p_index i = 0; i < shapes.size(); i++) {
-        if ((shapes[i].border != shape.border) && get_bordering(shapes[i], shape)) vec.push_back(i);
+        if ((shapes[i] != shape) && get_bordering(shapes[i], shape)) vec.push_back(i);
     }
     
     return vec;
@@ -727,9 +727,9 @@ p_index_set get_bordering_shapes(vector<Community> shapes, Shape shape) {
     */
 
     p_index_set vec;
-    
+
     for (p_index i = 0; i < shapes.size(); i++) {
-        if (get_bordering(shapes[i], shape)) vec.push_back(i);
+        if (shapes[i] != shape && get_bordering(shapes[i], shape)) vec.push_back(i);
         else {
             GeoDraw::Canvas c(900, 900);
             c.add_shape(generate_exterior_border(shapes[i]));
