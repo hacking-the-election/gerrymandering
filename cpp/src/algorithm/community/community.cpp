@@ -59,6 +59,7 @@ const int PARTISANSHIP = 0;
 const int COMPACTNESS = 1;
 const int POPULATION = 2;
 
+
 void State::generate_initial_communities(int num_communities) {
     /*
         @desc:
@@ -448,6 +449,7 @@ void State::generate_initial_communities(int num_communities) {
     return;
 }
 
+
 p_index State::get_next_community(double tolerance, int process) {
     /*
         @desc:
@@ -751,6 +753,7 @@ void State::refine_partisan(double partisanship_tolerance) {
     }
 }
 
+
 void State::refine_population(double population_tolerance) {
     /* 
         @desc:
@@ -771,6 +774,7 @@ void State::refine_population(double population_tolerance) {
     int aim = get_population() / state_communities.size();
     vector<int> ideal_range = {aim - (int)(population_tolerance * aim), aim + (int)(population_tolerance * aim)};
 
+    Anim anim(120);
     // begin main iterative loop
     while (!is_done) {
         cout << "modifying community " << worst_community << endl;
@@ -778,20 +782,20 @@ void State::refine_population(double population_tolerance) {
         Community c = state_communities[worst_community];
         p_index_set exchangeable_precincts = get_giveable_precincts(state_communities[worst_community], this->state_communities);
         int index = 0;
-        
-        while (state_communities[worst_community].get_population() < ideal_range[0] || state_communities[worst_community].get_population() > ideal_range[1]) {
+
+        while (index < exchangeable_precincts.size() &&
+              (state_communities[worst_community].get_population() < ideal_range[0] 
+              || state_communities[worst_community].get_population() > ideal_range[1])) {
+
             p_index precinct = exchangeable_precincts[index];
-            // Precinct p = precincts[precinct];
-            cout << "population is now " << state_communities[worst_community].get_population() << endl;
-            Canvas c(900, 900);
-            c.add_shape(this->state_communities);
-            c.add_shape(this->state_communities[worst_community], true, Color(100,255,0), 1);
-            c.add_shape(precincts[precinct], true, Color(0,100,255), 2);
-            c.draw();
+
+            Canvas canvas(900, 900);
+            canvas.add_shape(this->state_communities);
+            canvas.add_shape(state_communities[worst_community].precincts[precinct], true, Color(0,100,255), 2);
+            anim.frames.push_back(canvas);
 
             give_precinct(precinct, worst_community, PARTISANSHIP);
-            for (int i = 0; i < exchangeable_precincts.size(); i++) exchangeable_precincts[i]--;
-
+            for (int i = 0; i < exchangeable_precincts.size(); i++) exchangeable_precincts[i] = exchangeable_precincts[i] - 1;
             index++;
         }
 
@@ -802,6 +806,11 @@ void State::refine_population(double population_tolerance) {
         worst_community = get_next_community(population_tolerance, POPULATION);
         is_done = (worst_community == -1 || num_changes[worst_community] == MAX_ITERATIONS);
     }
+
+    Canvas canvas(900, 900);
+    canvas.add_shape(this->state_communities);
+    canvas.draw();
+    anim.playback();
 }
 
 int measure_difference(Communities communities, Communities new_communities) {
@@ -914,6 +923,15 @@ void State::generate_communities(int num_communities, double compactness_toleran
 }
 
 string Community::save_frame() {
+    /*
+        @desc:
+            Saves a community configuration into a string by using
+            the precinct id's with a comma separated list.
+
+        @params: none
+        @return: `string` saved communities
+    */
+
     string line;
     for (Precinct p : precincts) {
         line += "\"" + p.shape_id + "\", ";
@@ -925,6 +943,18 @@ string Community::save_frame() {
 }
 
 Communities Community::load_frame(std::string read_path, State precinct_list) {
+    /*
+        @desc:
+            Given file path and precinct reference, reads a saved
+            community configuration into an array of communities
+
+        @params:
+            `string` read_path: path to the saved community frame
+            `GeoGerry::State` precinct_list: reference to get precinct geodata given id's
+
+        @return: `Communities` loaded community array
+    */
+
     Communities cs;
     string file = readf(read_path);
     std::stringstream fs(file);
