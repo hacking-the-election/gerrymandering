@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
 
 
     State state;
-    string write_path = string(argv[3]);
+    string write_path;
 
     // generate state from files
     if (argc == 5) {
@@ -40,12 +40,14 @@ int main(int argc, char* argv[]) {
         string precinct_geoJSON = readf(argv[1]);
         string voter_data = readf(argv[2]);
         string district_geoJSON = readf(argv[3]);
+        write_path = string(argv[4]);
         state = State::generate_from_file(precinct_geoJSON, voter_data, district_geoJSON);
     }
     else {
         // read files into strings
         string precinct_geoJSON = readf(argv[1]);
         string district_geoJSON = readf(argv[2]);
+        write_path = string(argv[3]);
         state = State::generate_from_file(precinct_geoJSON, district_geoJSON);
     }
 

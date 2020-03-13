@@ -36,17 +36,16 @@ int main(int argc, char* argv[]) {
     State state = State::read_binary(read_path);
 
     cout << "generating communities from given parameters..." << endl;
-    int districts_in_state = 2;  // state.state_districts.size();
+    int districts_in_state = 4;  // state.state_districts.size();
     // state.generate_communities(districts_in_state, 0.5, 0.2, 0.15);
-
 
     
     state.read_communities("community_vt");
+    state.refine_communities(0.5, 0.2, 0.15);
+
     GeoDraw::Canvas c(900, 900);
     c.add_shape(state.state_communities);
-    // c.draw();
-    state.refine_population(0.02);
-    // state.refine_compactness(0.8);
+    c.draw();
 
     // write as binary
     return 0;
