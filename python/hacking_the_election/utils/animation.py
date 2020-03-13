@@ -3,8 +3,6 @@ Animates the changes in precincts
 """
 
 
-import os
-import time
 from tkinter import Canvas, Tk
 
 from PIL import Image, ImageDraw
@@ -12,17 +10,25 @@ from PIL import Image, ImageDraw
 from hacking_the_election.test.funcs import polygon_to_list
 
 
-def draw(shapes, state_name):
+FACTOR = 110
+SUBTRACTION_VALUE = 750
+
+
+def modify_coords(shapes):
     """
-    Creates tkinter drawing of shapes.
+    Converts shapely objects into something
+    tkinter and PIL can understand.
     """
 
     coords = [polygon_to_list(shape)[0] for shape in shapes]
+    # Not grouped by shape
     all_coords = [point for shape in coords for point in shape]
 
+    # Bottom-left corner of bounding box
     bottom_point = [min(all_coords, key=lambda point: point[0])[0],
                     min(all_coords, key=lambda point: point[1])[1]]
 
+    # Move all points down so that bottom of image is (1, 1)
     for i, (x, y) in enumerate(all_coords):
         all_coords[i][0] = (x - bottom_point[0]) + 1
         all_coords[i][1] = (y - bottom_point[1]) + 1
@@ -36,16 +42,38 @@ def draw(shapes, state_name):
     flattened_coords = [[coord for point in shape for coord in point]
                         for shape in coords]
 
+    # Dilate shape and subtract y values from given
+    # number to turn image upside down.
+    shape_coords = []
+    for shape in flattened_coords:
+        shape_coords.append(
+            [SUBTRACTION_VALUE - int(c * FACTOR) if i % 2 == 1
+                                                 else int(c * FACTOR)
+             for i, c in enumerate(shape)]
+        )
+
+    # Average x and average y
+    print(sum([c for shape in shape_coords for c in shape if c % 2 == 0])
+        / len(all_coords))
+    print(sum([c for shape in shape_coords for c in shape if c % 2 == 1])
+        / len(all_coords))
+
+    return shape_coords
+
+
+
+def draw(coords, state_name):
+    """
+    Creates tkinter drawing of shapes.
+    """
+
     root = Tk()
     root.title(state_name)
     cv = Canvas(root, width=1000, height=1000, bd=0)
     cv.pack()
-    for shape_coords in flattened_coords:
-        modified_shape_coords = \
-            [750 - int(c * 200) if i % 2 == 1 else int(c * 200)
-             for i, c in enumerate(shape_coords)]
+    for shape_coords in coords:
         cv.create_polygon(
-            *modified_shape_coords,
+            *shape_coords,
             fill="white",
             outline="black"
         )
@@ -65,4 +93,4 @@ if __name__ == "__main__":
     with open(sys.argv[1], "rb") as f:
         island_precinct_groups, _, _ = pickle.load(f)
 
-    draw([p.coords for p in island_precinct_groups[0]], sys.argv[2])
+    draw(modify_coords([p.coords for p in island_precinct_groups[0]]), sys.argv[2])
