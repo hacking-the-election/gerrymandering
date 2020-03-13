@@ -165,7 +165,10 @@ def refine_for_compactness(communities, minimum_compactness,
                             [c.coords for c in communities] + [circle]
                         save_as_image(
                             drawing_shapes,
-                            os.path.join(animation_dir, f"{f}.png"),
+                            os.path.join(
+                                animation_dir,
+                                f"{add_leading_zeroes(f)}.png"
+                            ),
                             red=communities.index(community)
                         )
                         f += 1
