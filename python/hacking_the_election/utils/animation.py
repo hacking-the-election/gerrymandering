@@ -80,6 +80,19 @@ def draw(coords, state_name):
     root.mainloop()
 
 
+def save_as_image(shapes, filepath):
+    """
+    Saves `shapes` to file at `filepath`
+    """
+
+    image = Image.new("RGB", (1000, 1000), (255, 255, 255))
+    modified_coords = modify_coords(shapes)
+    draw = ImageDraw.Draw(image)
+    for shape in modified_coords:
+        draw.polygon(shape, outline=(0, 0, 0))
+    image.save(filepath)
+
+
 if __name__ == "__main__":
 
     import pickle
@@ -93,4 +106,4 @@ if __name__ == "__main__":
     with open(sys.argv[1], "rb") as f:
         island_precinct_groups, _, _ = pickle.load(f)
 
-    draw(modify_coords([p.coords for p in island_precinct_groups[0]]), sys.argv[2])
+    save_as_image([p.coords for island in island_precinct_groups for p in island], sys.argv[2])
