@@ -732,28 +732,26 @@ void State::refine_partisan(double partisanship_tolerance) {
     int iter = 0;
 
     while (!is_done) {
-        Community c = state_communities[worst_community];
-        cout << "Current stdev is " << get_standard_deviation_partisanship(c) << endl;
-
-        double median = get_median_partisanship(c);
+        // cout << "on community" << worst_community << endl;
+        // cout << "Current stdev is " << get_standard_deviation_partisanship(state_communities[worst_community]) << endl;
+        double median = get_median_partisanship(state_communities[worst_community]);
         p_index worst_precinct = 0;
         double diff = 0;
-        p_index_set exchangeable_precincts = get_giveable_precincts(c, state_communities);
+        p_index_set border_precincts = get_inner_boundary_precincts(state_communities[worst_community]);
 
-        for (p_index p : exchangeable_precincts) {
-            // if precinct exchange decreases stdev, exchange
-            // if (get_standard_deviation_partisanship());
+        for (p_index p : border_precincts) {
+            if (!creates_island(state_communities[worst_community], p)) {
+                Precinct_Group without;    
+                for (int i = 0; i < state_communities[worst_community].precincts.size(); i++)
+                    if (i != p) without.precincts.push_back(state_communities[worst_community].precincts[i]);
 
-            c = state_communities[worst_community];
+                if (get_standard_deviation_partisanship(without) < get_standard_deviation_partisanship(state_communities[worst_community])) {
+                    if (give_precinct(p, worst_community, PARTISANSHIP)) {
+                        for (int i = 0; i < border_precincts.size(); i++) border_precincts[i] = border_precincts[i] - 1;
+                    }
 
-            Precinct_Group without;    
-            for (int i = 0; i < c.precincts.size(); i++)
-                if (i != p) without.precincts.push_back(c.precincts[i]);
-
-            if (get_standard_deviation_partisanship(without) < get_standard_deviation_partisanship(c)) {
-                cout << get_standard_deviation_partisanship(without) << " < " << get_standard_deviation_partisanship(c) << endl;
-                cout << "need to give precinct " << p << endl;
-                give_precinct(p, worst_community, PARTISANSHIP);
+                    cout << get_standard_deviation_partisanship(without) << ", " << get_standard_deviation_partisanship(state_communities[worst_community]) << endl;
+                }
             }
         }
 
@@ -941,6 +939,13 @@ void State::refine_communities(double part, double popt, double compt) {
         
         i++;
     }
+
+    GeoDraw::Canvas c(900, 900);
+    c.add_shape(state_communities);
+    c.draw();
+    writef(state_communities[0].to_json(), "c1.json");
+    writef(state_communities[1].to_json(), "c2.json");
+    full_animation.playback();
 }
 
 string Community::save_frame() {

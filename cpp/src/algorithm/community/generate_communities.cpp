@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
     */
 
     if (argc != 2) {
-        cerr << "generate_communities: usage: <state.dat>" << endl;
+        cerr << "generate_communities: usage: <state.dat> <data_dir>" << endl;
         return 1;
     }
 
@@ -41,12 +41,9 @@ int main(int argc, char* argv[]) {
 
     
     state.read_communities("community_vt_2");
-    state.refine_communities(0.5, 0.01, 0.5);
-
-    GeoDraw::Canvas c(900, 900);
-    c.add_shape(state.state_communities);
-    c.draw();
-
+    // state.refine_communities(0.5, 0.01, 0.5);
+    state.refine_partisan(0.07);
+    
     // write as binary
     return 0;
 }
