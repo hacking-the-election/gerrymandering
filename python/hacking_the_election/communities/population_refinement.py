@@ -93,6 +93,9 @@ def refine_for_population(communities, population_percentage,
                 while (community.population > population_range.upper
                        and i < len(outside_border_precincts)):
                     precinct = outside_border_precincts[i]
+                    if precinct in linked_precincts:
+                        i += 1
+                        continue
                     bordering_communities = \
                         [c for c in communities if (c != community
                             and get_if_bordering(c.coords, precinct.coords))]
@@ -136,6 +139,10 @@ def refine_for_population(communities, population_percentage,
                 while (community.population < population_range.lower
                        and i < len(bordering_precinct_ids)):
                     precinct = bordering_precinct_ids[i]
+                    if bordering_precincts[precinct].precincts[precinct] \
+                            in linked_precincts:
+                        i += 1
+                        continue
                     try:
                         bordering_precincts[precinct].give_precinct(
                             community,
