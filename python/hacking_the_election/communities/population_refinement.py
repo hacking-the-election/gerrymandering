@@ -439,7 +439,7 @@ def modify_for_population(communities_list, precinct_corridors, total_population
     communities_to_json(communities_list, '../../../../population_after.json')
     print('completed!')
     return (communities_list, precinct_corridors), count, populations, num_of_changed_precincts, population_stdev
-
+    
 # just for testing, will delete later
 with open('../../../../vermont_initial_configuration_new.pickle', 'rb') as f:
     x = pickle.load(f)

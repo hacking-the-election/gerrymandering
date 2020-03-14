@@ -56,12 +56,11 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ite
         community.update_standard_deviation()
     # average stdev tracks the average_standard_deviation across all communities throughout iterations
     average_stdev = [average([community20.standard_deviation for community20 in communities_list])]
-    print(average_stdev)
     # standard_deviations will store comma seperated standard deviations for communities, with rows 
     # being iterations
     standard_deviations = []
     while success != "yes!":
-        if count >= iterations:
+        if count >= int(iterations):
             break
         # update attribute values (in case this hasn't already been done)
         for community in communities_list:
@@ -86,7 +85,7 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ite
                 most_stdev[community5.id] = community5
         most_stdev_id = list(most_stdev.keys())[0]
         most_stdev_community = list(most_stdev.values())[0] 
-        if most_stdev_community.standard_deviation < threshold:
+        if most_stdev_community.standard_deviation < int(threshold):
             success = 'yes!'
             break  
         if len(num_of_changed_precincts) > 0:     
@@ -143,24 +142,7 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ite
                     no_duplicate_list.append(precinct7)
                     no_duplicate_precinct_list.append(precinct7)
             border_precincts[id3] = no_duplicate_precinct_list
-        border_precincts_list = []
-        for precinct_list1 in border_precincts.values():
-            for precinct1 in precinct_list1:
-                border_precincts_list.append(precinct1)
-        z = '../../../../border' + str(count) + '.json'
-        with open(z, 'w') as f:
-            try:
-                _ = shapely_to_polygon(clip([precinct8.coords for precinct8 in border_precincts_list], 1))[0][0][0][0]
-                y = json.dumps({"type":"FeatureCollection", "features":[{"type": "Feature", "geometry": {"type":"MultiPolygon", "coordinates":shapely_to_polygon(clip([precinct.coords for precinct in border_precincts_list], 1)), "properties":{"ID":"border"}}}]})
-            except:
-                y = json.dumps({"type":"FeatureCollection", "features":[{"type": "Feature", "geometry": {"type":"Polygon", "coordinates":shapely_to_polygon(clip([precinct.coords for precinct in border_precincts_list], 1)), "properties":{"ID":"border"}}}]})
-            f.write(y)
-            print('hello, border json ready')
-        
-        for bro, precinctlist in other_communities_dict.items():
-            for precinct20 in precinctlist:
-                if "50005VD47" == precinct20.vote_id:
-                    print("see", bro.id)
+
         # find which precinct exchanges are the best
         precinct_exchanges_dict = {}
         # for border precincts within the highest stdev community, find stdev without that precinct
@@ -223,7 +205,7 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ite
         # or until the community's standard deviation is below the threshold
         precinct_count = 1
         changing_stdev = []
-        while most_stdev_community.standard_deviation > threshold:
+        while most_stdev_community.standard_deviation > int(threshold):
             print(most_stdev_id, most_stdev_community.standard_deviation, threshold)
             # if there is only one precinct left, just stop
             if len(most_stdev_community.precincts) == 1:
@@ -398,24 +380,24 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ite
     print('completed!')
     return (minimized_communities, precinct_corridors), count, standard_deviations, num_of_changed_precincts, average_stdev
 
-# just for testing, will delete later
-with open('../../../../end_of_partisanship.pickle', 'rb') as f:
-    x = pickle.load(f)
-communities_to_json(x[0], '../../../../new_test_communities.json')
-b, count1, standard_deviations1, num_of_changed_precincts1, average_stdev1 = modify_for_partisanship(x[0], x[1], 5, 50)
 
 
-print('# of iterations:', count1)
-print('standard deviations:', standard_deviations1)
-print('# of changed precincts per iteration:', num_of_changed_precincts1)
-print('average standard deviation across iterations:', average_stdev1)
 
+if __name__ == "__main__":
+    arguments = sys.argv[1:]
+    with open(arguments[0], 'rb') as f:
+       to_modify = pickle.load(f) 
+    if len(arguments) == 4:
+        modified_communities, count1, standard_deviations1, num_of_changed_precincts1, average_stdev1 = modify_for_partisanship(to_modify[0], to_modify[1], arguments[2], arguments[3])
+    elif len(arguments) == 3:
+        modified_communities, count1, standard_deviations1, num_of_changed_precincts1, average_stdev1 = modify_for_partisanship(to_modify[0], to_modify[1], arguments[2], 50)
+    else:
+        raise ValueError('Incorrect number of arguments')
+    
+    print('# of iterations:', count1)
+    print('standard deviations:', standard_deviations1)
+    print('# of changed precincts per iteration:', num_of_changed_precincts1)
+    print('average standard deviation across iterations:', average_stdev1)
 
-with open('../../../../end_of_partisanship.pickle', 'wb') as f:
-    pickle.dump(b, f)
-
-# if __name__ == __main__:
-#     arguments = sys.argv[1:]
-#     with open(arguments[0], 'rb') as f:
-#        to_modify = pickle.load(f) 
-#     b = count
+    with open(arguments[1], 'wb') as f:
+        pickle.dump(modified_communities, f)
