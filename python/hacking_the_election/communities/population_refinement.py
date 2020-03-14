@@ -43,7 +43,7 @@ def signal_handler(sig, frame):
 def refine_for_population(communities, population_percentage,
                           linked_precincts, output_json,
                           output_pickle, animation_dir,
-                          state_name):
+                          state_name, max_iterations=100):
     """
     Returns communities that are within the population range.
     """
@@ -73,6 +73,9 @@ def refine_for_population(communities, population_percentage,
         x = 0
 
         while True:
+            if x > max_iterations:
+                break
+
             try:
                 community = random.choice(
                     [c for c in communities
