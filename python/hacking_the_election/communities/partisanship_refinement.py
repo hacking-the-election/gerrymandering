@@ -85,9 +85,9 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ite
                 most_stdev[community5.id] = community5
         most_stdev_id = list(most_stdev.keys())[0]
         most_stdev_community = list(most_stdev.values())[0] 
-        if most_stdev_community.standard_deviation < threshold:
+        if sum([c.standard_deviation for c in communities_list]) / len(communities_list) < threshold:
             success = 'yes!'
-            break  
+            break
         if len(num_of_changed_precincts) > 0:     
             if num_of_changed_precincts[-1] == 0:
                 success = 'yes!'
@@ -356,4 +356,4 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ite
     minimized = min(communities_at_stages)
     minimized_communities = communities_at_stages[minimized] 
     print(minimized)
-    return (minimized_communities, precinct_corridors), count, standard_deviations, num_of_changed_precincts, average_stdev
+    return minimized_communities
