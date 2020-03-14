@@ -20,9 +20,7 @@ from hacking_the_election.test.funcs import (
     convert_to_json
 )
 from hacking_the_election.utils.animation import (
-    draw,
-    save_as_image,
-    update_canvas
+    save_as_image
 )
 from hacking_the_election.utils.compactness import (
     add_precinct,
@@ -165,7 +163,10 @@ def refine_for_compactness(communities, minimum_compactness,
                             [c.coords for c in communities] + [circle]
                         save_as_image(
                             drawing_shapes,
-                            os.path.join(animation_dir, f"{f}.png"),
+                            os.path.join(
+                                animation_dir,
+                                f"{add_leading_zeroes(f)}.png"
+                            ),
                             red=communities.index(community)
                         )
                         f += 1
