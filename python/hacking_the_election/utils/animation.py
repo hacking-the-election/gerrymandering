@@ -108,12 +108,10 @@ def save_as_image(shapes, filepath, red=False, red_outline=False):
         else:
             fill = None
         if red_outline and i == red_outline:
-            width = 2
             outline = (255, 66, 66)
         else:
-            width = 1
             outline = (0, 0, 0)
-        draw.polygon(shape, fill=fill, width=width, outline=outline)
+        draw.polygon(shape, fill=fill, outline=outline)
     image.save(filepath)
 
 

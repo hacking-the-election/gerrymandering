@@ -24,3 +24,6 @@ class PopulationRange:
 
     def __contains__(self, key):
         return key <= self.upper and key >= self.lower
+
+    def __str__(self):
+        return f"{int(self.lower)} - {int(self.upper)}"

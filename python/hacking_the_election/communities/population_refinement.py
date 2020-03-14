@@ -20,7 +20,9 @@ from hacking_the_election.utils.animation import (
     save_as_image
 )
 from hacking_the_election.utils.exceptions import (
-    ExitException
+    CreatesMultiPolygonException,
+    ExitException,
+    ZeroPrecinctCommunityException
 )
 from hacking_the_election.utils.geometry import (
     get_if_bordering
@@ -68,6 +70,7 @@ def refine_for_population(communities, population_percentage,
         Y = [[] for _ in communities]
 
         f = 0
+        x = 0
 
         while True:
             try:
@@ -75,38 +78,46 @@ def refine_for_population(communities, population_percentage,
                     [c for c in communities
                     if c.population not in population_range]
                 )
-            except ValueError:
+            except IndexError:
                 # No communities above threshold.
                 print(
                      "Finished. Populations: \n"
                     f"{[c.population for c in communities]}"
                 )
+                break
 
             if community.population > population_range.upper:
-                outside_border_precincts = community.get_outside_precincts()
+                outside_border_precincts = \
+                    list(community.get_outside_precincts())
                 i = 0
-                while community.population > population_range.upper:
+                while (community.population > population_range.upper
+                       and i < len(outside_border_precincts)):
                     precinct = outside_border_precincts[i]
                     bordering_communities = \
                         [c for c in communities if (c != community
                             and get_if_bordering(c.coords, precinct.coords))]
-                    community.give_precinct(
-                        random.choice(bordering_communities),
-                        precinct.vote_id,
-                        **POPULATION_GIVE_PRECINCT_KWARGS
-                    )
+                    try:
+                        community.give_precinct(
+                            random.choice(bordering_communities),
+                            precinct.vote_id,
+                            **POPULATION_GIVE_PRECINCT_KWARGS
+                        )
+                        print(f"Removed {precinct.vote_id} from community {community.id}")
+                        f += 1
+                        drawing_shapes = \
+                            [c.coords for c in communities] + [precinct.coords]
+                        save_as_image(
+                            drawing_shapes,
+                            os.path.join(
+                                animation_dir,
+                                f"{add_leading_zeroes(f)}.png"
+                            ),
+                            red_outline=len(drawing_shapes) - 1
+                        )
+                    except (CreatesMultiPolygonException, IndexError,
+                            ZeroPrecinctCommunityException):
+                        pass
                     i += 1
-                    f += 1
-                    drawing_shapes = \
-                        [c.coords for c in communities] + [precinct.coords]
-                    save_as_image(
-                        drawing_shapes,
-                        os.path.join(
-                            animation_dir,
-                            f"{add_leading_zeroes(f)}.png"
-                        ),
-                        red_outline=len(drawing_shapes) - 1
-                    )
             else:
                 bordering_communities = \
                     [c for c in communities if (
@@ -116,30 +127,49 @@ def refine_for_population(communities, population_percentage,
                 bordering_precincts = \
                     {
                         p.vote_id: c for c in bordering_communities
-                        for p in c if get_if_bordering(p.coords,
-                                          community.coords)
+                        for p in c.precincts.values()
+                            if get_if_bordering(p.coords,
+                                community.coords)
                     }
                 bordering_precinct_ids = list(bordering_precincts.keys())
                 i = 0
-                while community.population < population_range.lower:
+                while (community.population < population_range.lower
+                       and i < len(bordering_precinct_ids)):
                     precinct = bordering_precinct_ids[i]
-                    bordering_precincts[precinct].give_precinct(
-                        community,
-                        precinct,
-                        **POPULATION_GIVE_PRECINCT_KWARGS
-                    )
+                    try:
+                        bordering_precincts[precinct].give_precinct(
+                            community,
+                            precinct,
+                            **POPULATION_GIVE_PRECINCT_KWARGS
+                        )
+                        print(f"Added {precinct} to community {community.id}")
+                        f += 1
+                        drawing_shapes = \
+                            ([c.coords for c in communities]
+                        + [community.precincts[precinct].coords])
+                        save_as_image(
+                            drawing_shapes,
+                            os.path.join(
+                                animation_dir,
+                                f"{add_leading_zeroes(f)}.png"
+                            ),
+                            red_outline=len(drawing_shapes) - 1
+                        )
+                    except (CreatesMultiPolygonException,
+                            ZeroPrecinctCommunityException):
+                        pass
                     i += 1
-                    f += 1
-                    drawing_shapes = \
-                        [c.coords for c in communities] + [precinct.coords]
-                    save_as_image(
-                        drawing_shapes,
-                        os.path.join(
-                            animation_dir,
-                            f"{add_leading_zeroes(f)}.png"
-                        ),
-                        red_outline=len(drawing_shapes) - 1
-                    )
+            
+            if community.population in population_range:
+                print(f"Community {community.id} within population range of {str(population_range)}.")
+                print(f"Community {community.id} population: {int(community.population)}")
+            else:
+                print(f"Community {community.id} failed to get within population range of {str(population_range)}")
+                print(f"Community {community.id} population: {int(community.population)}")
+            for i, c in enumerate(communities):
+                X[i].append(x)
+                Y[i].append(c.population)
+            x += 1
             
     finally:
         with open(output_pickle, "wb+") as f:
