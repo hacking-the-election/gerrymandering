@@ -56,12 +56,11 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ite
         community.update_standard_deviation()
     # average stdev tracks the average_standard_deviation across all communities throughout iterations
     average_stdev = [average([community20.standard_deviation for community20 in communities_list])]
-    print(average_stdev)
     # standard_deviations will store comma seperated standard deviations for communities, with rows 
     # being iterations
     standard_deviations = []
     while success != "yes!":
-        if count >= iterations:
+        if count >= int(iterations):
             break
         # update attribute values (in case this hasn't already been done)
         for community in communities_list:
@@ -204,7 +203,7 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ite
         # or until the community's standard deviation is below the threshold
         precinct_count = 1
         changing_stdev = []
-        while most_stdev_community.standard_deviation > threshold:
+        while most_stdev_community.standard_deviation > int(threshold):
             print(most_stdev_id, most_stdev_community.standard_deviation, threshold)
             # if there is only one precinct left, just stop
             if len(most_stdev_community.precincts) == 1:
@@ -357,3 +356,25 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ite
     minimized_communities = communities_at_stages[minimized] 
     print(minimized)
     return minimized_communities
+
+
+
+
+if __name__ == "__main__":
+    arguments = sys.argv[1:]
+    with open(arguments[0], 'rb') as f:
+       to_modify = pickle.load(f) 
+    if len(arguments) == 4:
+        modified_communities, count1, standard_deviations1, num_of_changed_precincts1, average_stdev1 = modify_for_partisanship(to_modify[0], to_modify[1], arguments[2], arguments[3])
+    elif len(arguments) == 3:
+        modified_communities, count1, standard_deviations1, num_of_changed_precincts1, average_stdev1 = modify_for_partisanship(to_modify[0], to_modify[1], arguments[2], 50)
+    else:
+        raise ValueError('Incorrect number of arguments')
+    
+    print('# of iterations:', count1)
+    print('standard deviations:', standard_deviations1)
+    print('# of changed precincts per iteration:', num_of_changed_precincts1)
+    print('average standard deviation across iterations:', average_stdev1)
+
+    with open(arguments[1], 'wb') as f:
+        pickle.dump(modified_communities, f)

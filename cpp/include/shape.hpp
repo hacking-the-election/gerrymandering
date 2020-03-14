@@ -423,7 +423,7 @@ class State : public Precinct_Group {
 
         // for the community generation algorithm
         void generate_communities(int num_communities, double compactness_tolerance, double partisanship_tolerance, double population_tolerance);
-        void give_precinct(p_index precinct, p_index community, int t_type);
+        bool give_precinct(p_index precinct, p_index community, int t_type);
 
         // initial random configuration of communities
         void generate_initial_communities(int num_communities);
@@ -434,7 +434,7 @@ class State : public Precinct_Group {
         void refine_partisan(double partisanship_tolerance);
         void refine_population(double population_tolerance);
         void refine_communities(double part, double popt, double compt);
-        
+
         // return precinct that can be added to the current precinct that won't create islands in the state
         p_index get_addable_precinct(p_index_set available_precincts, p_index current_precinct);
 
