@@ -40,8 +40,8 @@ int main(int argc, char* argv[]) {
     // state.generate_communities(districts_in_state, 0.5, 0.2, 0.15);
 
     
-    state.read_communities("community_vt");
-    state.refine_communities(0.5, 0.2, 0.15);
+    state.read_communities("community_vt_2");
+    state.refine_communities(0.5, 0.01, 0.5);
 
     GeoDraw::Canvas c(900, 900);
     c.add_shape(state.state_communities);
