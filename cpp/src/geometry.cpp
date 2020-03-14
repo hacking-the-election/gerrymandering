@@ -628,17 +628,21 @@ p_index_set get_inner_boundary_precincts(Precinct_Group shape) {
     */
 
     p_index_set boundary_precincts;
-    Multi_Shape exterior_border = generate_exterior_border(shape);
+    Multi_Shape exterior_border;
+    exterior_border.border = shape.border;
+    GeoDraw::Canvas canvas(900, 900);
 
     int i = 0;
     
     for (Precinct p : shape.precincts) {
         if (get_bordering(exterior_border, p)) {
             boundary_precincts.push_back(i);
+            canvas.add_shape(p);
         }
         i++;
     }
 
+    // canvas.draw();
     return boundary_precincts;
 }
 
@@ -730,13 +734,13 @@ p_index_set get_bordering_shapes(vector<Community> shapes, Shape shape) {
 
     for (p_index i = 0; i < shapes.size(); i++) {
         if (shapes[i] != shape && get_bordering(shapes[i], shape)) vec.push_back(i);
-        else {
-            GeoDraw::Canvas c(900, 900);
-            c.add_shape(generate_exterior_border(shapes[i]));
-            c.add_shape(shape);
-            cout << "do not border..." << endl;
-            c.draw();
-        }
+        // else {
+            // GeoDraw::Canvas c(900, 900);
+            // c.add_shape(generate_exterior_border(shapes[i]));
+            // c.add_shape(shape);
+            // cout << "do not border... to debug draw here" << endl;
+            // c.draw();
+        // }
     }
 
     return vec;
@@ -1093,21 +1097,21 @@ p_index_set get_giveable_precincts(Community c, Communities cs) {
     p_index_set borders = get_inner_boundary_precincts(c);
     p_index_set exchangeable_precincts;
 
-    // Multi_Shape ms(c.border);
-    // GeoDraw::Canvas canvas(900, 900);
+    Multi_Shape ms(c.border);
+    GeoDraw::Canvas canvas(900, 900);
 
     for (p_index p : borders) {
         for (Community c_p : cs) {
             if ((c_p != c) && get_bordering(c_p, c.precincts[p]) && !creates_island(c, p)) {
                 exchangeable_precincts.push_back(p);
-                // canvas.add_shape(c.precincts[p]);
+                canvas.add_shape(c.precincts[p]);
                 break;
             }
         }
     }
 
-    // canvas.add_shape(ms);
-    // canvas.draw();
+    canvas.add_shape(ms);
+    canvas.draw();
 
     return exchangeable_precincts;
 }
