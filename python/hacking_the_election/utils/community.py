@@ -95,6 +95,12 @@ class Community:
     def update_coords(self):
         self.coords = clip([precinct.coords for precinct in self.precincts.values()], UNION)
 
+    def update_population(self):
+        """
+        Updates the `population` attribute.
+        """
+        self.population = sum([p.population for p in self.precincts.values()])
+
     def give_precinct(self, other, precinct_id, coords=True,
                       partisanship=True, standard_deviation=True,
                       population=True, compactness=True,
