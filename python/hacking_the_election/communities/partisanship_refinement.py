@@ -242,9 +242,6 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ite
                 if isinstance(clip([most_stdev_community.coords, high_precinct.coords], 2), MultiPolygon):
                     del precinct_exchanges_dict[highest_precinct_exchange]
                     continue
-                if isinstance(clip([other_community.coords, high_precinct.coords], 1), MultiPolygon):
-                    del precinct_exchanges_dict[highest_precinct_exchange]
-                    continue
                 try:
                     most_stdev_community.give_precinct(other_community, high_precinct.vote_id)
                 except CreatesMultiPolygonException:
@@ -265,9 +262,6 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ite
             elif high_precinct in other_community.precincts.values():
                 print(other_community.id, 'chosen')
                 if isinstance(clip([other_community.coords, high_precinct.coords], 2), MultiPolygon):
-                    del precinct_exchanges_dict[highest_precinct_exchange]
-                    continue
-                if isinstance(clip([most_stdev_community.coords, high_precinct.coords], 1), MultiPolygon):
                     del precinct_exchanges_dict[highest_precinct_exchange]
                     continue
                 try:
