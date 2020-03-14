@@ -147,15 +147,6 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ite
         for precinct_list1 in border_precincts.values():
             for precinct1 in precinct_list1:
                 border_precincts_list.append(precinct1)
-        z = '../../../../border' + str(count) + '.json'
-        with open(z, 'w') as f:
-            try:
-                _ = shapely_to_polygon(clip([precinct8.coords for precinct8 in border_precincts_list], 1))[0][0][0][0]
-                y = json.dumps({"type":"FeatureCollection", "features":[{"type": "Feature", "geometry": {"type":"MultiPolygon", "coordinates":shapely_to_polygon(clip([precinct.coords for precinct in border_precincts_list], 1)), "properties":{"ID":"border"}}}]})
-            except:
-                y = json.dumps({"type":"FeatureCollection", "features":[{"type": "Feature", "geometry": {"type":"Polygon", "coordinates":shapely_to_polygon(clip([precinct.coords for precinct in border_precincts_list], 1)), "properties":{"ID":"border"}}}]})
-            f.write(y)
-            print('hello, border json ready')
         
         for bro, precinctlist in other_communities_dict.items():
             for precinct20 in precinctlist:
@@ -382,40 +373,10 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ite
         for community15 in not_involved_community_list:
             community_change_snapshot.append(community15)
         communities_at_stages[average([community.standard_deviation for community in communities_list])] = community_change_snapshot
-        communities_to_json(community_change_snapshot, str('../../../../partisanship_after boi' + str(count) + '.json'))
-        with open('../../../../partisanship_precinct_stdevs.txt', 'a') as f:
-            f.write(str(changing_stdev))
-        with open('../../../../partisanship_average_stdevs.txt', 'w') as f:
-            f.write(str(average_stdev))
-        with open('../../../../partisanship_precincts_changed.txt', 'w') as f:
-            f.write(str(num_of_changed_precincts))   
     # find iteration with smallest average_stdev
     print(communities_at_stages.keys())
     minimized = min(communities_at_stages)
     minimized_communities = communities_at_stages[minimized] 
     print(minimized, minimized_communities)
-    communities_to_json(minimized_communities, '../../../../partisanship_after.json')
     print('completed!')
     return (minimized_communities, precinct_corridors), count, standard_deviations, num_of_changed_precincts, average_stdev
-
-# just for testing, will delete later
-with open('../../../../end_of_partisanship.pickle', 'rb') as f:
-    x = pickle.load(f)
-communities_to_json(x[0], '../../../../new_test_communities.json')
-b, count1, standard_deviations1, num_of_changed_precincts1, average_stdev1 = modify_for_partisanship(x[0], x[1], 5, 50)
-
-
-print('# of iterations:', count1)
-print('standard deviations:', standard_deviations1)
-print('# of changed precincts per iteration:', num_of_changed_precincts1)
-print('average standard deviation across iterations:', average_stdev1)
-
-
-with open('../../../../end_of_partisanship.pickle', 'wb') as f:
-    pickle.dump(b, f)
-
-# if __name__ == __main__:
-#     arguments = sys.argv[1:]
-#     with open(arguments[0], 'rb') as f:
-#        to_modify = pickle.load(f) 
-#     b = count
