@@ -75,6 +75,7 @@ def polygon_to_list(polygon):
 
 
 def multipolygon_to_list(multipolygon):
+    # Turns shapely multipolygon into a json one.
     multipolygon_list = []
     for polygon in multipolygon.geoms:
         multipolygon_list.append(polygon_to_list(polygon))
@@ -82,5 +83,6 @@ def multipolygon_to_list(multipolygon):
 
 
 def multipolygon_to_shapely(multipolygon):
+    # Takes in coordinates of a json multipolygon and returns a shapley one.
     polygons = [polygon_to_shapely(p) for p in multipolygon]
     return MultiPolygon(polygons)

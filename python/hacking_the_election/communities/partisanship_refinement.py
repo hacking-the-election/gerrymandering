@@ -3,6 +3,19 @@ One of the refinement processes in the communities algorithm.
 
 Alters a set of communities such that their precincts all have a
 standard deviation below a certain threshold.
+
+Usage:
+
+python3/3.8 partisanship_refinement.py [input_pickle] [output_pickle] [threshold] ([iterations])
+
+input_pickle - pickle of tuple of lists of community objects to modify and precinct_corridor list
+
+output_pickle - pickle to save altered communities to
+
+threshold - threshold for partisanship standard deviation within communities (percentage, e.g. 5 means 5%)
+
+iterations (optional) - number of iterations to run assuming the communities in question never get below the threshold. 
+                        Automatically set at 100.
 """
 
 import sys
@@ -18,7 +31,7 @@ from hacking_the_election.serialization import save_precincts
 from shapely.geometry import MultiPolygon
 sys.modules['save_precincts'] = save_precincts
 
-def modify_for_partisanship(communities_list, precinct_corridors, threshold, iterations):
+def modify_for_partisanship(communities_list, precinct_corridors, threshold, iterations=100):
     '''
     Takes list of community objects, and returns a different list with the modified communities.,
     as well as the # of precincts that changed hands during this step. 
@@ -43,6 +56,7 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ite
         community.update_standard_deviation()
     # average stdev tracks the average_standard_deviation across all communities throughout iterations
     average_stdev = [average([community20.standard_deviation for community20 in communities_list])]
+    print(average_stdev)
     # standard_deviations will store comma seperated standard deviations for communities, with rows 
     # being iterations
     standard_deviations = []
@@ -382,10 +396,10 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ite
     print(minimized, minimized_communities)
     communities_to_json(minimized_communities, '../../../../partisanship_after.json')
     print('completed!')
-    return (communities_list, precinct_corridors), count, standard_deviations, num_of_changed_precincts, average_stdev
+    return (minimized_communities, precinct_corridors), count, standard_deviations, num_of_changed_precincts, average_stdev
 
 # just for testing, will delete later
-with open('../../../../vermont_initial_configuration_new.pickle', 'rb') as f:
+with open('../../../../end_of_partisanship.pickle', 'rb') as f:
     x = pickle.load(f)
 communities_to_json(x[0], '../../../../new_test_communities.json')
 b, count1, standard_deviations1, num_of_changed_precincts1, average_stdev1 = modify_for_partisanship(x[0], x[1], 5, 50)
@@ -399,3 +413,9 @@ print('average standard deviation across iterations:', average_stdev1)
 
 with open('../../../../end_of_partisanship.pickle', 'wb') as f:
     pickle.dump(b, f)
+
+# if __name__ == __main__:
+#     arguments = sys.argv[1:]
+#     with open(arguments[0], 'rb') as f:
+#        to_modify = pickle.load(f) 
+#     b = count

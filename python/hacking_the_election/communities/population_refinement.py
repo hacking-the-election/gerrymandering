@@ -163,6 +163,7 @@ def modify_for_population(communities_list, precinct_corridors, total_population
             if worst_population_community.population - ideal_population > 0:
                 best_community_to_exchange = min(border_communities)
                 best_community = border_communities[best_community_to_exchange]
+                print('best_community', best_community.id)
                 # we need to reduce population, so we find precincts to give away
                 bordering_worst_pop_precincts = other_communities_dict[best_community]
                 for precinct30 in bordering_worst_pop_precincts:
@@ -174,10 +175,11 @@ def modify_for_population(communities_list, precinct_corridors, total_population
                         continue
                     else:
                         precinct_exchanges_dict[(abs(worst_population_community.population - ideal_population) * 100 /ideal_population) -
-                                                (abs(modified_population - ideal_population) * 100 /ideal_population)]
+                                                (abs(modified_population - ideal_population) * 100 /ideal_population)] = precinct30
             else:
                 best_community_to_exchange = max(border_communities)
                 best_community = border_communities[best_community_to_exchange]
+                print('best_community', best_community.id)
                 # we need to increase population, so we find precincts to add
                 bordering_worst_pop_precincts = other_communities_dict[worst_population_community]
                 for precinct31 in bordering_worst_pop_precincts:
@@ -189,15 +191,15 @@ def modify_for_population(communities_list, precinct_corridors, total_population
                         continue
                     else:
                         precinct_exchanges_dict[(abs(worst_population_community.population - ideal_population) * 100 /ideal_population) -
-                                                (abs(modified_population - ideal_population) * 100 /ideal_population)]
+                                                (abs(modified_population - ideal_population) * 100 /ideal_population)] = precinct31
             print(len(precinct_exchanges_dict))
             best_precinct_exchange = max(precinct_exchanges_dict)
             best_precinct = precinct_exchanges_dict[best_precinct_exchange]
             # actually exchange the precinct
             if best_precinct in worst_population_community.precincts.values():
-                worst_population_community.give_precinct(best_community, best_precinct.id)
+                worst_population_community.give_precinct(best_community, best_precinct.vote_id)
             else:
-                best_community.give_precinct(worst_population_community, best_precinct.id)
+                best_community.give_precinct(worst_population_community, best_precinct.vote_id)
         # # find which precinct exchanges are the best
         # precinct_exchanges_dict = {}
         # # for border precincts within the highest stdev community, find stdev without that precinct
@@ -406,6 +408,7 @@ def modify_for_population(communities_list, precinct_corridors, total_population
             print('HELLO', precinct_count)
             precinct_count += 1
             # changing_stdev.append(str(average([worst_population_community.standard_deviation, best_community.standard_deviation])) + '\n')
+        print(stuff)
         population_stat = str([community10.population for community10 in communities_list])[1:-1]
         populations.append(population_stat)
         for community11 in communities_list:

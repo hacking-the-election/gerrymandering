@@ -57,8 +57,9 @@ def add_precinct(communities, community, precinct, give):
     """
     This function probably does something.
 
-    I don't really care,
-    because nobody except myself will read this code anyway.
+    "I don't really care,
+    because nobody except myself will read this code anyway."
+    YOU THOUGHT. SO THERE, I HAVE TO WIN - IRVING FINKEL
     """
     if give:
         other_community = \
