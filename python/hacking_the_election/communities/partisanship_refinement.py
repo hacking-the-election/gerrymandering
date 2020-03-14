@@ -3,6 +3,19 @@ One of the refinement processes in the communities algorithm.
 
 Alters a set of communities such that their precincts all have a
 standard deviation below a certain threshold.
+
+Usage:
+
+python3/3.8 partisanship_refinement.py [input_pickle] [output_pickle] [threshold] ([iterations])
+
+input_pickle - pickle of tuple of lists of community objects to modify and precinct_corridor list
+
+output_pickle - pickle to save altered communities to
+
+threshold - threshold for partisanship standard deviation within communities (percentage, e.g. 5 means 5%)
+
+iterations (optional) - number of iterations to run assuming the communities in question never get below the threshold. 
+                        Automatically set at 100.
 """
 
 import sys
@@ -18,10 +31,13 @@ from hacking_the_election.serialization import save_precincts
 from shapely.geometry import MultiPolygon
 sys.modules['save_precincts'] = save_precincts
 
-def modify_for_population(communities_list, precinct_corridors, threshold):
+def modify_for_partisanship(communities_list, precinct_corridors, threshold, iterations=100):
     '''
     Takes list of community objects, and returns a different list with the modified communities.,
-    as well as the # of precincts that changed hands during this step.
+    as well as the # of precincts that changed hands during this step. 
+    threshold - e.g. 5%, should be point at which, if all communities are below, it automatically stops
+    iterations should be number of iterations before hard stop, regardless of if below threshold or not
+    At the end, modify_for_partisanship should return iteration of communities with minimum stdev.
     precinct_corridors should be a list of lists of two precincts, which are "connected", i.e.
     should be considered bordering. The threshold is a decimal for maximum community partisanship 
     standard deviation, i.e. (0.05)
@@ -35,22 +51,28 @@ def modify_for_population(communities_list, precinct_corridors, threshold):
     count = 0
     num_of_changed_precincts = []
     success = 'no'
+    communities_at_stages = {}
+    for community in communities_list:
+        community.update_standard_deviation()
     # average stdev tracks the average_standard_deviation across all communities throughout iterations
-    average_stdev = []
+    average_stdev = [average([community20.standard_deviation for community20 in communities_list])]
+    print(average_stdev)
     # standard_deviations will store comma seperated standard deviations for communities, with rows 
     # being iterations
     standard_deviations = []
     while success != "yes!":
+        if count >= iterations:
+            break
         # update attribute values (in case this hasn't already been done)
         for community in communities_list:
             community.update_standard_deviation()
             community.update_coords()
             community.update_partisanship()
+            community.update_population()
             print(community.id, community.standard_deviation)
         print(time())
         count += 1
-        # add to average_stdev
-        average_stdev.append(average([community.standard_deviation for community in communities_list]))
+
         # create number_of_changed_iteration variable to store # of precincts changed this iteration
         num_of_changed_iteration = 0
         # find the highest standard deviation out of the communities in community_list
@@ -234,9 +256,6 @@ def modify_for_population(communities_list, precinct_corridors, threshold):
                 if isinstance(clip([most_stdev_community.coords, high_precinct.coords], 2), MultiPolygon):
                     del precinct_exchanges_dict[highest_precinct_exchange]
                     continue
-                if isinstance(clip([other_community.coords, high_precinct.coords], 1), MultiPolygon):
-                    del precinct_exchanges_dict[highest_precinct_exchange]
-                    continue
                 try:
                     most_stdev_community.give_precinct(other_community, high_precinct.vote_id)
                 except CreatesMultiPolygonException:
@@ -257,9 +276,6 @@ def modify_for_population(communities_list, precinct_corridors, threshold):
             elif high_precinct in other_community.precincts.values():
                 print(other_community.id, 'chosen')
                 if isinstance(clip([other_community.coords, high_precinct.coords], 2), MultiPolygon):
-                    del precinct_exchanges_dict[highest_precinct_exchange]
-                    continue
-                if isinstance(clip([most_stdev_community.coords, high_precinct.coords], 1), MultiPolygon):
                     del precinct_exchanges_dict[highest_precinct_exchange]
                     continue
                 try:
@@ -353,6 +369,8 @@ def modify_for_population(communities_list, precinct_corridors, threshold):
             print(community11.standard_deviation)
         # save number_of_changed_precincts_this_iteration to running list
         num_of_changed_precincts.append(num_of_changed_iteration)
+        # add to average_stdev
+        average_stdev.append(average([community.standard_deviation for community in communities_list]))
         # create new communities list
         not_involved_community_list = []
         # find not involved community
@@ -363,22 +381,28 @@ def modify_for_population(communities_list, precinct_corridors, threshold):
         community_change_snapshot = [other_community, most_stdev_community]
         for community15 in not_involved_community_list:
             community_change_snapshot.append(community15)
+        communities_at_stages[average([community.standard_deviation for community in communities_list])] = community_change_snapshot
         communities_to_json(community_change_snapshot, str('../../../../partisanship_after boi' + str(count) + '.json'))
-        with open('../../../../precinct_stdevs.txt', 'a') as f:
+        with open('../../../../partisanship_precinct_stdevs.txt', 'a') as f:
             f.write(str(changing_stdev))
-        with open('../../../../average_stdevs.txt', 'w') as f:
+        with open('../../../../partisanship_average_stdevs.txt', 'w') as f:
             f.write(str(average_stdev))
-        with open('../../../../precincts_changed.txt', 'w') as f:
-            f.write(str(num_of_changed_precincts))    
-    communities_to_json(communities_list, '../../../../partisanship_after.json')
+        with open('../../../../partisanship_precincts_changed.txt', 'w') as f:
+            f.write(str(num_of_changed_precincts))   
+    # find iteration with smallest average_stdev
+    print(communities_at_stages.keys())
+    minimized = min(communities_at_stages)
+    minimized_communities = communities_at_stages[minimized] 
+    print(minimized, minimized_communities)
+    communities_to_json(minimized_communities, '../../../../partisanship_after.json')
     print('completed!')
-    return communities_list, count, standard_deviations, num_of_changed_precincts, average_stdev
+    return (minimized_communities, precinct_corridors), count, standard_deviations, num_of_changed_precincts, average_stdev
 
 # just for testing, will delete later
-with open('../../../../test_vermont_initial_configuration.pickle', 'rb') as f:
+with open('../../../../end_of_partisanship.pickle', 'rb') as f:
     x = pickle.load(f)
 communities_to_json(x[0], '../../../../new_test_communities.json')
-b, count1, standard_deviations1, num_of_changed_precincts1, average_stdev1 = modify_for_population(x[0], x[1], 5)
+b, count1, standard_deviations1, num_of_changed_precincts1, average_stdev1 = modify_for_partisanship(x[0], x[1], 5, 50)
 
 
 print('# of iterations:', count1)
@@ -389,3 +413,9 @@ print('average standard deviation across iterations:', average_stdev1)
 
 with open('../../../../end_of_partisanship.pickle', 'wb') as f:
     pickle.dump(b, f)
+
+# if __name__ == __main__:
+#     arguments = sys.argv[1:]
+#     with open(arguments[0], 'rb') as f:
+#        to_modify = pickle.load(f) 
+#     b = count
