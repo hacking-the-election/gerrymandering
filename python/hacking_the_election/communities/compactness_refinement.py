@@ -51,7 +51,7 @@ def signal_handler(sig, frame):
 def refine_for_compactness(communities, minimum_compactness,
                            linked_precincts, output_json,
                            output_pickle, animation_dir,
-                           state_name):
+                           state_name, max_iterations=100):
     """
     Returns communities that are all below the minimum compactness.
     """
@@ -73,6 +73,10 @@ def refine_for_compactness(communities, minimum_compactness,
 
         while True:
             try:
+                if i > max_iterations:
+                    print("max iterations for compactness reached.")
+                    break
+
                 print("Average community compactness: "
                         f"{get_average_compactness(communities)}")
 
