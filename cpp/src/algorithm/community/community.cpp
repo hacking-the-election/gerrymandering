@@ -652,6 +652,8 @@ void State::refine_compactness(double compactness_tolerance) {
     vector<int> num_changes(state_communities.size());
 
     cout << "refining for compactness..." << endl;
+
+    bool override = false;
     int loop = 0;
     double first_average = 0;
     for (Community c : state_communities)
@@ -685,10 +687,22 @@ void State::refine_compactness(double compactness_tolerance) {
         if (worst_community == old_worst) loop++;
         else loop = 0;
 
+        double current_average = 0;
+        for (Community c : state_communities)
+            current_average += c.get_compactness();
+
         if (loop == 4) {
-            do {
-                worst_community = rand_num(0, state_communities.size() - 1);
-            } while (worst_community == old_worst);
+
+            if (!override && first_average > current_average) {
+                override = true;
+                do {
+                    worst_community = rand_num(0, state_communities.size() - 1);
+                } while (worst_community == old_worst);
+            }
+            else
+                override = false;
+
+            first_average = current_average;
         }
             
         // if the community is within the tolerance, or if it has been modified too many times
