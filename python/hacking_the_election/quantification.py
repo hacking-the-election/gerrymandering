@@ -97,11 +97,12 @@ def quantify(communities_file, districts_file):
             weighted2_score = weighted1_score / community_weight
             district_scores[district] = weighted2_score
     state_score = average(district_scores.values())
-    print(district_scores, state_score)
+    return district_scores, state_score
         
 
 if __name__ == "__main__":
     args = sys.argv[1:]
     if len(args) != 2:
         raise TypeError("Wrong number of arguments, see python file")
-    quantify(*args)
+    district_score, state_score = quantify(*args)
+    print(district_score, state_score)
