@@ -1116,13 +1116,26 @@ p_index_set get_giveable_precincts(Community c, Communities cs) {
     return exchangeable_precincts;
 }
 
-p_index_set get_takeable_precincts(Community c, Communities cs) {
+vector<array<int, 2>> get_takeable_precincts(Community c, Communities cs) {
     /*
+        {1, 5} => second community, 5th precinct
+
         @desc:
             Gets precincts that can be taken from another
             community - can never return null for geometric reasons
     */
 
+    vector<array<int, 2>> takeable;
+
+    p_index_set borders = get_bordering_shapes(cs, c);
+    for (p_index b : borders) {
+        p_index_set boundaries = get_inner_boundary_precincts(cs[b]);
+        for (p_index p : boundaries) {
+            if (get_bordering(c, cs[b].precincts[p])) takeable.push_back({b, p});
+        }
+    }
+
+    return takeable;
 }
 
 
