@@ -785,21 +785,16 @@ void State::refine_partisan(double partisanship_tolerance) {
         vector<array<int, 2>> takeable_precincts = get_takeable_precincts(state_communities[worst_community], this->state_communities);
 
         p_index best_exchange = -1;
-        p_index give_to = -1;
-        double lowest_stdev = 1;
-
-        double current_average = 0;
-        for (Community c : state_communities)
-            current_average += get_standard_deviation_partisanship(c);
-        current_average /= state_communities.size();
+        p_index take_from = -1;
+        double current_average = get_standard_deviation_partisanship(state_communities);
+        double lowest_stdev = 1;  // @warn: change to current average!!
 
         for (p_index p : giveable_precincts) {
-            // Precinct_Group without;    
-            // for (int i = 0; i < state_communities[worst_community].precincts.size(); i++)
-            //     if (i != p) without.precincts.push_back(state_communities[worst_community].precincts[i]);
+            Communities before = this->state_communities;
+            give_precinct(p, worst_community, PARTISANSHIP);
+            double after = get_standard_deviation_partisanship(this->state_communities);
+            this->state_communities = before;
 
-            double after = get_standard_deviation_partisanship(without);
-            
             if (after < lowest_stdev) {
                 lowest_stdev = after;
                 best_exchange = p;
@@ -807,19 +802,20 @@ void State::refine_partisan(double partisanship_tolerance) {
         }
 
         for (array<int, 2> p : takeable_precincts) {
-            Community with = state_communities[worst_community];
-            with.add_precinct_n(state_communities[p[0]].precincts[p[1]]);
-            double after = get_standard_deviation_partisanship(with);
-            
+            Communities before = this->state_communities;
+            give_precinct(p[1], p[0], worst_community, true);
+            double after = get_standard_deviation_partisanship(this->state_communities);
+            this->state_communities = before;
+
             if (after < lowest_stdev) {
                 lowest_stdev = after;
                 best_exchange = p[1];
-                give_to = p[0];
+                take_from = p[0];
             }
         }
  
-        if (give_to == -1) give_precinct(best_exchange, worst_community, PARTISANSHIP);
-        else give_precinct(best_exchange, worst_community, give_to, true);
+        if (take_from == -1) give_precinct(best_exchange, worst_community, PARTISANSHIP);
+        else give_precinct(best_exchange, take_from, worst_community, true);
         
         cout << get_standard_deviation_partisanship(state_communities[0]) << ", " << get_standard_deviation_partisanship(state_communities[1]) << endl;
 
@@ -845,6 +841,8 @@ void State::refine_population(double population_tolerance) {
         @return: void
     */
 
+    population_tolerance /= 2;  // so the +- value can be passed normally
+
     // find the first community to be optimized
     p_index worst_community = get_next_community(population_tolerance, POPULATION);
     bool is_done = (worst_community == -1); // initialize stop condition
@@ -856,8 +854,6 @@ void State::refine_population(double population_tolerance) {
 
     // begin main iterative loop
     while (!is_done) {
-        cout << "modifying community " << worst_community << endl;
-
         Community c = state_communities[worst_community];
         p_index_set border_precincts = get_inner_boundary_precincts(state_communities[worst_community]);
         int index = 0;

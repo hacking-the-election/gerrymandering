@@ -65,6 +65,8 @@ std::vector<std::array<int, 2>> get_takeable_precincts(GeoGerry::Community c, Ge
 
 // for algorithm helper methods
 double get_standard_deviation_partisanship(GeoGerry::Precinct_Group pg);
+double get_standard_deviation_partisanship(GeoGerry::Communities cs);
+
 double get_median_partisanship(GeoGerry::Precinct_Group pg);
 
 bool point_in_ring(GeoGerry::coordinate coord, GeoGerry::LinearRing lr);

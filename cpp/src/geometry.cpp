@@ -815,6 +815,18 @@ double get_standard_deviation_partisanship(Precinct_Group pg) {
     return (sqrt(dev_mean));
 }
 
+double get_standard_deviation_partisanship(Communities cs) {
+    /*
+        @desc: gets average partisanship standard deviation of communities within a group
+        @params: `Communities` cs: community list to check
+        @return: `double` average standard deviation of partisanships
+    */
+
+    double d = 0;
+    for (Community c : cs) d += get_standard_deviation_partisanship(c);
+    return (d / cs.size());
+}
+
 double get_median_partisanship(Precinct_Group pg) {
     /*
         Returns the median partisanship ratio
