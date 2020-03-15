@@ -470,28 +470,27 @@ p_index State::get_next_community(double tolerance, int process) {
             ratios that are most outside range of tolerance
         */
 
-        double max = 0;
-        p_index x = 0;
+        // double max = 0;
+        // p_index x = 0;
 
-        for (Community c : state_communities) {
-            double stdev = get_standard_deviation_partisanship(c);
-            if (stdev > tolerance && stdev > max) {
-                i = x;
-                max = stdev;
-            }
-            x++;
-        }
-        // p_index x = rand_num(0, state_communities.size() - 1);
+        // for (Community c : state_communities) {
+        //     double stdev = get_standard_deviation_partisanship(c);
+        //     if (stdev > tolerance && stdev > max) {
+        //         i = x;
+        //         max = stdev;
+        //     }
+        //     x++;
+        // }
+
+        p_index x = rand_num(0, state_communities.size() - 1);
         // int itermax = state_communities.size() * 2;
         // int iter = 0;
 
         // do {
         //     x = rand_num(0, state_communities.size() - 1);
-        //     // cout << "new x " << x << endl;
         //     iter++;
         // } while (get_standard_deviation_partisanship(state_communities[x]) < tolerance && iter < itermax);
-        // i = x;
-
+        i = x;
     }
     else if (process == COMPACTNESS) {
         unit_interval min = 1;
@@ -779,7 +778,8 @@ void State::refine_partisan(double partisanship_tolerance) {
     int iter = 0;
 
     while (!is_done) {
-        cout << "on community " << worst_community << endl;
+        cout << "modifying community " << worst_community << endl;
+        cout << get_standard_deviation_partisanship(state_communities[0]) << ", " << get_standard_deviation_partisanship(state_communities[1]) << endl;
 
         p_index_set giveable_precincts = get_giveable_precincts(state_communities[worst_community], this->state_communities);
         vector<array<int, 2>> takeable_precincts = get_takeable_precincts(state_communities[worst_community], this->state_communities);
@@ -817,8 +817,6 @@ void State::refine_partisan(double partisanship_tolerance) {
         if (take_from == -1) give_precinct(best_exchange, worst_community, PARTISANSHIP);
         else give_precinct(best_exchange, take_from, worst_community, true);
         
-        cout << get_standard_deviation_partisanship(state_communities[0]) << ", " << get_standard_deviation_partisanship(state_communities[1]) << endl;
-
         // update worst_community, check stop condition
         worst_community = get_next_community(partisanship_tolerance, PARTISANSHIP);
         // if the community is within the tolerance, or if it has been modified too many times
