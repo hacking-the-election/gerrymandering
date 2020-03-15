@@ -644,6 +644,8 @@ bool State::give_precinct(p_index precinct, p_index community, int t_type) {
     
     Canvas can(900, 900);
     can.add_shape(this->state_communities);
+    can.add_shape(Multi_Shape(this->state_communities[community].border), true, Color(247, 42, 42), 1);
+
     full_animation.frames.push_back(can);
 
     TOTAL_MOVED_PRECINCTS++;
@@ -675,6 +677,7 @@ bool State::give_precinct(p_index precinct, p_index community, p_index community
     
     Canvas can(900, 900);
     can.add_shape(this->state_communities);
+    can.add_shape(Multi_Shape(this->state_communities[community].border), true, Color(247, 42, 42), 1);
     full_animation.frames.push_back(can);
 
     TOTAL_MOVED_PRECINCTS++;
@@ -753,7 +756,7 @@ void State::refine_compactness(double compactness_tolerance) {
         }
             
         // if the community is within the tolerance, or if it has been modified too many times
-        cout << state_communities[0].get_compactness() << ", " << state_communities[1].get_compactness() << endl;
+        // cout << state_communities[0].get_compactness() << ", " << state_communities[1].get_compactness() << endl;
         is_done = (worst_community == -1 || num_changes[worst_community] == MAX_ITERATIONS);
     }
 }
@@ -773,14 +776,11 @@ void State::refine_partisan(double partisanship_tolerance) {
     cout << "Refining for partisanship..." << endl;
 
     p_index worst_community = get_next_community(partisanship_tolerance, PARTISANSHIP);
-    bool is_done = (worst_community == -1);
+    bool is_done = (worst_community == -1 || get_standard_deviation_partisanship(this->state_communities) < partisanship_tolerance);
     vector<int> num_changes(state_communities.size());
     int iter = 0;
 
     while (!is_done) {
-        cout << "modifying community " << worst_community << endl;
-        cout << get_standard_deviation_partisanship(state_communities[0]) << ", " << get_standard_deviation_partisanship(state_communities[1]) << endl;
-
         p_index_set giveable_precincts = get_giveable_precincts(state_communities[worst_community], this->state_communities);
         vector<array<int, 2>> takeable_precincts = get_takeable_precincts(state_communities[worst_community], this->state_communities);
 
@@ -817,13 +817,17 @@ void State::refine_partisan(double partisanship_tolerance) {
         if (take_from == -1) give_precinct(best_exchange, worst_community, PARTISANSHIP);
         else give_precinct(best_exchange, take_from, worst_community, true);
         
+        num_changes[worst_community] += 1;
         // update worst_community, check stop condition
         worst_community = get_next_community(partisanship_tolerance, PARTISANSHIP);
         // if the community is within the tolerance, or if it has been modified too many times
-        is_done = (worst_community == -1 || num_changes[worst_community] == MAX_ITERATIONS);
+        is_done = (worst_community == -1 || num_changes[worst_community] == MAX_ITERATIONS || get_standard_deviation_partisanship(this->state_communities) < partisanship_tolerance);
         iter++;
     }
 
+    Canvas canvas(900, 900);
+    canvas.add_shape(this->state_communities, true, Color(0,0,0), 2);
+    canvas.draw();
     full_animation.playback();
 }
 
@@ -849,6 +853,8 @@ void State::refine_population(double population_tolerance) {
     // calculate the range each community's population should be within
     int aim = get_population() / state_communities.size();
     vector<int> ideal_range = {aim - (int)(population_tolerance * aim), aim + (int)(population_tolerance * aim)};
+
+    cout << "refining for population..." << endl;
 
     // begin main iterative loop
     while (!is_done) {
@@ -876,6 +882,7 @@ void State::refine_population(double population_tolerance) {
         is_done = (worst_community == -1 || num_changes[worst_community] == MAX_ITERATIONS);
     }
 }
+
 
 int measure_difference(Communities communities, Communities new_communities) {
     
@@ -994,7 +1001,7 @@ void State::refine_communities(double part, double popt, double compt) {
         cout << "On iteration " << i + 1 << endl;
 
         refine_compactness(compt);
-        // refine_partisan(part);
+        refine_partisan(part);
         refine_population(popt);
   
         if (VERBOSE) cout << TOTAL_MOVED_PRECINCTS - sum << " precincts changed." << endl;
