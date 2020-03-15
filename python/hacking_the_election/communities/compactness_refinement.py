@@ -37,7 +37,8 @@ from hacking_the_election.utils.geometry import (
     clip,
     DIFFERENCE,
     get_if_bordering,
-    INTERSECTION
+    INTERSECTION,
+    UNION
 )
 from hacking_the_election.utils.initial_configuration import (
     add_leading_zeroes
@@ -51,7 +52,7 @@ def signal_handler(sig, frame):
 def refine_for_compactness(communities, minimum_compactness,
                            linked_precincts, output_json,
                            output_pickle, animation_dir,
-                           state_name):
+                           state_name, max_iterations=100):
     """
     Returns communities that are all below the minimum compactness.
     """
@@ -73,6 +74,10 @@ def refine_for_compactness(communities, minimum_compactness,
 
         while True:
             try:
+                if i > max_iterations:
+                    print("max iterations for compactness reached.")
+                    raise ExitException
+
                 print("Average community compactness: "
                         f"{get_average_compactness(communities)}")
 
@@ -160,14 +165,13 @@ def refine_for_compactness(communities, minimum_compactness,
                         inside_circle.discard(precinct)
                     if community_changed:
                         drawing_shapes = \
-                            [c.coords for c in communities] + [circle]
+                            [c.coords for c in communities]
                         save_as_image(
                             drawing_shapes,
                             os.path.join(
                                 animation_dir,
                                 f"{add_leading_zeroes(f)}.png"
-                            ),
-                            red=communities.index(community)
+                            )
                         )
                         f += 1
 
@@ -200,6 +204,9 @@ def refine_for_compactness(communities, minimum_compactness,
                 
             except LoopBreakException:
                 break
+    except Exception as e:
+        print(str(e))
+        raise e
     finally:
         with open(output_pickle, "wb+") as f:
             pickle.dump(communities, f)
@@ -208,11 +215,11 @@ def refine_for_compactness(communities, minimum_compactness,
             output_json,
             [{"ID": c.id} for c in communities]
         )
-        for x, y in zip(X, Y):
-            plt.plot(x, y)
-        plt.show()
-        with open("test_compactness_graph.pickle", "wb+") as f:
-            pickle.dump([X, Y], f)
+        # for x, y in zip(X, Y):
+        #     plt.plot(x, y)
+        # plt.show()
+        assert communities[0].coords == clip([p.coords for p in communities[0].precincts.values()], UNION)
+        return communities
 
 
 if __name__ == "__main__":

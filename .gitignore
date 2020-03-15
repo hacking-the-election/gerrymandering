@@ -10,6 +10,8 @@ test*.json
 test*.pickle
 test*.txt
 hacking_the_election.egg-info
+tmp.json
+tmp.pickle
 
 # vscode
 settings.json

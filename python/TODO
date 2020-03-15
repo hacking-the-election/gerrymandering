@@ -10,6 +10,7 @@
     - Predict errors and create custom exceptions to throw in those cases
     - speed up with cython and c++ extensions (may have to be done before fair if code is too slow)
     - update unit tests and make them actually pass
+    - Move imports up and out of __name__ conditional block
 
 # Serialization:
    Later (Possible after project):

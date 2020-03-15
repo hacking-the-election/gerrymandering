@@ -43,7 +43,7 @@ def signal_handler(sig, frame):
 def refine_for_population(communities, population_percentage,
                           linked_precincts, output_json,
                           output_pickle, animation_dir,
-                          state_name):
+                          state_name, max_iterations=100):
     """
     Returns communities that are within the population range.
     """
@@ -55,12 +55,11 @@ def refine_for_population(communities, population_percentage,
 
     for community in communities:
         community.update_population()
-    population_factor = float(population_percentage) / 100
     ideal_population = \
         sum([c.population for c in communities]) / len(communities)
     population_range = PopulationRange(
-        ideal_population - ideal_population * population_factor,
-        ideal_population + ideal_population * population_factor
+        ideal_population,
+        population_percentage
     )
     print(f"max population: {population_range.upper}")
     print(f"min population: {population_range.lower}")
@@ -73,6 +72,10 @@ def refine_for_population(communities, population_percentage,
         x = 0
 
         while True:
+            if x > max_iterations:
+                print("max iterations for population reached.")
+                raise ExitException
+
             try:
                 community = random.choice(
                     [c for c in communities
@@ -152,15 +155,13 @@ def refine_for_population(communities, population_percentage,
                         print(f"Added {precinct} to community {community.id}")
                         f += 1
                         drawing_shapes = \
-                            ([c.coords for c in communities]
-                        + [community.precincts[precinct].coords])
+                            [c.coords for c in communities]
                         save_as_image(
                             drawing_shapes,
                             os.path.join(
                                 animation_dir,
                                 f"{add_leading_zeroes(f)}.png"
-                            ),
-                            red_outline=len(drawing_shapes) - 1
+                            )
                         )
                     except (CreatesMultiPolygonException,
                             ZeroPrecinctCommunityException):
@@ -177,7 +178,8 @@ def refine_for_population(communities, population_percentage,
                 X[i].append(x)
                 Y[i].append(c.population)
             x += 1
-            
+    except ExitException:
+        pass
     finally:
         with open(output_pickle, "wb+") as f:
             pickle.dump(communities, f)
@@ -186,11 +188,12 @@ def refine_for_population(communities, population_percentage,
             output_json,
             [{"ID": c.id} for c in communities]
         )
-        for x, y in zip(X, Y):
-            plt.plot(x, y)
-        plt.show()
+        # for x, y in zip(X, Y):
+        #     plt.plot(x, y)
+        # plt.show()
         with open("test_compactness_graph.pickle", "wb+") as f:
             pickle.dump([X, Y], f)
+        return communities
 
 
 if __name__ == "__main__":

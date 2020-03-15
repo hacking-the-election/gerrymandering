@@ -18,9 +18,10 @@ class PopulationRange:
     Continuous range of numbers between two values.
     """
 
-    def __init__(self, lower, upper):
-        self.upper = upper
-        self.lower = lower
+    def __init__(self, ideal_population, percentage):
+        deviation = ideal_population * (percentage / 100)
+        self.upper = ideal_population + deviation
+        self.lower = ideal_population - deviation
 
     def __contains__(self, key):
         return key <= self.upper and key >= self.lower
