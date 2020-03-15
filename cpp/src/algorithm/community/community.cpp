@@ -54,7 +54,6 @@ const int CHANGED_PRECINT_TOLERANCE = 10; // percent of precincts that can chang
 const int MAX_ITERATIONS = 10; // max number of times we can change a community
 int TOTAL_MOVED_PRECINCTS = 0;  // number of times a precinct has been given to another district
 
-enum processes { PARTISANSHIP, COMPACTNESS, POPULATION };
 Anim full_animation(150);
 
 
@@ -471,17 +470,16 @@ p_index State::get_next_community(double tolerance, int process) {
             ratios that are most outside range of tolerance
         */
 
-        double max = 0;
-        p_index x = 0;
+        p_index x = rand_num(0, state_communities.size() - 1);
+        int itermax = state_communities.size() * 2;
+        int iter = 0;
 
-        for (Community c : state_communities) {
-            double stdev = get_standard_deviation_partisanship(c);
-            if (stdev > tolerance && stdev > max) {
-                i = x;
-                max = stdev;
-            }
-            x++;
-        }
+        do {
+            x = rand_num(0, state_communities.size() - 1);
+            iter++;
+        } while (get_standard_deviation_partisanship(state_communities[x]) > tolerance && iter < itermax);
+        i = x;
+
     }
     else if (process == COMPACTNESS) {
         unit_interval min = 1;
@@ -533,6 +531,7 @@ p_index State::get_next_community(double tolerance, int process) {
     return i;
 }
 
+
 bool State::give_precinct(p_index precinct, p_index community, int t_type) {
     /*
         @desc: 
@@ -558,7 +557,6 @@ bool State::give_precinct(p_index precinct, p_index community, int t_type) {
     
     // get communities that border the current community
     p_index_set bordering_communities_i = get_bordering_shapes(this->state_communities, this->state_communities[community]);
-    // {1,5} -> 1st and 5th hstate communities
 
     // convert to actual shape array
     Communities bordering_communities;
@@ -567,22 +565,14 @@ bool State::give_precinct(p_index precinct, p_index community, int t_type) {
 
     // of those communities, get the ones that also border the precinct
     p_index_set exchangeable_communities_i = get_bordering_shapes(bordering_communities, precinct_shape);
-    
-    if (exchangeable_communities_i.size() == 0) {
-        // cout << "ERROR: No community to give precinct to." << endl;
-        return false;
-    }
-
     Communities exchangeable_communities;
+    if (exchangeable_communities_i.size() == 0) return false;
 
     for (int i = 0; i < exchangeable_communities_i.size(); i++) {
         exchangeable_communities_i[i] = bordering_communities_i[exchangeable_communities_i[i]];
         exchangeable_communities.push_back(this->state_communities[exchangeable_communities_i[i]]);
     }
     
-    if (exchangeable_communities_i.size() == 0)
-        cout << "something went terribly wrong" << endl;
-
     p_index exchange_choice;
 
     if (t_type == PARTISANSHIP) {
@@ -620,10 +610,40 @@ bool State::give_precinct(p_index precinct, p_index community, int t_type) {
     }
 
     exchange_choice = exchangeable_communities_i[exchange_choice];
-    Community chosen_c = state_communities[exchange_choice];
 
     // add precinct to new community
     this->state_communities[exchange_choice].add_precinct(precinct_shape);
+    this->state_communities[community].remove_precinct(precinct_shape);
+    
+    Canvas can(900, 900);
+    can.add_shape(this->state_communities);
+    full_animation.frames.push_back(can);
+
+    TOTAL_MOVED_PRECINCTS++;
+
+    return true;
+}
+
+
+bool State::give_precinct(p_index precinct, p_index community, p_index community_give, bool p) {
+    /*
+        @desc: 
+            performs a precinct transaction by giving `precinct` from `community` to
+            a possible other community specified in the parameters.
+            This is the only way community borders can change.
+
+        @params:
+            `p_index` precinct: The position of the precinct to give in the community
+            `p_index` community: The position of the community in the state array
+            `p_index` community_give: The community to give to
+
+        @return: void
+    */
+
+    Precinct precinct_shape = this->state_communities[community].precincts[precinct];
+    cout << "this one is used" << endl;
+    // add precinct to new community
+    this->state_communities[community_give].add_precinct(precinct_shape);
     this->state_communities[community].remove_precinct(precinct_shape);
     
     Canvas can(900, 900);
@@ -732,13 +752,7 @@ void State::refine_partisan(double partisanship_tolerance) {
     int iter = 0;
 
     while (!is_done) {
-        // cout << "on community " << worst_community << endl;
-        // cout << "Current stdev is " << get_standard_deviation_partisanship(state_communities[worst_community]) << endl;
-        double median = get_median_partisanship(state_communities[worst_community]);
-        p_index worst_precinct = 0;
-        double diff = 0;
         p_index_set border_precincts = get_giveable_precincts(state_communities[worst_community], this->state_communities);
-        
         p_index best_exchange = -1;
         double lowest_stdev = 1;
 
@@ -755,19 +769,41 @@ void State::refine_partisan(double partisanship_tolerance) {
             }
         }
 
-        if (lowest_stdev < get_standard_deviation_partisanship(state_communities[worst_community])) {
+        if (lowest_stdev < get_standard_deviation_partisanship(state_communities[worst_community]))
             give_precinct(best_exchange, worst_community, PARTISANSHIP);
-            cout << get_standard_deviation_partisanship(state_communities[0]) << ", " << get_standard_deviation_partisanship(state_communities[1]) << endl;
-        }
         else cout << "no exchange makes things better" << endl;
 
-        num_changes[worst_community] += 1; // update the changelist
+        //====================================
+        vector<array<int, 2>> takeable_precincts = get_takeable_precincts(state_communities[worst_community], this->state_communities);
+        p_index best_exchange_x = -1;
+        p_index best_exchange_community = -1;
+        double lowest_stdev_x = 1;
+
+        for (array<int, 2> p : takeable_precincts) {
+            Community with = state_communities[worst_community];
+            with.add_precinct_n(state_communities[p[0]].precincts[p[1]]);
+            double after_x = get_standard_deviation_partisanship(with);
+            
+            if (after_x < lowest_stdev_x) {
+                lowest_stdev_x = after_x;
+                best_exchange_x = p[1];
+                best_exchange_community = p[0];
+            }
+        }
+
+        if (lowest_stdev_x < get_standard_deviation_partisanship(state_communities[worst_community]))
+            give_precinct(best_exchange_x, best_exchange_community, worst_community, true);
+
+        cout << get_standard_deviation_partisanship(state_communities[0]) << ", " << get_standard_deviation_partisanship(state_communities[1]) << endl;
+
         // update worst_community, check stop condition
         worst_community = get_next_community(partisanship_tolerance, PARTISANSHIP);
         // if the community is within the tolerance, or if it has been modified too many times
         is_done = (worst_community == -1 || num_changes[worst_community] == MAX_ITERATIONS);
         iter++;
     }
+
+    full_animation.playback();
 }
 
 
