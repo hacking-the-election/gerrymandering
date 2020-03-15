@@ -65,6 +65,8 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ani
         community.update_standard_deviation()
     # average stdev tracks the average_standard_deviation across all communities throughout iterations
     average_stdev = [average([community20.standard_deviation for community20 in communities_list])]
+    if average_stdev[0] < threshold:
+        return communities_list
     # standard_deviations will store comma seperated standard deviations for communities, with rows 
     # being iterations
     standard_deviations = []
@@ -368,6 +370,7 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ani
             )
         )
         z += 1
+        print("iteration complete")
     # find iteration with smallest average_stdev
     print(communities_at_stages.keys())
     minimized = min(communities_at_stages)
