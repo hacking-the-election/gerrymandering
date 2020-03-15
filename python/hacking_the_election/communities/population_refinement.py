@@ -9,6 +9,7 @@ python3 population_refinement.py [initial_configuration] [population_percentage]
 import os
 import pickle
 import random
+import signal
 
 import matplotlib.pyplot as plt
 
@@ -111,14 +112,13 @@ def refine_for_population(communities, population_percentage,
                         print(f"Removed {precinct.vote_id} from community {community.id}")
                         f += 1
                         drawing_shapes = \
-                            [c.coords for c in communities] + [precinct.coords]
+                            [c.coords for c in communities]
                         save_as_image(
                             drawing_shapes,
                             os.path.join(
                                 animation_dir,
                                 f"{add_leading_zeroes(f)}.png"
                             ),
-                            red_outline=len(drawing_shapes) - 1
                         )
                     except (CreatesMultiPolygonException, IndexError,
                             ZeroPrecinctCommunityException):
@@ -197,14 +197,11 @@ def refine_for_population(communities, population_percentage,
 
 
 if __name__ == "__main__":
-    
-    import signal
+
     import sys
 
     from hacking_the_election.utils.community import Community
     from hacking_the_election.serialization.save_precincts import Precinct
-
-    signal.signal(signal.SIGINT, signal_handler)
 
     with open(sys.argv[1], "rb") as f:
         try:

@@ -218,7 +218,6 @@ def refine_for_compactness(communities, minimum_compactness,
         # for x, y in zip(X, Y):
         #     plt.plot(x, y)
         # plt.show()
-        assert communities[0].coords == clip([p.coords for p in communities[0].precincts.values()], UNION)
         return communities
 
 

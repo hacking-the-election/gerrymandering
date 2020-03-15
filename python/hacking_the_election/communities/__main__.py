@@ -38,12 +38,15 @@ from hacking_the_election.utils.population import PopulationRange
 # Parameters
 PARTISANSHIP_STDEV = 7  # Minimum average standard deviation of
                         # partisanship within communities.
-POPULATION = 5  # Allowed percent difference from ideal population
-COMPACTNESS = 0.4  # Minimum compactness score.
+POPULATION = 20  # Allowed percent difference from ideal population
+COMPACTNESS = 0.2  # Minimum compactness score.
 
 
 def signal_handler(sig, frame):
     raise ExitException
+
+
+signal.signal(signal.SIGINT, signal_handler)
 
 
 def get_refinement_complete(communities):
@@ -104,13 +107,11 @@ def make_communities(island_precinct_groups, n_districts, state_name,
 
     try:
         # Start iterative method with random guess.
-        # initial_configuration, precinct_corridors = create_initial_configuration(
-        #     island_precinct_groups,
-        #     n_districts,
-        #     state_border
-        # )
-        with open("/Users/Mukeshkhare/Desktop/new_hampshire_initial_configuration.pickle", "rb") as f:
-            initial_configuration, precinct_corridors = pickle.load(f)
+        initial_configuration, precinct_corridors = create_initial_configuration(
+            island_precinct_groups,
+            n_districts,
+            state_border
+        )
         linked_precincts = {p for c in precinct_corridors for p in c}
         
         # Community "snapshots" at different iterations.
