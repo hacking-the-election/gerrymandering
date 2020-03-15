@@ -68,7 +68,6 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ite
             community.update_coords()
             community.update_partisanship()
             community.update_population()
-            print(community.id, community.standard_deviation)
         count += 1
 
         # create number_of_changed_iteration variable to store # of precincts changed this iteration
@@ -353,7 +352,7 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ite
     # find iteration with smallest average_stdev
     print(communities_at_stages.keys())
     minimized = min(communities_at_stages)
-    minimized_communities = communities_at_stages[minimized] 
+    minimized_communities = communities_at_stages[minimized]
     print(minimized)
     return minimized_communities
 

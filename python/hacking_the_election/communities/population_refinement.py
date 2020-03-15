@@ -74,7 +74,8 @@ def refine_for_population(communities, population_percentage,
 
         while True:
             if x > max_iterations:
-                break
+                print("max iterations for population reached.")
+                raise ExitException
 
             try:
                 community = random.choice(
@@ -180,7 +181,8 @@ def refine_for_population(communities, population_percentage,
                 X[i].append(x)
                 Y[i].append(c.population)
             x += 1
-            
+    except ExitException:
+        pass
     finally:
         with open(output_pickle, "wb+") as f:
             pickle.dump(communities, f)
@@ -189,11 +191,12 @@ def refine_for_population(communities, population_percentage,
             output_json,
             [{"ID": c.id} for c in communities]
         )
-        for x, y in zip(X, Y):
-            plt.plot(x, y)
-        plt.show()
+        # for x, y in zip(X, Y):
+        #     plt.plot(x, y)
+        # plt.show()
         with open("test_compactness_graph.pickle", "wb+") as f:
             pickle.dump([X, Y], f)
+        return communities
 
 
 if __name__ == "__main__":
