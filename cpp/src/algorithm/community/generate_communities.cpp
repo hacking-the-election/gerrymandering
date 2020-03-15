@@ -40,7 +40,7 @@ int main(int argc, char* argv[]) {
     // state.generate_communities(districts_in_state, 0.5, 0.08, 0.01);
     
     state.read_communities("community_vt");
-    state.refine_communities(0.07, 0.01, 0.5);
+    state.refine_communities(0.075, 0.1, 0.5);
     // state.refine_partisan(0.07);
 
     // write as binary

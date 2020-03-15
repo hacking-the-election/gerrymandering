@@ -1056,11 +1056,8 @@ bool creates_island(GeoGerry::Precinct_Group set, GeoGerry::p_index remove) {
     */
     
     // remove precinct from set
-    set.precincts.erase(set.precincts.begin() + remove);
-    int islands_after = generate_exterior_border(set).border.size();
-
-    // return whether exchange has created an island
-    return (islands_after > 1);
+    set.remove_precinct(set.precincts[remove]);
+    return (set.border.size() > 1);
 }
 
 

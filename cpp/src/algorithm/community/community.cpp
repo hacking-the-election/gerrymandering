@@ -717,10 +717,10 @@ void State::refine_compactness(double compactness_tolerance) {
 
     p_index worst_community = get_next_community(compactness_tolerance, COMPACTNESS);
     bool is_done = (worst_community == -1);
-    vector<int> num_changes(state_communities.size());
 
     cout << "refining for compactness..." << endl;
 
+    int iter = 0;
     bool override = false;
     int loop = 0;
     double first_average = 0;
@@ -728,8 +728,8 @@ void State::refine_compactness(double compactness_tolerance) {
         first_average += c.get_compactness();
     first_average /= state_communities.size();
 
+
     while (!is_done) {
-    
         Shape circle;
         coordinate center = state_communities[worst_community].get_center();
         circle = generate_gon(center, sqrt(state_communities[worst_community].get_area() / PI), 30);
@@ -746,7 +746,6 @@ void State::refine_compactness(double compactness_tolerance) {
             }
         }
 
-        num_changes[worst_community] += 1; // update the changelist
         p_index old_c = worst_community;
 
         // update worst_community, check stop condition
@@ -774,8 +773,8 @@ void State::refine_compactness(double compactness_tolerance) {
         }
             
         // if the community is within the tolerance, or if it has been modified too many times
-        // cout << state_communities[0].get_compactness() << ", " << state_communities[1].get_compactness() << endl;
-        is_done = (worst_community == -1 || num_changes[worst_community] == MAX_ITERATIONS);
+        is_done = (worst_community == -1 || iter == MAX_ITERATIONS);
+        iter++;
     }
 }
 
@@ -794,8 +793,7 @@ void State::refine_partisan(double partisanship_tolerance) {
     cout << "Refining for partisanship..." << endl;
 
     p_index worst_community = get_next_community(partisanship_tolerance, PARTISANSHIP);
-    bool is_done = (worst_community == -1 || get_standard_deviation_partisanship(this->state_communities) < partisanship_tolerance);
-    vector<int> num_changes(state_communities.size());
+    bool is_done = (get_standard_deviation_partisanship(this->state_communities) < partisanship_tolerance);
     int iter = 0;
 
     while (!is_done) {
@@ -813,29 +811,10 @@ void State::refine_partisan(double partisanship_tolerance) {
             }
         }
 
-        // vector<array<int, 2>> takeable_precincts = get_takeable_precincts(state_communities[worst_community], this->state_communities);
-
-        // for (array<int, 2> p : takeable_precincts) {
-        //     Communities before = this->state_communities;
-        //     give_precinct(p[1], p[0], worst_community, true, false);
-        //     double after = get_standard_deviation_partisanship(this->state_communities);
-        //     this->state_communities = before;
-
-        //     if (after < lowest_stdev) {
-        //         lowest_stdev = after;
-        //         best_exchange = p[1];
-        //         take_from = p[0];
-        //     }
-        // }
- 
-        // if (take_from == -1) give_precinct(best_exchange, worst_community, PARTISANSHIP, true);
-        // else give_precinct(best_exchange, take_from, worst_community, true, true);
-        
-        num_changes[worst_community] += 1;
         // update worst_community, check stop condition
         worst_community = get_next_community(partisanship_tolerance, PARTISANSHIP);
         // if the community is within the tolerance, or if it has been modified too many times
-        is_done = (worst_community == -1 || num_changes[worst_community] == MAX_ITERATIONS || get_standard_deviation_partisanship(this->state_communities) < partisanship_tolerance);
+        is_done = (iter == MAX_ITERATIONS || get_standard_deviation_partisanship(this->state_communities) < partisanship_tolerance);
         iter++;
     }
 
@@ -862,11 +841,11 @@ void State::refine_population(double population_tolerance) {
     // find the first community to be optimized
     p_index worst_community = get_next_community(population_tolerance, POPULATION);
     bool is_done = (worst_community == -1); // initialize stop condition
-    vector<int> num_changes(state_communities.size());
 
     // calculate the range each community's population should be within
     int aim = get_population() / state_communities.size();
     vector<int> ideal_range = {aim - (int)(population_tolerance * aim), aim + (int)(population_tolerance * aim)};
+    int iter = 0;
 
     cout << "refining for population..." << endl;
 
@@ -888,12 +867,10 @@ void State::refine_population(double population_tolerance) {
             index++;
         }
 
-        // update the changelist
-        num_changes[worst_community] += 1; 
-        
         // check stop condition, update the community that needs to be optimized
         worst_community = get_next_community(population_tolerance, POPULATION);
-        is_done = (worst_community == -1 || num_changes[worst_community] == MAX_ITERATIONS);
+        is_done = (worst_community == -1 || iter == MAX_ITERATIONS);
+        iter++;
     }
 }
 
