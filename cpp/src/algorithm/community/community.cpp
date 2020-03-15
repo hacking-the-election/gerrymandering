@@ -53,8 +53,10 @@ using namespace boost::filesystem;
 const int CHANGED_PRECINT_TOLERANCE = 10; // percent of precincts that can change from iteration
 const int MAX_ITERATIONS = 10; // max number of times we can change a community
 int TOTAL_MOVED_PRECINCTS = 0;  // number of times a precinct has been given to another district
+vector<string> TOTAL_MOVED_PRECINCT_ID = {};
 
 Anim full_animation(150);
+void save_iteration_data(Communities cs, string folder);
 
 
 void State::generate_initial_communities(int num_communities) {
@@ -100,7 +102,7 @@ void State::generate_initial_communities(int num_communities) {
             if (large_sizes.size() == 0) {
                 vals[(x * base)] = {x, 0};
             }
-            
+
             for (int y = 1; y <= large_sizes.size(); y++) {
                 vals[(x * (base)) + (y * (base + 1))] = {x, y};
                 cout << (x * (base) + (y * (base + 1))) << endl;
@@ -431,22 +433,31 @@ void State::generate_initial_communities(int num_communities) {
                     else cout << "creates island, refraining..." << endl;
                 }
 
-                if (!can_do_one) cout << "No precinct exchanges work!!" << endl;
+                if (!can_do_one) {
+                    Canvas canvas(900, 900);
+                    canvas.add_shape(c);
+                    canvas.draw();
+                }
+                // } cout << "No precinct exchanges work!!" << endl;
             }
             available_precincts[i] = island_available_precincts; 
         }
         c[c_index] = community;
     }
 
+    cout << "filled in islands" << endl;
+
     for (p_index_set p : available_precincts)
         for (p_index pi : p )
             c[c.size() - 1].add_precinct_n(precincts[pi]);
 
+    cout << "filled in all islands" << endl;
+    this->state_communities = c; // assign state communities to generated array
+
     for (int i = 0; i < state_communities.size(); i++)
         state_communities[i].border = generate_exterior_border(state_communities[i]).border;
 
-    this->state_communities = c; // assign state communities to generated array
-    save_communities("community_al_1", this->state_communities);
+    save_communities("community_al_3", this->state_communities);
     return;
 }
 
@@ -652,6 +663,7 @@ bool State::give_precinct(p_index precinct, p_index community, int t_type, bool 
         can.add_shape(Multi_Shape(this->state_communities[community].border), true, Color(247, 42, 42), 2);
         full_animation.frames.push_back(can);
         TOTAL_MOVED_PRECINCTS++;
+        TOTAL_MOVED_PRECINCT_ID.push_back(precinct_shape.shape_id);
     }
 
     return true;
@@ -685,6 +697,7 @@ bool State::give_precinct(p_index precinct, p_index community, p_index community
         can.add_shape(Multi_Shape(this->state_communities[community].border), true, Color(247, 42, 42), 2);
         full_animation.frames.push_back(can);
         TOTAL_MOVED_PRECINCTS++;
+        TOTAL_MOVED_PRECINCT_ID.push_back(precinct_shape.shape_id);
     }
 
     return true;
@@ -1005,6 +1018,7 @@ void State::generate_communities(int num_communities, double compactness_toleran
     // }
 }
 
+
 void State::refine_communities(double part, double popt, double compt) {
     Communities old_communities;
     int i = 0, changed_precincts = 0;
@@ -1014,8 +1028,11 @@ void State::refine_communities(double part, double popt, double compt) {
         TOTAL_MOVED_PRECINCTS = 0;
 
         refine_compactness(compt);
+        save_iteration_data(this->state_communities, "vt_community_data");
         refine_partisan(part);
+        save_iteration_data(this->state_communities, "vt_community_data");
         refine_population(popt);
+        save_iteration_data(this->state_communities, "vt_community_data");
 
         if (VERBOSE) cout << TOTAL_MOVED_PRECINCTS << " precincts changed." << endl;
         i++;
@@ -1086,4 +1103,29 @@ Communities Community::load_frame(std::string read_path, State precinct_list) {
     }
 
     return cs;
+}
+
+
+void save_iteration_data(Communities cs, string folder) {
+    string compactness = readf(folder + "/compactness.list"),
+           population = readf(folder + "/population.list"),
+           stdev = readf(folder + "/partisan.list"),
+           moved_precincts = readf(folder + "/moved_precincts.list");
+
+    moved_precincts += join(TOTAL_MOVED_PRECINCT_ID, ", ") + "\n";
+
+    for (Community c : cs) {
+        compactness += std::to_string(c.get_compactness()) + ", ";
+        population += std::to_string(c.get_population()) + ", ";
+        stdev += std::to_string(get_standard_deviation_partisanship(c)) + ", ";
+    }
+
+    stdev = stdev.substr(0, stdev.size() - 2) + "\n";
+    population = stdev.substr(0, stdev.size() - 2) + "\n";
+    compactness = stdev.substr(0, stdev.size() - 2) + "\n";
+
+    writef(compactness, folder + "/compactness.list");
+    writef(population, folder + "/population.list");
+    writef(stdev, folder + "/partisan.list");
+    writef(moved_precincts, folder + "/moved_precincts.list");
 }
