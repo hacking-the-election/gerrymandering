@@ -55,12 +55,11 @@ def refine_for_population(communities, population_percentage,
 
     for community in communities:
         community.update_population()
-    population_factor = float(population_percentage) / 100
     ideal_population = \
         sum([c.population for c in communities]) / len(communities)
     population_range = PopulationRange(
-        ideal_population - ideal_population * population_factor,
-        ideal_population + ideal_population * population_factor
+        ideal_population,
+        population_percentage
     )
     print(f"max population: {population_range.upper}")
     print(f"min population: {population_range.lower}")
