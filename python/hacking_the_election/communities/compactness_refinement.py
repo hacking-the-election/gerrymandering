@@ -37,7 +37,8 @@ from hacking_the_election.utils.geometry import (
     clip,
     DIFFERENCE,
     get_if_bordering,
-    INTERSECTION
+    INTERSECTION,
+    UNION
 )
 from hacking_the_election.utils.initial_configuration import (
     add_leading_zeroes
@@ -164,14 +165,13 @@ def refine_for_compactness(communities, minimum_compactness,
                         inside_circle.discard(precinct)
                     if community_changed:
                         drawing_shapes = \
-                            [c.coords for c in communities] + [circle]
+                            [c.coords for c in communities]
                         save_as_image(
                             drawing_shapes,
                             os.path.join(
                                 animation_dir,
                                 f"{add_leading_zeroes(f)}.png"
-                            ),
-                            red=communities.index(community)
+                            )
                         )
                         f += 1
 
@@ -204,8 +204,9 @@ def refine_for_compactness(communities, minimum_compactness,
                 
             except LoopBreakException:
                 break
-    except ExitException:
-        pass
+    except Exception as e:
+        print(str(e))
+        raise e
     finally:
         with open(output_pickle, "wb+") as f:
             pickle.dump(communities, f)
@@ -217,8 +218,7 @@ def refine_for_compactness(communities, minimum_compactness,
         # for x, y in zip(X, Y):
         #     plt.plot(x, y)
         # plt.show()
-        with open("test_compactness_graph.pickle", "wb+") as f:
-            pickle.dump([X, Y], f)
+        assert communities[0].coords == clip([p.coords for p in communities[0].precincts.values()], UNION)
         return communities
 
 

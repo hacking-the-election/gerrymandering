@@ -155,15 +155,13 @@ def refine_for_population(communities, population_percentage,
                         print(f"Added {precinct} to community {community.id}")
                         f += 1
                         drawing_shapes = \
-                            ([c.coords for c in communities]
-                        + [community.precincts[precinct].coords])
+                            [c.coords for c in communities]
                         save_as_image(
                             drawing_shapes,
                             os.path.join(
                                 animation_dir,
                                 f"{add_leading_zeroes(f)}.png"
-                            ),
-                            red_outline=len(drawing_shapes) - 1
+                            )
                         )
                     except (CreatesMultiPolygonException,
                             ZeroPrecinctCommunityException):

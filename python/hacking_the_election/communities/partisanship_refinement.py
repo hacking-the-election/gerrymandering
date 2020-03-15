@@ -19,6 +19,7 @@ iterations (optional) - number of iterations to run assuming the communities in 
 """
 
 import sys
+import os
 import pickle
 import json
 from time import time
@@ -28,10 +29,12 @@ from hacking_the_election.utils.stats import average, stdev
 from hacking_the_election.utils.geometry import shapely_to_polygon, polygon_to_shapely, get_if_bordering, communities_to_json, clip
 from hacking_the_election.utils.exceptions import CreatesMultiPolygonException
 from hacking_the_election.serialization import save_precincts
+from hacking_the_election.utils.animation import save_as_image
+from hacking_the_election.utils.initial_configuration import add_leading_zeroes
 from shapely.geometry import MultiPolygon
 sys.modules['save_precincts'] = save_precincts
 
-def modify_for_partisanship(communities_list, precinct_corridors, threshold, iterations=100):
+def modify_for_partisanship(communities_list, precinct_corridors, threshold, animation_dir, iterations=100):
     '''
     Takes list of community objects, and returns a different list with the modified communities.,
     as well as the # of precincts that changed hands during this step. 
@@ -42,6 +45,12 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ite
     should be considered bordering. The threshold is a decimal for maximum community partisanship 
     standard deviation, i.e. (0.05)
     '''
+
+    try:
+        os.mkdir(animation_dir)
+    except FileExistsError:
+        pass
+
     communities_dict = {community.id : community for community in communities_list}
     communities_precincts = {community.id : community.precincts for community in communities_list}
     # create dictionary of ids and community partisanship standard deviations
@@ -59,6 +68,7 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ite
     # standard_deviations will store comma seperated standard deviations for communities, with rows 
     # being iterations
     standard_deviations = []
+    z = 0
     while success != "yes!":
         if count >= int(iterations):
             break
@@ -349,6 +359,15 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ite
         for community15 in not_involved_community_list:
             community_change_snapshot.append(community15)
         communities_at_stages[average([community.standard_deviation for community in communities_list])] = community_change_snapshot
+
+        save_as_image(
+            [c.coords for c in community_change_snapshot],
+            os.path.join(
+                animation_dir,
+                f"{add_leading_zeroes(z)}_partisanshp.png"
+            )
+        )
+        z += 1
     # find iteration with smallest average_stdev
     print(communities_at_stages.keys())
     minimized = min(communities_at_stages)
