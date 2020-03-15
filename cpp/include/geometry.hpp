@@ -54,7 +54,7 @@ ClipperLib::Paths shape_to_paths(GeoGerry::Shape shape);
 GeoGerry::Multi_Shape paths_to_multi_shape(ClipperLib::Paths paths);
 
 GeoGerry::p_index_set get_giveable_precincts(GeoGerry::Community c, GeoGerry::Communities cs);
-GeoGerry::p_index_set get_takeable_precincts(GeoGerry::Community c, GeoGerry::Communities cs);
+std::vector<std::array<int, 2>> get_takeable_precincts(GeoGerry::Community c, GeoGerry::Communities cs);
 
 // geos::geom::LinearRing* create_linearring(GeoGerry::coordinate_set coords);
 // geos::geom::Point* create_point(double x, double y);

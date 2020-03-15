@@ -10,6 +10,7 @@
 
 #include "../include/shape.hpp"      // class definitions
 #include "../include/geometry.hpp"   // class definitions
+#include "../include/canvas.hpp"   // class definitions
 
 #define REP  // use rep / (dem + rep) as ratio
 
