@@ -18,7 +18,7 @@ void writef(std::string contents, std::string path);
 
 // vector manipulation
 std::vector<std::string> split(std::string str, std::string del);
-template<typename T> std::string join(std::vector<T> str, std::string del);
+std::string join(std::vector<std::string> str, std::string del);
 
 // assertions (type equality)
 bool is_number(std::string token);

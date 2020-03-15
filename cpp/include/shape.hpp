@@ -424,8 +424,8 @@ class State : public Precinct_Group {
 
         // for the community generation algorithm
         void generate_communities(int num_communities, double compactness_tolerance, double partisanship_tolerance, double population_tolerance);
-        bool give_precinct(p_index precinct, p_index community, int t_type);
-        bool give_precinct(p_index precinct, p_index community, p_index give_community, bool p);
+        bool give_precinct(p_index precinct, p_index community, int t_type, bool animate);
+        bool give_precinct(p_index precinct, p_index community, p_index give_community, bool animate, bool p);
 
         // initial random configuration of communities
         void generate_initial_communities(int num_communities);

@@ -1121,8 +1121,8 @@ void save_iteration_data(Communities cs, string folder) {
     }
 
     stdev = stdev.substr(0, stdev.size() - 2) + "\n";
-    population = stdev.substr(0, stdev.size() - 2) + "\n";
-    compactness = stdev.substr(0, stdev.size() - 2) + "\n";
+    population = population.substr(0, population.size() - 2) + "\n";
+    compactness = compactness.substr(0, compactness.size() - 2) + "\n";
 
     writef(compactness, folder + "/compactness.list");
     writef(population, folder + "/population.list");

@@ -66,8 +66,8 @@ vector<string> split(string str, string del) {
     return array;
 }
 
-template<typename T> std::string join(vector<T> str, string del) {
-    string ret;
+std::string join(std::vector<std::string> str, std::string del) {
+    string ret = "";
     for (int i = 0; i < str.size() - 1; i++)
         ret += str[i] + del;
 
