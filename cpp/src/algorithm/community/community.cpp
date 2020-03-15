@@ -71,7 +71,6 @@ void State::generate_initial_communities(int num_communities) {
     */
 
     int num_precincts = precincts.size(); // total precinct amount
-
     vector<int> large_sizes; // number of communities of greater amount
     vector<int> base_sizes;
 
@@ -97,9 +96,14 @@ void State::generate_initial_communities(int num_communities) {
         if (DEBUG_COMMUNITIES) cout << "checking new island" << endl;
         map<int, array<int, 2> > vals; // to hold possible size combinations
 
-        for (int x = 1; x <= large_sizes.size(); x++) {
-            for (int y = 1; y <= base_sizes.size(); y++) {
-                vals[(x * (base + 1)) + (y * base)] = {x, y};
+        for (int x = 1; x <= base_sizes.size(); x++) {
+            if (large_sizes.size() == 0) {
+                vals[(x * base)] = {x, 0};
+            }
+            
+            for (int y = 1; y <= large_sizes.size(); y++) {
+                vals[(x * (base)) + (y * (base + 1))] = {x, y};
+                cout << (x * (base) + (y * (base + 1))) << endl;
             }
         }
 
@@ -543,7 +547,7 @@ p_index State::get_next_community(double tolerance, int process) {
 }
 
 
-bool State::give_precinct(p_index precinct, p_index community, int t_type) {
+bool State::give_precinct(p_index precinct, p_index community, int t_type, bool animate) {
     /*
         @desc: 
             performs a precinct transaction by giving `precinct` from `community` to
@@ -642,19 +646,19 @@ bool State::give_precinct(p_index precinct, p_index community, int t_type) {
     this->state_communities[exchange_choice].add_precinct(precinct_shape);
     this->state_communities[community].remove_precinct(precinct_shape);
     
-    Canvas can(900, 900);
-    can.add_shape(this->state_communities);
-    can.add_shape(Multi_Shape(this->state_communities[community].border), true, Color(247, 42, 42), 1);
-
-    full_animation.frames.push_back(can);
-
-    TOTAL_MOVED_PRECINCTS++;
+    if (animate) {
+        Canvas can(900, 900);
+        can.add_shape(this->state_communities);
+        can.add_shape(Multi_Shape(this->state_communities[community].border), true, Color(247, 42, 42), 2);
+        full_animation.frames.push_back(can);
+        TOTAL_MOVED_PRECINCTS++;
+    }
 
     return true;
 }
 
 
-bool State::give_precinct(p_index precinct, p_index community, p_index community_give, bool p) {
+bool State::give_precinct(p_index precinct, p_index community, p_index community_give, bool p, bool animate) {
     /*
         @desc: 
             performs a precinct transaction by giving `precinct` from `community` to
@@ -675,12 +679,13 @@ bool State::give_precinct(p_index precinct, p_index community, p_index community
     this->state_communities[community_give].add_precinct(precinct_shape);
     this->state_communities[community].remove_precinct(precinct_shape);
     
-    Canvas can(900, 900);
-    can.add_shape(this->state_communities);
-    can.add_shape(Multi_Shape(this->state_communities[community].border), true, Color(247, 42, 42), 1);
-    full_animation.frames.push_back(can);
-
-    TOTAL_MOVED_PRECINCTS++;
+    if (animate) {
+        Canvas can(900, 900);
+        can.add_shape(this->state_communities);
+        can.add_shape(Multi_Shape(this->state_communities[community].border), true, Color(247, 42, 42), 2);
+        full_animation.frames.push_back(can);
+        TOTAL_MOVED_PRECINCTS++;
+    }
 
     return true;
 }
@@ -723,7 +728,7 @@ void State::refine_compactness(double compactness_tolerance) {
             Precinct pre = state_communities[worst_community].precincts[giveable[x]];
 
             if (state_communities[worst_community].get_compactness() < compactness_tolerance && !get_inside_first(pre.hull, circle.hull) && !creates_island(state_communities[worst_community], giveable[x])) {
-                if (give_precinct(giveable[x], worst_community, COMPACTNESS))
+                if (give_precinct(giveable[x], worst_community, COMPACTNESS, true))
                     for (int i = 0; i < giveable.size(); i++) giveable[i] = giveable[i] - 1;
             }
         }
@@ -781,6 +786,7 @@ void State::refine_partisan(double partisanship_tolerance) {
     int iter = 0;
 
     while (!is_done) {
+        cout << "on community " << worst_community << endl;
         p_index_set giveable_precincts = get_giveable_precincts(state_communities[worst_community], this->state_communities);
         vector<array<int, 2>> takeable_precincts = get_takeable_precincts(state_communities[worst_community], this->state_communities);
 
@@ -791,7 +797,7 @@ void State::refine_partisan(double partisanship_tolerance) {
 
         for (p_index p : giveable_precincts) {
             Communities before = this->state_communities;
-            give_precinct(p, worst_community, PARTISANSHIP);
+            give_precinct(p, worst_community, PARTISANSHIP, false);
             double after = get_standard_deviation_partisanship(this->state_communities);
             this->state_communities = before;
 
@@ -803,7 +809,7 @@ void State::refine_partisan(double partisanship_tolerance) {
 
         for (array<int, 2> p : takeable_precincts) {
             Communities before = this->state_communities;
-            give_precinct(p[1], p[0], worst_community, true);
+            give_precinct(p[1], p[0], worst_community, true, false);
             double after = get_standard_deviation_partisanship(this->state_communities);
             this->state_communities = before;
 
@@ -814,8 +820,8 @@ void State::refine_partisan(double partisanship_tolerance) {
             }
         }
  
-        if (take_from == -1) give_precinct(best_exchange, worst_community, PARTISANSHIP);
-        else give_precinct(best_exchange, take_from, worst_community, true);
+        if (take_from == -1) give_precinct(best_exchange, worst_community, PARTISANSHIP, true);
+        else give_precinct(best_exchange, take_from, worst_community, true, true);
         
         num_changes[worst_community] += 1;
         // update worst_community, check stop condition
@@ -867,7 +873,7 @@ void State::refine_population(double population_tolerance) {
               || state_communities[worst_community].get_population() > ideal_range[1])) {
             if (!creates_island(state_communities[worst_community], border_precincts[index])) {
                 Precinct precinct = state_communities[worst_community].precincts[border_precincts[index]];
-                if (give_precinct(border_precincts[index], worst_community, POPULATION))
+                if (give_precinct(border_precincts[index], worst_community, POPULATION, true))
                     for (int i = 0; i < border_precincts.size(); i++) border_precincts[i] = border_precincts[i] - 1;
             }
 
@@ -972,6 +978,12 @@ void State::generate_communities(int num_communities, double compactness_toleran
            while (changed_precincts > precinct_change_tolerance)
     */
    
+    Canvas canvas(900, 900);
+    canvas.add_shape(this->state_communities);
+    canvas.draw();
+    delete &canvas;
+
+    this->refine_communities(partisanship_tolerance, population_tolerance, compactness_tolerance);
     // while (i < 30) {
     //     cout << "On iteration " << i << endl;
     //     old_communities = this->state_communities;
@@ -995,20 +1007,20 @@ void State::generate_communities(int num_communities, double compactness_toleran
 
 void State::refine_communities(double part, double popt, double compt) {
     Communities old_communities;
-    int i = 0, sum = 0;
+    int i = 0, changed_precincts = 0;
     
-    while (i < 30) {
+    do {
         cout << "On iteration " << i + 1 << endl;
+        TOTAL_MOVED_PRECINCTS = 0;
 
         refine_compactness(compt);
         refine_partisan(part);
         refine_population(popt);
-  
-        if (VERBOSE) cout << TOTAL_MOVED_PRECINCTS - sum << " precincts changed." << endl;
-        sum += (TOTAL_MOVED_PRECINCTS - sum);
-        
+
+        if (VERBOSE) cout << TOTAL_MOVED_PRECINCTS << " precincts changed." << endl;
         i++;
-    }
+
+    } while (TOTAL_MOVED_PRECINCTS != 0);
 
     GeoDraw::Canvas c(900, 900);
     c.add_shape(state_communities);
