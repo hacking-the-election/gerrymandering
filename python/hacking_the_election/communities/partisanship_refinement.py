@@ -73,6 +73,7 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ani
     z = 0
     while success != "yes!":
         if count >= int(iterations):
+            print("max iterations reached for partisanship")
             break
         # update attribute values (in case this hasn't already been done)
         for community in communities_list:
@@ -215,7 +216,6 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ani
         precinct_count = 1
         changing_stdev = []
         while most_stdev_community.standard_deviation > int(threshold):
-            print(most_stdev_id, most_stdev_community.standard_deviation, threshold)
             # if there is only one precinct left, just stop
             if len(most_stdev_community.precincts) == 1:
                 break
@@ -363,19 +363,18 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ani
         communities_at_stages[average([community.standard_deviation for community in communities_list])] = community_change_snapshot
 
         save_as_image(
-            [c.coords for c in community_change_snapshot],
+            community_change_snapshot,
             os.path.join(
                 animation_dir,
                 f"{add_leading_zeroes(z)}_partisanshp.png"
             )
         )
         z += 1
-        print("iteration complete")
+        print(f"avg stdev: {sum([c.standard_deviation for c in communities_list]) / len(communities_list)}")
     # find iteration with smallest average_stdev
-    print(communities_at_stages.keys())
     minimized = min(communities_at_stages)
     minimized_communities = communities_at_stages[minimized]
-    print(minimized)
+    print(f"finished partisanship. communities {[c.standard_deviation for c in minimized_communities]}")
     return minimized_communities
 
 

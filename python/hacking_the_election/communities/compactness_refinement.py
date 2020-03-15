@@ -75,11 +75,10 @@ def refine_for_compactness(communities, minimum_compactness,
         while True:
             try:
                 if i > max_iterations:
-                    print("max iterations for compactness reached.")
+                    print("max iterations for compactness reached for compactness")
                     raise ExitException
 
-                print("Average community compactness: "
-                        f"{get_average_compactness(communities)}")
+                print(f"avg compactness: {get_average_compactness(communities)}")
 
                 community = min(communities, key=lambda c: c.compactness)
 
@@ -134,9 +133,6 @@ def refine_for_compactness(communities, minimum_compactness,
                             try:
                                 add_precinct(
                                     communities, community, precinct, True)
-                                print(f"Removed {precinct.vote_id} from "
-                                      f"community {community.id}. Compactness: "
-                                      f"{round(community.compactness, 3)}")
                                 community_changed = True
                             except (CreatesMultiPolygonException,
                                     ZeroPrecinctCommunityException):
@@ -153,9 +149,6 @@ def refine_for_compactness(communities, minimum_compactness,
                             try:
                                 add_precinct(
                                     communities, community, precinct, False)
-                                print(f"Added {precinct.vote_id} to community "
-                                      f"{community.id}. Compactness: "
-                                      f"{round(community.compactness, 3)}")
                                 community_changed = True
                             except (CreatesMultiPolygonException,
                                     ZeroPrecinctCommunityException):
@@ -164,10 +157,8 @@ def refine_for_compactness(communities, minimum_compactness,
                             warnings.warn(str(e))
                         inside_circle.discard(precinct)
                     if community_changed:
-                        drawing_shapes = \
-                            [c.coords for c in communities]
                         save_as_image(
-                            drawing_shapes,
+                            communities,
                             os.path.join(
                                 animation_dir,
                                 f"{add_leading_zeroes(f)}.png"
@@ -189,8 +180,6 @@ def refine_for_compactness(communities, minimum_compactness,
                         for x, c in enumerate(communities):
                             Y[x].append(c.compactness)
                             X[x].append(i)
-                        print(f"Community {community.id} has "
-                               "compactness above threshold.")
                         break
 
                 if community.compactness <= minimum_compactness:
@@ -198,9 +187,6 @@ def refine_for_compactness(communities, minimum_compactness,
                     for x, c in enumerate(communities):
                         Y[x].append(c.compactness)
                         X[x].append(i)
-                    print(f"Community {community.id} failed to get above "
-                            "threshold after adding and removing all "
-                            "precincts in and out of circle.")
                 
             except LoopBreakException:
                 break
@@ -218,6 +204,7 @@ def refine_for_compactness(communities, minimum_compactness,
         # for x, y in zip(X, Y):
         #     plt.plot(x, y)
         # plt.show()
+        print(f"finished compactness. communities: {[c.compactness for c in communities]}")
         return communities
 
 

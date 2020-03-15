@@ -10,6 +10,7 @@ import os
 import pickle
 import signal
 import sys
+import time
 
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
@@ -39,10 +40,10 @@ from hacking_the_election.utils.population import PopulationRange
 
 
 # Parameters
-PARTISANSHIP_STDEV = 9  # Minimum average standard deviation of
+PARTISANSHIP_STDEV = 7.5  # Maximum average standard deviation of
                         # partisanship within communities.
-POPULATION = 12.5  # Allowed percent difference from ideal population
-COMPACTNESS = 0.175  # Minimum compactness score.
+POPULATION = 10  # Allowed percent difference from ideal population
+COMPACTNESS = 0.4  # Minimum compactness score.
 
 
 def signal_handler(sig, frame):
@@ -114,13 +115,11 @@ def make_communities(island_precinct_groups, n_districts, state_name,
         pass
 
     # Start iterative method with random guess.
-    # initial_configuration, precinct_corridors = create_initial_configuration(
-    #     island_precinct_groups,
-    #     n_districts,
-    #     state_border
-    # )
-    with open("/Users/Mukeshkhare/Desktop/new_hampshire_initial_configuration.pickle", "rb") as f:
-        initial_configuration, precinct_corridors = pickle.load(f)
+    initial_configuration, precinct_corridors = create_initial_configuration(
+        island_precinct_groups,
+        n_districts,
+        state_border
+    )
     linked_precincts = {p for c in precinct_corridors for p in c}
     
     # Community "snapshots" at different iterations.
@@ -131,9 +130,11 @@ def make_communities(island_precinct_groups, n_districts, state_name,
 
     i = 0
     try:
-        while not get_refinement_complete(community_stages[-1]):
+        while True:
+            print(f"iteration {i}")
 
-            community_stages.append(
+            start_time = time.time()
+            partisanship_refined = \
                 modify_for_partisanship(
                     deepcopy(community_stages[-1]),
                     precinct_corridors,
@@ -144,16 +145,12 @@ def make_communities(island_precinct_groups, n_districts, state_name,
                     ),
                     30
                 )
-            )
+            print(f"partisanship took {round(time.time() - start_time, 3)}s")
 
-            changed_precincts.append(
-                get_changed_precincts(*community_stages[-2:]))
-            print("refined for partisanship")
-            print(f"{len(changed_precincts[-1])} precincts moved")
-
-            community_stages.append(
+            start_time = time.time()
+            compactness_refined = \
                 refine_for_compactness(
-                    deepcopy(community_stages[-1]),
+                    deepcopy(partisanship_refined),
                     COMPACTNESS,
                     precinct_corridors,
                     "tmp.json",
@@ -165,16 +162,12 @@ def make_communities(island_precinct_groups, n_districts, state_name,
                     state_name,
                     10
                 )
-            )
+            print(f"compactness took {round(time.time() - start_time, 3)}s")
 
-            changed_precincts.append(
-                get_changed_precincts(*community_stages[-2:]))
-            print("refined for compactness")
-            print(f"{len(changed_precincts[-1])} precincts moved")
-
+            start_time = time.time()
             community_stages.append(
                 refine_for_population(
-                    deepcopy(community_stages[-1]),
+                    deepcopy(compactness_refined),
                     POPULATION,
                     precinct_corridors,
                     "tmp.json",
@@ -187,11 +180,15 @@ def make_communities(island_precinct_groups, n_districts, state_name,
                     10
                 )
             )
+            print(f"partisanship took {round(time.time() - start_time, 3)}s")
 
             changed_precincts.append(
                 get_changed_precincts(*community_stages[-2:]))
-            print("refined for population")
-            print(f"{len(changed_precincts[-1])} precincts moved")
+            print(f"{len(changed_precincts[-1])} precincts moved on iteration {i}")
+
+            if len(changed_precincts[-1]) < 3:
+                # Less than 3 precincts moved this iteration.
+                break
 
             i += 1
 

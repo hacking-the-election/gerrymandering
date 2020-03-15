@@ -62,8 +62,6 @@ def refine_for_population(communities, population_percentage,
         ideal_population,
         population_percentage
     )
-    print(f"max population: {population_range.upper}")
-    print(f"min population: {population_range.lower}")
 
     try:
         X = [[] for _ in communities]
@@ -85,7 +83,7 @@ def refine_for_population(communities, population_percentage,
             except IndexError:
                 # No communities above threshold.
                 print(
-                     "Finished. Populations: \n"
+                     "finished population. communities: "
                     f"{[c.population for c in communities]}"
                 )
                 break
@@ -111,10 +109,8 @@ def refine_for_population(communities, population_percentage,
                         )
                         print(f"Removed {precinct.vote_id} from community {community.id}")
                         f += 1
-                        drawing_shapes = \
-                            [c.coords for c in communities]
                         save_as_image(
-                            drawing_shapes,
+                            communities,
                             os.path.join(
                                 animation_dir,
                                 f"{add_leading_zeroes(f)}.png"
@@ -154,10 +150,8 @@ def refine_for_population(communities, population_percentage,
                         )
                         print(f"Added {precinct} to community {community.id}")
                         f += 1
-                        drawing_shapes = \
-                            [c.coords for c in communities]
                         save_as_image(
-                            drawing_shapes,
+                            communities,
                             os.path.join(
                                 animation_dir,
                                 f"{add_leading_zeroes(f)}.png"
