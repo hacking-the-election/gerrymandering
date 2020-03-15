@@ -6,5 +6,6 @@ setup(
     install_requires=[
         "numpy",
         "matplotlib",
-        "shapely"
+        "shapely",
+        "Pillow"
     ])
