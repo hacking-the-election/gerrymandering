@@ -437,6 +437,7 @@ class State : public Precinct_Group {
 
         // return precinct that can be added to the current precinct that won't create islands in the state
         p_index get_addable_precinct(p_index_set available_precincts, p_index current_precinct);
+        std::vector<unit_interval> quantify_gerrymandering(std::vector<Multi_Shape> districts, Communities base_communities);
 
         // write out communities at a certain point in time
         void save_communities(std::string write_path, Communities communities);

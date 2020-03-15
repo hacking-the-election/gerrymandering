@@ -1097,21 +1097,21 @@ p_index_set get_giveable_precincts(Community c, Communities cs) {
     p_index_set borders = get_inner_boundary_precincts(c);
     p_index_set exchangeable_precincts;
 
-    Multi_Shape ms(c.border);
-    GeoDraw::Canvas canvas(900, 900);
+    // Multi_Shape ms(c.border);
+    // GeoDraw::Canvas canvas(900, 900);
 
     for (p_index p : borders) {
         for (Community c_p : cs) {
             if ((c_p != c) && get_bordering(c_p, c.precincts[p]) && !creates_island(c, p)) {
                 exchangeable_precincts.push_back(p);
-                canvas.add_shape(c.precincts[p]);
+                // canvas.add_shape(c.precincts[p]);
                 break;
             }
         }
     }
 
-    canvas.add_shape(ms);
-    canvas.draw();
+    // canvas.add_shape(ms);
+    // canvas.draw();
 
     return exchangeable_precincts;
 }
