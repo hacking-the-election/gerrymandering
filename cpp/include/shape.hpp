@@ -71,6 +71,7 @@ typedef int p_index;                       // defines an index in an array
 typedef std::vector<p_index> p_index_set;  // vector of indices in an array
 typedef std::array<int, 2> seg_index;      // {p_index, segment_index};
 
+enum processes { PARTISANSHIP, COMPACTNESS, POPULATION };
 
 class Exceptions {
     /*
@@ -423,7 +424,8 @@ class State : public Precinct_Group {
 
         // for the community generation algorithm
         void generate_communities(int num_communities, double compactness_tolerance, double partisanship_tolerance, double population_tolerance);
-        bool give_precinct(p_index precinct, p_index community, int t_type);
+        bool give_precinct(p_index precinct, p_index community, int t_type, bool animate);
+        bool give_precinct(p_index precinct, p_index community, p_index give_community, bool animate, bool p);
 
         // initial random configuration of communities
         void generate_initial_communities(int num_communities);
@@ -437,6 +439,7 @@ class State : public Precinct_Group {
 
         // return precinct that can be added to the current precinct that won't create islands in the state
         p_index get_addable_precinct(p_index_set available_precincts, p_index current_precinct);
+        std::vector<unit_interval> quantify_gerrymandering(std::vector<Multi_Shape> districts, Communities base_communities);
 
         // write out communities at a certain point in time
         void save_communities(std::string write_path, Communities communities);

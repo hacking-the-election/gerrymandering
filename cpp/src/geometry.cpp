@@ -815,6 +815,18 @@ double get_standard_deviation_partisanship(Precinct_Group pg) {
     return (sqrt(dev_mean));
 }
 
+double get_standard_deviation_partisanship(Communities cs) {
+    /*
+        @desc: gets average partisanship standard deviation of communities within a group
+        @params: `Communities` cs: community list to check
+        @return: `double` average standard deviation of partisanships
+    */
+
+    double d = 0;
+    for (Community c : cs) d += get_standard_deviation_partisanship(c);
+    return (d / cs.size());
+}
+
 double get_median_partisanship(Precinct_Group pg) {
     /*
         Returns the median partisanship ratio
@@ -1097,32 +1109,45 @@ p_index_set get_giveable_precincts(Community c, Communities cs) {
     p_index_set borders = get_inner_boundary_precincts(c);
     p_index_set exchangeable_precincts;
 
-    Multi_Shape ms(c.border);
-    GeoDraw::Canvas canvas(900, 900);
+    // Multi_Shape ms(c.border);
+    // GeoDraw::Canvas canvas(900, 900);
 
     for (p_index p : borders) {
         for (Community c_p : cs) {
             if ((c_p != c) && get_bordering(c_p, c.precincts[p]) && !creates_island(c, p)) {
                 exchangeable_precincts.push_back(p);
-                canvas.add_shape(c.precincts[p]);
+                // canvas.add_shape(c.precincts[p]);
                 break;
             }
         }
     }
 
-    canvas.add_shape(ms);
-    canvas.draw();
+    // canvas.add_shape(ms);
+    // canvas.draw();
 
     return exchangeable_precincts;
 }
 
-p_index_set get_takeable_precincts(Community c, Communities cs) {
+vector<array<int, 2>> get_takeable_precincts(Community c, Communities cs) {
     /*
+        {1, 5} => second community, 5th precinct
+
         @desc:
             Gets precincts that can be taken from another
             community - can never return null for geometric reasons
     */
 
+    vector<array<int, 2>> takeable;
+
+    p_index_set borders = get_bordering_shapes(cs, c);
+    for (p_index b : borders) {
+        p_index_set boundaries = get_inner_boundary_precincts(cs[b]);
+        for (p_index p : boundaries) {
+            if (get_bordering(c, cs[b].precincts[p])) takeable.push_back({b, p});
+        }
+    }
+
+    return takeable;
 }
 
 

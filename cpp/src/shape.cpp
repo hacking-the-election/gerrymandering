@@ -10,6 +10,7 @@
 
 #include "../include/shape.hpp"      // class definitions
 #include "../include/geometry.hpp"   // class definitions
+#include "../include/canvas.hpp"   // class definitions
 
 #define REP  // use rep / (dem + rep) as ratio
 
@@ -42,6 +43,12 @@ int GeoGerry::Precinct_Group::get_population() {
 }
 
 void GeoGerry::Precinct_Group::remove_precinct(GeoGerry::Precinct pre) {
+    /*
+        @desc: Removes a precinct from a Precinct Group and updates the border with a difference
+        @params: `Precinct` pre: Precinct to be removed
+        @return: none
+    */
+
     if (std::find(precincts.begin(), precincts.end(), pre) != precincts.end()) {
         precincts.erase(std::remove(precincts.begin(), precincts.end(), pre), precincts.end());
 
@@ -68,6 +75,12 @@ void GeoGerry::Precinct_Group::remove_precinct(GeoGerry::Precinct pre) {
 }
 
 void GeoGerry::Precinct_Group::add_precinct(GeoGerry::Precinct pre) {
+    /*
+        @desc: Adds a precinct to a Precinct Group and updates the border with a union
+        @params: `Precinct` pre: Precinct to be added
+        @return: none
+    */
+   
     precincts.push_back(pre);
     if (border.size() == 0)
         border.push_back(pre.hull);

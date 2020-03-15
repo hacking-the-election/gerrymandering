@@ -22,12 +22,12 @@ using namespace rapidjson;
 const long int c = pow(2, 18);
 
 // constant id strings
-// NDV	NDR	PERSONS
+//ndv	nrv	geoid10	GEOID10	POP100
 const std::string election_id_header = "geoid10";
-const std::vector<std::string> d_head = {"NDV"};
-const std::vector<std::string> r_head = {"NDR"};
+const std::vector<std::string> d_head = {"ndv"};
+const std::vector<std::string> r_head = {"nrv"};
 const std::string geodata_id = "GEOID10";
-const std::string population_id = "PERSONS";
+const std::string population_id = "POP100";
 
 std::vector<std::vector<std::string > > parse_sv(std::string, std::string);
 bool check_column(std::vector<std::vector<std::string> >, int);
@@ -369,8 +369,18 @@ std::vector<GeoGerry::Shape> parse_precinct_coordinates(std::string geoJSON) {
         }
 
         // get the population from geodata
-        if (shapes["features"][i]["properties"].HasMember(population_id.c_str()))
-            pop = shapes["features"][i]["properties"][population_id.c_str()].GetInt();
+        if (shapes["features"][i]["properties"].HasMember(population_id.c_str())) {
+            if (shapes["features"][i]["properties"][population_id.c_str()].IsInt())
+                pop = shapes["features"][i]["properties"][population_id.c_str()].GetInt();
+            else if (shapes["features"][i]["properties"][population_id.c_str()].IsString()){
+                // std::cout << shapes["features"][i]["properties"][population_id.c_str()].GetString() << std::endl;
+                std::string tmp = shapes["features"][i]["properties"][population_id.c_str()].GetString();
+                if (tmp != "" && tmp != "NA") pop = std::stoi(tmp);
+            }
+            else {
+                std::cout << "Unrecognized typerror - src/parse.cpp, line 379" << std::endl;
+            }
+        }
         else
             std::cout << "\e[31merror: \e[0mNo population data" << std::endl;
         
