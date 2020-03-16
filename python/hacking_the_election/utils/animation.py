@@ -94,24 +94,37 @@ def update_canvas(shape_ids, shapes, canvas, root):
     root.update()
 
 
-def save_as_image(shapes, filepath, red=False, red_outline=False):
+def save_as_image(communities, filepath):
     """
     Saves `shapes` to file at `filepath`
     """
 
+    blue_communities = []
+    red_communities = []
+    for community in communities:
+        if community.partisanship > 50:
+            red_communities.append(community)
+        else:
+            blue_communities.append(community)
+    community_colors = {}
+    for community in blue_communities:
+        changed_value = int(2.55 * community.standard_deviation)
+        community_colors[community.id] = \
+            (changed_value, changed_value, 255)
+    for community in red_communities:
+        changed_value = int(2.55 * community.standard_deviation)
+        community_colors[community.id] = \
+            (255, changed_value, changed_value)
+
     image = Image.new("RGB", (1000, 1000), (255, 255, 255))
-    modified_coords = modify_coords(shapes)
+    modified_coords = modify_coords([c.coords for c in communities])
     draw = ImageDraw.Draw(image)
-    for i, shape in enumerate(modified_coords):
-        if red and i == red:
-            fill = (255, 66, 66)
-        else:
-            fill = None
-        if red_outline and i == red_outline:
-            outline = (255, 66, 66)
-        else:
-            outline = (0, 0, 0)
-        draw.polygon(shape, fill=fill, outline=outline)
+    for community, shape in zip(communities, modified_coords):
+        draw.polygon(
+            shape,
+            fill=community_colors[community.id],
+            outline=(0, 0, 0)
+        )
     image.save(filepath)
 
 
