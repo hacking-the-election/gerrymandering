@@ -360,20 +360,14 @@ void State::generate_initial_communities(int num_communities) {
     // for (int c_index = 0; c_index < 1; c_index++) {
         // fill linked communities with generation method
         cout << "filling new community..." << endl;
-        cout << "csize: " << c.size() << endl;
         Community community = c[c_index];
         for (int i = 0; i < community.location.size(); i++) {
             cout << "on size " << community.size[i] << endl;
             // get information about the current community
             int size  = community.size[i];
             int island_i = community.location[i];
-            
             p_index_set island_available_precincts = available_precincts[i]; 
-            Precinct_Group available_shapes;
-            for (p_index pre : island_available_precincts)
-                available_shapes.add_precinct_n(precincts[pre]);
-            available_shapes.border = generate_exterior_border(available_shapes).border;
-
+            
             int start_precinct;
             
             if (community.link_position.size() > 0)
@@ -416,7 +410,7 @@ void State::generate_initial_communities(int num_communities) {
                 bool can_do_one = false;
 
                 for (p_index pre : bordering_precincts) {
-                    if (!creates_island(available_shapes, precincts[pre]) && precincts_added < precincts_to_add) {
+                    if (!creates_island(island_available_precincts, pre, *this) && precincts_added < precincts_to_add) {
                         can_do_one = true;
                         cout << "adding precinct " << pre << endl;
                         island_available_precincts.erase(
@@ -428,20 +422,14 @@ void State::generate_initial_communities(int num_communities) {
                                 island_available_precincts.end()
                             );
 
-                        available_shapes.remove_precinct(precincts[pre]);
                         community.add_precinct_n(precincts[pre]);
                         precincts_added++;
-                        writef(community.to_json(), to_string(c_index) + "c.json");
+                        writef(community.to_json(), "test_data/c" + to_string(c_index) + ".json");
                     }
                     else cout << "creates island, refraining..." << endl;
                 }
 
-                if (!can_do_one) {
-                    Canvas canvas(900, 900);
-                    canvas.add_shape(c);
-                    canvas.draw();
-                }
-                // } cout << "No precinct exchanges work!!" << endl;
+                if (!can_do_one) cout << "No precinct exchanges work!!" << endl;
             }
             available_precincts[i] = island_available_precincts; 
         }
@@ -459,6 +447,7 @@ void State::generate_initial_communities(int num_communities) {
 
     for (int i = 0; i < state_communities.size(); i++)
         state_communities[i].border = generate_exterior_border(state_communities[i]).border;
+    cout << "filled in all islands" << endl;
 
     save_communities("community_al_initial", this->state_communities);
     return;
@@ -1016,8 +1005,6 @@ void State::refine_communities(double part, double popt, double compt) {
     GeoDraw::Canvas c(900, 900);
     c.add_shape(state_communities);
     c.draw();
-    writef(state_communities[0].to_json(), "c1.json");
-    writef(state_communities[1].to_json(), "c2.json");
     full_animation.playback();
 }
 
@@ -1096,8 +1083,8 @@ void save_iteration_data(Communities cs, string folder) {
     population = population.substr(0, population.size() - 2) + "\n";
     compactness = compactness.substr(0, compactness.size() - 2) + "\n";
 
-    writef(compactness, folder + "/compactness.list");
-    writef(population, folder + "/population.list");
-    writef(stdev, folder + "/partisan.list");
-    writef(moved_precincts, folder + "/moved_precincts.list");
+    writef(compactness, "test_data/" + folder + "/compactness.list");
+    writef(population, "test_data/" + folder + "/population.list");
+    writef(stdev, "test_data/" + folder + "/partisan.list");
+    writef(moved_precincts, "test_data/" + folder + "/moved_precincts.list");
 }

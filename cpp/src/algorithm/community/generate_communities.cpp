@@ -10,7 +10,7 @@
 #include "../../../include/shape.hpp"
 #include "../../../include/util.hpp"
 #include "../../../include/geometry.hpp"
-#include "../../../include/canvas.hpp"
+#include "../../../include/ }nvas.hpp"
 #include <chrono> 
 #include <boost/filesystem.hpp>
 

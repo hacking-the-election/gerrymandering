@@ -64,7 +64,7 @@ void GeoGerry::Precinct_Group::remove_precinct(GeoGerry::Precinct pre) {
         precincts.erase(std::remove(precincts.begin(), precincts.end(), pre), precincts.end());
 
         ClipperLib::Paths subj;
-        for (Shape shape : border)
+        for (Shape shape : this->border)
             subj.push_back(ring_to_path(shape.hull));
 
         ClipperLib::Paths clip;

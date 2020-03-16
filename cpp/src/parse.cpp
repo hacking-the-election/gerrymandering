@@ -22,12 +22,12 @@ using namespace rapidjson;
 const long int c = pow(2, 18);
 
 // constant id strings
-//ndv	nrv	geoid10	GEOID10	POP100
-const std::string election_id_header = "geoid10";
+//ndv	nrv	vtd_key	GEOID10	PL10AA_TOT
+const std::string election_id_header = "vtd_key";
 const std::vector<std::string> d_head = {"NDV"};
 const std::vector<std::string> r_head = {"NRV"};
 const std::string geodata_id = "GEOID10";
-const std::string population_id = "POP100";
+const std::string population_id = "PL10AA_TOT";
 
 std::vector<std::vector<std::string > > parse_sv(std::string, std::string);
 bool check_column(std::vector<std::vector<std::string> >, int);
