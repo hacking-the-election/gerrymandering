@@ -4,7 +4,6 @@ Animates the changes in precincts
 
 
 from tkinter import Canvas, Tk
-
 from PIL import Image, ImageDraw
 
 from hacking_the_election.test.funcs import polygon_to_list

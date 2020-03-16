@@ -64,7 +64,8 @@ def get_if_bordering(shape1, shape2, inside=False):
         # Doesn't work if one shape is inside the other because it'll
         # always return false because their intersection would be a
         # Polygon, but they may still be intersecting.
-        return isinstance(clip([shape1, shape2], INTERSECTION), MultiLineString)
+        return isinstance(clip([shape1, shape2], UNION), Polygon)
+        # return isinstance(clip([shape1, shape2], INTERSECTION), MultiLineString)
 
 
 def get_point_in_polygon(polygon, point):
@@ -127,9 +128,19 @@ def polygon_to_shapely(polygon):
     # if input is already in correct form
     if isinstance(polygon, Polygon):
         return polygon
-    tuple_polygon = [[tuple(coord) for coord in linear_ring] for linear_ring in polygon]
-    return Polygon(tuple_polygon[0], tuple_polygon[1:])
-
+    try: 
+        _ = polygon[0][0][0][0]
+    # smaller than multipolygon, i.e. polygon
+    except:
+        tuple_polygon = [[tuple(coord) for coord in linear_ring] for linear_ring in polygon]
+        return Polygon(tuple_polygon[0], tuple_polygon[1:])
+    # multipolygon
+    else:
+        multi_polygon = []
+        for inside_polygon in polygon:
+            shapely_polygon = polygon_to_shapely(inside_polygon)
+            multi_polygon.append(shapely_polygon)
+        return MultiPolygon(multi_polygon)
 
 def shapely_to_polygon(polygon):
     """
