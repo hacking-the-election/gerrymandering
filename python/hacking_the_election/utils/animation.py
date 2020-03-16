@@ -7,7 +7,8 @@ from tkinter import Canvas, Tk
 
 from PIL import Image, ImageDraw
 
-from hacking_the_election.test.funcs import polygon_to_list
+from hacking_the_election.test.funcs import polygon_to_list, multipolygon_to_list
+from hacking_the_election.utils.geometry import clip, UNION
 
 
 FACTOR = 110
@@ -20,7 +21,25 @@ def modify_coords(shapes):
     tkinter and PIL can understand.
     """
 
-    coords = [polygon_to_list(shape)[0] for shape in shapes]
+    community_groups = []
+    coords = []
+    for shape in shapes:
+        try:
+            community_groups.append([len(coords)])
+            polygon = []
+            for ring in polygon_to_list(shape):
+                for point in ring:
+                    polygon.append(point)
+            coords.append(polygon)
+        except AttributeError:
+            community_groups.append([])
+            for polygon in multipolygon_to_list(shape):
+                polygon_coords = []
+                for ring in polygon:
+                    for point in ring:
+                        polygon_coords.append(point)
+                coords.append(polygon_coords)
+                community_groups[-1].append(len(coords) - 1)
     # Not grouped by shape
     all_coords = [point for shape in coords for point in shape]
 
@@ -51,8 +70,14 @@ def modify_coords(shapes):
                                                  else int(c * FACTOR)
              for i, c in enumerate(shape)]
         )
+    grouped_shape_coords = []
+    for group in community_groups:
+        group_coords = []
+        for i in group:
+            group_coords.append(shape_coords[i])
+        grouped_shape_coords.append(group_coords)
 
-    return shape_coords
+    return grouped_shape_coords
 
 
 
@@ -102,17 +127,18 @@ def save_as_image(communities, filepath):
     blue_communities = []
     red_communities = []
     for community in communities:
-        if community.partisanship > 50:
+        community.update_partisanship()
+        if community.partisanship > 0.5:
             red_communities.append(community)
         else:
             blue_communities.append(community)
     community_colors = {}
     for community in blue_communities:
-        changed_value = int(2.55 * community.standard_deviation)
+        changed_value = int(510 * community.partisanship)
         community_colors[community.id] = \
             (changed_value, changed_value, 255)
     for community in red_communities:
-        changed_value = int(2.55 * community.standard_deviation)
+        changed_value = int(510 * (1 - community.partisanship))
         community_colors[community.id] = \
             (255, changed_value, changed_value)
 
@@ -120,11 +146,12 @@ def save_as_image(communities, filepath):
     modified_coords = modify_coords([c.coords for c in communities])
     draw = ImageDraw.Draw(image)
     for community, shape in zip(communities, modified_coords):
-        draw.polygon(
-            shape,
-            fill=community_colors[community.id],
-            outline=(0, 0, 0)
-        )
+        for polygon in shape:
+            draw.polygon(
+                polygon,
+                fill=community_colors[community.id],
+                outline=(0, 0, 0)
+            )
     image.save(filepath)
 
 

@@ -115,13 +115,14 @@ def make_communities(island_precinct_groups, n_districts, state_name,
         pass
 
     # Start iterative method with random guess.
-    initial_configuration, precinct_corridors = create_initial_configuration(
-        island_precinct_groups,
-        n_districts,
-        state_border
-    )
-    # with open("/Users/Mukeshkhare/Desktop/new_hampshire_initial_configuration.pickle", "rb") as f:
-    #     initial_configuration, precinct_corridors = pickle.load(f)
+    # initial_configuration, precinct_corridors = create_initial_configuration(
+    #     island_precinct_groups,
+    #     n_districts,
+    #     state_border
+    # )
+    with open("/Users/Mukeshkhare/Desktop/new_hampshire_loose_initial_configuration.pickle", "rb") as f:
+        initial_configuration = pickle.load(f)
+    precinct_corridors = []
     linked_precincts = {p for c in precinct_corridors for p in c}
     
     # Community "snapshots" at different iterations.

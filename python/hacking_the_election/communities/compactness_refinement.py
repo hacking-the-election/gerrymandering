@@ -126,14 +126,20 @@ def refine_for_compactness(communities, minimum_compactness,
 
                 while outside_circle != set() or inside_circle != set():
                     # Add precincts one by one
-                    community_changed = False
                     try:
                         precinct = random.sample(outside_circle, 1)[0]
                         try:
                             try:
                                 add_precinct(
                                     communities, community, precinct, True)
-                                community_changed = True
+                                save_as_image(
+                                    communities,
+                                    os.path.join(
+                                        animation_dir,
+                                        f"{add_leading_zeroes(f)}.png"
+                                    )
+                                )
+                                f += 1
                             except (CreatesMultiPolygonException,
                                     ZeroPrecinctCommunityException):
                                 pass
@@ -149,22 +155,21 @@ def refine_for_compactness(communities, minimum_compactness,
                             try:
                                 add_precinct(
                                     communities, community, precinct, False)
-                                community_changed = True
+                                save_as_image(
+                                    communities,
+                                    os.path.join(
+                                        animation_dir,
+                                        f"{add_leading_zeroes(f)}.png"
+                                    )
+                                )
+                                f += 1
                             except (CreatesMultiPolygonException,
                                     ZeroPrecinctCommunityException):
                                 pass
                         except ValueError as e:
                             warnings.warn(str(e))
                         inside_circle.discard(precinct)
-                    if community_changed:
-                        save_as_image(
-                            communities,
-                            os.path.join(
-                                animation_dir,
-                                f"{add_leading_zeroes(f)}.png"
-                            )
-                        )
-                        f += 1
+                        
 
                     if all([c.compactness > minimum_compactness
                             for c in communities]):

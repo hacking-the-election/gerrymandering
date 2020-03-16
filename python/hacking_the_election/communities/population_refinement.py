@@ -115,7 +115,7 @@ def refine_for_population(communities, population_percentage,
                             os.path.join(
                                 animation_dir,
                                 f"{add_leading_zeroes(f)}.png"
-                            ),
+                            )
                         )
                     except (CreatesMultiPolygonException, IndexError,
                             ZeroPrecinctCommunityException):
