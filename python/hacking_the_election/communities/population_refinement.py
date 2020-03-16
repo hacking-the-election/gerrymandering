@@ -9,6 +9,7 @@ python3 population_refinement.py [initial_configuration] [population_percentage]
 import os
 import pickle
 import random
+import signal
 
 import matplotlib.pyplot as plt
 
@@ -61,8 +62,6 @@ def refine_for_population(communities, population_percentage,
         ideal_population,
         population_percentage
     )
-    print(f"max population: {population_range.upper}")
-    print(f"min population: {population_range.lower}")
 
     try:
         X = [[] for _ in communities]
@@ -84,10 +83,12 @@ def refine_for_population(communities, population_percentage,
             except IndexError:
                 # No communities above threshold.
                 print(
-                     "Finished. Populations: \n"
+                     "finished population. communities: "
                     f"{[c.population for c in communities]}"
                 )
                 break
+
+            print(f"avg population: {sum([c.population for c in communities]) / len(communities)}")
 
             if community.population > population_range.upper:
                 outside_border_precincts = \
@@ -108,17 +109,13 @@ def refine_for_population(communities, population_percentage,
                             precinct.vote_id,
                             **POPULATION_GIVE_PRECINCT_KWARGS
                         )
-                        print(f"Removed {precinct.vote_id} from community {community.id}")
                         f += 1
-                        drawing_shapes = \
-                            [c.coords for c in communities] + [precinct.coords]
                         save_as_image(
-                            drawing_shapes,
+                            communities,
                             os.path.join(
                                 animation_dir,
                                 f"{add_leading_zeroes(f)}.png"
-                            ),
-                            red_outline=len(drawing_shapes) - 1
+                            )
                         )
                     except (CreatesMultiPolygonException, IndexError,
                             ZeroPrecinctCommunityException):
@@ -152,12 +149,9 @@ def refine_for_population(communities, population_percentage,
                             precinct,
                             **POPULATION_GIVE_PRECINCT_KWARGS
                         )
-                        print(f"Added {precinct} to community {community.id}")
                         f += 1
-                        drawing_shapes = \
-                            [c.coords for c in communities]
                         save_as_image(
-                            drawing_shapes,
+                            communities,
                             os.path.join(
                                 animation_dir,
                                 f"{add_leading_zeroes(f)}.png"
@@ -167,19 +161,14 @@ def refine_for_population(communities, population_percentage,
                             ZeroPrecinctCommunityException):
                         pass
                     i += 1
-            
-            if community.population in population_range:
-                print(f"Community {community.id} within population range of {str(population_range)}.")
-                print(f"Community {community.id} population: {int(community.population)}")
-            else:
-                print(f"Community {community.id} failed to get within population range of {str(population_range)}")
-                print(f"Community {community.id} population: {int(community.population)}")
+
             for i, c in enumerate(communities):
                 X[i].append(x)
                 Y[i].append(c.population)
             x += 1
-    except ExitException:
-        pass
+    except Exception as e:
+        print(str(e))
+        raise e
     finally:
         with open(output_pickle, "wb+") as f:
             pickle.dump(communities, f)
@@ -197,14 +186,11 @@ def refine_for_population(communities, population_percentage,
 
 
 if __name__ == "__main__":
-    
-    import signal
+
     import sys
 
     from hacking_the_election.utils.community import Community
     from hacking_the_election.serialization.save_precincts import Precinct
-
-    signal.signal(signal.SIGINT, signal_handler)
 
     with open(sys.argv[1], "rb") as f:
         try:

@@ -10,6 +10,10 @@ import os
 import pickle
 import signal
 import sys
+import time
+
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 
 from hacking_the_election.communities.compactness_refinement import (
     refine_for_compactness
@@ -36,14 +40,17 @@ from hacking_the_election.utils.population import PopulationRange
 
 
 # Parameters
-PARTISANSHIP_STDEV = 7  # Minimum average standard deviation of
-                        # partisanship within communities.
-POPULATION = 5  # Allowed percent difference from ideal population
-COMPACTNESS = 0.4  # Minimum compactness score.
+PARTISANSHIP_STDEV = 10  # Maximum average standard deviation of
+                          # partisanship within communities.
+POPULATION = 15  # Allowed percent difference from ideal population
+COMPACTNESS = 0.3  # Minimum compactness score.
 
 
 def signal_handler(sig, frame):
     raise ExitException
+
+
+signal.signal(signal.SIGINT, signal_handler)
 
 
 def get_refinement_complete(communities):
@@ -61,12 +68,17 @@ def get_refinement_complete(communities):
         sum([c.population for c in communities]) / len(communities)
     population_range = PopulationRange(ideal_population, POPULATION)
     
-    if (
-            community.standard_deviation < PARTISANSHIP_STDEV
-        and community.population in population_range
-        and community.compactness > COMPACTNESS
-            ):
-        raise LoopBreakException
+    community_passes = []
+    for community in communities:
+        community_passes.append(
+                community.population in population_range
+            and community.compactness > COMPACTNESS
+        )
+
+    average_stdev = (sum([c.standard_deviation for c in communities])
+                   / len(communities))
+
+    return all(community_passes) and average_stdev < PARTISANSHIP_STDEV
 
 
 def get_changed_precincts(old_communities, new_communities):
@@ -102,94 +114,107 @@ def make_communities(island_precinct_groups, n_districts, state_name,
     except FileExistsError:
         pass
 
+    # Start iterative method with random guess.
+    # initial_configuration, precinct_corridors = create_initial_configuration(
+    #     island_precinct_groups,
+    #     n_districts,
+    #     state_border
+    # )
+    with open("/Users/Mukeshkhare/Desktop/new_hampshire_loose_initial_configuration.pickle", "rb") as f:
+        initial_configuration = pickle.load(f)
+    precinct_corridors = []
+    linked_precincts = {p for c in precinct_corridors for p in c}
+    
+    # Community "snapshots" at different iterations.
+    community_stages = [deepcopy(initial_configuration)]
+    # List of precincts that changed each iteration. (ids)
+    changed_precincts = []
+
+    i = 1
     try:
-        # Start iterative method with random guess.
-        # initial_configuration, precinct_corridors = create_initial_configuration(
-        #     island_precinct_groups,
-        #     n_districts,
-        #     state_border
-        # )
-        with open("/Users/Mukeshkhare/Desktop/new_hampshire_initial_configuration.pickle", "rb") as f:
-            initial_configuration, precinct_corridors = pickle.load(f)
-        linked_precincts = {p for c in precinct_corridors for p in c}
-        
-        # Community "snapshots" at different iterations.
-        community_stages = [deepcopy(initial_configuration)]
-        # List of precincts that changed each iteration. (ids)
-        changed_precincts = []
-        get_refinement_complete(community_stages[0])
+        while True:
+            print(f"iteration {i}")
 
-        i = 0
-        try:
-            while True:
+            iteration_changed_precincts = []
 
-                community_stages.append(
-                    modify_for_partisanship(
-                        deepcopy(community_stages[-1]),
-                        precinct_corridors,
-                        PARTISANSHIP_STDEV,
-                        os.path.join(
-                            animation_dir,
-                            f"{add_leading_zeroes(i)}_partisanship"
-                        ),
-                        10
-                    )
+            start_time = time.time()
+            partisanship_refined = \
+                modify_for_partisanship(
+                    deepcopy(community_stages[-1]),
+                    precinct_corridors,
+                    PARTISANSHIP_STDEV,
+                    os.path.join(
+                        animation_dir,
+                        f"{add_leading_zeroes(i)}_partisanship"
+                    ),
+                    30
                 )
-
-                changed_precincts.append(
-                    get_changed_precincts(*community_stages[-2:]))
-                print("refined for partisanship")
-                print(f"{len(changed_precincts[-1])} precincts moved")
-                get_refinement_complete(community_stages[-1])
-
-                community_stages.append(
-                    refine_for_compactness(
-                        deepcopy(community_stages[-1]),
-                        COMPACTNESS,
-                        precinct_corridors,
-                        "tmp.json",
-                        "tmp.pickle",
-                        os.path.join(
-                            animation_dir,
-                            f"{add_leading_zeroes(i)}_compactness"
-                        ),
-                        state_name,
-                        10
-                    )
+            iteration_changed_precincts.append(
+                get_changed_precincts(
+                    community_stages[-1],
+                    partisanship_refined
                 )
+            )
+            print(f"partisanship took {round(time.time() - start_time, 3)}s")
+            print(f"partisanship moved {len(iteration_changed_precincts[-1])} precincts")
 
-                changed_precincts.append(
-                    get_changed_precincts(*community_stages[-2:]))
-                print("refined for compactness")
-                print(f"{len(changed_precincts[-1])} precincts moved")
-                get_refinement_complete(community_stages[-1])
-
-                community_stages.append(
-                    refine_for_population(
-                        deepcopy(community_stages[-1]),
-                        POPULATION,
-                        precinct_corridors,
-                        "tmp.json",
-                        "tmp.pickle",
-                        os.path.join(
-                            animation_dir,
-                            f"{add_leading_zeroes(i)}_population"
-                        ),
-                        state_name,
-                        10
-                    )
+            start_time = time.time()
+            compactness_refined = \
+                refine_for_compactness(
+                    deepcopy(partisanship_refined),
+                    COMPACTNESS,
+                    precinct_corridors,
+                    "tmp.json",
+                    "tmp.pickle",
+                    os.path.join(
+                        animation_dir,
+                        f"{add_leading_zeroes(i)}_compactness"
+                    ),
+                    state_name,
+                    10
                 )
+            iteration_changed_precincts.append(
+                get_changed_precincts(
+                    partisanship_refined,
+                    compactness_refined
+                )
+            )
+            print(f"compactness took {round(time.time() - start_time, 3)}s")
+            print(f"compactness moved {len(iteration_changed_precincts[-1])} precincts")
 
-                changed_precincts.append(
-                    get_changed_precincts(*community_stages[-2:]))
-                print("refined for population")
-                print(f"{len(changed_precincts[-1])} precincts moved")
-                get_refinement_complete(community_stages[-1])
+            start_time = time.time()
+            community_stages.append(
+                refine_for_population(
+                    deepcopy(compactness_refined),
+                    POPULATION,
+                    precinct_corridors,
+                    "tmp.json",
+                    "tmp.pickle",
+                    os.path.join(
+                        animation_dir,
+                        f"{add_leading_zeroes(i)}_population"
+                    ),
+                    state_name,
+                    10
+                )
+            )
+            print(f"population took {round(time.time() - start_time, 3)}s")
+            iteration_changed_precincts.append(
+                get_changed_precincts(
+                    compactness_refined,
+                    community_stages[-1]
+                )
+            )
+            print(f"population moved {len(iteration_changed_precincts[-1])} precincts")
 
-                i += 1
+            changed_precincts.append(iteration_changed_precincts)
+            print(f"{sum([len(i) for i in changed_precincts[-1]])} precincts moved on iteration {i}")
 
-        except LoopBreakException:
-            pass
+            if sum([len(i) for i in changed_precincts[-1]]) < 10:
+                # Less than 10 precincts moved this iteration.
+                break
+
+            i += 1
 
         # Save output to pickle and json
         with open(output_pickle, "wb+") as f:

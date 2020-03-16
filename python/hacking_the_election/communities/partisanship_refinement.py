@@ -65,12 +65,15 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ani
         community.update_standard_deviation()
     # average stdev tracks the average_standard_deviation across all communities throughout iterations
     average_stdev = [average([community20.standard_deviation for community20 in communities_list])]
+    if average_stdev[0] < threshold:
+        return communities_list
     # standard_deviations will store comma seperated standard deviations for communities, with rows 
     # being iterations
     standard_deviations = []
     z = 0
     while success != "yes!":
         if count >= int(iterations):
+            print("max iterations reached for partisanship")
             break
         # update attribute values (in case this hasn't already been done)
         for community in communities_list:
@@ -213,7 +216,6 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ani
         precinct_count = 1
         changing_stdev = []
         while most_stdev_community.standard_deviation > int(threshold):
-            print(most_stdev_id, most_stdev_community.standard_deviation, threshold)
             # if there is only one precinct left, just stop
             if len(most_stdev_community.precincts) == 1:
                 break
@@ -245,6 +247,14 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ani
                     continue
                 try:
                     most_stdev_community.give_precinct(other_community, high_precinct.vote_id)
+                    save_as_image(
+                        [most_stdev_community, other_community],
+                        os.path.join(
+                            animation_dir,
+                            f"{add_leading_zeroes(z)}.png"
+                        )
+                    )
+                    z += 1
                 except CreatesMultiPolygonException:
                     del precinct_exchanges_dict[highest_precinct_exchange]
                     continue
@@ -266,6 +276,14 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ani
                     continue
                 try:
                     other_community.give_precinct(most_stdev_community, high_precinct.vote_id)
+                    save_as_image(
+                        [most_stdev_community, other_community],
+                        os.path.join(
+                            animation_dir,
+                            f"{add_leading_zeroes(z)}.png"
+                        )
+                    )
+                    z += 1
                 except CreatesMultiPolygonException:
                     del precinct_exchanges_dict[highest_precinct_exchange]
                     continue
@@ -359,20 +377,11 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ani
         for community15 in not_involved_community_list:
             community_change_snapshot.append(community15)
         communities_at_stages[average([community.standard_deviation for community in communities_list])] = community_change_snapshot
-
-        save_as_image(
-            [c.coords for c in community_change_snapshot],
-            os.path.join(
-                animation_dir,
-                f"{add_leading_zeroes(z)}_partisanshp.png"
-            )
-        )
-        z += 1
+        print(f"avg stdev: {sum([c.standard_deviation for c in communities_list]) / len(communities_list)}")
     # find iteration with smallest average_stdev
-    print(communities_at_stages.keys())
     minimized = min(communities_at_stages)
     minimized_communities = communities_at_stages[minimized]
-    print(minimized)
+    print(f"finished partisanship. communities {[c.standard_deviation for c in minimized_communities]}")
     return minimized_communities
 
 
