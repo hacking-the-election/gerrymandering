@@ -953,11 +953,11 @@ GeoGerry::Multi_Shape paths_to_multi_shape(ClipperLib::Paths paths) {
     for (ClipperLib::Path path : paths) {
         if (!ClipperLib::Orientation(path)) {
             GeoGerry::LinearRing border = path_to_ring(path);
-            if (border.border[0] != border.border[border.border.size() - 1])
-                border.border.insert(border.border.begin(), border.border[border.border.size() - 1]);
-
-            GeoGerry::Shape s(border);
-            ms.border.push_back(s);
+            if (border.border[0] == border.border[border.border.size() - 1]) {
+                // border.border.insert(border.border.begin(), border.border[border.border.size() - 1]);
+                GeoGerry::Shape s(border);
+                ms.border.push_back(s);
+            }
         }
         else {
             // std::cout << "hole" << std::endl;

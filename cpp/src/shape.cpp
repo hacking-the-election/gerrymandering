@@ -27,6 +27,17 @@ double GeoGerry::Precinct::get_ratio() {
     #endif
 }
 
+
+double GeoGerry::Precinct_Group::get_ratio() {
+    
+    double average = 0;
+    for (Precinct p : precincts)
+        average += p.get_ratio();
+    average /= precincts.size();
+
+    return average;
+}
+
 std::vector<int> GeoGerry::Precinct::get_voter_data() {
     // get vector of voting data
     return {dem, rep};

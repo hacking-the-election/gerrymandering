@@ -250,7 +250,7 @@ class Precinct : public Shape {
             rep = repV;
         }
 
-        double get_ratio();                 // returns dem/total ratio
+        virtual double get_ratio();                 // returns dem/total ratio
         std::vector<int> get_voter_data();  // get data in {dem, rep} format
 
         // add operator overloading for object equality
@@ -349,6 +349,7 @@ class Precinct_Group : public Multi_Shape {
         // serialize and read to and from binary
         void write_binary(std::string path);
         static Precinct_Group read_binary(std::string path);
+        double get_ratio();
         std::string to_json();
 
         int get_population();

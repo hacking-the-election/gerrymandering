@@ -47,7 +47,7 @@ using namespace boost::filesystem;
 */
 
 const int CHANGED_PRECINT_TOLERANCE = 10; // percent of precincts that can change from iteration
-const int MAX_ITERATIONS = 10; // max number of times we can change a community
+const int MAX_ITERATIONS = 25; // max number of times we can change a community
 int TOTAL_MOVED_PRECINCTS = 0;  // number of times a precinct has been given to another district
 vector<string> TOTAL_MOVED_PRECINCT_ID = {};
 
@@ -976,11 +976,11 @@ void State::refine_communities(double part, double popt, double compt) {
         TOTAL_MOVED_PRECINCTS = 0;
 
         refine_compactness(compt);
-        save_iteration_data(this->state_communities, "al_community_data");
-        refine_partisan(part);
-        save_iteration_data(this->state_communities, "al_community_data");
+        save_iteration_data(this->state_communities, "nh_community_data");
+        // refine_partisan(part);
+        // save_iteration_data(this->state_communities, "nh_community_data");
         refine_population(popt);
-        save_iteration_data(this->state_communities, "al_community_data");
+        save_iteration_data(this->state_communities, "nh_community_data");
 
         if (VERBOSE) cout << TOTAL_MOVED_PRECINCTS << " precincts changed" << endl;
         i++;
