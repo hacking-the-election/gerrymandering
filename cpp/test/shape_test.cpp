@@ -65,11 +65,12 @@ bool is_bordering(ClipperLib::Path p1, ClipperLib::Path p2) {
 
     ClipperLib::Paths solutions;
     ClipperLib::Clipper c;
-
+    ClipperLib::Paths subj = {p1};
+    ClipperLib::Paths clip = {p2};
     // execute union on paths array
-    c.AddPath(p1, ClipperLib::ptSubject, true);
-    c.AddPath(p2, ClipperLib::ptClip, true);
-    c.Execute(ClipperLib::ctIntersection, solutions, ClipperLib::pftNegative);
+    c.AddPaths(subj, ClipperLib::ptSubject, true);
+    c.AddPaths(clip, ClipperLib::ptClip, true);
+    c.Execute(ClipperLib::ctIntersection, solutions, ClipperLib::pftNonZero);
 
     return (solutions.size() > 0);
 }
@@ -78,9 +79,10 @@ int main() {
     ClipperLib::Path p1, p2;
     p1 << ClipperLib::IntPoint(0,0) << ClipperLib::IntPoint(1,0) << ClipperLib::IntPoint(0,1) << ClipperLib::IntPoint(0,0);
     p2 << ClipperLib::IntPoint(1,0) << ClipperLib::IntPoint(1,1) << ClipperLib::IntPoint(0,1) << ClipperLib::IntPoint(1,0);
-    GeoDraw::Canvas c(900, 900);
+    // GeoDraw::Canvas c(900, 900);
     // c.add_shape(path_to_ring(p1));
     // c.add_shape(path_to_ring(p2));
     // c.draw();
+
     cout << is_bordering(p1, p2) << endl;
 }

@@ -953,11 +953,11 @@ GeoGerry::Multi_Shape paths_to_multi_shape(ClipperLib::Paths paths) {
     for (ClipperLib::Path path : paths) {
         if (!ClipperLib::Orientation(path)) {
             GeoGerry::LinearRing border = path_to_ring(path);
-            if (border.border[0] != border.border[border.border.size() - 1])
-                border.border.insert(border.border.begin(), border.border[border.border.size() - 1]);
-
-            GeoGerry::Shape s(border);
-            ms.border.push_back(s);
+            if (border.border[0] == border.border[border.border.size() - 1]) {
+                // border.border.insert(border.border.begin(), border.border[border.border.size() - 1]);
+                GeoGerry::Shape s(border);
+                ms.border.push_back(s);
+            }
         }
         else {
             // std::cout << "hole" << std::endl;
@@ -1056,11 +1056,8 @@ bool creates_island(GeoGerry::Precinct_Group set, GeoGerry::p_index remove) {
     */
     
     // remove precinct from set
-    set.precincts.erase(set.precincts.begin() + remove);
-    int islands_after = generate_exterior_border(set).border.size();
-
-    // return whether exchange has created an island
-    return (islands_after > 1);
+    set.remove_precinct(set.precincts[remove]);
+    return (set.border.size() > 1);
 }
 
 
@@ -1096,6 +1093,15 @@ bool creates_island(GeoGerry::p_index_set set, GeoGerry::p_index remove, GeoGerr
     int islands_after = generate_exterior_border(pg_after).border.size();
 
     return (islands_after > 1);
+}
+
+
+bool creates_island(GeoGerry::Precinct_Group set, GeoGerry::Precinct precinct) {
+    set.remove_precinct(precinct);
+    int t = set.border.size();
+    set.add_precinct(precinct);
+    
+    return (t > 1);
 }
 
 
