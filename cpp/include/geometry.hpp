@@ -75,5 +75,6 @@ bool get_inside_first(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1);
 
 bool creates_island(GeoGerry::Precinct_Group set, GeoGerry::p_index remove);
 bool creates_island(GeoGerry::p_index_set set, GeoGerry::p_index remove, GeoGerry::State precincts);
+bool creates_island(GeoGerry::Precinct_Group set, GeoGerry::Precinct precinct);
 
 GeoGerry::Shape generate_gon(GeoGerry::coordinate c, double radius, int n);

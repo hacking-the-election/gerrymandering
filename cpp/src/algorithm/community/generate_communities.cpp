@@ -37,10 +37,7 @@ int main(int argc, char* argv[]) {
 
     cout << "generating communities from given parameters..." << endl;
     int districts_in_state = state.state_districts.size();
-    // state.generate_communities(districts_in_state, 0.5, 0.08, 0.1);
-    
-    state.read_communities("community_al_3");
-    state.quantify_gerrymandering(state.state_districts, state.state_communities);
+    state.generate_communities(districts_in_state, 0.4, 0.095, 0.12);
 
     // state.refine_communities(0.075, 0.1, 0.5);
     // state.refine_partisan(0.07);

@@ -56,7 +56,6 @@ std::string GeoGerry::Precinct_Group::to_json() {
         str += p.hull.to_json();
         for (GeoGerry::LinearRing hole : p.holes)
             str += "," + hole.to_json();
-
         str += "]}},";
     }
 

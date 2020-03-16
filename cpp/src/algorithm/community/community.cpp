@@ -360,13 +360,19 @@ void State::generate_initial_communities(int num_communities) {
     // for (int c_index = 0; c_index < 1; c_index++) {
         // fill linked communities with generation method
         cout << "filling new community..." << endl;
+        cout << "csize: " << c.size() << endl;
         Community community = c[c_index];
         for (int i = 0; i < community.location.size(); i++) {
             cout << "on size " << community.size[i] << endl;
             // get information about the current community
             int size  = community.size[i];
             int island_i = community.location[i];
+            
             p_index_set island_available_precincts = available_precincts[i]; 
+            Precinct_Group available_shapes;
+            for (p_index pre : island_available_precincts)
+                available_shapes.add_precinct_n(precincts[pre]);
+            available_shapes.border = generate_exterior_border(available_shapes).border;
 
             int start_precinct;
             
@@ -410,7 +416,7 @@ void State::generate_initial_communities(int num_communities) {
                 bool can_do_one = false;
 
                 for (p_index pre : bordering_precincts) {
-                    if (!creates_island(island_available_precincts, pre, *this) && precincts_added < precincts_to_add) {
+                    if (!creates_island(available_shapes, precincts[pre]) && precincts_added < precincts_to_add) {
                         can_do_one = true;
                         cout << "adding precinct " << pre << endl;
                         island_available_precincts.erase(
@@ -422,8 +428,10 @@ void State::generate_initial_communities(int num_communities) {
                                 island_available_precincts.end()
                             );
 
+                        available_shapes.remove_precinct(precincts[pre]);
                         community.add_precinct_n(precincts[pre]);
                         precincts_added++;
+                        writef(community.to_json(), to_string(c_index) + "c.json");
                     }
                     else cout << "creates island, refraining..." << endl;
                 }
@@ -705,7 +713,17 @@ void State::refine_compactness(double compactness_tolerance) {
     */
 
     p_index worst_community = get_next_community(compactness_tolerance, COMPACTNESS);
-    bool is_done = (worst_community == -1);
+
+    bool is_worst = false;
+    for (int i = 0; i < state_communities.size(); i++) {
+        if (state_communities[i].get_compactness() < compactness_tolerance) {
+            is_worst = true;
+            break;
+        }
+    }
+
+    bool is_done = (!is_worst);
+        
 
     cout << "refining for compactness..." << endl;
 
@@ -761,7 +779,15 @@ void State::refine_compactness(double compactness_tolerance) {
         }
             
         // if the community is within the tolerance, or if it has been modified too many times
-        is_done = (worst_community == -1 || iter == MAX_ITERATIONS);
+        bool is_worst = false;
+        for (int i = 0; i < state_communities.size(); i++) {
+            if (state_communities[i].get_compactness() < compactness_tolerance) {
+                is_worst = true;
+                break;
+            }
+        }
+
+        is_done = (!is_worst || iter == MAX_ITERATIONS);
         iter++;
     }
 }

@@ -71,34 +71,15 @@ vector<unit_interval> State::quantify_gerrymandering(vector<Multi_Shape> distric
             intersection_ratios.push_back(intersections[i].get_area() / district.get_area());
         }
 
-        score = 1 - (largest / district.get_area());
-        cout << "Unmodified: " << score << endl;
-        
+        score = 1 - (largest / district.get_area());        
         double average_community_area = base_communities.size();
         vector<double> weights;
-        for (double ir : intersection_ratios) weights.push_back(ir / average_community_area);
+        double partisanship = 0;
 
-        double weighted_average;
-        double mult_sum = 0;
-        double weight_sum = 0;
-
-        for (double weight : weights) weight_sum += weight;
-        for (int i = 0; i < weights.size(); i++)
-            mult_sum += (weights[i] * inside[i].get_ratio());
-
-        weighted_average = mult_sum / weight_sum;
-        cout << weight_sum << endl;
-
-        double part_factor = 0;
-        for (int i = 0; i < weights.size(); i++)
-            part_factor += weights[i] * pow((inside[i].get_ratio() - weighted_average), 2);
-        part_factor /= weight_sum;
-
-        cout << "part " << part_factor << endl;
-        score *= part_factor;
-        cout << "score " << score << endl;
-
-        vals.push_back(score);
+        for (int i = 0; i < intersection_ratios.size(); i++)
+            partisanship += inside[i].get_ratio() * (intersection_ratios[i] / average_community_area);
+        
+        vals.push_back(score * (abs(partisanship - 0.5) * 2));
     }
 
     return vals;

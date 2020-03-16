@@ -1096,6 +1096,12 @@ bool creates_island(GeoGerry::p_index_set set, GeoGerry::p_index remove, GeoGerr
 }
 
 
+bool creates_island(GeoGerry::Precinct_Group set, GeoGerry::Precinct precinct) {
+    set.remove_precinct(precinct);
+    return (set.border.size() > 1);
+}
+
+
 p_index_set get_giveable_precincts(Community c, Communities cs) {
     /*
         @desc:
