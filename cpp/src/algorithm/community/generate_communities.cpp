@@ -36,11 +36,11 @@ int main(int argc, char* argv[]) {
     State state = State::read_binary(read_path);
 
     cout << "generating communities from given parameters..." << endl;
-    int districts_in_state = 2;  // state.state_districts.size();
-    // state.generate_communities(districts_in_state, 0.5, 0.08, 0.01);
+    int districts_in_state = state.state_districts.size();
+    state.generate_communities(districts_in_state, 0.5, 0.08, 0.1);
     
-    state.read_communities("community_vt");
-    state.refine_communities(0.075, 0.1, 0.5);
+    // state.read_communities("community_al_3");
+    // state.refine_communities(0.075, 0.1, 0.5);
     // state.refine_partisan(0.07);
 
     // write as binary

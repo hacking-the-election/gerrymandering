@@ -24,8 +24,8 @@ const long int c = pow(2, 18);
 // constant id strings
 //ndv	nrv	geoid10	GEOID10	POP100
 const std::string election_id_header = "geoid10";
-const std::vector<std::string> d_head = {"ndv"};
-const std::vector<std::string> r_head = {"nrv"};
+const std::vector<std::string> d_head = {"NDV"};
+const std::vector<std::string> r_head = {"NRV"};
 const std::string geodata_id = "GEOID10";
 const std::string population_id = "POP100";
 

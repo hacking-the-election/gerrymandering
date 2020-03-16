@@ -1,24 +1,20 @@
 /*===============================================
  community.cpp:                        k-vernooy
  last modified:                     Fri, Feb 28
-
  Definition of the community-generation algorithm for
  quantifying gerrymandering and redistricting. This
  algorithm is the main result of the project
  hacking-the-election, and detailed techincal
  documents can be found in the /docs root folder of
  this repository.
-
  Visit https://hacking-the-election.github.io for
  more information on this project.
  
  Useful links for explanations, visualizations,
  results, and other information:
-
  Our data sources for actually running this
  algorithm can be seen at /data/ or on GitHub:
  https://github.com/hacking-the-election/data
-
  This algorithm has been implemented in C++ and in
  Python. If you're interested in contributing to the
  open source political movement, please contact us
@@ -163,7 +159,6 @@ void State::generate_initial_communities(int num_communities) {
             Loop through all ƒractional islands - those that need precincts
             from other islands to create communities - and create community
             objects with links
-
             Have fun trying to understand this code tomorrow
         */
 
@@ -457,7 +452,7 @@ void State::generate_initial_communities(int num_communities) {
     for (int i = 0; i < state_communities.size(); i++)
         state_communities[i].border = generate_exterior_border(state_communities[i]).border;
 
-    save_communities("community_al_3", this->state_communities);
+    save_communities("community_al_initial", this->state_communities);
     return;
 }
 
@@ -473,7 +468,6 @@ p_index State::get_next_community(double tolerance, int process) {
             `double` tolerance: the tolerance for any process
             `int` process: the id of the current running process. These are
                            defined in the top of this file as constants
-
         @return: `p_index` community to modify next
     */
 
@@ -564,12 +558,10 @@ bool State::give_precinct(p_index precinct, p_index community, int t_type, bool 
             performs a precinct transaction by giving `precinct` from `community` to
             a possible other community (dependent on which function it's being used for).
             This is the only way community borders can change.
-
         @params:
             `p_index` precinct: The position of the precinct to give in the community
             `p_index` community: The position of the community in the state array
             `int` t_type: the currently running process (consts defined in community.cpp)
-
         @return: void
     */
 
@@ -676,12 +668,10 @@ bool State::give_precinct(p_index precinct, p_index community, p_index community
             performs a precinct transaction by giving `precinct` from `community` to
             a possible other community specified in the parameters.
             This is the only way community borders can change.
-
         @params:
             `p_index` precinct: The position of the precinct to give in the community
             `p_index` community: The position of the community in the state array
             `p_index` community_give: The community to give to
-
         @return: void
     */
 
@@ -710,7 +700,6 @@ void State::refine_compactness(double compactness_tolerance) {
             Optimize the state's communities for population. Attempts
             to minimize difference in population across the state
             with a tolerance for acceptable +- percent difference
-
         @params: `double` compactness_tolerance: tolerance for compactness
         @return: void
     */
@@ -733,7 +722,6 @@ void State::refine_compactness(double compactness_tolerance) {
         Shape circle;
         coordinate center = state_communities[worst_community].get_center();
         circle = generate_gon(center, sqrt(state_communities[worst_community].get_area() / PI), 30);
-        
         p_index_set giveable = get_inner_boundary_precincts(state_communities[worst_community]);
 
         // for  each precinct in edge of community;
@@ -785,12 +773,11 @@ void State::refine_partisan(double partisanship_tolerance) {
             optimize the partisanship of a community - attempts
             to minimize the stdev of partisanship of precincts
             within each community.
-
         @params: `double` partisanship_tolerance: tolerance for partisanship
         @return: void
     */
 
-    cout << "Refining for partisanship..." << endl;
+    cout << "refining for partisanship..." << endl;
 
     p_index worst_community = get_next_community(partisanship_tolerance, PARTISANSHIP);
     bool is_done = (get_standard_deviation_partisanship(this->state_communities) < partisanship_tolerance);
@@ -817,11 +804,6 @@ void State::refine_partisan(double partisanship_tolerance) {
         is_done = (iter == MAX_ITERATIONS || get_standard_deviation_partisanship(this->state_communities) < partisanship_tolerance);
         iter++;
     }
-
-    Canvas canvas(900, 900);
-    canvas.add_shape(this->state_communities, true, Color(0,0,0), 2);
-    canvas.draw();
-    full_animation.playback();
 }
 
 
@@ -831,7 +813,6 @@ void State::refine_population(double population_tolerance) {
             optimize the state's communities for population. Attempts
             to minimize difference in population across the state
             with a tolerance for acceptable +- percent difference
-
         @params: `double` population_tolerance: tolerance for population
         @return: void
     */
@@ -882,10 +863,8 @@ int measure_difference(Communities communities, Communities new_communities) {
             measures and returns how many precincts have changed communities
             in a given list of old and new communities. Used for checking when
             to stop the algorithm.
-
         @params:
             `Communities` communities, new_communities: community arrays to measure difference of
-
         @return: `int` difference in communities
     */
     
@@ -928,10 +907,8 @@ void State::generate_communities(int num_communities, double compactness_toleran
             a random configuration. Then, it uses the iterative method to
             refine for a variable until the number of precincts that change is
             within a tolerance, set above (see CHANGED_PRECINCT_TOLERANCE).
-
             This State method returns nothing - to access results, check
             the state.state_communities property.
-
             The #defined WRITE determines whether or not to write binary
             community objects to a predefined directory. These can then be loaded
             in order to visualize algorithms. See the `community_playback` function
@@ -958,7 +935,6 @@ void State::generate_communities(int num_communities, double compactness_toleran
         ! This is only until we have a good idea for a stop condition. We
            first will plot results on a graph and regress to see the optimal
            point of minimal change.
-
         At some point this will be changed to:
            while (changed_precincts > precinct_change_tolerance)
     */
@@ -996,17 +972,17 @@ void State::refine_communities(double part, double popt, double compt) {
     int i = 0, changed_precincts = 0;
     
     do {
-        cout << "On iteration " << i + 1 << endl;
+        cout << "iteration " << i + 1 << endl;
         TOTAL_MOVED_PRECINCTS = 0;
 
         refine_compactness(compt);
-        save_iteration_data(this->state_communities, "vt_community_data");
+        save_iteration_data(this->state_communities, "al_community_data");
         refine_partisan(part);
-        save_iteration_data(this->state_communities, "vt_community_data");
+        save_iteration_data(this->state_communities, "al_community_data");
         refine_population(popt);
-        save_iteration_data(this->state_communities, "vt_community_data");
+        save_iteration_data(this->state_communities, "al_community_data");
 
-        if (VERBOSE) cout << TOTAL_MOVED_PRECINCTS << " precincts changed." << endl;
+        if (VERBOSE) cout << TOTAL_MOVED_PRECINCTS << " precincts changed" << endl;
         i++;
 
     } while (TOTAL_MOVED_PRECINCTS != 0);
@@ -1025,7 +1001,6 @@ string Community::save_frame() {
         @desc:
             Saves a community configuration into a string by using
             the precinct id's with a comma separated list.
-
         @params: none
         @return: `string` saved communities
     */
@@ -1045,11 +1020,9 @@ Communities Community::load_frame(std::string read_path, State precinct_list) {
         @desc:
             Given file path and precinct reference, reads a saved
             community configuration into an array of communities
-
         @params:
             `string` read_path: path to the saved community frame
             `GeoGerry::State` precinct_list: reference to get precinct geodata given id's
-
         @return: `Communities` loaded community array
     */
 
