@@ -37,6 +37,7 @@ from hacking_the_election.utils.initial_configuration import (
     add_leading_zeroes
 )
 from hacking_the_election.utils.population import PopulationRange
+from hacking_the_election.quantification import quantify
 
 
 # Parameters
@@ -104,7 +105,8 @@ def get_changed_precincts(old_communities, new_communities):
 
 
 def make_communities(island_precinct_groups, n_districts, state_name,
-                     state_border, animation_dir, output_pickle, output_json):
+                     state_border, animation_dir, output_pickle, output_json,
+                     redistricting, base_communities_file):
     """
     Divides a state into ungerrymandered political communities.
     """
@@ -115,13 +117,11 @@ def make_communities(island_precinct_groups, n_districts, state_name,
         pass
 
     # Start iterative method with random guess.
-    # initial_configuration, precinct_corridors = create_initial_configuration(
-    #     island_precinct_groups,
-    #     n_districts,
-    #     state_border
-    # )
-    with open("/Users/Mukeshkhare/Desktop/new_hampshire_loose_initial_configuration.pickle", "rb") as f:
-        initial_configuration = pickle.load(f)
+    initial_configuration, precinct_corridors = create_initial_configuration(
+        island_precinct_groups,
+        n_districts,
+        state_border
+    )
     precinct_corridors = []
     linked_precincts = {p for c in precinct_corridors for p in c}
     
@@ -129,6 +129,8 @@ def make_communities(island_precinct_groups, n_districts, state_name,
     community_stages = [deepcopy(initial_configuration)]
     # List of precincts that changed each iteration. (ids)
     changed_precincts = []
+    # Gerrymandering score after each iteration.
+    gerrymandering_scores = []
 
     i = 1
     try:
@@ -156,7 +158,8 @@ def make_communities(island_precinct_groups, n_districts, state_name,
                 )
             )
             print(f"partisanship took {round(time.time() - start_time, 3)}s")
-            print(f"partisanship moved {len(iteration_changed_precincts[-1])} precincts")
+            print(f"partisanship moved {len(iteration_changed_precincts[-1])} "
+                   "precincts")
 
             start_time = time.time()
             compactness_refined = \
@@ -180,7 +183,8 @@ def make_communities(island_precinct_groups, n_districts, state_name,
                 )
             )
             print(f"compactness took {round(time.time() - start_time, 3)}s")
-            print(f"compactness moved {len(iteration_changed_precincts[-1])} precincts")
+            print(f"compactness moved {len(iteration_changed_precincts[-1])} "
+                   "precincts")
 
             start_time = time.time()
             community_stages.append(
@@ -205,14 +209,25 @@ def make_communities(island_precinct_groups, n_districts, state_name,
                     community_stages[-1]
                 )
             )
-            print(f"population moved {len(iteration_changed_precincts[-1])} precincts")
+            print(f"population moved {len(iteration_changed_precincts[-1])} "
+                   "precincts")
 
             changed_precincts.append(iteration_changed_precincts)
-            print(f"{sum([len(i) for i in changed_precincts[-1]])} precincts moved on iteration {i}")
+            print(f"{sum([len(i) for i in changed_precincts[-1]])} precincts "
+                  f"moved on iteration {i}")
 
             if sum([len(i) for i in changed_precincts[-1]]) < 10:
                 # Less than 10 precincts moved this iteration.
                 break
+            
+            if redistricting:
+                with open("tmp1.pickle", "wb+") as f:
+                    pickle.dump(community_stages[-1])
+                gerrymandering_scores.append(
+                    quantify(base_communities_file, "tmp1.pickle")
+                )
+            print(f"iteration {i} got a gerrymandering score of "
+                  f"{gerrymandering_scores[-1][-1]}")
 
             i += 1
 
@@ -242,4 +257,5 @@ if __name__ == "__main__":
         island_precinct_groups, _, state_border = pickle.load(f)
 
     make_communities(island_precinct_groups, int(sys.argv[2]), sys.argv[3],
-                     state_border, *sys.argv[4:])
+                     state_border, *sys.argv[4:7], bool(sys.argv[7]),
+                     sys.argv[8])
