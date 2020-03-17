@@ -11,6 +11,7 @@ test*.pickle
 test*.txt
 hacking_the_election.egg-info
 tmp.json
+tmp1.json
 tmp.pickle
 
 # vscode
