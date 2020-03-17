@@ -22,6 +22,19 @@ from hacking_the_election.quantification import quantify
 COLORS = ["blue", "green"]
 
 
+def get_squishing_function(min_val, max_val):
+    """
+    Returns a function that takes an input between `min_val` and
+    `max_val` and squishes it proportionately between 0 and 1
+    """
+    def f(x):
+        try:
+            return (x - min_val) / (max_val - min_val)
+        except ZeroDivisionError:
+            return 0
+    return f
+
+
 def generate_graphs(districts_file, redistricting, pop_constraint):
     """
     Makes these graphs:
@@ -173,6 +186,53 @@ def generate_graphs(districts_file, redistricting, pop_constraint):
         line, = ax6.plot(community, color=COLORS[i])
         line.set_label(f"District {i + 1}")
     ax6.legend()
+
+    # Average Constraint Values Over Iterations
+    fig7 = plt.figure()
+
+    X = list(range(len(community_stages)))
+    Y = [[] for _ in range(3)]
+
+    # Constraint values for each stage:
+    average_constraints = [
+        [sum([c.standard_deviation for c in stage]) / (l := len(stage)),
+         sum([1 - c.compactness for c in stage]) / l,
+         sum([(abs(c.population - ideal_pop) / ideal_pop) * 100
+              for c in stage]) / l]
+        for stage in community_stages
+    ]
+    
+    # Create "squishing functions" for each of the constraints
+    stdev_squish = get_squishing_function(
+        min([stage[0] for stage in average_constraints]),
+        max([stage[0] for stage in average_constraints])
+    )
+    compactness_squish = get_squishing_function(
+        min([stage[1] for stage in average_constraints]),
+        max([stage[1] for stage in average_constraints])
+    )
+    population_squish = get_squishing_function(
+        min([stage[2] for stage in average_constraints]),
+        max([stage[2] for stage in average_constraints])
+    )
+
+    # Add squished values to Y
+    for stage in average_constraints:
+        Y[0].append(stdev_squish(stage[0]))
+        Y[1].append(compactness_squish(stage[1]))
+        Y[2].append(population_squish(stage[2]))
+
+    ax7 = fig7.add_subplot(111)
+    ax7.set_title("Average Constraint Values Over Time")
+    constraint_order = [
+        "Partisanship Diversity",
+        "Uncompactness",
+        "Difference in Population from Average"
+    ]
+    for constraint_name, constraint_line in zip(constraint_order, Y):
+        line, = ax7.plot(X, constraint_line)
+        line.set_label(constraint_name)
+    ax7.legend()
 
     plt.show()
 
