@@ -88,7 +88,7 @@ def refine_for_population(communities, population_percentage,
                 )
                 break
 
-            print(f"avg population: {sum([c.population for c in communities]) / len(communities)}")
+            print(f"community populations: {[c.population for c in communities]}")
 
             if community.population > population_range.upper:
                 outside_border_precincts = \
@@ -180,8 +180,6 @@ def refine_for_population(communities, population_percentage,
         # for x, y in zip(X, Y):
         #     plt.plot(x, y)
         # plt.show()
-        with open("test_compactness_graph.pickle", "wb+") as f:
-            pickle.dump([X, Y], f)
         return communities
 
 

@@ -46,7 +46,7 @@ def quantify(communities_file, districts_file):
     data = data[0][-1]
     for community in data:
         community.update_partisanship()
-    communities_to_json(data, '../../../base_communities.json')
+    # communities_to_json(data, '../../../base_communities.json')
     # keys: community index
     # values: list of: [decimal percentage of republicans, shapely community border coordinates polygon]
     community_coords = {community:community.coords
@@ -86,7 +86,7 @@ def quantify(communities_file, districts_file):
             # print(district.intersection(community.coords), district_id)
             if district.intersection(community.coords).area > 0:
                 intersecting_communities[community] = district.intersection(community.coords).area
-        print({community.id : intersecting_communities[community] for community in intersecting_communities})
+        # print({community.id : intersecting_communities[community] for community in intersecting_communities})
         # find biggest community, and area
         biggest_community = {}
         for key in intersecting_communities:
@@ -109,12 +109,12 @@ def quantify(communities_file, districts_file):
         district_partisanships = [community.partisanship for community in intersecting_communities]
         # find weighted standard deviation using partisanship, area_weights
         stdev_district = stdev(district_partisanships, area_weights)
-        print(stdev_district)
+        # print(stdev_district)
         # add score to district_scores dict:
         score = 1 - list(biggest_community.values())[0]/total_area
-        print('score', score)
+        # print('score', score)
         weighted1_score = score * stdev_district
-        print('after partisanship factor', weighted1_score)
+        # print('after partisanship factor', weighted1_score)
         district_scores[district_id] = weighted1_score
     state_score = average(district_scores.values())
     return district_scores, state_score

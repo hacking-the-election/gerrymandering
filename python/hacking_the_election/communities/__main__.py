@@ -2,7 +2,11 @@
 The Communities Algorithm.
 
 Usage:
-python3 communities [state_data] [n_districts] [state_name] [animation_dir] [output_pickle] [output_json]
+python3 communities [state_data] [n_districts] [state_name] [animation_dir] [output_pickle] [output_json] [redistricting] [base_communities_file]
+
+
+redistricting should either be "true" or "false"
+base_communities_file should be non if not redistricting
 """
 
 from copy import deepcopy
@@ -41,10 +45,10 @@ from hacking_the_election.quantification import quantify
 
 
 # Parameters
-PARTISANSHIP_STDEV = 10  # Maximum average standard deviation of
-                          # partisanship within communities.
-POPULATION = 15  # Allowed percent difference from ideal population
-COMPACTNESS = 0.3  # Minimum compactness score.
+PARTISANSHIP_STDEV = 11  # Maximum average standard deviation of
+                         # partisanship within communities.
+POPULATION = 1  # Allowed percent difference from ideal population
+COMPACTNESS = 0.5  # Minimum compactness score.
 
 
 def signal_handler(sig, frame):
@@ -221,10 +225,13 @@ def make_communities(island_precinct_groups, n_districts, state_name,
                 break
             
             if redistricting:
-                with open("tmp1.pickle", "wb+") as f:
-                    pickle.dump(community_stages[-1])
+                convert_to_json(
+                    [polygon_to_list(c.coords) for c in community_stages[-1]],
+                    "tmp1.json",
+                    [{"District":str(c.id)} for c in community_stages[-1]]
+                )
                 gerrymandering_scores.append(
-                    quantify(base_communities_file, "tmp1.pickle")
+                    quantify(base_communities_file, "tmp1.json")
                 )
             print(f"iteration {i} got a gerrymandering score of "
                   f"{gerrymandering_scores[-1][-1]}")
@@ -257,5 +264,6 @@ if __name__ == "__main__":
         island_precinct_groups, _, state_border = pickle.load(f)
 
     make_communities(island_precinct_groups, int(sys.argv[2]), sys.argv[3],
-                     state_border, *sys.argv[4:7], bool(sys.argv[7]),
+                     state_border, *sys.argv[4:7],
+                     (True if sys.argv[7] == "true" else False),
                      sys.argv[8])
