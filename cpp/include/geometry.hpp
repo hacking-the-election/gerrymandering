@@ -77,4 +77,5 @@ bool creates_island(GeoGerry::Precinct_Group set, GeoGerry::p_index remove);
 bool creates_island(GeoGerry::p_index_set set, GeoGerry::p_index remove, GeoGerry::State precincts);
 bool creates_island(GeoGerry::Precinct_Group set, GeoGerry::Precinct precinct);
 
+GeoGerry::p_index get_first_precinct(GeoGerry::Precinct_Group available_precincts, GeoGerry::Communities communities);
 GeoGerry::Shape generate_gon(GeoGerry::coordinate c, double radius, int n);

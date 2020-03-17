@@ -81,6 +81,11 @@ void GeoGerry::Precinct_Group::remove_precinct(GeoGerry::Precinct pre) {
         this->border = paths_to_multi_shape(solutions).border;
     }
     else {
+        GeoDraw::Canvas canvas(900, 900);
+        canvas.add_shape(generate_exterior_border(*this));
+        canvas.add_shape(pre);
+        canvas.draw();
+        
         throw GeoGerry::Exceptions::PrecinctNotInGroup();
     }
 }
