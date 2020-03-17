@@ -96,7 +96,7 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ani
                 most_stdev[community5.id] = community5
         most_stdev_id = list(most_stdev.keys())[0]
         most_stdev_community = list(most_stdev.values())[0] 
-        if sum([d.standard_deviation for d in communities_list]) / len(communities_list) < int(threshold):
+        if sum([d.standard_deviation for d in communities_list]) / len(communities_list) < float(threshold):
             success = 'yes!'
             break
         if len(num_of_changed_precincts) > 0:     
@@ -254,15 +254,15 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ani
                     continue
                 try:
                     most_stdev_community.give_precinct(other_community, high_precinct.vote_id)
-                    if animation_dir:
-                        save_as_image(
-                            [most_stdev_community, other_community],
-                            os.path.join(
-                                animation_dir,
-                                f"{add_leading_zeroes(z)}.png"
-                            )
-                        )
-                        z += 1
+                    # if animation_dir:
+                    #     save_as_image(
+                    #         [most_stdev_community, other_community],
+                    #         os.path.join(
+                    #             animation_dir,
+                    #             f"{add_leading_zeroes(z)}.png"
+                    #         )
+                    #     )
+                    #     z += 1
                 except CreatesMultiPolygonException:
                     del precinct_exchanges_dict[highest_precinct_exchange]
                     continue
@@ -284,15 +284,15 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ani
                     continue
                 try:
                     other_community.give_precinct(most_stdev_community, high_precinct.vote_id)
-                    if animation_dir:
-                        save_as_image(
-                            [most_stdev_community, other_community],
-                            os.path.join(
-                                animation_dir,
-                                f"{add_leading_zeroes(z)}.png"
-                            )
-                        )
-                        z += 1
+                    # if animation_dir:
+                    #     save_as_image(
+                    #         [most_stdev_community, other_community],
+                    #         os.path.join(
+                    #             animation_dir,
+                    #             f"{add_leading_zeroes(z)}.png"
+                    #         )
+                    #     )
+                    #     z += 1
                 except CreatesMultiPolygonException:
                     del precinct_exchanges_dict[highest_precinct_exchange]
                     continue
@@ -398,7 +398,7 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ani
         num_of_changed_precincts.append(num_of_changed_iteration)
         # add to average_stdev
         average_stdev.append(average([community100.standard_deviation for community100 in communities_list]))
-
+        print(f"avg stdev: {average_stdev[-1]}")
 
         # # create new communities list
         # not_involved_community_list = []
@@ -411,11 +411,14 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ani
         # for community15 in not_involved_community_list:
         #     community_change_snapshot1.append(community15)
         # communities_at_stages[average([community29.standard_deviation for community29 in community_change_snapshot])] = community_change_snapshot1
-        print(f"avg stdev: {sum([c.standard_deviation for c in community_change_snapshot]) / len(community_change_snapshot)}")
         # print('minimized so far:', min(communities_at_stages.keys()))
     # find iteration with smallest average_stdev
-    minimized = min(communities_at_stages)
-    minimized_communities = communities_at_stages[minimized]
+    try:
+        minimized = min(communities_at_stages)
+        minimized_communities = communities_at_stages[minimized]
+    except ValueError:
+        minimized_communities = communities_list[:]
+    
     # print('# of iterations:', count)
     # print('standard deviations:', standard_deviations)
     # print('# of changed precincts per iteration:', num_of_changed_precincts)

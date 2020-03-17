@@ -94,6 +94,5 @@ def generate_graphs(districts_file, redistricting, pop_constraint):
     plt.show()
 
 
-
 if __name__ == "__main__":
     generate_graphs(*sys.argv[1:3], float(sys.argv[3]))
