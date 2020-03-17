@@ -2,7 +2,11 @@
 The Communities Algorithm.
 
 Usage:
-python3 communities [state_data] [n_districts] [state_name] [animation_dir] [output_pickle] [output_json]
+python3 communities [state_data] [n_districts] [state_name] [animation_dir] [output_pickle] [output_json] [redistricting] [base_communities_file]
+
+
+redistricting should either be "true" or "false"
+base_communities_file should be non if not redistricting
 """
 
 from copy import deepcopy
@@ -37,13 +41,14 @@ from hacking_the_election.utils.initial_configuration import (
     add_leading_zeroes
 )
 from hacking_the_election.utils.population import PopulationRange
+from hacking_the_election.quantification import quantify
 
 
 # Parameters
-PARTISANSHIP_STDEV = 7.5  # Maximum average standard deviation of
-                        # partisanship within communities.
-POPULATION = 10  # Allowed percent difference from ideal population
-COMPACTNESS = 0.4  # Minimum compactness score.
+PARTISANSHIP_STDEV = 11  # Maximum average standard deviation of
+                         # partisanship within communities.
+POPULATION = 1  # Allowed percent difference from ideal population
+COMPACTNESS = 0.5  # Minimum compactness score.
 
 
 def signal_handler(sig, frame):
@@ -104,7 +109,8 @@ def get_changed_precincts(old_communities, new_communities):
 
 
 def make_communities(island_precinct_groups, n_districts, state_name,
-                     state_border, animation_dir, output_pickle, output_json):
+                     state_border, animation_dir, output_pickle, output_json,
+                     redistricting, base_communities_file):
     """
     Divides a state into ungerrymandered political communities.
     """
@@ -120,18 +126,22 @@ def make_communities(island_precinct_groups, n_districts, state_name,
         n_districts,
         state_border
     )
+    precinct_corridors = []
     linked_precincts = {p for c in precinct_corridors for p in c}
     
     # Community "snapshots" at different iterations.
     community_stages = [deepcopy(initial_configuration)]
     # List of precincts that changed each iteration. (ids)
     changed_precincts = []
-    get_refinement_complete(community_stages[0])
+    # Gerrymandering score after each iteration.
+    gerrymandering_scores = []
 
-    i = 0
+    i = 1
     try:
         while True:
             print(f"iteration {i}")
+
+            iteration_changed_precincts = []
 
             start_time = time.time()
             partisanship_refined = \
@@ -145,7 +155,15 @@ def make_communities(island_precinct_groups, n_districts, state_name,
                     ),
                     30
                 )
+            iteration_changed_precincts.append(
+                get_changed_precincts(
+                    community_stages[-1],
+                    partisanship_refined
+                )
+            )
             print(f"partisanship took {round(time.time() - start_time, 3)}s")
+            print(f"partisanship moved {len(iteration_changed_precincts[-1])} "
+                   "precincts")
 
             start_time = time.time()
             compactness_refined = \
@@ -162,7 +180,15 @@ def make_communities(island_precinct_groups, n_districts, state_name,
                     state_name,
                     10
                 )
+            iteration_changed_precincts.append(
+                get_changed_precincts(
+                    partisanship_refined,
+                    compactness_refined
+                )
+            )
             print(f"compactness took {round(time.time() - start_time, 3)}s")
+            print(f"compactness moved {len(iteration_changed_precincts[-1])} "
+                   "precincts")
 
             start_time = time.time()
             community_stages.append(
@@ -180,15 +206,35 @@ def make_communities(island_precinct_groups, n_districts, state_name,
                     10
                 )
             )
-            print(f"partisanship took {round(time.time() - start_time, 3)}s")
+            print(f"population took {round(time.time() - start_time, 3)}s")
+            iteration_changed_precincts.append(
+                get_changed_precincts(
+                    compactness_refined,
+                    community_stages[-1]
+                )
+            )
+            print(f"population moved {len(iteration_changed_precincts[-1])} "
+                   "precincts")
 
-            changed_precincts.append(
-                get_changed_precincts(*community_stages[-2:]))
-            print(f"{len(changed_precincts[-1])} precincts moved on iteration {i}")
+            changed_precincts.append(iteration_changed_precincts)
+            print(f"{sum([len(i) for i in changed_precincts[-1]])} precincts "
+                  f"moved on iteration {i}")
 
-            if len(changed_precincts[-1]) < 3:
-                # Less than 3 precincts moved this iteration.
+            if sum([len(i) for i in changed_precincts[-1]]) < 10:
+                # Less than 10 precincts moved this iteration.
                 break
+            
+            if redistricting:
+                convert_to_json(
+                    [polygon_to_list(c.coords) for c in community_stages[-1]],
+                    "tmp1.json",
+                    [{"District":str(c.id)} for c in community_stages[-1]]
+                )
+                gerrymandering_scores.append(
+                    quantify(base_communities_file, "tmp1.json")
+                )
+            print(f"iteration {i} got a gerrymandering score of "
+                  f"{gerrymandering_scores[-1][-1]}")
 
             i += 1
 
@@ -218,4 +264,6 @@ if __name__ == "__main__":
         island_precinct_groups, _, state_border = pickle.load(f)
 
     make_communities(island_precinct_groups, int(sys.argv[2]), sys.argv[3],
-                     state_border, *sys.argv[4:])
+                     state_border, *sys.argv[4:7],
+                     (True if sys.argv[7] == "true" else False),
+                     sys.argv[8])

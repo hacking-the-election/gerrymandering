@@ -19,14 +19,10 @@
 
 # Communities:
    Now:
-    - initial configuration why overlap?
-    - animation
     - continue working on partisanship test
-    - write make_communities function in __init__.py
     - add much datas to return in partisanship
     - figure out how to overhaul standard deviation so it makes sense in partisanship
     - update communities_to_json so it creates new json at every precinct change or literally whatever
-    - Begin work on population
     
     Later 
     - Fully comment on partisanship

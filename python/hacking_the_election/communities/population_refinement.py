@@ -88,6 +88,8 @@ def refine_for_population(communities, population_percentage,
                 )
                 break
 
+            print(f"community populations: {[c.population for c in communities]}")
+
             if community.population > population_range.upper:
                 outside_border_precincts = \
                     list(community.get_outside_precincts())
@@ -107,14 +109,13 @@ def refine_for_population(communities, population_percentage,
                             precinct.vote_id,
                             **POPULATION_GIVE_PRECINCT_KWARGS
                         )
-                        print(f"Removed {precinct.vote_id} from community {community.id}")
                         f += 1
                         save_as_image(
                             communities,
                             os.path.join(
                                 animation_dir,
                                 f"{add_leading_zeroes(f)}.png"
-                            ),
+                            )
                         )
                     except (CreatesMultiPolygonException, IndexError,
                             ZeroPrecinctCommunityException):
@@ -148,7 +149,6 @@ def refine_for_population(communities, population_percentage,
                             precinct,
                             **POPULATION_GIVE_PRECINCT_KWARGS
                         )
-                        print(f"Added {precinct} to community {community.id}")
                         f += 1
                         save_as_image(
                             communities,
@@ -161,19 +161,14 @@ def refine_for_population(communities, population_percentage,
                             ZeroPrecinctCommunityException):
                         pass
                     i += 1
-            
-            if community.population in population_range:
-                print(f"Community {community.id} within population range of {str(population_range)}.")
-                print(f"Community {community.id} population: {int(community.population)}")
-            else:
-                print(f"Community {community.id} failed to get within population range of {str(population_range)}")
-                print(f"Community {community.id} population: {int(community.population)}")
+
             for i, c in enumerate(communities):
                 X[i].append(x)
                 Y[i].append(c.population)
             x += 1
-    except ExitException:
-        pass
+    except Exception as e:
+        print(str(e))
+        raise e
     finally:
         with open(output_pickle, "wb+") as f:
             pickle.dump(communities, f)
@@ -185,8 +180,6 @@ def refine_for_population(communities, population_percentage,
         # for x, y in zip(X, Y):
         #     plt.plot(x, y)
         # plt.show()
-        with open("test_compactness_graph.pickle", "wb+") as f:
-            pickle.dump([X, Y], f)
         return communities
 
 

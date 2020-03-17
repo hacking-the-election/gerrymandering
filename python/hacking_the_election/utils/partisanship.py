@@ -1,7 +1,7 @@
 """
 Functions for partisanship refinement step in communities algorithm
 """
-
+from time import time
 
 from .geometry import (
     clip,
@@ -30,13 +30,13 @@ def get_bordering_precincts(community1, community2):
     if area_intersection > 0:
         raise Exception('Communities intersect!')
     border_precincts = {community1.id: [], community2.id: []}
+    # print('it middle ends', time())
     for precinct in community1.precincts.values():
         if get_if_bordering(precinct.coords, coords2):
             border_precincts[community1.id].append(precinct)
     for precinct1 in community2.precincts.values():
         if get_if_bordering(precinct1.coords, coords1):
             border_precincts[community2.id].append(precinct1)
-
     # # create combined list of coordinates in each community,
     # combined_coords = shapely_to_polygon(coords1)[0]
     # to_combine = shapely_to_polygon(coords2)[0]

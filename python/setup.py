@@ -7,5 +7,7 @@ setup(
         "numpy",
         "matplotlib",
         "shapely",
-        "Pillow"
+        "Pillow",
+        "colormap",
+        "easydev"
     ])
