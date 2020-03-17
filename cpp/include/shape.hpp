@@ -424,7 +424,7 @@ class State : public Precinct_Group {
         template<class Archive> void serialize(Archive & ar, const unsigned int version);
 
         // for the community generation algorithm
-        void generate_communities(int num_communities, double compactness_tolerance, double partisanship_tolerance, double population_tolerance);
+        void generate_communities(int num_communities, double compactness_tolerance, double partisanship_tolerance, double population_tolerance, std::string writedir);
         bool give_precinct(p_index precinct, p_index community, int t_type, bool animate);
         bool give_precinct(p_index precinct, p_index community, p_index give_community, bool animate, bool p);
 
@@ -432,11 +432,12 @@ class State : public Precinct_Group {
         void generate_initial_communities(int num_communities);
 
         // for the iterative methods
+        void save_iteration_data(Communities cs, std::string folder, int iteration);
         void refine_compactness(double compactness_tolerance);
         p_index get_next_community(double compactness_tolerance, int process);
         void refine_partisan(double partisanship_tolerance);
         void refine_population(double population_tolerance);
-        void refine_communities(double part, double popt, double compt);
+        void refine_communities(double part, double popt, double compt, std::string write_dir);
 
         // return precinct that can be added to the current precinct that won't create islands in the state
         p_index get_addable_precinct(p_index_set available_precincts, p_index current_precinct);
