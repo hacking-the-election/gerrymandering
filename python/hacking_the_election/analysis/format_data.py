@@ -96,4 +96,5 @@ def format_data(input_file, output_file, redistricts):
 
 
 if __name__ == "__main__":
-    format_data(*sys.argv[1:])
+    format_data(sys.argv[1], sys.argv[2],
+                True if sys.argv[3] == "true" else False)

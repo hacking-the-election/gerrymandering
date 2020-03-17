@@ -31,9 +31,9 @@ def generate_graphs(districts_file, redistricting, pop_constraint):
         - Population of each community over iterations
         - This one is the coolest because the lines come together
     |--------
-    | - Compactness Over Time
-    | - Partisanship Stdev Over Time
-    | - Percent Difference From Ideal Population Over Time.
+    | - Compactness Over Iteration
+    | - Partisanship Stdev Over Iteration
+    | - Percent Difference From Ideal Population Over Iteration
     |--------
     For the above there will be one graph with the state average over time.
     For each of them there will also be a graph with each line being a community.
@@ -100,12 +100,12 @@ def generate_graphs(districts_file, redistricting, pop_constraint):
     X = list(range(len(community_stages)))
     Y = [[stage[i].population for stage in community_stages]
          for i in range(len(community_stages[0]))]
-    ax2 = fig3.add_subplot(111)
-    ax2.set_title("Convergence of Populations of Districts")
-    ax2.set_xlabel("Iterations")
-    ax2.set_ylabel("Population")
-    ax2.set_xlim(left=-0.25, right=len(community_stages) - 0.75)
-    ax2.xaxis.set_ticks(np.arange(0, len(community_stages), 1))
+    ax3 = fig3.add_subplot(111)
+    ax3.set_title("Convergence of Populations of Districts")
+    ax3.set_xlabel("Iterations")
+    ax3.set_ylabel("Population")
+    ax3.set_xlim(left=-0.25, right=len(community_stages) - 0.75)
+    ax3.xaxis.set_ticks(np.arange(0, len(community_stages), 1))
 
     x = np.arange(-100, 100, 0.01)
     
@@ -114,13 +114,65 @@ def generate_graphs(districts_file, redistricting, pop_constraint):
                / len(community_stages[0]))
     max_pop = ideal_pop + (ideal_pop * (pop_constraint / 100))
     min_pop = ideal_pop - (ideal_pop * (pop_constraint / 100))
-    ax2.fill_between(x, min_pop, max_pop, facecolor="red", alpha=0.5)
+    ax3.fill_between(x, min_pop, max_pop, facecolor="red", alpha=0.5)
 
     # Create a line for each district
     for i, community in enumerate(Y):
-        line, = ax2.plot(community, color=COLORS[i])
+        line, = ax3.plot(community, color=COLORS[i])
         line.set_label(f"District {i + 1}")
-    ax2.legend()
+    ax3.legend()
+
+    # Compactness Over Time (one line for each community)
+    fig4 = plt.figure(4)
+
+    X = list(range(len(community_stages)))
+    Y = [[stage[i].compactness for stage in community_stages]
+         for i in range(len(community_stages[0]))]
+    ax4 = fig4.add_subplot(111)
+    ax4.set_title("Compactness Over Iterations")
+    ax4.set_xlabel("Iterations")
+    ax4.set_ylabel("Compactness")
+
+    # Create a line for each district
+    for i, community in enumerate(Y):
+        line, = ax4.plot(community, color=COLORS[i])
+        line.set_label(f"District {i + 1}")
+    ax4.legend()
+
+    # Partisanship Standard Deviation Over Iterations
+    fig5 = plt.figure(5)
+
+    X = list(range(len(community_stages)))
+    Y = [[stage[i].standard_deviation for stage in community_stages]
+         for i in range(len(community_stages[0]))]
+    ax5 = fig5.add_subplot(111)
+    ax5.set_title("Partisanship Diversity Over Iterations")
+    ax5.set_xlabel("Iterations")
+    ax5.set_ylabel("Standard Deviation")
+
+    # Create a line for each district
+    for i, community in enumerate(Y):
+        line, = ax5.plot(community, color=COLORS[i])
+        line.set_label(f"District {i + 1}")
+    ax5.legend()
+
+    # Percent Difference from Average Population Over Iterations
+    fig6 = plt.figure(6)
+
+    X = list(range(len(community_stages)))
+    Y = [[(abs(stage[i].population - ideal_pop) / ideal_pop) * 100
+         for stage in community_stages]
+         for i in range(len(community_stages[0]))]
+    ax6 = fig6.add_subplot(111)
+    ax6.set_title("Difference from Average Population Over Iterations")
+    ax6.set_xlabel("Iterations")
+    ax6.set_ylabel("Percent Difference")
+
+    # Create a line for each district
+    for i, community in enumerate(Y):
+        line, = ax6.plot(community, color=COLORS[i])
+        line.set_label(f"District {i + 1}")
+    ax6.legend()
 
     plt.show()
 
