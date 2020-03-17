@@ -427,7 +427,10 @@ void State::generate_initial_communities(int num_communities) {
                     else cout << "creates island, refraining..." << endl;
                 }
 
-                if (!can_do_one) cout << "No precinct exchanges work!!" << endl;
+                if (!can_do_one) {
+                    cout << "No precinct exchanges work!!" << endl;
+                    exit(1);
+                }
             }
             available_precincts[i] = island_available_precincts; 
         }
