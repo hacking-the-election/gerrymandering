@@ -391,17 +391,18 @@ if __name__ == "__main__":
     arguments = sys.argv[1:]
     with open(arguments[0], 'rb') as f:
        to_modify = pickle.load(f) 
-    if len(arguments) == 4:
-        modified_communities, count1, standard_deviations1, num_of_changed_precincts1, average_stdev1 = modify_for_partisanship(to_modify[0], to_modify[1], arguments[2], arguments[3])
-    elif len(arguments) == 3:
-        modified_communities, count1, standard_deviations1, num_of_changed_precincts1, average_stdev1 = modify_for_partisanship(to_modify[0], to_modify[1], arguments[2], 50)
-    else:
-        raise ValueError('Incorrect number of arguments')
+    # if len(arguments) == 4:
+    #     modified_communities = modify_for_partisanship(to_modify[0], to_modify[1], float(arguments[2]), arguments[3])
+    # elif len(arguments) == 3:
+    #     modified_communities, count1, standard_deviations1, num_of_changed_precincts1, average_stdev1 = modify_for_partisanship(to_modify[0], to_modify[1], arguments[2], 50)
+    # else:
+    #     raise ValueError('Incorrect number of arguments')
+    modified_communities = modify_for_partisanship(to_modify[0], to_modify[1], float(arguments[2]), arguments[3])
     
-    print('# of iterations:', count1)
-    print('standard deviations:', standard_deviations1)
-    print('# of changed precincts per iteration:', num_of_changed_precincts1)
-    print('average standard deviation across iterations:', average_stdev1)
+    # print('# of iterations:', count1)
+    # print('standard deviations:', standard_deviations1)
+    # print('# of changed precincts per iteration:', num_of_changed_precincts1)
+    # print('average standard deviation across iterations:', average_stdev1)
 
     with open(arguments[1], 'wb') as f:
         pickle.dump(modified_communities, f)
