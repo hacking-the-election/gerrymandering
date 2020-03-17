@@ -14,7 +14,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from hacking_the_election.serialization.save_precincts import Precinct
+from hacking_the_election.test.funcs import convert_to_json, polygon_to_list
 from hacking_the_election.utils.community import Community
+from hacking_the_election.quantification import quantify
+
+
+COLORS = ["blue", "green"]
 
 
 def generate_graphs(districts_file, redistricting, pop_constraint):
@@ -25,6 +30,13 @@ def generate_graphs(districts_file, redistricting, pop_constraint):
      - Population Convergence
         - Population of each community over iterations
         - This one is the coolest because the lines come together
+    |--------
+    | - Compactness Over Time
+    | - Partisanship Stdev Over Time
+    | - Percent Difference From Ideal Population Over Time.
+    |--------
+    For the above there will be one graph with the state average over time.
+    For each of them there will also be a graph with each line being a community.
     """
 
     with open(districts_file, "rb") as f:
@@ -33,6 +45,25 @@ def generate_graphs(districts_file, redistricting, pop_constraint):
                 pickle.load(f)
         else:
             community_stages, changed_precincts = pickle.load(f)
+
+    # Update gerrymandering scores list with communities that weren't quantified.
+    with open("tmp.pickle", "wb+") as f:
+        pickle.dump([[community_stages[0]], []], f)
+
+    # Last iteration. Loop broke before quantification run.
+    convert_to_json(
+        [polygon_to_list(c.coords) for c in community_stages[-1]],
+        "tmp.json",
+        [{"District": c.id} for c in community_stages[-1]]
+    )
+    gerrymandering_scores.append(quantify("tmp.pickle", "tmp.json"))
+    # Initial configuration
+    convert_to_json(
+        [polygon_to_list(c.coords) for c in community_stages[0]],
+        "tmp.json",
+        [{"District": c.id} for c in community_stages[0]]
+    )
+    gerrymandering_scores.insert(0, quantify("tmp.pickle", "tmp.json"))
     
     fig1 = plt.figure(1)
 
@@ -44,7 +75,7 @@ def generate_graphs(districts_file, redistricting, pop_constraint):
     ax1.set_title("Number of Changed Precincts Over Iterations")
     ax1.set_xlabel("Iterations")
     ax1.set_ylabel("Changed Precincts")
-    ax1.xaxis.set_ticks(np.arange(0, len(changed_precincts), 1))
+    ax1.xaxis.set_ticks(np.arange(1, len(changed_precincts) + 1, 1))
     ax1.plot(X, Y)
 
     # Gerrymandering Score Over Iterations
@@ -87,7 +118,7 @@ def generate_graphs(districts_file, redistricting, pop_constraint):
 
     # Create a line for each district
     for i, community in enumerate(Y):
-        line, = ax2.plot(community)
+        line, = ax2.plot(community, color=COLORS[i])
         line.set_label(f"District {i + 1}")
     ax2.legend()
 
@@ -95,4 +126,4 @@ def generate_graphs(districts_file, redistricting, pop_constraint):
 
 
 if __name__ == "__main__":
-    generate_graphs(*sys.argv[1:3], float(sys.argv[3]))
+    generate_graphs(sys.argv[1], True if sys.argv[2] == "true" else False, float(sys.argv[3]))
