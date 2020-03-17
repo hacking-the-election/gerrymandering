@@ -990,7 +990,7 @@ void State::refine_communities(double part, double popt, double compt, string wr
         save_iteration_data(this->state_communities, writedir, i);
 
         i++;
-    } while (TOTAL_MOVED_PRECINCTS != 0);
+    } while (TOTAL_MOVED_PRECINCTS > 25);
 }
 
 

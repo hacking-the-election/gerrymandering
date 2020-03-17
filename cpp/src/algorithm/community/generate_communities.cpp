@@ -52,12 +52,12 @@ int main(int argc, char* argv[]) {
     state.generate_initial_communities(districts_in_state);
     Communities initial_generation = state.state_communities;
 
-    state.refine_communities(0.095, 0.12, 0.4, string(argv[2]) + "/base_communities");
+    state.refine_communities(0.085, 0.10, 0.425, string(argv[2]) + "/base_communities");
     state.save_communities(string(argv[2]) + "/base_communities/base_communities", state.state_communities);
 
     cout << endl << endl << "creating districts..." << endl;
     state.state_communities = initial_generation;
-    state.refine_communities(0.095, 0.12, 0.4, string(argv[2]) + "/districts");
+    state.refine_communities(0.10, 0.01, 0.375, string(argv[2]) + "/districts");
     state.save_communities(string(argv[2]) + "/districts/districts", state.state_communities);
 
     // state.read_communities("test_data/community_al_3");
