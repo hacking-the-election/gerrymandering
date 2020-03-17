@@ -3,6 +3,7 @@ The Communities Algorithm.
 
 Usage:
 python3 communities [state_data] [n_districts] [state_name] [animation_dir] [output_pickle] [output_json] [redistricting] [base_communities_file]
+[partisanship_stdev] [compactness] [population]
 
 
 redistricting should either be "true" or "false"
@@ -45,10 +46,10 @@ from hacking_the_election.quantification import quantify
 
 
 # Parameters
-PARTISANSHIP_STDEV = 10  # Maximum average standard deviation of
+PARTISANSHIP_STDEV = 9  # Maximum average standard deviation of
                          # partisanship within communities.
-POPULATION = 1  # Allowed percent difference from ideal population
-COMPACTNESS = 0.35  # Minimum compactness score.
+POPULATION = 15  # Allowed percent difference from ideal population
+COMPACTNESS = 0.3  # Minimum compactness score.
 
 
 def signal_handler(sig, frame):
@@ -110,10 +111,18 @@ def get_changed_precincts(old_communities, new_communities):
 
 def make_communities(island_precinct_groups, n_districts, state_name,
                      state_border, animation_dir, output_pickle, output_json,
-                     redistricting, base_communities_file):
+                     redistricting, base_communities_file,
+                     partisanship_stdev, compactness, population):
     """
     Divides a state into ungerrymandered political communities.
     """
+
+    PARTISANSHIP_STDEV = partisanship_stdev
+    COMPACTNESS = compactness
+    POPULATION = population
+    print(f"{PARTISANSHIP_STDEV=}")
+    print(f"{COMPACTNESS=}")
+    print(f"{POPULATION=}")
 
     try:
         os.mkdir(animation_dir)
@@ -237,8 +246,8 @@ def make_communities(island_precinct_groups, n_districts, state_name,
                 gerrymandering_scores.append(
                     quantify(base_communities_file, "tmp1.json")
                 )
-            print(f"iteration {i} got a gerrymandering score of "
-                  f"{gerrymandering_scores[-1][-1]}")
+                print(f"iteration {i} got a gerrymandering score of "
+                    f"{gerrymandering_scores[-1][-1]}")
 
             i += 1
 
@@ -280,4 +289,4 @@ if __name__ == "__main__":
     make_communities(island_precinct_groups, int(sys.argv[2]), sys.argv[3],
                      state_border, *sys.argv[4:7],
                      (True if sys.argv[7] == "true" else False),
-                     sys.argv[8])
+                     sys.argv[8], *[float(i) for i in sys.argv[9:]])
