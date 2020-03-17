@@ -135,7 +135,6 @@ def make_communities(island_precinct_groups, n_districts, state_name,
         n_districts,
         state_border
     )
-    precinct_corridors = []
     linked_precincts = {p for c in precinct_corridors for p in c}
 
     for c in initial_configuration:
