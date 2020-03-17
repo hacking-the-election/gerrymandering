@@ -53,8 +53,6 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ani
 
     communities_dict = {community.id : community for community in communities_list}
     communities_precincts = {community30.id : community30.precincts for community30 in communities_list}
-    # create dictionary of ids and community partisanship standard deviations
-    community_stdev = {community31.id : community31.standard_deviation for community31 in communities_list}
     # check if any communities are above the threshold
     # count the number of times the list has been checked
     count = 0
@@ -63,6 +61,8 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ani
     communities_at_stages = {}
     for community in communities_list:
         community.update_standard_deviation()
+    # create dictionary of ids and community partisanship standard deviations
+    community_stdev = {community31.id : community31.standard_deviation for community31 in communities_list}
     # average stdev tracks the average_standard_deviation across all communities throughout iterations
     average_stdev = [average([community20.standard_deviation for community20 in communities_list])]
     if average_stdev[0] < int(threshold):
@@ -380,7 +380,7 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ani
 
 
             not_involved_community_list = []
-            for community13 in not_involved_community_list:
+            for community13 in communities_list:
                 if community13 != other_community:
                     if community13 != most_stdev_community:
                         not_involved_community_list.append(community13)
@@ -388,8 +388,10 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ani
             for community14 in not_involved_community_list:
                 community_change_snapshot.append(community14)
             precinct_count += 1
+            print(community_change_snapshot)
             changing_stdev.append(str(average([most_stdev_community.standard_deviation, other_community.standard_deviation])) + '\n')
             new_average = average([community28.standard_deviation for community28 in community_change_snapshot])
+            print(new_average)
             communities_at_stages[new_average] = community_change_snapshot
         
         stdev_stat = str([community10.standard_deviation for community10 in communities_list])[1:-1]
@@ -414,8 +416,11 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ani
         print(f"avg stdev: {sum([c.standard_deviation for c in community_change_snapshot]) / len(community_change_snapshot)}")
         print('minimized so far:', min(communities_at_stages.keys()))
     # find iteration with smallest average_stdev
-    minimized = min(communities_at_stages)
-    minimized_communities = communities_at_stages[minimized]
+    try:
+        minimized = min(communities_at_stages)
+        minimized_communities = communities_at_stages[minimized]
+    except:
+        return communities_list
     print('# of iterations:', count)
     print('standard deviations:', standard_deviations)
     print('# of changed precincts per iteration:', num_of_changed_precincts)

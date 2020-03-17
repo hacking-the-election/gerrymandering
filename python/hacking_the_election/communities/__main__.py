@@ -45,10 +45,10 @@ from hacking_the_election.quantification import quantify
 
 
 # Parameters
-PARTISANSHIP_STDEV = 11  # Maximum average standard deviation of
+PARTISANSHIP_STDEV = 9.5  # Maximum average standard deviation of
                          # partisanship within communities.
-POPULATION = 1  # Allowed percent difference from ideal population
-COMPACTNESS = 0.5  # Minimum compactness score.
+POPULATION = 12.5  # Allowed percent difference from ideal population
+COMPACTNESS = 0.325  # Minimum compactness score.
 
 
 def signal_handler(sig, frame):
