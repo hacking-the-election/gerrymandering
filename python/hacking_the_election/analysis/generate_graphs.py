@@ -30,6 +30,13 @@ def generate_graphs(districts_file, redistricting, pop_constraint):
      - Population Convergence
         - Population of each community over iterations
         - This one is the coolest because the lines come together
+    |--------
+    | - Compactness Over Time
+    | - Partisanship Stdev Over Time
+    | - Percent Difference From Ideal Population Over Time.
+    |--------
+    For the above there will be one graph with the state average over time.
+    For each of them there will also be a graph with each line being a community.
     """
 
     with open(districts_file, "rb") as f:
