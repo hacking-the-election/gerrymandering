@@ -45,10 +45,10 @@ from hacking_the_election.quantification import quantify
 
 
 # Parameters
-PARTISANSHIP_STDEV = 11  # Maximum average standard deviation of
+PARTISANSHIP_STDEV = 10  # Maximum average standard deviation of
                          # partisanship within communities.
 POPULATION = 1  # Allowed percent difference from ideal population
-COMPACTNESS = 0.5  # Minimum compactness score.
+COMPACTNESS = 0.35  # Minimum compactness score.
 
 
 def signal_handler(sig, frame):
@@ -128,6 +128,10 @@ def make_communities(island_precinct_groups, n_districts, state_name,
     )
     precinct_corridors = []
     linked_precincts = {p for c in precinct_corridors for p in c}
+
+    for c in initial_configuration:
+        c.update_standard_deviation()
+    print(f"standard deviations: {[c.standard_deviation for c in initial_configuration]}")
     
     # Community "snapshots" at different iterations.
     community_stages = [deepcopy(initial_configuration)]
@@ -178,7 +182,7 @@ def make_communities(island_precinct_groups, n_districts, state_name,
                         f"{add_leading_zeroes(i)}_compactness"
                     ),
                     state_name,
-                    10
+                    30
                 )
             iteration_changed_precincts.append(
                 get_changed_precincts(
@@ -203,7 +207,7 @@ def make_communities(island_precinct_groups, n_districts, state_name,
                         f"{add_leading_zeroes(i)}_population"
                     ),
                     state_name,
-                    10
+                    30
                 )
             )
             print(f"population took {round(time.time() - start_time, 3)}s")
@@ -239,8 +243,18 @@ def make_communities(island_precinct_groups, n_districts, state_name,
             i += 1
 
         # Save output to pickle and json
-        with open(output_pickle, "wb+") as f:
-            pickle.dump([community_stages, changed_precincts], f)
+        if redistricting:
+            with open(output_pickle, "wb+") as f:
+                pickle.dump(
+                    [community_stages,
+                     changed_precincts,
+                     gerrymandering_scores
+                    ],
+                    f
+                )
+        else:
+            with open(output_pickle, "wb+") as f:
+                pickle.dump([community_stages, changed_precincts], f)
         convert_to_json(
             [polygon_to_list(c.coords) for c in community_stages[-1]],
             output_json

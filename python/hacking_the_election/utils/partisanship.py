@@ -30,7 +30,6 @@ def get_bordering_precincts(community1, community2):
     if area_intersection > 0:
         raise Exception('Communities intersect!')
     border_precincts = {community1.id: [], community2.id: []}
-    # print('it middle ends', time())
     for precinct in community1.precincts.values():
         if get_if_bordering(precinct.coords, coords2):
             border_precincts[community1.id].append(precinct)
