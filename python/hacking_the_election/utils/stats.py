@@ -24,7 +24,7 @@ def average(number_list, weight_list=None):
     '''
     if weight_list:
         weighted_sum = []
-        for num, number in number_list:
+        for num, number in enumerate(number_list):
             weighted_num = number * weight_list[num]
             weighted_sum.append(weighted_num)
         return sum(weighted_sum)/sum(weight_list)

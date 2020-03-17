@@ -28,6 +28,7 @@ from hacking_the_election.utils.geometry import (
 from hacking_the_election.utils.stats import average, stdev
 from hacking_the_election.serialization import save_precincts
 from hacking_the_election.utils.community import Community
+from hacking_the_election.utils.geometry import communities_to_json, clip
 
 def quantify(communities_file, districts_file):
     '''
@@ -41,61 +42,80 @@ def quantify(communities_file, districts_file):
         data = pickle.load(f)
     with open(districts_file, 'r') as f:
         district_data = json.load(f)
+    # we don't need precinct corridors, only communities
+    data = data[0][-1]
     for community in data:
         community.update_partisanship()
+    communities_to_json(data, '../../../base_communities.json')
     # keys: community index
     # values: list of: [decimal percentage of republicans, shapely community border coordinates polygon]
-    community_dict = {community.id:[community.partisanship, community.coords] 
+    community_coords = {community:community.coords
                      for community in data}
     # keys: ids
     # values: json polygon of coordinates
-    district_dict = {district["properties"]["District"]: district["geometry"]["coordinates"] 
+    district_dict = {district["properties"]["District"]: polygon_to_shapely(district["geometry"]["coordinates"]) 
                     for district in district_data["features"]}
     # find partianshipps
-    partisanships = {id:community_dict[id][0] for id in community_dict}
+    partisanships = {community:community.partisanship for community in data}
     # find areas of communities
-    community_areas = {community:save_precincts.area(shapely_to_polygon(community_dict[community][1])[0]) for community in community_dict}
+    community_areas = {community: community.coords.area for community in community_coords}
     # begin finding district gerrymandering scores
     district_scores = {}
-    for district in district_dict:
+    for district_id, district in district_dict.items():
         # finds total area of district
-        total_area = save_precincts.area(district_dict[district][0][0])
+        total_area = district.area
         # keys: community.id for community object
         # values: area of intersection with district
         intersecting_communities ={}
-        for community in community_dict.keys():
-            # note: this is where stuff is really slow
-            community1 = community_dict[community][1]
-            if get_area_intersection(polygon_to_shapely(district_dict[district][0]), community1) > 0:
-                intersecting_communities[community] = get_area_intersection(
-                                                    polygon_to_shapely(district_dict[district][0]), community1)
-        # find average_community_area and calculate weights for each district 
-        average_community_area = sum(intersecting_communities.values())/len(intersecting_communities)
-        area_weights = [area/average_community_area for area in intersecting_communities.values()]
-        # percentage of community in district, for community in intersecting_communities
-        community_percentages = [intersecting_communities[community]/community_areas[community] 
-                                for community in intersecting_communities]
-        # average of percentage of community in district. Therefore districts that take a 
-        # small portion of communitites that are big get punished proportionally, weighted by the 
-        # area of that community in the district.
-        community_weight = sum([community_percentages[num]*area_weights[num] 
-        for num in range(len(community_percentages))])
-        # Create list of partisanship weights (decimal of proportion of republicans in district) 
-        # for intersecting communities
-        district_partisanships = [partisanships[community] for community in intersecting_communities]
-        # find weighted standard deviation using partisanship, area_weights
-        stdev_district = stdev(district_partisanships, area_weights)
+        for community in community_coords.keys():
+            coords = district.intersection(community.coords)
+            print(coords.area, district_id, community.id)
+            # # note: this is where stuff is really slow
+            # # coords = shapely_to_polygon(clip([district, community.coords], 1))
+            # features = []
+            # try: 
+            #     _ = coords[0][0][0][0]
+            # # coords[0][0].append(coords[0][0][0])
+            #     features.append({"geometry": {"type":"MultiPolygon", "coordinates":coords}, "type":"Feature", "properties":{"ID":community.id}})
+            # except:
+            # # coords[0].append(coords[0][0])
+            #     features.append({"geometry": {"type":"Polygon", "coordinates":coords}, "type":"Feature", "properties":{"ID":community.id}})
+            # completed_json = {"type":"FeatureCollection", "features":features}
+            # with open('../../../intersection.json', 'w') as f:
+            #     json.dump(completed_json, f)
+            # print(district.intersection(community.coords), district_id)
+            if district.intersection(community.coords).area > 0:
+                intersecting_communities[community] = district.intersection(community.coords).area
+        print({community.id : intersecting_communities[community] for community in intersecting_communities})
         # find biggest community, and area
         biggest_community = {}
         for key in intersecting_communities:
             if intersecting_communities[key] > biggest_community.get(key, 0):
+                if len(biggest_community) == 0:
+                    biggest_community[key] = intersecting_communities[key]
+                else:
+
+                    del biggest_community[list(biggest_community.keys())[0]]
                 biggest_community[key] = intersecting_communities[key]
-        # add score to district_scores dict
-        for key, value in biggest_community.items():
-            score = 1 - value/total_area
-            weighted1_score = score * stdev_district
-            weighted2_score = weighted1_score / community_weight
-            district_scores[district] = weighted2_score
+
+
+        # find average_community_area and calculate weights for each district 
+        average_community_area = sum(intersecting_communities.values())/len(intersecting_communities)
+
+        area_weights = [area/average_community_area for area in intersecting_communities.values()]
+
+        # Create list of partisanship weights (decimal of proportion of republicans in district) 
+        # for intersecting communities
+        district_partisanships = [community.partisanship for community in intersecting_communities]
+        # find weighted standard deviation using partisanship, area_weights
+        stdev_district = stdev(district_partisanships, area_weights)
+        print(stdev_district)
+        # add score to district_scores dict:
+        score = 1 - list(biggest_community.values())[0]/total_area
+        print('score', score)
+        weighted1_score = score * stdev_district
+        print('after partisanship factor', weighted1_score)
+        district_scores[district_id] = weighted1_score
     state_score = average(district_scores.values())
     return district_scores, state_score
         
