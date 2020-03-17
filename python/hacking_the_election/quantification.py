@@ -46,6 +46,7 @@ def quantify(communities_file, districts_file):
     data = data[0][-1]
     for community in data:
         community.update_partisanship()
+    communities_to_json(data, '../../../base_communities_9-5.json')
     # communities_to_json(data, '../../../base_communities.json')
     # keys: community index
     # values: list of: [decimal percentage of republicans, shapely community border coordinates polygon]
