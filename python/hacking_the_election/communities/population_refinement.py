@@ -110,13 +110,13 @@ def refine_for_population(communities, population_percentage,
                             **POPULATION_GIVE_PRECINCT_KWARGS
                         )
                         f += 1
-                        save_as_image(
-                            communities,
-                            os.path.join(
-                                animation_dir,
-                                f"{add_leading_zeroes(f)}.png"
-                            )
-                        )
+                        # save_as_image(
+                        #     communities,
+                        #     os.path.join(
+                        #         animation_dir,
+                        #         f"{add_leading_zeroes(f)}.png"
+                        #     )
+                        # )
                     except (CreatesMultiPolygonException, IndexError,
                             ZeroPrecinctCommunityException):
                         pass
@@ -150,13 +150,13 @@ def refine_for_population(communities, population_percentage,
                             **POPULATION_GIVE_PRECINCT_KWARGS
                         )
                         f += 1
-                        save_as_image(
-                            communities,
-                            os.path.join(
-                                animation_dir,
-                                f"{add_leading_zeroes(f)}.png"
-                            )
-                        )
+                        # save_as_image(
+                        #     communities,
+                        #     os.path.join(
+                        #         animation_dir,
+                        #         f"{add_leading_zeroes(f)}.png"
+                        #     )
+                        # )
                     except (CreatesMultiPolygonException,
                             ZeroPrecinctCommunityException):
                         pass

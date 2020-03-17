@@ -11,6 +11,7 @@ python3 animation_frames.py [animation_source] [animation_dst]
 
 import os
 from shutil import copyfile
+import sys
 
 from hacking_the_election.utils.initial_configuration import add_leading_zeroes
 

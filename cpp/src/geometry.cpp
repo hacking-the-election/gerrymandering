@@ -1176,6 +1176,57 @@ Shape generate_gon(coordinate c, double radius, int n) {
     return Shape(lr);
 }
 
+
+p_index get_first_precinct(Precinct_Group available_precincts, Communities communities) {
+    // gets the first addable precinct in a community
+    p_index_set precincts = get_inner_boundary_precincts(available_precincts);
+    p_index ret = -1;
+
+    if (precincts.size() == 0)
+        cout << "PROBLEMS HERE" << endl;
+
+    for (p_index pre : precincts) {
+        for (Community community : communities) {
+            Multi_Shape border = generate_exterior_border(community);
+            if (get_bordering(border, available_precincts.precincts[pre])) {
+                if (!creates_island(available_precincts, available_precincts.precincts[pre])) {
+                    ret = pre;
+                    break;
+                }
+            }
+        }
+        if (ret != -1) break;
+    }
+
+    if (ret == -1) {
+        for (p_index pre : precincts) {
+            if (!creates_island(available_precincts, available_precincts.precincts[pre])) {
+                ret = pre;
+                break;
+            }
+        }
+    }
+
+    if (ret == -1) {
+        int i = 0;
+        for (Precinct pre : available_precincts.precincts) {
+            if (!creates_island(available_precincts, pre)) {
+                ret = i;
+                break;
+            }
+            i++;
+        }
+    }
+
+    if (ret == -1) cout << "WOW SOMETHING FAILED" << endl;
+        
+    GeoDraw::Canvas canvas(900, 900);
+    canvas.add_shape(available_precincts);
+    canvas.add_shape(available_precincts.precincts[ret], true, GeoDraw::Color(0,100,255), 2);
+    canvas.draw();
+
+    return ret;
+}
 // geos::geom::GeometryFactory::Ptr global_factory;
 
 // Point* create_point(double x, double y) {

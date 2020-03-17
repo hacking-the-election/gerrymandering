@@ -228,6 +228,7 @@ GeoGerry::Precinct_Group GeoGerry::Precinct_Group::read_binary(std::string path)
     return pg; // return precinct group object
 }
 
+
 template<class Archive> void GeoGerry::LinearRing::serialize(Archive & ar, const unsigned int version) {
     ar & border;
 }

@@ -72,6 +72,8 @@ def refine_for_compactness(communities, minimum_compactness,
         i = 0
         f = 1
 
+        worst_communities = []
+
         while True:
             try:
                 if i > max_iterations:
@@ -81,6 +83,13 @@ def refine_for_compactness(communities, minimum_compactness,
                 print(f"avg compactness: {get_average_compactness(communities)}")
 
                 community = min(communities, key=lambda c: c.compactness)
+                worst_communities.append(community.id)
+                if len(worst_communities) >= 2:
+                    if len(set(worst_communities[-2:])) == 1:
+                        # Last 5 communities were the same.
+                        community = random.choice(
+                            [c for c in communities if c != community]
+                        )
 
                 # Find circle with same area as district.
                 radius = math.sqrt(community.coords.area / math.pi)
@@ -132,13 +141,13 @@ def refine_for_compactness(communities, minimum_compactness,
                             try:
                                 add_precinct(
                                     communities, community, precinct, True)
-                                save_as_image(
-                                    communities,
-                                    os.path.join(
-                                        animation_dir,
-                                        f"{add_leading_zeroes(f)}.png"
-                                    )
-                                )
+                                # save_as_image(
+                                #     communities,
+                                #     os.path.join(
+                                #         animation_dir,
+                                #         f"{add_leading_zeroes(f)}.png"
+                                #     )
+                                # )
                                 f += 1
                             except (CreatesMultiPolygonException,
                                     ZeroPrecinctCommunityException):
@@ -155,13 +164,13 @@ def refine_for_compactness(communities, minimum_compactness,
                             try:
                                 add_precinct(
                                     communities, community, precinct, False)
-                                save_as_image(
-                                    communities,
-                                    os.path.join(
-                                        animation_dir,
-                                        f"{add_leading_zeroes(f)}.png"
-                                    )
-                                )
+                                # save_as_image(
+                                #     communities,
+                                #     os.path.join(
+                                #         animation_dir,
+                                #         f"{add_leading_zeroes(f)}.png"
+                                #     )
+                                # )
                                 f += 1
                             except (CreatesMultiPolygonException,
                                     ZeroPrecinctCommunityException):
