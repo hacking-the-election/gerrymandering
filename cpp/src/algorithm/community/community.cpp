@@ -367,24 +367,22 @@ void State::generate_initial_communities(int num_communities) {
             int island_i = community.location[i];
             p_index_set island_available_precincts = available_precincts[i]; 
             
-            int start_precinct;
+            Precinct_Group island_available_shape;
+            for (p_index pre : island_available_precincts)
+                island_available_shape.add_precinct_n(precincts[pre]);
+            island_available_shape.border = generate_exterior_border(island_available_shape).border;
             
-            if (community.link_position.size() > 0)
-                // need to start on the linked precinct
-                start_precinct = community.link_position[i][0][1];
-            else {
-                vector<p_index> tried_precincts;
-                do {
-                    start_precinct = rand_num(0, size - 1);
-                } while (
-                        creates_island(island_available_precincts, start_precinct, *this) 
-                        && std::find(island_available_precincts.begin(), island_available_precincts.end(), start_precinct) == island_available_precincts.end()
-                    );
-            }
-
+            int start_precinct = island_available_precincts[get_first_precinct(island_available_shape, this->state_communities)];
+        
+            GeoDraw::Canvas canvas(900, 900);
+            canvas.add_shape(precincts[start_precinct], true, GeoDraw::Color(0,100,255), 2);
+            canvas.add_shape(island_available_shape);
+            canvas.draw();
+        
             cout << "adding precinct " << start_precinct << " to community " << c_index << endl;
             community.add_precinct_n(precincts[start_precinct]);
 
+            island_available_shape.remove_precinct(precincts[start_precinct]);
             island_available_precincts.erase(
                     std::remove(
                         island_available_precincts.begin(),
@@ -409,9 +407,11 @@ void State::generate_initial_communities(int num_communities) {
                 bool can_do_one = false;
 
                 for (p_index pre : bordering_precincts) {
-                    if (!creates_island(island_available_precincts, pre, *this) && precincts_added < precincts_to_add) {
+                    if (!creates_island(island_available_shape, precincts[pre]) && precincts_added < precincts_to_add) {
                         can_do_one = true;
                         cout << "adding precinct " << pre << endl;
+
+                        island_available_shape.remove_precinct(precincts[pre]);
                         island_available_precincts.erase(
                                 std::remove(
                                     island_available_precincts.begin(),
@@ -426,6 +426,10 @@ void State::generate_initial_communities(int num_communities) {
                     }
                     else cout << "creates island, refraining..." << endl;
                 }
+
+                // Canvas canvas(900, 900);
+                // canvas.add_shape(Multi_Shape(island_available_shape.border));
+                // canvas.draw();
 
                 if (!can_do_one) {
                     cout << "No precinct exchanges work!!" << endl;
