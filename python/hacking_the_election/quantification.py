@@ -54,8 +54,12 @@ def quantify(communities_file, districts_file):
                      for community in data}
     # keys: ids
     # values: json polygon of coordinates
-    district_dict = {district["properties"]["District"]: polygon_to_shapely(district["geometry"]["coordinates"]) 
-                    for district in district_data["features"]}
+    try:
+        district_dict = {district["properties"]["District"]: polygon_to_shapely(district["geometry"]["coordinates"]) 
+                        for district in district_data["features"]}
+    except KeyError:
+        district_dict = {district["properties"]["ID"]: polygon_to_shapely(district["geometry"]["coordinates"]) 
+                        for district in district_data["features"]}
     # find partianshipps
     partisanships = {community:community.partisanship for community in data}
     # find areas of communities
@@ -70,7 +74,6 @@ def quantify(communities_file, districts_file):
         intersecting_communities ={}
         for community in community_coords.keys():
             coords = district.intersection(community.coords)
-            print(coords.area, district_id, community.id)
             # # note: this is where stuff is really slow
             # # coords = shapely_to_polygon(clip([district, community.coords], 1))
             # features = []
@@ -87,19 +90,21 @@ def quantify(communities_file, districts_file):
             # print(district.intersection(community.coords), district_id)
             if district.intersection(community.coords).area > 0:
                 intersecting_communities[community] = district.intersection(community.coords).area
+        print(intersecting_communities)
+        print(total_area)
         # print({community.id : intersecting_communities[community] for community in intersecting_communities})
         # find biggest community, and area
         biggest_community = {}
         for key in intersecting_communities:
-            if intersecting_communities[key] > biggest_community.get(key, 0):
-                if len(biggest_community) == 0:
-                    biggest_community[key] = intersecting_communities[key]
-                else:
-
-                    del biggest_community[list(biggest_community.keys())[0]]
+            print(biggest_community)
+            if len(biggest_community) == 0:
                 biggest_community[key] = intersecting_communities[key]
+            else:
+                if intersecting_communities[key] > list(biggest_community.values())[0]:
+                    del biggest_community[list(biggest_community.keys())[0]]
+                    biggest_community[key] = intersecting_communities[key]
 
-
+        print(biggest_community)
         # find average_community_area and calculate weights for each district 
         average_community_area = sum(intersecting_communities.values())/len(intersecting_communities)
 
@@ -113,10 +118,12 @@ def quantify(communities_file, districts_file):
         # print(stdev_district)
         # add score to district_scores dict:
         score = 1 - list(biggest_community.values())[0]/total_area
+        print(score)
         # print('score', score)
         weighted1_score = score * stdev_district
+        print(stdev_district)
         # print('after partisanship factor', weighted1_score)
-        district_scores[district_id] = weighted1_score
+        district_scores[district_id] = score
     state_score = average(district_scores.values())
     return district_scores, state_score
         

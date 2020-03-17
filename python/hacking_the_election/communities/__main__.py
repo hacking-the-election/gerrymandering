@@ -285,7 +285,7 @@ if __name__ == "__main__":
     with open(sys.argv[1], "rb") as f:
         island_precinct_groups, _, state_border = pickle.load(f)
 
-    make_communities(island_precinct_groups, int(sys.argv[2]), sys.argv[3],
+    make_communities(island_precinct_groups, int(sys.argv[2]), sys.argv[3], \
                      state_border, *sys.argv[4:7],
                      (True if sys.argv[7] == "true" else False),
                      sys.argv[8], *[float(i) for i in sys.argv[9:]])
