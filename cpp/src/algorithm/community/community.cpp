@@ -712,18 +712,17 @@ void State::refine_compactness(double compactness_tolerance) {
     }
 
     bool is_done = (!is_worst);
-        
-
-    cout << "refining for compactness..." << endl;
+    bool override = false;
 
     int iter = 0;
-    bool override = false;
     int loop = 0;
     double first_average = 0;
+
     for (Community c : state_communities)
         first_average += c.get_compactness();
     first_average /= state_communities.size();
 
+    cout << "refining for compactness" << endl;
 
     while (!is_done) {
         Shape circle;
@@ -792,11 +791,11 @@ void State::refine_partisan(double partisanship_tolerance) {
         @return: void
     */
 
-    cout << "refining for partisanship..." << endl;
-
     p_index worst_community = get_next_community(partisanship_tolerance, PARTISANSHIP);
     bool is_done = (get_standard_deviation_partisanship(this->state_communities) < partisanship_tolerance);
     int iter = 0;
+
+    cout << "refining for partisanship" << endl;
 
     while (!is_done) {
         p_index_set border_precincts = get_inner_boundary_precincts(state_communities[worst_community]);
@@ -843,7 +842,7 @@ void State::refine_population(double population_tolerance) {
     vector<int> ideal_range = {aim - (int)(population_tolerance * aim), aim + (int)(population_tolerance * aim)};
     int iter = 0;
 
-    cout << "refining for population..." << endl;
+    cout << "refining for population" << endl;
 
     // begin main iterative loop
     while (!is_done) {
@@ -987,19 +986,32 @@ void State::refine_communities(double part, double popt, double compt) {
     int i = 0, changed_precincts = 0;
     
     do {
-        cout << "iteration " << i + 1 << endl;
         TOTAL_MOVED_PRECINCTS = 0;
-
+        TOTAL_MOVED_PRECINCT_ID = {};
+        
+        // @warn save data here
         refine_compactness(compt);
         save_iteration_data(this->state_communities, "nh_community_data");
-        // refine_partisan(part);
-        // save_iteration_data(this->state_communities, "nh_community_data");
+        if (VERBOSE) cout << TOTAL_MOVED_PRECINCTS << " precincts changed" << endl;
+
+        TOTAL_MOVED_PRECINCTS = 0;
+        TOTAL_MOVED_PRECINCT_ID = {};
+        
+        refine_partisan(part);
+        save_iteration_data(this->state_communities, "nh_community_data");
+        if (VERBOSE) cout << TOTAL_MOVED_PRECINCTS << " precincts changed" << endl;
+
+        TOTAL_MOVED_PRECINCTS = 0;
+        TOTAL_MOVED_PRECINCT_ID = {};
+        
         refine_population(popt);
         save_iteration_data(this->state_communities, "nh_community_data");
-
         if (VERBOSE) cout << TOTAL_MOVED_PRECINCTS << " precincts changed" << endl;
-        i++;
 
+        i++;
+        GeoDraw::Canvas c(900, 900);
+        c.add_shape(state_communities);
+        c.draw();
     } while (TOTAL_MOVED_PRECINCTS != 0);
 
     GeoDraw::Canvas c(900, 900);

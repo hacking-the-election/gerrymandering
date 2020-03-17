@@ -10,7 +10,7 @@
 #include "../../../include/shape.hpp"
 #include "../../../include/util.hpp"
 #include "../../../include/geometry.hpp"
-#include "../../../include/ }nvas.hpp"
+#include "../../../include/canvas.hpp"
 #include <chrono> 
 #include <boost/filesystem.hpp>
 
@@ -18,6 +18,7 @@ using namespace boost::filesystem;
 using namespace std;
 using namespace chrono;
 using namespace GeoGerry;
+using namespace GeoDraw;
 
 int main(int argc, char* argv[]) {
     
@@ -37,9 +38,14 @@ int main(int argc, char* argv[]) {
 
     cout << "generating communities from given parameters..." << endl;
     int districts_in_state = state.state_districts.size();
-    state.generate_communities(districts_in_state, 0.4, 0.095, 0.12);
+    // state.generate_communities(districts_in_state, 0.4, 0.095, 0.12);
 
-    // state.refine_communities(0.075, 0.1, 0.5);
+    state.read_communities("test_data/community_al_3");
+    Canvas canvas(900, 900);
+    canvas.add_shape(state.state_communities);
+    canvas.draw();
+
+    state.refine_communities(0.095, 0.12, 0.4);
     // state.refine_partisan(0.07);
 
     // write as binary
