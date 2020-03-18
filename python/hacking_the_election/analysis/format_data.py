@@ -21,7 +21,7 @@ def format_data(input_file, output_file, redistricts):
 
     with open(input_file, "rb") as f:
         if redistricts:
-            community_stages, changed_precincts, gerrymandering_scores = \
+            community_stages, changed_precincts, _ = \
                 pickle.load(f)
         else:
             community_stages, changed_precincts = pickle.load(f)
@@ -36,22 +36,14 @@ def format_data(input_file, output_file, redistricts):
 
     if redistricts:
         # Gerrymandering Score
-        with open("tmp.pickle", "wb+") as f:
-            pickle.dump([[community_stages[0]], []], f)
-        # Last iteration. Loop broke before quantification run.
-        convert_to_json(
-            [polygon_to_list(c.coords) for c in community_stages[-1]],
-            "tmp.json",
-            [{"District": str(c.id)} for c in community_stages[-1]]
-        )
-        gerrymandering_scores.append(quantify("tmp.pickle", "tmp.json"))
-        # Initial configuration
-        convert_to_json(
-            [polygon_to_list(c.coords) for c in community_stages[0]],
-            "tmp.json",
-            [{"District": str(c.id)} for c in community_stages[0]]
-        )
-        gerrymandering_scores.insert(0, quantify("tmp.pickle", "tmp.json"))
+        gerrymandering_scores = []
+        for stage in community_stages:
+            convert_to_json(
+                [polygon_to_list(c.coords) for c in stage],
+                "tmp.json",
+                [{"District": str(c.id)} for c in stage]
+            )
+            gerrymandering_scores.append(quantify("tmp.pickle", "tmp.json"))
 
     # Partisanship
     partisanships = [[stage[i].partisanship for stage in community_stages]

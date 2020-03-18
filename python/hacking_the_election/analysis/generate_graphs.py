@@ -54,8 +54,7 @@ def generate_graphs(districts_file, redistricting, pop_constraint):
 
     with open(districts_file, "rb") as f:
         if redistricting:
-            community_stages, changed_precincts, gerrymandering_scores = \
-                pickle.load(f)
+            community_stages, changed_precincts, _ = pickle.load(f)
         else:
             community_stages, changed_precincts = pickle.load(f)
 
@@ -63,20 +62,14 @@ def generate_graphs(districts_file, redistricting, pop_constraint):
     with open("tmp.pickle", "wb+") as f:
         pickle.dump([[community_stages[0]], []], f)
 
-    # Last iteration. Loop broke before quantification run.
-    convert_to_json(
-        [polygon_to_list(c.coords) for c in community_stages[-1]],
-        "tmp.json",
-        [{"District": c.id} for c in community_stages[-1]]
-    )
-    gerrymandering_scores.append(quantify("tmp.pickle", "tmp.json"))
-    # Initial configuration
-    convert_to_json(
-        [polygon_to_list(c.coords) for c in community_stages[0]],
-        "tmp.json",
-        [{"District": c.id} for c in community_stages[0]]
-    )
-    gerrymandering_scores.insert(0, quantify("tmp.pickle", "tmp.json"))
+    gerrymandering_scores = []
+    for stage in community_stages:
+        convert_to_json(
+            [polygon_to_list(c.coords) for c in stage],
+            "tmp.json",
+            [{"District": c.id} for c in stage]
+        )
+        gerrymandering_scores.append(quantify("tmp.pickle", "tmp.json"))
     
     fig1 = plt.figure(1)
 
@@ -223,7 +216,7 @@ def generate_graphs(districts_file, redistricting, pop_constraint):
         Y[2].append(population_squish(stage[2]))
 
     ax7 = fig7.add_subplot(111)
-    ax7.set_title("Average Constraint Values Over Time")
+    ax7.set_title("Average Constraint Values Over Iterations")
     constraint_order = [
         "Partisanship Diversity",
         "Uncompactness",
