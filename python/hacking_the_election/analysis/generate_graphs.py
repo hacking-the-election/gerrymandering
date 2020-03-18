@@ -2,7 +2,7 @@
 Generates all the graphs required for data analysis of redistricting.
 
 Usage:
-python3 generate_graphs.py [districts_file] [redistricting] [pop_constraint]
+python3 generate_graphs.py [districts_file] [redistricting] [pop_constraint] [base_communities_file]
 
 `redistricting` should be given the value "true" or "false"
 """
@@ -35,7 +35,7 @@ def get_squishing_function(min_val, max_val):
     return f
 
 
-def generate_graphs(districts_file, redistricting, pop_constraint):
+def generate_graphs(districts_file, redistricting, pop_constraint, base_communities_file):
     """
     Makes these graphs:
      - Number of Changed Precincts Over Iterations
@@ -66,8 +66,6 @@ def generate_graphs(districts_file, redistricting, pop_constraint):
             community.update_population()
 
     # Update gerrymandering scores list with communities that weren't quantified.
-    with open("tmp.pickle", "wb+") as f:
-        pickle.dump([[community_stages[0]], []], f)
 
     if redistricting:
         gerrymandering_scores = []
@@ -77,7 +75,8 @@ def generate_graphs(districts_file, redistricting, pop_constraint):
                 "tmp.json",
                 [{"District": c.id} for c in stage]
             )
-            gerrymandering_scores.append(quantify("tmp.pickle", "tmp.json"))
+            gerrymandering_scores.append(
+                quantify(base_communities_file, "tmp.json"))
     
     fig1 = plt.figure(1)
 
@@ -240,4 +239,9 @@ def generate_graphs(districts_file, redistricting, pop_constraint):
 
 
 if __name__ == "__main__":
-    generate_graphs(sys.argv[1], True if sys.argv[2] == "true" else False, float(sys.argv[3]))
+    generate_graphs(
+        sys.argv[1],
+        True if sys.argv[2] == "true" else False,
+        float(sys.argv[3]),
+        sys.argv[4]
+    )

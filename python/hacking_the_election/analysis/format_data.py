@@ -2,7 +2,7 @@
 Takes a pickle and makes it human readable.
 
 Usage:
-python3 format_data.py [input_file] [output_file] [redistricts]
+python3 format_data.py [input_file] [output_file] [redistricts] [base_communities_file]
 """
 
 import pickle
@@ -14,7 +14,7 @@ from hacking_the_election.utils.community import Community
 from hacking_the_election.quantification import quantify
 
 
-def format_data(input_file, output_file, redistricts):
+def format_data(input_file, output_file, redistricts, base_communities_file):
     """
     Gets a pickle for a nickle (no tickle!)
     """
@@ -32,7 +32,7 @@ def format_data(input_file, output_file, redistricts):
             community.update_partisanship()
             community.update_standard_deviation()
             community.update_compactness()
-            community.update_population()
+            community.update_population()    
 
     if redistricts:
         # Gerrymandering Score
@@ -43,7 +43,8 @@ def format_data(input_file, output_file, redistricts):
                 "tmp.json",
                 [{"District": str(c.id)} for c in stage]
             )
-            gerrymandering_scores.append(quantify("tmp.pickle", "tmp.json"))
+            gerrymandering_scores.append(
+                quantify(base_communities_file, "tmp.json"))
 
     # Partisanship
     partisanships = [[stage[i].partisanship for stage in community_stages]
