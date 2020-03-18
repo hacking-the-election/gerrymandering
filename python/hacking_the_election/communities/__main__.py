@@ -23,6 +23,8 @@ import time
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
+sys.path.append('../../')
+
 from hacking_the_election.communities.compactness_refinement import (
     refine_for_compactness
 )
