@@ -47,30 +47,15 @@ int main(int argc, char* argv[]) {
     path p4 = string(argv[2]) + "/districts/shapes";
     create_directory(p4);
 
-    int districts_in_state = 5;// state.state_districts.size();
+    int districts_in_state = state.state_districts.size();
     state.generate_initial_communities(districts_in_state);
-    Communities initial_generation = state.state_communities;
 
-    Canvas canvas(900, 900);
-    canvas.add_shape(state.state_communities);
-    canvas.draw();
-
-    state.refine_communities(0.080, 0.10, 0.4, string(argv[2]) + "/base_communities");
+    state.refine_communities(0.085, 0.125, 0.375, string(argv[2]) + "/base_communities");
     state.save_communities(string(argv[2]) + "/base_communities/base_communities", state.state_communities);
 
     cout << endl << endl << "creating districts..." << endl;
-    state.state_communities = initial_generation;
-    state.refine_communities(0.85, 0.01, 0.45, string(argv[2]) + "/districts");
+    state.refine_communities(0.10, 0.01, 0.425, string(argv[2]) + "/districts");
     state.save_communities(string(argv[2]) + "/districts/districts", state.state_communities);
-
-    // state.read_communities("test_data/community_al_3");
-    // Canvas canvas(900, 900);
-    // canvas.add_shape(state.state_communities);
-    // canvas.draw();
-
-    // state.refine_communities(0.095, 0.12, 0.4);
-    // state.refine_partisan(0.07);
-
     // write as binary
     return 0;
 }

@@ -2,8 +2,9 @@
 The Community class.
 """
 
+from concurrent.futures import ProcessPoolExecutor
 import math
-import threading
+import multiprocessing
 
 from shapely.geometry import Polygon, MultiPolygon
 
@@ -144,10 +145,10 @@ class Community:
             def update_other_coords():
                 other.coords = clip([p.coords for p in other.precincts.values()],
                                     UNION)
-            thread_1 = threading.Thread(target=update_self_coords)
-            thread_2 = threading.Thread(target=update_other_coords)
-            thread_1.run()
-            thread_2.run()
+            proc1 = multiprocessing.Process(target=update_self_coords)
+            proc2 = multiprocessing.Process(target=update_other_coords)
+            proc1.run()
+            proc2.run()
 
             if not allow_multipolygons:
                 if (
@@ -173,6 +174,17 @@ class Community:
             if compactness:
                 community.update_compactness()
 
+    def process_func(self, precinct_group):
+        """
+        Returns set of ids of precincts in
+        `precinct_group` that touch `coords`.
+        """
+        bordering_precincts = set()
+        for precinct in precinct_group:
+            if get_if_bordering(precinct.coords, self.coords):
+                bordering_precincts.add(precinct.vote_id)
+        return bordering_precincts
+
     def get_bordering_precincts(self, unchosen_precincts):
         """
         Returns list of precincts bordering `self`
@@ -183,29 +195,27 @@ class Community:
         """
         bordering_precincts = set()
         if self.precincts != {}:
-            try:
-                # create 20 threads that will simeltaneously calculate
+            if len(self.precincts) >= 20:
+                # create 20 processes that will simeltaneously calculate
                 # whether or not a certain number of precincts are
                 # bordering self.coords
 
                 precincts = list(unchosen_precincts.precincts.values())
                 n_precincts = len(precincts)
-                precincts_per_thread = n_precincts // 20
-                # precincts that will be calculated in each thread.
-                thread_precincts = [
-                    precincts[i:i + precincts_per_thread] for i in
-                    range(0, n_precincts - (n_precincts % 20), precincts_per_thread)
+                precincts_per_process = n_precincts // 20
+                # precincts that will be calculated in each process.
+                process_precincts = [
+                    precincts[i:i + precincts_per_process] for i in
+                    range(0, n_precincts - (n_precincts % 20), precincts_per_process)
                 ]
-                thread_precincts.append(precincts[n_precincts % 20 : n_precincts])
-
-                for precinct_group in thread_precincts:
-                    def thread_func():
-                        for precinct in precinct_group:
-                            if get_if_bordering(precinct.coords, self.coords):
-                                bordering_precincts.add(precinct.vote_id)
-                    thread = threading.Thread(target=thread_func)
-                    thread.run()
-            except ValueError:
+                process_precincts.append(precincts[n_precincts % 20 : n_precincts])
+                
+                with ProcessPoolExecutor() as executor:
+                    for bordering_group in executor.map(self.process_func,
+                                                        process_precincts):
+                        bordering_precincts = \
+                            bordering_precincts | bordering_group
+            else:
                 # There are less than 20 precincts left.
                 for precinct in unchosen_precincts.precincts.values():
                     if get_if_bordering(self.coords, precinct.coords):

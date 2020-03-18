@@ -13,6 +13,7 @@
 #include "../include/shape.hpp"   // class definitions
 #include "../include/util.hpp"
 #include <iomanip>
+#include <random>  // for std::shuffle
 #include <math.h>
 
 // define geometric constants
@@ -1056,8 +1057,9 @@ bool creates_island(GeoGerry::Precinct_Group set, GeoGerry::p_index remove) {
     */
     
     // remove precinct from set
+    int t = set.border.size();
     set.remove_precinct(set.precincts[remove]);
-    return (set.border.size() > 1);
+    return (set.border.size() > t);
 }
 
 
@@ -1097,11 +1099,12 @@ bool creates_island(GeoGerry::p_index_set set, GeoGerry::p_index remove, GeoGerr
 
 
 bool creates_island(GeoGerry::Precinct_Group set, GeoGerry::Precinct precinct) {
+    int x = set.border.size();
     set.remove_precinct(precinct);
     int t = set.border.size();
     set.add_precinct(precinct);
     
-    return (t > 1);
+    return (t > x);
 }
 
 
@@ -1180,10 +1183,8 @@ Shape generate_gon(coordinate c, double radius, int n) {
 p_index get_first_precinct(Precinct_Group available_precincts, Communities communities) {
     // gets the first addable precinct in a community
     p_index_set precincts = get_inner_boundary_precincts(available_precincts);
+    std::shuffle(precincts.begin(), precincts.end(), std::random_device());
     p_index ret = -1;
-
-    if (precincts.size() == 0)
-        cout << "PROBLEMS HERE" << endl;
 
     for (p_index pre : precincts) {
         for (Community community : communities) {
@@ -1200,7 +1201,7 @@ p_index get_first_precinct(Precinct_Group available_precincts, Communities commu
 
     if (ret == -1) {
         for (p_index pre : precincts) {
-            if (!creates_island(available_precincts, available_precincts.precincts[pre])) {
+            if (!creates_island(available_precincts, pre)) {
                 ret = pre;
                 break;
             }
@@ -1218,15 +1219,9 @@ p_index get_first_precinct(Precinct_Group available_precincts, Communities commu
         }
     }
 
-    if (ret == -1) cout << "WOW SOMETHING FAILED" << endl;
-        
-    GeoDraw::Canvas canvas(900, 900);
-    canvas.add_shape(available_precincts);
-    canvas.add_shape(available_precincts.precincts[ret], true, GeoDraw::Color(0,100,255), 2);
-    canvas.draw();
-
     return ret;
 }
+
 // geos::geom::GeometryFactory::Ptr global_factory;
 
 // Point* create_point(double x, double y) {
