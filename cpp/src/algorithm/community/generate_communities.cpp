@@ -47,14 +47,14 @@ int main(int argc, char* argv[]) {
     path p4 = string(argv[2]) + "/districts/shapes";
     create_directory(p4);
 
-    int districts_in_state = 3;// state.state_districts.size();
+    int districts_in_state = state.state_districts.size();
     state.generate_initial_communities(districts_in_state);
 
-    state.refine_communities(0.080, 0.10, 0.4, string(argv[2]) + "/base_communities");
+    state.refine_communities(0.085, 0.125, 0.375, string(argv[2]) + "/base_communities");
     state.save_communities(string(argv[2]) + "/base_communities/base_communities", state.state_communities);
 
     cout << endl << endl << "creating districts..." << endl;
-    state.refine_communities(0.85, 0.01, 0.45, string(argv[2]) + "/districts");
+    state.refine_communities(0.10, 0.01, 0.425, string(argv[2]) + "/districts");
     state.save_communities(string(argv[2]) + "/districts/districts", state.state_communities);
     // write as binary
     return 0;
