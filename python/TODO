@@ -26,3 +26,7 @@
     
     Later 
     - Fully comment on partisanship
+
+# Analysis:
+   Later:
+    - Turn python/hacking_the_election/analysis/generate_graphs.py into a jupyter notebook.
