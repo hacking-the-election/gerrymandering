@@ -147,14 +147,14 @@ def make_communities(island_precinct_groups, n_districts, state_name,
             pickle.dump(save_initial_config, f)
     else:
         with open(last_generated_file, 'rb') as f:
-            initial_configuration = pickle.load(f)[0]
-            precinct_corridors = pickle.load(f)[1]
+            loaded = pickle.load(f)
+            initial_configuration = loaded[0][-1]
+            precinct_corridors = loaded[1]
     linked_precincts = {p for c in precinct_corridors for p in c}
 
     for c in initial_configuration:
         c.update_standard_deviation()
     print(f"standard deviations: {[c.standard_deviation for c in initial_configuration]}")
-    
     # Community "snapshots" at different iterations.
     community_stages = [deepcopy(initial_configuration)]
     # List of precincts that changed each iteration. (ids)
