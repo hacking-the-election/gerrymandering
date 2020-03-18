@@ -58,18 +58,26 @@ def generate_graphs(districts_file, redistricting, pop_constraint):
         else:
             community_stages, changed_precincts = pickle.load(f)
 
+    for stage in community_stages:
+        for community in stage:
+            community.update_partisanship()
+            community.update_standard_deviation()
+            community.update_compactness()
+            community.update_population()
+
     # Update gerrymandering scores list with communities that weren't quantified.
     with open("tmp.pickle", "wb+") as f:
         pickle.dump([[community_stages[0]], []], f)
 
-    gerrymandering_scores = []
-    for stage in community_stages:
-        convert_to_json(
-            [polygon_to_list(c.coords) for c in stage],
-            "tmp.json",
-            [{"District": c.id} for c in stage]
-        )
-        gerrymandering_scores.append(quantify("tmp.pickle", "tmp.json"))
+    if redistricting:
+        gerrymandering_scores = []
+        for stage in community_stages:
+            convert_to_json(
+                [polygon_to_list(c.coords) for c in stage],
+                "tmp.json",
+                [{"District": c.id} for c in stage]
+            )
+            gerrymandering_scores.append(quantify("tmp.pickle", "tmp.json"))
     
     fig1 = plt.figure(1)
 
@@ -84,17 +92,18 @@ def generate_graphs(districts_file, redistricting, pop_constraint):
     ax1.xaxis.set_ticks(np.arange(1, len(changed_precincts) + 1, 1))
     ax1.plot(X, Y)
 
-    # Gerrymandering Score Over Iterations
     if redistricting:
-        fig2 = plt.figure(2)
-        X = list(range(len(gerrymandering_scores)))
-        Y = [score[1] for score in gerrymandering_scores]
-        ax2 = fig2.add_subplot(111)
-        ax2.set_title("Gerrymandering Score Over Iterations")
-        ax2.set_xlabel("Iterations")
-        ax2.set_ylabel("Gerrymandering Score")
-        ax2.xaxis.set_ticks(np.arange(0, len(gerrymandering_scores), 1))
-        ax2.plot(X, Y)
+        # Gerrymandering Score Over Iterations
+        if redistricting:
+            fig2 = plt.figure(2)
+            X = list(range(len(gerrymandering_scores)))
+            Y = [score[1] for score in gerrymandering_scores]
+            ax2 = fig2.add_subplot(111)
+            ax2.set_title("Gerrymandering Score Over Iterations")
+            ax2.set_xlabel("Iterations")
+            ax2.set_ylabel("Gerrymandering Score")
+            ax2.xaxis.set_ticks(np.arange(0, len(gerrymandering_scores), 1))
+            ax2.plot(X, Y)
 
     # Population Convergence
     fig3 = plt.figure(3)
