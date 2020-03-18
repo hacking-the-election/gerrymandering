@@ -207,7 +207,7 @@ def get_area_intersection(polygon1, polygon2):
 def communities_to_json(communities_list, output_path):
     """
     convert lists of communities of the kind outputed by communities
-    into a json file for viewing
+    into a json file for viewing, if output_path == None then just returns formatted json
     """
     features = []
     for community in communities_list:
@@ -220,6 +220,9 @@ def communities_to_json(communities_list, output_path):
             # coords[0].append(coords[0][0])
             features.append({"geometry": {"type":"Polygon", "coordinates":coords}, "type":"Feature", "properties":{"ID":community.id}})
     completed_json = {"type":"FeatureCollection", "features":features}
-    with open(output_path, 'w') as f:
-        json.dump(completed_json, f)
-         
+    if output_path == None:
+        return completed_json
+    else:
+        with open(output_path, 'w') as f:
+            json.dump(completed_json, f)
+            

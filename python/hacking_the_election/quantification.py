@@ -5,7 +5,7 @@ usage: python3 quantification.py [communities_pickle_file] [districts_file]
                      which should store data as a list of community objects
                      with an attribute being a list of precinct_ids, all in a pickle
 
-`districts_file` - path to file that stores district json
+`districts_file` - path to file that stores district json, either preexisting or the .json for base communities
 """
 # Note: How is gerrymandering defined? 
 # While cracking and packing (splitting and combining political communities) does not necessarily imply gerrymandering,
@@ -30,13 +30,15 @@ from hacking_the_election.serialization import save_precincts
 from hacking_the_election.utils.community import Community
 from hacking_the_election.utils.geometry import communities_to_json, clip
 
-def quantify(communities_file, districts_file):
+def quantify(communities_file, districts_file, acceptable_partisanship_threshold):
     '''
     Creates gerrymandering scores for each district and community in a district file by 
     comparing them to each other. Weights by population, weights population by area. 
     Then at the very end, weights by average of area of community in district / total area of community.
     communities_file should be a .pickle file.
     districts_file should be a .json file.
+    When the partisanship factor is found, divide by the threshold and multiply by the unmodified_score. Should be percentage, 
+    e.g. 9.5% = 9.5
     '''
     with open (communities_file, 'rb') as f:
         data = pickle.load(f)
@@ -46,7 +48,7 @@ def quantify(communities_file, districts_file):
     data = data[0][-1]
     for community in data:
         community.update_partisanship()
-    communities_to_json(data, '../../../base_communities_9-5.json')
+    communities_to_json(data, '../../../base_communities.json')
     # communities_to_json(data, '../../../base_communities.json')
     # keys: community index
     # values: list of: [decimal percentage of republicans, shapely community border coordinates polygon]
@@ -54,8 +56,12 @@ def quantify(communities_file, districts_file):
                      for community in data}
     # keys: ids
     # values: json polygon of coordinates
-    district_dict = {district["properties"]["District"]: polygon_to_shapely(district["geometry"]["coordinates"]) 
-                    for district in district_data["features"]}
+    try:
+        district_dict = {district["properties"]["District"]: polygon_to_shapely(district["geometry"]["coordinates"]) 
+                        for district in district_data["features"]}
+    except KeyError:
+        district_dict = {district["properties"]["ID"]: polygon_to_shapely(district["geometry"]["coordinates"]) 
+                        for district in district_data["features"]}
     # find partianshipps
     partisanships = {community:community.partisanship for community in data}
     # find areas of communities
@@ -70,7 +76,6 @@ def quantify(communities_file, districts_file):
         intersecting_communities ={}
         for community in community_coords.keys():
             coords = district.intersection(community.coords)
-            print(coords.area, district_id, community.id)
             # # note: this is where stuff is really slow
             # # coords = shapely_to_polygon(clip([district, community.coords], 1))
             # features = []
@@ -91,30 +96,29 @@ def quantify(communities_file, districts_file):
         # find biggest community, and area
         biggest_community = {}
         for key in intersecting_communities:
-            if intersecting_communities[key] > biggest_community.get(key, 0):
-                if len(biggest_community) == 0:
-                    biggest_community[key] = intersecting_communities[key]
-                else:
-
-                    del biggest_community[list(biggest_community.keys())[0]]
+            print(biggest_community)
+            if len(biggest_community) == 0:
                 biggest_community[key] = intersecting_communities[key]
-
+            else:
+                if intersecting_communities[key] > list(biggest_community.values())[0]:
+                    del biggest_community[list(biggest_community.keys())[0]]
+                    biggest_community[key] = intersecting_communities[key]
 
         # find average_community_area and calculate weights for each district 
-        average_community_area = sum(intersecting_communities.values())/len(intersecting_communities)
+        average_community_population = average([community.population for community in data])
 
-        area_weights = [area/average_community_area for area in intersecting_communities.values()]
+        pop_weights = [community.population/average_community_population for community in data]
 
         # Create list of partisanship weights (decimal of proportion of republicans in district) 
         # for intersecting communities
         district_partisanships = [community.partisanship for community in intersecting_communities]
         # find weighted standard deviation using partisanship, area_weights
-        stdev_district = stdev(district_partisanships, area_weights)
+        stdev_district = stdev(district_partisanships, pop_weights) * 100
         # print(stdev_district)
         # add score to district_scores dict:
         score = 1 - list(biggest_community.values())[0]/total_area
         # print('score', score)
-        weighted1_score = score * stdev_district
+        weighted1_score = score * stdev_district / float(acceptable_partisanship_threshold)
         # print('after partisanship factor', weighted1_score)
         district_scores[district_id] = weighted1_score
     state_score = average(district_scores.values())
@@ -123,7 +127,7 @@ def quantify(communities_file, districts_file):
 
 if __name__ == "__main__":
     args = sys.argv[1:]
-    if len(args) != 2:
+    if len(args) != 3:
         raise TypeError("Wrong number of arguments, see python file")
     district_score, state_score = quantify(*args)
     print(district_score, state_score)

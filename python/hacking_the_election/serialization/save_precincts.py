@@ -311,10 +311,10 @@ class Precinct:
                 # create dem, rep cols
                 # They have the following format: {precinct_id : [53,157,38,31]}
                 dem_cols = {precinct["properties"][ele_id] : 
-                            [precinct["properties"][dem_key] for dem_key in dem_keys] 
+                            {dem_key : precinct["properties"][dem_key] for dem_key in dem_keys} 
                             for precinct in election_data["features"]}
                 rep_cols = {precinct["properties"][ele_id] : 
-                            [precinct["properties"][rep_key] for rep_key in rep_keys]
+                            {rep_key : precinct["properties"][rep_key] for rep_key in rep_keys}
                             for precinct in election_data["features"] }
                 # create precinct_coords dictionary
                 precinct_coords = {precinct["properties"][ele_id]: precinct["geometry"]["coordinates"] 
