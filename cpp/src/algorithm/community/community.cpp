@@ -90,26 +90,20 @@ void State::generate_initial_communities(int num_communities) {
             communities, add it to
         */
 
-        if (DEBUG_COMMUNITIES) cout << "checking new island" << endl;
         map<int, array<int, 2> > vals; // to hold possible size combinations
 
         for (int x = 1; x <= base_sizes.size(); x++) {
-            if (large_sizes.size() == 0) {
-                vals[(x * base)] = {x, 0};
-            }
-
+            if (large_sizes.size() == 0) vals[(x * base)] = {x, 0};
             for (int y = 1; y <= large_sizes.size(); y++) {
                 vals[(x * (base)) + (y * (base + 1))] = {x, y};
-                cout << (x * (base) + (y * (base + 1))) << endl;
             }
         }
 
         int x = 0; // number of base communities on island
         int y = 0; // number of base + 1 communities on island
 
-        auto it = vals.find(island.size());
-        
-        if (it != vals.end()) {
+
+        if (vals.find(island.size()) != vals.end()) {
             // this island can be made from whole communities
             x = vals[island.size()][1];
             y = vals[island.size()][0];
@@ -132,20 +126,18 @@ void State::generate_initial_communities(int num_communities) {
         }
 
         for (int i = 0; i < x; i++) {
-            base_sizes.pop_back();
+            if (base_sizes.size() != 0) base_sizes.erase(base_sizes.begin());
             Community com;
             com.size.push_back(base);
             com.location.push_back(island_index);
             c.push_back(com);
-            if (DEBUG_COMMUNITIES) cout << "full community of " << base << endl;
         }
+
         for (int j = 0; j < y; j++) {
-            large_sizes.pop_back();
             Community com;
             com.size.push_back(base + 1);
             com.location.push_back(island_index);
             c.push_back(com);
-            if (DEBUG_COMMUNITIES) cout << "full community of " << base + 1 << endl;
         }
 
         island_index++;
@@ -199,12 +191,12 @@ void State::generate_initial_communities(int num_communities) {
             if (large_sizes.size() > 0) {
                 // there are still large sizes available
                 total_community_size = base + 1;
-                large_sizes.pop_back();
+                if (large_sizes.size() != 0) large_sizes.erase(large_sizes.begin());
             }
             else {
                 // there are only base sizes available
                 total_community_size = base;
-                base_sizes.pop_back();
+                if (base_sizes.size() != 0) base_sizes.erase(base_sizes.begin());
             }
 
             if (DEBUG_COMMUNITIES) cout << "need to make community of " << total_community_size << endl;
@@ -305,7 +297,6 @@ void State::generate_initial_communities(int num_communities) {
 
                 } while (creates_island(islands[fractional_islands[n_fractional_island_i]], min_link, *this));
 
-
                 if (DEBUG_COMMUNITIES) cout << "linking precinct " << link << " on " << n_fractional_island_i << " with " << min_link << " on " << min_index << endl;
                 // cout << available_precincts.size() << endl;
                 // cout << available_precincts[n_fractional_island_i].size() << endl;
@@ -353,15 +344,13 @@ void State::generate_initial_communities(int num_communities) {
 
     }  // fractional linker
 
-    if (VERBOSE) cout << "filling communities with real precincts..." << endl;
+    if (VERBOSE) cout << "filling communities with precincts..." << endl;
 
     for (int c_index = 0; c_index < c.size() - 1; c_index++) {
-    // for (int c_index = 0; c_index < 1; c_index++) {
-        // fill linked communities with generation method
-        cout << "filling new community..." << endl;
+        cout << "starting community " << c_index << endl;
         Community community = c[c_index];
+
         for (int i = 0; i < community.location.size(); i++) {
-            cout << "on size " << community.size[i] << endl;
             // get information about the current community
             int size  = community.size[i];
             int island_i = community.location[i];
@@ -373,13 +362,6 @@ void State::generate_initial_communities(int num_communities) {
             island_available_shape.border = generate_exterior_border(island_available_shape).border;
             
             int start_precinct = island_available_precincts[get_first_precinct(island_available_shape, this->state_communities)];
-        
-            GeoDraw::Canvas canvas(900, 900);
-            canvas.add_shape(precincts[start_precinct], true, GeoDraw::Color(0,100,255), 2);
-            canvas.add_shape(island_available_shape);
-            canvas.draw();
-        
-            cout << "adding precinct " << start_precinct << " to community " << c_index << endl;
             community.add_precinct_n(precincts[start_precinct]);
 
             island_available_shape.remove_precinct(precincts[start_precinct]);
@@ -394,7 +376,7 @@ void State::generate_initial_communities(int num_communities) {
 
 
             int precincts_to_add = size;
-            int precincts_added = 0;
+            int precincts_added = 1;
 
             while (precincts_added < precincts_to_add) {
                 int precinct = -1;
@@ -402,12 +384,11 @@ void State::generate_initial_communities(int num_communities) {
                 p_index start; // random precinct in border thats not linked
 
                 // calculate border, avoid multipoly
-                // cout << "calculating bordering precincts..." << endl;
                 p_index_set bordering_precincts = get_ext_bordering_precincts(community, island_available_precincts, *this);
                 bool can_do_one = false;
 
                 for (p_index pre : bordering_precincts) {
-                    if (!creates_island(island_available_shape, precincts[pre]) && precincts_added < precincts_to_add) {
+                    if (precincts_added < precincts_to_add && !creates_island(island_available_shape, precincts[pre])) {
                         can_do_one = true;
                         cout << "adding precinct " << pre << endl;
 
@@ -427,10 +408,6 @@ void State::generate_initial_communities(int num_communities) {
                     else cout << "creates island, refraining..." << endl;
                 }
 
-                // Canvas canvas(900, 900);
-                // canvas.add_shape(Multi_Shape(island_available_shape.border));
-                // canvas.draw();
-
                 if (!can_do_one) {
                     cout << "No precinct exchanges work!!" << endl;
                     exit(1);
@@ -441,18 +418,18 @@ void State::generate_initial_communities(int num_communities) {
         c[c_index] = community;
     }
 
-    cout << "filled in islands" << endl;
-
-    for (p_index_set p : available_precincts)
-        for (p_index pi : p )
+    for (p_index_set p : available_precincts) {
+        for (p_index pi : p ) {
             c[c.size() - 1].add_precinct_n(precincts[pi]);
+        }
+    }
 
-    cout << "filled in all islands" << endl;
     this->state_communities = c; // assign state communities to generated array
 
-    for (int i = 0; i < state_communities.size(); i++)
+    for (int i = 0; i < state_communities.size(); i++) {
         state_communities[i].border = generate_exterior_border(state_communities[i]).border;
-    cout << "filled in all islands" << endl;
+    }
+
     return;
 }
 
@@ -978,9 +955,9 @@ void State::generate_communities(int num_communities, double compactness_toleran
 
 
 void State::refine_communities(double part, double popt, double compt, string writedir) {
-    Communities old_communities;
-    int i = 0, changed_precincts = 0;
-    
+
+    int i = 0;
+
     do {
         TOTAL_MOVED_PRECINCTS = 0;
         TOTAL_MOVED_PRECINCT_ID.clear();
@@ -1016,6 +993,7 @@ string Community::save_frame() {
     // cout << line << endl;
     return line;
 }
+
 
 Communities Community::load_frame(std::string read_path, State precinct_list) {
     /*
