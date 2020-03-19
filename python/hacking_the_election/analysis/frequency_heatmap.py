@@ -29,7 +29,7 @@ def generate_heatmap_json(base_communities_file, serialized_state, output_file):
     """
 
     with open(base_communities_file, "rb") as f:
-        community_stages, changed_precincts, gerrymandering_score = pickle.load(f)
+        community_stages, changed_precincts, _ = pickle.load(f)
 
     with open(serialized_state, "rb") as f:
         island_precinct_groups, _, _ = pickle.load(f)
