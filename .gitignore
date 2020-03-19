@@ -24,6 +24,7 @@ cpp/bin/
 cpp/src/combine_districts
 cpp/test/test
 cpp/lib/clipper/
+cpp/test_data/
 
 # lol-cubes
 notes
