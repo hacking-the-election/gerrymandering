@@ -23,6 +23,8 @@ import time
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
+sys.path.append('../../')
+
 from hacking_the_election.communities.compactness_refinement import (
     refine_for_compactness
 )
@@ -145,14 +147,14 @@ def make_communities(island_precinct_groups, n_districts, state_name,
             pickle.dump(save_initial_config, f)
     else:
         with open(last_generated_file, 'rb') as f:
-            initial_configuration = pickle.load(f)[0]
-            precinct_corridors = pickle.load(f)[0]
+            loaded = pickle.load(f)
+            initial_configuration = loaded[0][-1]
+            precinct_corridors = loaded[1]
     linked_precincts = {p for c in precinct_corridors for p in c}
 
     for c in initial_configuration:
         c.update_standard_deviation()
     print(f"standard deviations: {[c.standard_deviation for c in initial_configuration]}")
-    
     # Community "snapshots" at different iterations.
     community_stages = [deepcopy(initial_configuration)]
     # List of precincts that changed each iteration. (ids)
@@ -221,7 +223,7 @@ def make_communities(island_precinct_groups, n_districts, state_name,
                 print(f"partisanship took {round(time.time() - start_time, 3)}s")
                 print(f"partisanship moved {len(iteration_changed_precincts[-1])} "
                     "precincts")
-                with open(f"./{add_leading_zeroes(i)}_partisanship.pickle", wb) as f:
+                with open(f"./{add_leading_zeroes(i)}_partisanship.pickle", 'wb+') as f:
                     to_save_partisanship = (partisanship_refined, precinct_corridors)
                     pickle.dump(to_save_partisanship, f)
 
@@ -250,7 +252,7 @@ def make_communities(island_precinct_groups, n_districts, state_name,
                 print(f"compactness took {round(time.time() - start_time, 3)}s")
                 print(f"compactness moved {len(iteration_changed_precincts[-1])} "
                     "precincts")
-                with open(f"./{add_leading_zeroes(i)}_compactness.pickle", 'wb') as f:
+                with open(f"./{add_leading_zeroes(i)}_compactness.pickle", 'wb+') as f:
                     to_save_compactness = (compactness_refined, precinct_corridors)
                     pickle.dump(to_save_compactness, f)
             if run_population:
@@ -279,7 +281,7 @@ def make_communities(island_precinct_groups, n_districts, state_name,
                 )
                 print(f"population moved {len(iteration_changed_precincts[-1])} "
                     "precincts")
-                with open(f"./{add_leading_zeroes(i)}_population.pickle", 'wb') as f:
+                with open(f"./{add_leading_zeroes(i)}_population.pickle", 'wb+') as f:
                     to_save_population = (community_stages[-1], precinct_corridors)
                     pickle.dump(to_save_population, f)
 

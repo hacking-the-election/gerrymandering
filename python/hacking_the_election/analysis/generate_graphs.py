@@ -2,7 +2,7 @@
 Generates all the graphs required for data analysis of redistricting.
 
 Usage:
-python3 generate_graphs.py [districts_file] [redistricting] [pop_constraint] [base_communities_file]
+python3 generate_graphs.py [districts_file] [redistricting] [pop_constraint] [base_communities]
 
 `redistricting` should be given the value "true" or "false"
 """
@@ -35,7 +35,7 @@ def get_squishing_function(min_val, max_val):
     return f
 
 
-def generate_graphs(districts_file, redistricting, pop_constraint, base_communities_file):
+def generate_graphs(districts_file, redistricting, pop_constraint, base_communities):
     """
     Makes these graphs:
      - Number of Changed Precincts Over Iterations
@@ -65,9 +65,8 @@ def generate_graphs(districts_file, redistricting, pop_constraint, base_communit
             community.update_compactness()
             community.update_population()
 
-    # Update gerrymandering scores list with communities that weren't quantified.
-
     if redistricting:
+        # Update gerrymandering scores list with communities that weren't quantified.
         gerrymandering_scores = []
         for stage in community_stages:
             convert_to_json(
@@ -75,13 +74,12 @@ def generate_graphs(districts_file, redistricting, pop_constraint, base_communit
                 "tmp.json",
                 [{"District": c.id} for c in stage]
             )
-            gerrymandering_scores.append(
-                quantify(base_communities_file, "tmp.json"))
+            gerrymandering_scores.append(quantify(base_communities, "tmp.json"))
     
     fig1 = plt.figure(1)
 
     # Number of Changed Precincts Over Iterations
-    X = list(range(len(changed_precincts)))
+    X = list(range(1, len(changed_precincts) + 1))
     Y = [sum([len(refinement) for refinement in iteration])
          for iteration in changed_precincts]
     ax1 = fig1.add_subplot(111)
@@ -119,6 +117,7 @@ def generate_graphs(districts_file, redistricting, pop_constraint, base_communit
     ax3.set_xlabel("Iterations")
     ax3.set_ylabel("Population")
     ax3.set_xlim(left=-0.25, right=len(community_stages) - 0.75)
+    ax3.set_ylim(ymin=406488.4, ymax=609732.6)
     ax3.xaxis.set_ticks(np.arange(0, len(community_stages), 1))
 
     x = np.arange(-100, 100, 0.01)
