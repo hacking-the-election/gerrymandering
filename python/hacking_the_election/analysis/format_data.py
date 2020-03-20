@@ -43,12 +43,9 @@ def format_data(input_file, output_file, redistricts, base_communities):
                 "tmp.json",
                 [{"District": str(c.id)} for c in stage]
             )
-<<<<<<< HEAD
             gerrymandering_scores.append(
                 quantify(base_communities_file, "tmp.json"))
-=======
             gerrymandering_scores.append(quantify(base_communities, "tmp.json"))
->>>>>>> tmp
 
     # Partisanship
     partisanships = [[stage[i].partisanship for stage in community_stages]

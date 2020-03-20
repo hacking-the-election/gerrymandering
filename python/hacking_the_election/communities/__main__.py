@@ -48,6 +48,7 @@ from hacking_the_election.utils.initial_configuration import (
 )
 from hacking_the_election.utils.population import PopulationRange
 from hacking_the_election.quantification import quantify
+from hacking_the_election.utils.community import Community
 
 
 # Parameters
@@ -148,7 +149,11 @@ def make_communities(island_precinct_groups, n_districts, state_name,
     else:
         with open(last_generated_file, 'rb') as f:
             loaded = pickle.load(f)
-            initial_configuration = loaded[0][-1]
+            # accomodate for different formats of pickles
+            if isinstance(loaded[0][-1], Community):
+                initial_configuration = loaded[0]
+            else:
+                initial_configuration = loaded[0][-1]
             precinct_corridors = loaded[1]
     linked_precincts = {p for c in precinct_corridors for p in c}
 
