@@ -30,3 +30,6 @@ notes
 quick.txt
 quick.py
 analysis.py
+
+# notebooks
+notebooks/.ipynb_checkpoints
