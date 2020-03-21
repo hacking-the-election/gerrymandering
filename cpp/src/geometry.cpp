@@ -631,19 +631,16 @@ p_index_set get_inner_boundary_precincts(Precinct_Group shape) {
     p_index_set boundary_precincts;
     Multi_Shape exterior_border;
     exterior_border.border = shape.border;
-    GeoDraw::Canvas canvas(900, 900);
 
     int i = 0;
     
     for (Precinct p : shape.precincts) {
         if (get_bordering(exterior_border, p)) {
             boundary_precincts.push_back(i);
-            canvas.add_shape(p);
         }
         i++;
     }
 
-    // canvas.draw();
     return boundary_precincts;
 }
 

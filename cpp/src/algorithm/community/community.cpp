@@ -47,7 +47,7 @@ using namespace boost::filesystem;
 */
 
 const int CHANGED_PRECINT_TOLERANCE = 10; // percent of precincts that can change from iteration
-const int MAX_ITERATIONS = 25; // max number of times we can change a community
+const int MAX_ITERATIONS = 13; // max number of times we can change a community
 int TOTAL_MOVED_PRECINCTS = 0;  // number of times a precinct has been given to another district
 vector<string> TOTAL_MOVED_PRECINCT_ID = {};
 
@@ -355,12 +355,14 @@ void State::generate_initial_communities(int num_communities) {
             int size  = community.size[i];
             int island_i = community.location[i];
             p_index_set island_available_precincts = available_precincts[i]; 
+            cout << "getting available precincts..." << endl;
             
             Precinct_Group island_available_shape;
             for (p_index pre : island_available_precincts)
                 island_available_shape.add_precinct_n(precincts[pre]);
             island_available_shape.border = generate_exterior_border(island_available_shape).border;
             
+            cout << "calculating start precinct" << endl;
             int start_precinct = island_available_precincts[get_first_precinct(island_available_shape, this->state_communities)];
             community.add_precinct_n(precincts[start_precinct]);
 
@@ -710,6 +712,10 @@ void State::refine_compactness(double compactness_tolerance) {
         circle = generate_gon(center, sqrt(state_communities[worst_community].get_area() / PI), 30);
         p_index_set giveable = get_inner_boundary_precincts(state_communities[worst_community]);
 
+        for (Community c : this->state_communities)
+            cout << c.get_compactness() << ", ";
+        cout << endl;
+
         // for  each precinct in edge of community;
         for (int x = 0; x < giveable.size(); x++) {
             Precinct pre = state_communities[worst_community].precincts[giveable[x]];
@@ -758,6 +764,11 @@ void State::refine_compactness(double compactness_tolerance) {
         is_done = (!is_worst || iter == MAX_ITERATIONS);
         iter++;
     }
+
+
+    for (Community c : this->state_communities)
+        cout << c.get_compactness() << ", ";
+    cout << endl;
 }
 
 
@@ -779,7 +790,10 @@ void State::refine_partisan(double partisanship_tolerance) {
 
     while (!is_done) {
         p_index_set border_precincts = get_inner_boundary_precincts(state_communities[worst_community]);
-        
+        for (Community c : this->state_communities)
+            cout << get_standard_deviation_partisanship(c) << ", ";
+        cout << endl;
+
         for (p_index p : border_precincts) {
             if (!creates_island(state_communities[worst_community], p)) {
                 Communities before = this->state_communities;
@@ -798,6 +812,10 @@ void State::refine_partisan(double partisanship_tolerance) {
         is_done = (iter == MAX_ITERATIONS || get_standard_deviation_partisanship(this->state_communities) < partisanship_tolerance);
         iter++;
     }
+
+    for (Community c : this->state_communities)
+        cout << get_standard_deviation_partisanship(c) << ", ";
+    cout << endl;
 }
 
 
@@ -830,6 +848,10 @@ void State::refine_population(double population_tolerance) {
         p_index_set border_precincts = get_inner_boundary_precincts(state_communities[worst_community]);
         int index = 0;
 
+        for (Community c : this->state_communities)
+            cout << c.get_population() << ", ";
+        cout << endl;
+
         while (index < border_precincts.size() && 
                (state_communities[worst_community].get_population() < ideal_range[0] 
               || state_communities[worst_community].get_population() > ideal_range[1])) {
@@ -847,6 +869,10 @@ void State::refine_population(double population_tolerance) {
         is_done = (worst_community == -1 || iter == MAX_ITERATIONS);
         iter++;
     }
+
+    for (Community c : this->state_communities)
+        cout << c.get_population() << ", ";
+    cout << endl;
 }
 
 
