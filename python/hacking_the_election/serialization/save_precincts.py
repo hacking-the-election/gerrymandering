@@ -228,7 +228,7 @@ class Precinct:
         for num, precinct in enumerate(geo_data['features']):
             if state == "colorado":
                 precinct_geo_ids.append(
-                    tostring(precinct['properties'][json_id])[1:])
+                    tostring(precinct['properties'][json_id[0]])[1:])
             else:
                 if len(json_id) > 1:
                     precinct_id = ' '
@@ -238,7 +238,6 @@ class Precinct:
                 else:
                     precinct_geo_ids.append(
                         tostring(precinct['properties'][json_id[0]]))
-
         # whether or not there is an
         # individual population file
         if population_file != 'none':
@@ -261,7 +260,7 @@ class Precinct:
         else:
             is_population_data = False
             # Population is in geodata
-            pop = {p["properties"][json_id][1:] if state == "colorado"
+            pop = {p["properties"][json_id[0]][1:] if state == "colorado"
             else ' '.join([p['properties'][x] for x in json_id]) if len(json_id) > 1
             else p["properties"][json_id[0]]:
             convert_to_int(sum(num for num in 
@@ -375,7 +374,7 @@ class Precinct:
                 for precinct_id in precinct_geo_ids:
                     for precinct in geo_data["features"]:
                         if state == "colorado":
-                            geo_data_id = precinct["properties"][json_id][1:]
+                            geo_data_id = precinct["properties"][json_id[0]][1:]
                         if state == "maryland":
                             geo_data_id = ' 0'.join([precinct["properties"][x] for x in json_id])
                         elif len(json_id) == 1:

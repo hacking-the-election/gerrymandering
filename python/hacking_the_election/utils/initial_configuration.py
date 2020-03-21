@@ -94,7 +94,7 @@ def fill(self, precincts, linked_precincts, island_index,
         eligible_precincts = all_bordering_precincts
     initial_precinct = random.sample(
         eligible_precincts - used_starting_precincts, 1)[0]
-
+    added_precincts.add(initial_precinct)
     unchosen_precincts.give_precinct(self, initial_precinct,
                                      **GIVE_PRECINCT_COORDS_ONLY_KWARGS,
                                      allow_zero_precincts=True,
@@ -127,7 +127,7 @@ def fill(self, precincts, linked_precincts, island_index,
                     allow_multipolygons=True)
                 if (
                         isinstance(unchosen_precincts.coords, MultiPolygon)
-                     or isinstance(self.coords, MultiPolygon)  # Not sure how this is possible, but apparently it is.
+                     or isinstance(self.coords, MultiPolygon)
                         ):
                     self.give_precinct(
                         unchosen_precincts,
