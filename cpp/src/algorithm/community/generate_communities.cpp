@@ -49,6 +49,7 @@ int main(int argc, char* argv[]) {
 
     int districts_in_state = state.state_districts.size();
     state.generate_initial_communities(districts_in_state);
+//    state.read_communities("test_data/ia_init");
     Communities initial_config = state.state_communities;
 
     state.refine_communities(0.085, 0.125, 0.375, string(argv[2]) + "/base_communities");
