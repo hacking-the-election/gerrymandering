@@ -32,7 +32,7 @@ def format_data(input_file, output_file, redistricts, base_communities):
             community.update_partisanship()
             community.update_standard_deviation()
             community.update_compactness()
-            community.update_population()
+            community.update_population()    
 
     if redistricts:
         # Gerrymandering Score
@@ -43,6 +43,8 @@ def format_data(input_file, output_file, redistricts, base_communities):
                 "tmp.json",
                 [{"District": str(c.id)} for c in stage]
             )
+            gerrymandering_scores.append(
+                quantify(base_communities_file, "tmp.json"))
             gerrymandering_scores.append(quantify(base_communities, "tmp.json"))
 
     # Partisanship

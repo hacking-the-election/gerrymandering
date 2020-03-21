@@ -388,10 +388,10 @@ def modify_for_partisanship(communities_list, precinct_corridors, threshold, ani
             for community14 in not_involved_community_list:
                 community_change_snapshot.append(community14)
             precinct_count += 1
-            print(community_change_snapshot)
+            # print(community_change_snapshot)
             changing_stdev.append(str(average([most_stdev_community.standard_deviation, other_community.standard_deviation])) + '\n')
             new_average = average([community28.standard_deviation for community28 in community_change_snapshot])
-            print(new_average)
+            # print(new_average)
             communities_at_stages[new_average] = community_change_snapshot
         
         stdev_stat = str([community10.standard_deviation for community10 in communities_list])[1:-1]

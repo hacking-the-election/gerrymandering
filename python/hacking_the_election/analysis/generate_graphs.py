@@ -238,4 +238,9 @@ def generate_graphs(districts_file, redistricting, pop_constraint, base_communit
 
 
 if __name__ == "__main__":
-    generate_graphs(sys.argv[1], True if sys.argv[2] == "true" else False, float(sys.argv[3]), sys.argv[4])
+    generate_graphs(
+        sys.argv[1],
+        True if sys.argv[2] == "true" else False,
+        float(sys.argv[3]),
+        sys.argv[4]
+    )
