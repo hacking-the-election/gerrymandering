@@ -1,9 +1,0 @@
-year	state	state_po	state_fips	state_cen	state_ic	office	district	stage	runoff	special	candidate	party	writein	mode	candidatevotes	totalvotes	unofficial	version
-2018	"New Hampshire"	"NH"	33	12	4	"US House"	1	"gen"	"NA"	"FALSE"	"Eddie Edwards"	"republican"	"FALSE"	"total"	"130996"	291039	"FALSE"	20190110
-2018	"New Hampshire"	"NH"	33	12	4	"US House"	1	"gen"	"NA"	"FALSE"	"Chris Pappas"	"democrat"	"FALSE"	"total"	"155884"	291039	"FALSE"	20190110
-2018	"New Hampshire"	"NH"	33	12	4	"US House"	1	"gen"	"NA"	"FALSE"	"Dan Belforti"	"libertarian"	"FALSE"	"total"	"4048"	291039	"FALSE"	20190110
-2018	"New Hampshire"	"NH"	33	12	4	"US House"	1	"gen"	"NA"	"FALSE"	"NA"	"NA"	"TRUE"	"total"	"111"	291039	"FALSE"	20190110
-2018	"New Hampshire"	"NH"	33	12	4	"US House"	2	"gen"	"NA"	"FALSE"	"Steven Negron"	"republican"	"FALSE"	"total"	"117990"	279705	"FALSE"	20190110
-2018	"New Hampshire"	"NH"	33	12	4	"US House"	2	"gen"	"NA"	"FALSE"	"Anne McLane Kuster"	"democrat"	"FALSE"	"total"	"155358"	279705	"FALSE"	20190110
-2018	"New Hampshire"	"NH"	33	12	4	"US House"	2	"gen"	"NA"	"FALSE"	"Justin O'Donnell"	"libertarian"	"FALSE"	"total"	"6206"	279705	"FALSE"	20190110
-2018	"New Hampshire"	"NH"	33	12	4	"US House"	2	"gen"	"NA"	"FALSE"	"NA"	"NA"	"TRUE"	"total"	"151"	279705	"FALSE"	20190110

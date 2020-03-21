@@ -1,0 +1,7 @@
+year	state	state_po	state_fips	state_cen	state_ic	office	district	stage	runoff	special	candidate	party	writein	mode	candidatevotes	totalvotes	unofficial	version
+2008	"New Hampshire"	"NH"	33	12	4	"US House"	1	"gen"	"NA"	"FALSE"	"Jeb Bradley"	"republican"	"FALSE"	"total"	"156338"	340873	"FALSE"	20171005
+2008	"New Hampshire"	"NH"	33	12	4	"US House"	1	"gen"	"NA"	"FALSE"	"Carol Shea-Porter"	"democrat"	"FALSE"	"total"	"176435"	340873	"FALSE"	20171005
+2008	"New Hampshire"	"NH"	33	12	4	"US House"	1	"gen"	"NA"	"FALSE"	"Robert Kingsbury"	"libertarian"	"FALSE"	"total"	"8100"	340873	"FALSE"	20171005
+2008	"New Hampshire"	"NH"	33	12	4	"US House"	2	"gen"	"NA"	"FALSE"	"Jennifer Horn"	"republican"	"FALSE"	"total"	"138222"	333675	"FALSE"	20171005
+2008	"New Hampshire"	"NH"	33	12	4	"US House"	2	"gen"	"NA"	"FALSE"	"Chester L. Lapointe II"	"libertarian"	"FALSE"	"total"	"7121"	333675	"FALSE"	20171005
+2008	"New Hampshire"	"NH"	33	12	4	"US House"	2	"gen"	"NA"	"FALSE"	"Paul W. Hodes"	"democrat"	"FALSE"	"total"	"188332"	333675	"FALSE"	20171005
