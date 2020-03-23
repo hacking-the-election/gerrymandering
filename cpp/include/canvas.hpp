@@ -82,7 +82,7 @@ namespace GeoDraw {
         // modify canvas attributes
         void flood_fill_util(GeoGerry::coordinate coord, Color c1, Color c2);
         void flood_fill(GeoGerry::coordinate, Color c);
-        void translate(long int x, long int y);      // move the outlines by x and y
+        void translate(long int x, long int y, bool b);      // move the outlines by x and y
         void scale(double scale_factor);             // scale the shapes by scale factor
         void rasterize_shapes();                     // determine pixel positions and values for coordiantes
         void rasterize_edges();                      // generate edges
@@ -95,11 +95,11 @@ namespace GeoDraw {
         }
 
         // add shape to the canvas
-        void add_shape(GeoGerry::Shape s, bool = true, Color = Color(0,0,0), int = 1);
-        void add_shape(GeoGerry::LinearRing s, bool = true, Color = Color(0,0,0), int = 1);
-        void add_shape(GeoGerry::Multi_Shape s, bool = true, Color = Color(0,0,0), int = 1);
-        void add_shape(GeoGerry::Precinct_Group s, bool = true, Color = Color(0,0,0), int = 1);
-        void add_shape(GeoGerry::Communities s, bool = true, Color = Color(0,0,0), int = 1);
+        void add_shape(GeoGerry::Shape s, bool = false, Color = Color(0,0,0), int = 1);
+        void add_shape(GeoGerry::LinearRing s, bool = false, Color = Color(0,0,0), int = 1);
+        void add_shape(GeoGerry::Multi_Shape s, bool = false, Color = Color(0,0,0), int = 1);
+        void add_shape(GeoGerry::Precinct_Group s, bool = false, Color = Color(0,0,0), int = 1);
+        void add_shape(GeoGerry::Communities s, bool = false, Color = Color(0,0,0), int = 1);
         void clear();
         void resize_window(int x, int y);
         void draw();

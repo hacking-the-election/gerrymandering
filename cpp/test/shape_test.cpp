@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
     GeoGerry::Shape shape(t);
 
     GeoDraw::Canvas canvas(600,600);
-    canvas.add_shape(shape, true, GeoDraw::Color(255, 50, 50), 1);
+    canvas.add_shape(shape, false, GeoDraw::Color(255, 50, 50), 1);
     canvas.draw();
     
     // assert_equal("checking area function", area(shape), 0.5);

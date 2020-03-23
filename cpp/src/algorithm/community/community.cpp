@@ -51,7 +51,7 @@ const int MAX_ITERATIONS = 13; // max number of times we can change a community
 int TOTAL_MOVED_PRECINCTS = 0;  // number of times a precinct has been given to another district
 vector<string> TOTAL_MOVED_PRECINCT_ID = {};
 
-Anim full_animation(150);
+Anim full_animation(40);
 
 
 void State::generate_initial_communities(int num_communities) {
@@ -355,17 +355,30 @@ void State::generate_initial_communities(int num_communities) {
             int size  = community.size[i];
             int island_i = community.location[i];
             p_index_set island_available_precincts = available_precincts[i]; 
-            cout << "getting available precincts..." << endl;
+            cout << "getting available precincts..." << flush;
             
             Precinct_Group island_available_shape;
-            for (p_index pre : island_available_precincts)
-                island_available_shape.add_precinct_n(precincts[pre]);
-            island_available_shape.border = generate_exterior_border(island_available_shape).border;
-            
-            cout << "calculating start precinct" << endl;
-            int start_precinct = island_available_precincts[get_first_precinct(island_available_shape, this->state_communities)];
-            community.add_precinct_n(precincts[start_precinct]);
+            for (p_index pre : island_available_precincts) {
+                Precinct pr = precincts[pre];
+                pr.shape_id = to_string(pre);
+                island_available_shape.add_precinct_n(pr);
+            }
 
+            island_available_shape.border = generate_exterior_border(island_available_shape).border;
+
+            cout << "got" << endl;
+
+            cout << "calculating start precinct..." << flush;
+            p_index_set inner_precincts = get_inner_boundary_precincts(island_available_shape);
+
+            p_index start_precinct = stoi(island_available_shape.precincts[inner_precincts[0]].shape_id);
+
+            Canvas canvas(900,900);
+            canvas.add_shape(*this);
+            canvas.add_shape(precincts[start_precinct], false, Color(200, 50, 50), 2);
+            canvas.draw();
+
+            community.add_precinct_n(precincts[start_precinct]);
             island_available_shape.remove_precinct(precincts[start_precinct]);
             island_available_precincts.erase(
                     std::remove(
@@ -631,7 +644,7 @@ bool State::give_precinct(p_index precinct, p_index community, int t_type, bool 
     if (animate) {
         Canvas can(900, 900);
         can.add_shape(this->state_communities);
-        can.add_shape(Multi_Shape(this->state_communities[community].border), true, Color(247, 42, 42), 2);
+        can.add_shape(Multi_Shape(this->state_communities[community].border), false, Color(247, 42, 42), 2);
         full_animation.frames.push_back(can);
         TOTAL_MOVED_PRECINCTS++;
         TOTAL_MOVED_PRECINCT_ID.push_back(precinct_shape.shape_id);
@@ -663,7 +676,7 @@ bool State::give_precinct(p_index precinct, p_index community, p_index community
     if (animate) {
         Canvas can(900, 900);
         can.add_shape(this->state_communities);
-        can.add_shape(Multi_Shape(this->state_communities[community].border), true, Color(247, 42, 42), 2);
+        can.add_shape(Multi_Shape(this->state_communities[community].border), false, Color(247, 42, 42), 2);
         full_animation.frames.push_back(can);
         TOTAL_MOVED_PRECINCTS++;
         TOTAL_MOVED_PRECINCT_ID.push_back(precinct_shape.shape_id);
@@ -998,8 +1011,14 @@ void State::refine_communities(double part, double popt, double compt, string wr
 
         i++;
     } while (TOTAL_MOVED_PRECINCTS > 20);
+    
+    Canvas canvas(200,200);
+    canvas.add_shape(this->state_communities);
+    canvas.draw();
+    
+    full_animation.playback();
+    full_animation = GeoDraw::Anim(40);
 }
-
 
 string Community::save_frame() {
     /*
