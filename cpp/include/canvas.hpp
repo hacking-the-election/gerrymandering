@@ -52,6 +52,7 @@ namespace GeoDraw {
             Color color;
             int line_thickness;
             bool filled;
+            GeoGerry::coordinate get_representative_point();
 
             Outline(GeoGerry::LinearRing lr, Color c, int th, bool f) :
                 border(lr), color(c), line_thickness(th), filled(f) {}
@@ -79,11 +80,14 @@ namespace GeoDraw {
         int x, y;                         // dimensions of the screen
 
         // modify canvas attributes
+        void flood_fill_util(GeoGerry::coordinate coord, Color c1, Color c2);
+        void flood_fill(GeoGerry::coordinate, Color c);
         void translate(long int x, long int y);      // move the outlines by x and y
         void scale(double scale_factor);             // scale the shapes by scale factor
         void rasterize_shapes();                     // determine pixel positions and values for coordiantes
         void rasterize_edges();                      // generate edges
         void fill_shapes();                          // fill shapes with solid color
+        Pixel get_pixel(GeoGerry::coordinate c);
 
         Canvas(int dx, int dy) : x(dx), y(dy) {
             background = new Uint32[dx * dy];

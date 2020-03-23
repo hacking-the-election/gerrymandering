@@ -127,7 +127,7 @@ def fill(self, precincts, linked_precincts, island_index,
                     allow_multipolygons=True)
                 if (
                         isinstance(unchosen_precincts.coords, MultiPolygon)
-                     or isinstance(self.coords, MultiPolygon)  # Not sure how this is possible, but apparently it is.
+                     or isinstance(self.coords, MultiPolygon)
                         ):
                     self.give_precinct(
                         unchosen_precincts,
