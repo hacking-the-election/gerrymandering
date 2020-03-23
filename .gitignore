@@ -13,6 +13,9 @@ hacking_the_election.egg-info
 tmp.json
 tmp1.json
 tmp.pickle
+*compactness.pickle
+*partisanship.pickle
+*population.pickle
 
 # vscode
 settings.json
