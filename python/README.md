@@ -19,6 +19,7 @@ All dependencies are installed when using pip. They are:
  - [numpy](https://numpy.org/)
  - [matplotlib](https://matplotlib.org/)
  - [shapely](https://shapely.readthedocs.io/)
+ - [colormap](https://github.com/cokelaer/colormap)
 
 ### Python Version
 

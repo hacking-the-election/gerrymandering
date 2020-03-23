@@ -36,9 +36,9 @@ def read_statistics(pickle_path, return_flag=None):
     if return_flag:
         return partisanships, standard_deviations, compactnesses, population_devs
     else:
-        print('Partisanships: ', partisanships)
-        print('Standard Deviations: ', standard_deviations)
-        print('Compactnesses: ', compactnesses)
+        print('Partisanships: ', partisanships, 'Average Partisanship: ', average(partisanships))
+        print('Standard Deviations: ', standard_deviations, 'Average Standard Deviation: ', average(standard_deviations))
+        print('Compactnesses: ', compactnesses, 'Average Compactness: ', average(compactnesses))
         print('Percent Deviations from Ideal: ', population_devs)
         print('Community Ids: ', [community.id for community in generated_communities])
 

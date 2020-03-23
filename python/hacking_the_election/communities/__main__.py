@@ -6,8 +6,8 @@ python3 communities [state_data] [n_districts] [state_name] [animation_dir] [out
 [last generated_file] [last_generated_process] [partisanship_stdev] [compactness] [population]
 
 if there is no last_generated_file, should be none and so should last_generated_file, else 
-last_generated_file should be pickle and last_generated_process should be "initial_configuration" or "partisanship" or 
-"compactness" or "population" the process (automatically starts from the first iteration)
+last_generated_file should be pickle and last_generated_process should be "initial_configuration" or "partisanship-2" or 
+"compactness-4" or "population-7" the process (automatically starts from the iteration given)
 
 redistricting should either be "true" or "false"
 base_communities_file should be non if not redistricting
@@ -180,20 +180,22 @@ def make_communities(island_precinct_groups, n_districts, state_name,
                         run_partisanship = True
                         run_compactness = True
                         run_population = True
-                    elif last_generated_process == "partisanship":
+                    elif last_generated_process[:-2] == "partisanship":
                         run_partisanship = False
                         run_compactness = True
                         run_population = True
                         partisanship_refined = initial_configuration 
-                    elif last_generated_process == "compactness":
+                    elif last_generated_process[:-2] == "compactness":
                         run_partisanship = False
                         run_compactness = False
                         run_population = True
                         compactness_refined = initial_configuration
-                    elif last_generated_process == "population":
+                    elif last_generated_process[:-2] == "population":
                         run_partisanship = False
                         run_compactness = False
                         run_population = False
+                    else:
+                        raise ValueError
                         # no defining anything for initial_configuration because it's already in community_stages
                 else:
                     run_partisanship = True
@@ -293,10 +295,15 @@ def make_communities(island_precinct_groups, n_districts, state_name,
             changed_precincts.append(iteration_changed_precincts)
             print(f"{sum([len(i) for i in changed_precincts[-1]])} precincts "
                   f"moved on iteration {i}")
-
-            if sum([len(i) for i in changed_precincts[-1]]) < 10:
-                # Less than 10 precincts moved this iteration.
-                break
+            if i == 1:
+                if last_generated_process == "none":
+                    if sum([len(i) for i in changed_precincts[-1]]) < 10:
+                        # Less than 10 precincts moved this iteration.
+                        break
+            else:
+                if sum([len(i) for i in changed_precincts[-1]]) < 10:
+                    # Less than 10 precincts moved this iteration.
+                    break
             
             if redistricting:
                 convert_to_json(
