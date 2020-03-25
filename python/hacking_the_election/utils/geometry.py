@@ -1,0 +1,3 @@
+"""
+Various useful geometric functions.
+"""
