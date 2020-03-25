@@ -11,6 +11,7 @@
 #include "../include/geometry.hpp"
 
 int RECURSION_STATE = 0;
+double PADDING = (2.0/5.0);
 
 GeoGerry::coordinate i_average(GeoGerry::bounding_box n) {
     double y = n[0] + n[1];
@@ -173,7 +174,7 @@ GeoGerry::bounding_box GeoDraw::Canvas::get_bounding_box() {
 }
 
 
-void GeoDraw::Canvas::translate(long int t_x, long int t_y) {
+void GeoDraw::Canvas::translate(long int t_x, long int t_y, bool b) {
     /*
         @desc:
             Translates all linear rings contained in the
@@ -199,8 +200,8 @@ void GeoDraw::Canvas::translate(long int t_x, long int t_y) {
             holes[i].border.border[j][1] += t_y;
         }
     }
-
-    box = {box[0] + t_y, box[1] + t_y, box[2] + t_x, box[3] + t_x};
+    
+    if (b) box = {box[0] + t_y, box[1] + t_y, box[2] + t_x, box[3] + t_x};
 }
 
 
@@ -354,12 +355,6 @@ void GeoDraw::Canvas::rasterize_shapes() {
         @return: void
     */
 
-    double ratio_top = ceil((double) this->box[0]) / (double) (x);   // the rounded ratio of top:top
-    double ratio_right = ceil((double) this->box[3]) / (double) (y); // the rounded ratio of side:side
-
-    // find out which is larger and assign its reciporical to the scale factor
-    double scale_factor = 1 / ((ratio_top > ratio_right) ? ratio_top : ratio_right); 
-    scale(scale_factor);
     this->rasterize_edges();
     this->fill_shapes();
 
@@ -405,7 +400,23 @@ void GeoDraw::Canvas::draw() {
     // size and position coordinates in the right wuat
     memset(background, 255, x * y * sizeof(Uint32));
     get_bounding_box();
-    translate(-box[2], -box[1]);
+    translate(-box[2], -box[1], true);
+
+    double ratio_top = ceil((double) this->box[0]) / (double) (x);   // the rounded ratio of top:top
+    double ratio_right = ceil((double) this->box[3]) / (double) (y); // the rounded ratio of side:side
+    double scale_factor = 1 / ((ratio_top > ratio_right) ? ratio_top : ratio_right); 
+    scale(scale_factor * PADDING);
+
+    int px = (int)((double)x * (1.0-PADDING) / 2.0), py = (int)((double)y * (1.0-PADDING) / 2.0);
+    translate(px, py, false);
+    if (ratio_top < ratio_right) {
+        // center vertically
+        std::cout << "x" << std::endl;
+        int t = (int)((((double)y - ((double)py * 2.0)) - (double)this->box[0]) / 2.0);
+        std::cout << t << std::endl;
+        translate(0, t, false);
+    }
+
     rasterize_shapes();
 
     SDL_Init(SDL_INIT_VIDEO);
@@ -457,7 +468,7 @@ void GeoDraw::Anim::playback() {
     std::vector<Uint32*> backgrounds;
     for (Canvas c : frames) {
         GeoGerry::bounding_box b = c.get_bounding_box();
-        c.translate(-b[2], -b[1]);
+        c.translate(-b[2], -b[1], true);
         c.rasterize_shapes();
         backgrounds.push_back(c.background);
     }
