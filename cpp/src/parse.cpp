@@ -23,11 +23,11 @@ const long int c = pow(2, 18);
 
 // constant id strings
 //ndv	nrv	geoid10	GEOID10	POP100
-const std::string election_id_header = "geoid10";
-const std::vector<std::string> d_head = {"ndv"};
-const std::vector<std::string> r_head = {"nrv"};
-const std::string geodata_id = "GEOID10";
-const std::string population_id = "POP100";
+std::string election_id_header = "geoid10";
+std::vector<std::string> d_head = {"ndv"};
+std::vector<std::string> r_head = {"nrv"};
+std::string geodata_id = "GEOID10";
+std::string population_id = "POP100";
 
 std::vector<std::vector<std::string > > parse_sv(std::string, std::string);
 bool check_column(std::vector<std::vector<std::string> >, int);
@@ -664,7 +664,7 @@ int hole_count(GeoGerry::Precinct_Group pg) {
 }
 
 
-GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON, std::string voter_data, std::string district_geoJSON) {
+GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON, std::string voter_data, std::string district_geoJSON, std::vector<std::vector<std::string> > opts) {
     /*
         @desc:
             Parse precinct and district geojson, along with
@@ -680,6 +680,12 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
 
     //! Should probably allocate memory with malloc
     //! Will be some outrageously large vectors here
+
+    election_id_header = opts[0][0];
+    geodata_id = opts[1][0];
+    d_head = opts[2];
+    r_head = opts[3];
+    population_id = opts[4][0];
 
     // generate shapes from coordinates
     if (VERBOSE) std::cout << "generating coordinate array from precinct file..." << std::endl;
@@ -724,7 +730,7 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
 }
 
 
-GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON, std::string district_geoJSON) {
+GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON, std::string district_geoJSON, std::vector<std::vector<std::string> > opts) {
         /*
         @desc:
             Parse precinct and district geojson, along with
@@ -737,6 +743,10 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
 
         @return: `State` parsed state object
     */
+
+    d_head = opts[0];
+    r_head = opts[1];
+    population_id = opts[2][0];
 
     // generate shapes from coordinates
     if (VERBOSE) std::cout << "generating coordinate array from precinct file..." << std::endl;
