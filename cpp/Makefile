@@ -8,7 +8,7 @@ CV := -std=c++11
 # filepaths
 BIN := bin
 BINARIES := $(BINDIR)/serialize_state $(BINDIR)/generate_communities
-STATE_OBJECTS = parse.o canvas.o parse.o geometry.o util.o
+STATE_OBJECTS = build/parse.o build/canvas.o build/parse.o build/geometry.o build/util.o
 BUILD = build
 
 # libraries
@@ -20,7 +20,7 @@ all: compile
 
 compile: setup dependencies $(STATE_OBJECTS) clipper
 	@echo dependencies done
-	$(CC) -std=c++$(CV) $(STATE_OBJECTS) $(BOOST) $(SDL) -o $(BIN)/serialize_state
+	$(CC) -std=c++$(CV) $(STATE_OBJECTS) clipper.o $(BOOST) $(SDL) -o $(BIN)/serialize_state
 
 dependencies: lib/rapidjson/include/rapidjson/rapidjson.h.dependency
 
