@@ -7,11 +7,11 @@ data in our project's data files: the precinct.
 class Precinct:
     """
     Class containing precinct voter, population, and geodata.
-    Also has a `node` attribute that can be used for graph
-    theory related functions.
+    
+    Should be pointed to by node in graph.Graph object.
     """
 
-    def __init__(self, rep_data, dem_data, pop, coords, geoid, node):
+    def __init__(self, rep_data, dem_data, pop, coords, geoid):
 
         self.rep_data = rep_data
         self.dem_data = dem_data
@@ -19,5 +19,3 @@ class Precinct:
         self.coords = coords
 
         self.id = geoid
-
-        self.node = node

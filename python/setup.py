@@ -9,5 +9,6 @@ setup(
         "shapely",
         "Pillow",
         "colormap",
-        "easydev"
+        "easydev",
+        "graph-theory"
     ])
