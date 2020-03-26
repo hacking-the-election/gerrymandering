@@ -60,11 +60,17 @@ def create_graph(election_file, geo_file, pop_file, state):
 
     # Read election and geo data files.
     if election_file != "none":
-        with open(election_file, "r") as f:
-            election_file_contents = f.read().strip()
-        election_data = [line.split("\t") for line in
-                         election_file_contents.split("\n")]
-
+        if election_file[-4:] == ".json":
+            with open(election_file, "r") as f:
+                election_data = json.load(f)
+        elif election_file[-4:] == ".tab":
+            with open(election_file, "r") as f:
+                election_file_contents = f.read().strip()
+            # create a list of rows that are a list of values in that row
+            election_data = [line.split("\t") for line in
+                            election_file_contents.split("\n")]
+        else:
+            raise ValueError('.json or .tab file')
     with open(geo_file, "r") as f:
         geodata = json.load(f)
 
@@ -72,8 +78,8 @@ def create_graph(election_file, geo_file, pop_file, state):
         state_metadata = json.load(f)[state]
     dem_keys = state_metadata[state]["dem_keys"]
     rep_keys = state_metadata[state]["rep_keys"]
-    json_id  = state_metadata[state]["geo_id"]
-    json_pop = state_metadata[state]["pop_key"]
+    json_ids  = state_metadata[state]["geo_id"]
+    json_pops = state_metadata[state]["pop_key"]
     ele_id   = state_metadata[state]["ele_id"]
 
     precincts = []
@@ -89,38 +95,58 @@ def create_graph(election_file, geo_file, pop_file, state):
         # Fill precinct_election_data
         for precinct in geodata["features"]:
             properties = precinct["properties"]
-            precinct_id = "".join(properties[json_id])
+            precinct_id = "".join(properties[json_id] for json_id in json_ids)
             precinct_election_data[precinct_id] = [
                 {key: convert_to_int(properties[key]) for key in dem_keys},
                 {key: convert_to_int(properties[key]) for key in rep_keys}
             ]
     # If there is an election data file...
     else:
-        election_column_names = election_data[0]
+        # If the election data file is a .json file
+        if election_file[-4:] == ".json":
+             # Fill precinct_election_data
+            for precinct in election_data["features"]:
+                properties = precinct["properties"]
+                precinct_id = "".join(properties[json_id] for json_id in json_ids)
+                precinct_election_data[precinct_id] = [
+                    {key: convert_to_int(properties[key]) for key in dem_keys},
+                    {key: convert_to_int(properties[key]) for key in rep_keys}
+                ]
+        # If the election data file is a .tab file
+        elif election_file[-4:] == ".tab":
 
-        # Get the index of each of the relevant columns.
-        dem_key_col_indices = \
-            [i for i, col in enumerate(election_column_names)
-             if col in dem_keys]
+            # headers for different categories
+            election_column_names = election_data[0]
 
-        rep_key_col_indices = \
-            [i for i, col in enumerate(election_column_names)
-             if col in rep_keys]
+            # Get the index of each of the relevant columns.
+            dem_key_col_indices = \
+                [i for i, col in enumerate(election_column_names)
+                if col in dem_keys]
 
-        ele_id_col_index = 0
-        for i, col in election_column_names:
-            if col == ele_id:
-                ele_id_col_index = i
-                break
+            rep_key_col_indices = \
+                [i for i, col in enumerate(election_column_names)
+                if col in rep_keys]
 
-        # Fill precinct_election_data
-        for precinct in election_data[1:]:
-            precinct_election_data[precinct[ele_id_col_index]] = [
-                {election_column_names[i]: precinct[i]
-                 for i in dem_key_col_indices},
-                {election_column_names[i]: precinct[i]
-                 for i in rep_key_col_indices}
-            ]
+            ele_id_col_index = 0
+            for i, col in election_column_names:
+                if col == ele_id:
+                    ele_id_col_index = i
+                    break
+
+            # Fill precinct_election_data
+            for precinct in election_data[1:]:
+                precinct_election_data[precinct[ele_id_col_index]] = [
+                    {election_column_names[i]: precinct[i]
+                    for i in dem_key_col_indices},
+                    {election_column_names[i]: precinct[i]
+                    for i in rep_key_col_indices}
+                ]
+
+    # then find population
+    # {precinct_id : population}
+    pop = {}
+
+
 
     return write(precinct_graph), precincts
 
