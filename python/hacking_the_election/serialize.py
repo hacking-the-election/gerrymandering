@@ -1,6 +1,13 @@
 """
 Script for serializing precinct-level election, geo, and population
-data into graph of hacking_the_election.precinct.Precinct objects.
+data.
+
+Data is serialized into 2 files:
+ - .xml file containing graph.
+ - .pickle file containing Precinct objects.
+
+Usage:
+python3 serialize.py [election_file] [geo_file] [pop_file] [state] [output.pickle] [output.xml]
 """
 
 
@@ -9,7 +16,8 @@ from os.path import dirname
 import pickle
 import sys
 
-from graph import Graph
+from pygraph.classes.graph import graph
+from pygraph.readwrite.markup import write
 from shapely.geometry import Polygon, MultiPolygon
 
 from hacking_the_election.utils.precinct import Precinct
@@ -17,8 +25,8 @@ from hacking_the_election.utils.precinct import Precinct
 
 def create_graph(election_file, geo_file, pop_file, state):
     """
-    Takes data from inputted files and returns all precincts
-    as graph with Precinct objects as nodes.
+    Returns graph with precinct ids stored in nodes (string of XML)
+    and list of Precinct objects.
     """
 
     # Read election and geo data files.
@@ -32,13 +40,20 @@ def create_graph(election_file, geo_file, pop_file, state):
     with open(f"{dirname(__file__)}/state_metadata.pickle", "r") as f:
         state_metadata = json.load(f)[state]
     
-    precinct_graph = Graph()
+    precincts = []
+    precinct_graph = graph()
 
-    return precinct_graph
+    return write(precinct_graph), precincts
 
 
 if __name__ == "__main__":
     
-    precinct_graph = create_graph(sys.argv[1:5])
+    precinct_graph, precincts = create_graph(sys.argv[1:5])
+    
+    # Save precincts as pickle
     with open(sys.argv[5], "wb+") as f:
-        pickle.dump(precinct_graph)
+        pickle.dump(precincts)
+
+    # Save graph with precinct ids as XML
+    with open(sys.argv[6], "w+") as f:
+        f.write(precinct_graph)
