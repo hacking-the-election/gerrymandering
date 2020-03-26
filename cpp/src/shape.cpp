@@ -8,9 +8,9 @@
  algorithms (see geometry.cpp).
 ========================================*/
 
-#include "../include/shape.hpp"      // class definitions
-#include "../include/geometry.hpp"   // class definitions
-#include "../include/canvas.hpp"   // class definitions
+#include "../include/shape.hpp"     // class definitions
+#include "../include/geometry.hpp"  // class definitions
+#include "../include/util.hpp"      // split and join
 
 #define REP  // use rep / (dem + rep) as ratio
 
@@ -29,7 +29,6 @@ double GeoGerry::Precinct::get_ratio() {
 
 
 double GeoGerry::Precinct_Group::get_ratio() {
-    
     double average = 0;
     for (Precinct p : precincts)
         average += p.get_ratio();
@@ -38,10 +37,12 @@ double GeoGerry::Precinct_Group::get_ratio() {
     return average;
 }
 
+
 std::vector<int> GeoGerry::Precinct::get_voter_data() {
     // get vector of voting data
     return {dem, rep};
 }
+
 
 int GeoGerry::Precinct_Group::get_population() {
     // Returns total population in a Precinct_Group
@@ -52,6 +53,7 @@ int GeoGerry::Precinct_Group::get_population() {
 
     return total;
 }
+
 
 void GeoGerry::Precinct_Group::remove_precinct(GeoGerry::Precinct pre) {
     /*
@@ -81,14 +83,10 @@ void GeoGerry::Precinct_Group::remove_precinct(GeoGerry::Precinct pre) {
         this->border = paths_to_multi_shape(solutions).border;
     }
     else {
-        GeoDraw::Canvas canvas(900, 900);
-        canvas.add_shape(generate_exterior_border(*this));
-        canvas.add_shape(pre);
-        canvas.draw();
-        
         throw GeoGerry::Exceptions::PrecinctNotInGroup();
     }
 }
+
 
 void GeoGerry::Precinct_Group::add_precinct(GeoGerry::Precinct pre) {
     /*
@@ -118,4 +116,85 @@ void GeoGerry::Precinct_Group::add_precinct(GeoGerry::Precinct pre) {
 
         this->border = paths_to_multi_shape(solutions).border;
     }
-};
+}
+
+
+std::string GeoGerry::Community::save_frame() {
+    /*
+        @desc:
+            Saves a community configuration into a string by using
+            the precinct id's with a comma separated list.
+        @params: none
+        @return: `string` saved communities
+    */
+
+    std::string line;
+    for (Precinct p : precincts) {
+        line += "\"" + p.shape_id + "\", ";
+    }
+
+    line = line.substr(0, line.size() - 2);
+    // cout << line << endl;
+    return line;
+}
+
+
+GeoGerry::Communities GeoGerry::Community::load_frame(std::string read_path, State precinct_list) {
+    /*
+        @desc:
+            Given file path and precinct reference, reads a saved
+            community configuration into an array of communities
+        @params:
+            `string` read_path: path to the saved community frame
+            `GeoGerry::State` precinct_list: reference to get precinct geodata given id's
+        @return: `Communities` loaded community array
+    */
+
+    Communities cs;
+    std::string file = readf(read_path);
+    std::stringstream fs(file);
+    std::string line;
+
+    while (getline(fs, line)) {
+        Community c;
+        std::vector<std::string> vals = split(line, "\"");
+
+        for (std::string v : vals) {
+            if (v != ", ") { // v contains a precinct id
+                for (Precinct p : precinct_list.precincts) {
+                    if (p.shape_id == v) {
+                        c.add_precinct_n(p);
+                    }
+                } 
+            }
+        }
+
+        cs.push_back(c);
+    }
+
+    return cs;
+}
+
+bool GeoGerry::operator== (GeoGerry::LinearRing l1, GeoGerry::LinearRing l2) {
+    return (l1.border == l2.border);
+}
+
+bool GeoGerry::operator!= (GeoGerry::LinearRing l1, GeoGerry::LinearRing l2) {
+    return (l1.border != l2.border);
+}
+
+bool GeoGerry::operator== (GeoGerry::Shape p1, GeoGerry::Shape p2) {
+    return (p1.hull == p2.hull && p1.holes == p2.holes);
+}
+
+bool GeoGerry::operator!= (GeoGerry::Shape p1, GeoGerry::Shape p2) {
+    return (p1.hull != p2.hull || p1.holes != p2.holes);
+}
+
+bool GeoGerry::operator== (GeoGerry::Precinct p1, GeoGerry::Precinct p2) {
+    return (p1.hull == p2.hull && p1.holes == p2.holes && p1.dem == p2.dem && p1.rep == p2.rep && p1.pop == p2.pop);
+}
+
+bool GeoGerry::operator!= (GeoGerry::Precinct p1, GeoGerry::Precinct p2) {
+    return (p1.hull != p2.hull || p1.holes != p2.holes || p1.dem != p2.dem || p1.rep != p2.rep || p1.pop != p2.pop);
+}

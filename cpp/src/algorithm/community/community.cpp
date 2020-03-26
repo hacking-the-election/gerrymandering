@@ -930,6 +930,7 @@ int measure_difference(Communities communities, Communities new_communities) {
     return changed_precincts;
 }
 
+
 void State::generate_communities(int num_communities, double compactness_tolerance, double partisanship_tolerance, double population_tolerance, string writedir) {
     /*
         @desc:
@@ -1021,64 +1022,8 @@ void State::refine_communities(double part, double popt, double compt, string wr
     full_animation = GeoDraw::Anim(40);
 }
 
-string Community::save_frame() {
-    /*
-        @desc:
-            Saves a community configuration into a string by using
-            the precinct id's with a comma separated list.
-        @params: none
-        @return: `string` saved communities
-    */
 
-    string line;
-    for (Precinct p : precincts) {
-        line += "\"" + p.shape_id + "\", ";
-    }
-
-    line = line.substr(0, line.size() - 2);
-    // cout << line << endl;
-    return line;
-}
-
-
-Communities Community::load_frame(std::string read_path, State precinct_list) {
-    /*
-        @desc:
-            Given file path and precinct reference, reads a saved
-            community configuration into an array of communities
-        @params:
-            `string` read_path: path to the saved community frame
-            `GeoGerry::State` precinct_list: reference to get precinct geodata given id's
-        @return: `Communities` loaded community array
-    */
-
-    Communities cs;
-    string file = readf(read_path);
-    std::stringstream fs(file);
-    std::string line;
-
-    while (getline(fs, line)) {
-        Community c;
-        vector<string> vals = split(line, "\"");
-
-        for (string v : vals) {
-            if (v != ", ") { // v contains a precinct id
-                for (Precinct p : precinct_list.precincts) {
-                    if (p.shape_id == v) {
-                        c.add_precinct_n(p);
-                    }
-                } 
-            }
-        }
-
-        cs.push_back(c);
-    }
-
-    return cs;
-}
-
-
-void State::save_iteration_data(Communities cs, string folder, int iteration) {
+void GeoGerry::State::save_iteration_data(Communities cs, string folder, int iteration) {
     string compactness = readf(folder + "/compactness.list"),
            population = readf(folder + "/population.list"),
            stdev = readf(folder + "/partisan.list"),
