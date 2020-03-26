@@ -10,5 +10,5 @@ setup(
         "Pillow",
         "colormap",
         "easydev",
-        "graph-theory"
+        "python-graph-core"
     ])

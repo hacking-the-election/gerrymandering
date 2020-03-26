@@ -4,18 +4,17 @@
 # python
 venv
 **/*/__pycache__
-python/test-data
 precincts.log
 test*.json
 test*.pickle
 test*.txt
 hacking_the_election.egg-info
-tmp.json
-tmp1.json
-tmp.pickle
 **/*compactness.pickle
 **/*partisanship.pickle
 **/*population.pickle
+
+# sphinx documentation
+python/docs/
 
 # vscode
 settings.json
@@ -28,12 +27,6 @@ cpp/src/combine_districts
 cpp/test/test
 cpp/lib/clipper/
 cpp/test_data/
-
-# lol-cubes
-notes
-quick.txt
-quick.py
-analysis.py
 
 # notebooks
 notebooks/.ipynb_checkpoints

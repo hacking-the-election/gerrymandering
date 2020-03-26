@@ -1,0 +1,9 @@
+numpy
+matplotlib
+shapely
+python-graph-core
+Pillow
+colormap
+easydev
+python-graph-core
+hacking_the_election
