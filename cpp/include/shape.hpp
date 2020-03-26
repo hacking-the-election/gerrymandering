@@ -312,7 +312,7 @@ class Precinct_Group : public Multi_Shape {
 
         virtual void add_precinct(Precinct pre);
         virtual void remove_precinct(Precinct pre);
-        virtual void add_precinct_n(Precinct pre) {precincts.push_back(pre);};
+        virtual void add_precinct_n(Precinct pre);
 
         Precinct_Group(){};
         Precinct_Group(std::vector<Shape> shapes)

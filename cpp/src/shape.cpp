@@ -54,6 +54,9 @@ int GeoGerry::Precinct_Group::get_population() {
     return total;
 }
 
+void GeoGerry::Precinct_Group::add_precinct_n(Precinct pre) {
+    precincts.push_back(pre);
+}
 
 void GeoGerry::Precinct_Group::remove_precinct(GeoGerry::Precinct pre) {
     /*
@@ -197,4 +200,12 @@ bool GeoGerry::operator== (GeoGerry::Precinct p1, GeoGerry::Precinct p2) {
 
 bool GeoGerry::operator!= (GeoGerry::Precinct p1, GeoGerry::Precinct p2) {
     return (p1.hull != p2.hull || p1.holes != p2.holes || p1.dem != p2.dem || p1.rep != p2.rep || p1.pop != p2.pop);
+}
+
+bool GeoGerry::operator== (GeoGerry::Multi_Shape& s1, GeoGerry::Multi_Shape& s2) {
+    return (s1.border == s2.border);
+}
+
+bool GeoGerry::operator!= (GeoGerry::Multi_Shape& s1, GeoGerry::Multi_Shape& s2) {
+    return (s1.border != s2.border);
 }

@@ -29,11 +29,11 @@ const long int c = pow(2, 18);
 
 // constant id strings
 //ndv	nrv	geoid10	GEOID10	POP100
-std::string election_id_header = "geoid10";
-std::vector<std::string> d_head = {"ndv"};
-std::vector<std::string> r_head = {"nrv"};
-std::string geodata_id = "GEOID10";
-std::string population_id = "POP100";
+std::string election_id_header = "";
+std::vector<std::string> d_head = {""};
+std::vector<std::string> r_head = {""};
+std::string geodata_id = "";
+std::string population_id = "";
 
 std::vector<std::vector<std::string > > parse_sv(std::string, std::string);
 bool check_column(std::vector<std::vector<std::string> >, int);
@@ -387,8 +387,7 @@ std::vector<GeoGerry::Shape> parse_precinct_coordinates(std::string geoJSON) {
                 std::cout << "Unrecognized typerror - src/parse.cpp, line 379" << std::endl;
             }
         }
-        else
-            std::cout << "\e[31merror: \e[0mNo population data" << std::endl;
+        else std::cerr << "\e[31merror: \e[0mNo population data" << std::endl;
         
         // create empty string buffer
         StringBuffer buffer;
@@ -694,9 +693,8 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
     population_id = opts[4][0];
 
     // generate shapes from coordinates
-    if (VERBOSE) std::cout << "generating coordinate array from precinct file..." << std::endl;
+    if (VERBOSE) std::cout << "generating coordinate arrays..." << std::endl;
     std::vector<Shape> precinct_shapes = parse_precinct_coordinates(precinct_geoJSON);
-    if (VERBOSE) std::cout << "generating coordinate array from district file..." << std::endl;
     std::vector<Multi_Shape> district_shapes = parse_district_coordinates(district_geoJSON);
     
     // get voter data from election data file
@@ -704,17 +702,13 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
     std::map<std::string, std::vector<int> > precinct_voter_data = parse_voter_data(voter_data);
 
     // create a vector of precinct objects from border and voter data
-    if (VERBOSE) std::cout << "merging parsed geodata with parsed voter data into precinct array..." << std::endl;
+    if (VERBOSE) std::cout << "merging geodata with voter data into precincts..." << std::endl;
     std::vector<Precinct> precincts = merge_data(precinct_shapes, precinct_voter_data);
-    Precinct_Group pre_group(precincts);
+    GeoGerry::Precinct_Group pre_group(precincts);
 
     // remove holes from precinct data
-    int before = pre_group.precincts.size();
-    if (VERBOSE) std::cout << "combining holes in precinct geodata..." << std::endl;
     pre_group = combine_holes(pre_group);
-    int removed = before - pre_group.precincts.size();
-    if (VERBOSE) std::cout << "removed " << removed << " hole precincts from precinct geodata" << std::endl;
-
+    if (VERBOSE) std::cout << "removed hole precincts from precinct geodata" << std::endl;
     std::vector<Shape> state_shape_v; // dummy exterior border
 
     // generate state data from files
@@ -722,16 +716,10 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
     State state = State(district_shapes, pre_group.precincts, state_shape_v);
     Multi_Shape sborder = generate_exterior_border(state);
     state.border = sborder.border;
-    std::cout << sborder.border.size() << std::endl;
-    // sort files into
-    if (VERBOSE) std::cout << "sorting precincts into islands from exterior state border..." << std::endl;
-    state.islands = sort_precincts(sborder, pre_group);
-    if (VERBOSE) std::cout << "state serialized!" << std::endl;
-    std::cout << state.precincts.size() << std::endl;    
-    GeoDraw::Canvas c(500, 500);
-    c.add_shape(state);
-    c.draw();
 
+    // sort files into
+    if (VERBOSE) std::cout << "sorting precincts into islands..." << std::endl << std::endl;
+    state.islands = sort_precincts(sborder, pre_group);
     return state; // return the state object
 }
 

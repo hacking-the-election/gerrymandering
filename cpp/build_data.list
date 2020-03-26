@@ -1,4 +1,9 @@
-# list of different arguments to build the data library
+# keys go in following order
+#   election_id_header
+#   geodata_id
+#   d_head
+#   r_head
+#   population_id 
 
-serialize_state --set="var:15,var2:val" "../data/raw/new york/geodata.json" "../data/raw/new york/"
-# serialize_state ../data/raw/
+# list of different arguments to build the data library
+bin/serialize_state ../../data/raw/alabama/geodata.json ../../data/raw/alabama/election_data.tab ../../data/raw/alabama/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100

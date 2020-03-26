@@ -21,12 +21,14 @@ settings.json
 .vscode
 *.dSYM/
 
-# c++ binaries
+
+# c++
 cpp/bin/
-cpp/src/combine_districts
 cpp/test/test
 cpp/lib/clipper/
 cpp/test_data/
+*.o
+
 
 # notebooks
 notebooks/.ipynb_checkpoints
