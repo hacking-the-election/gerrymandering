@@ -7,6 +7,7 @@
  files, assertions.
 ========================================*/
 
+#pragma once
 #include <sstream>
 #include <string>
 #include <fstream>
