@@ -6,3 +6,4 @@ Once it is completed, more information on this science fair project will be avai
 
 ## OS Compatability
 - Any software written in C++ will be Linux and macOS compatible.
+- Any software written in Python will be Windows and macOS compatible.
