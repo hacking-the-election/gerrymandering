@@ -12,7 +12,7 @@
 #include "../include/canvas.hpp"
 #include "../include/shape.hpp"   // class definitions
 #include "../include/util.hpp"
-#include <iomanip>
+
 #include <random>  // for std::shuffle
 #include <math.h>
 
@@ -216,7 +216,7 @@ segments GeoGerry::LinearRing::get_segments() {
 }
 
 
-segments GeoGerry::Shape::get_segments() {
+segments GeoGerry::Polygon::get_segments() {
     /*
         @desc: get list of all segments in a shape, including hole LinearRings array
         @params: none
@@ -233,7 +233,7 @@ segments GeoGerry::Shape::get_segments() {
 }
 
 
-segments GeoGerry::Multi_Shape::get_segments() {
+segments GeoGerry::Multi_Polygon::get_segments() {
     /*
         @desc: get a list of all segments in a multi_shape, for each shape, including holes
         @params: none
@@ -241,7 +241,7 @@ segments GeoGerry::Multi_Shape::get_segments() {
     */
 
     segments segs;
-    for (Shape s : this->border)
+    for (Polygon s : this->border)
         for (segment seg : s.get_segments())
             segs.push_back(seg);
 
@@ -323,7 +323,7 @@ double GeoGerry::LinearRing::get_perimeter() {
 }
 
 
-coordinate GeoGerry::Shape::get_center() {
+coordinate GeoGerry::Polygon::get_center() {
     /*
         @desc:
             returns average centroid from list of `holes`
@@ -346,7 +346,7 @@ coordinate GeoGerry::Shape::get_center() {
 }
 
 
-coordinate GeoGerry::Multi_Shape::get_center() {
+coordinate GeoGerry::Multi_Polygon::get_center() {
     /*
         @desc:
             returns average centroid from list of `holes`
@@ -358,7 +358,7 @@ coordinate GeoGerry::Multi_Shape::get_center() {
 
     coordinate average = {0,0};
 
-    for (Shape s : border) {
+    for (Polygon s : border) {
         coordinate center = s.hull.get_center();
 
         for (GeoGerry::LinearRing lr : s.holes) {
@@ -376,7 +376,7 @@ coordinate GeoGerry::Multi_Shape::get_center() {
 }
 
 
-double GeoGerry::Shape::get_area() {
+double GeoGerry::Polygon::get_area() {
     /*
         @desc:
             gets the area of the hull of a shape
@@ -394,7 +394,7 @@ double GeoGerry::Shape::get_area() {
 }
 
 
-double GeoGerry::Shape::get_perimeter() {
+double GeoGerry::Polygon::get_perimeter() {
     /*
         @desc:
             gets the sum perimeter of all LinearRings
@@ -412,22 +412,22 @@ double GeoGerry::Shape::get_perimeter() {
 }
 
 
-double Multi_Shape::get_area() {
+double Multi_Polygon::get_area() {
     /*
-        @desc: gets sum area of all Shape objects in border
+        @desc: gets sum area of all Polygon objects in border
         @params: none
         @return: `double` total area of shapes
     */
 
     double total = 0;
-    for (Shape s : border)
+    for (Polygon s : border)
         total += s.get_area();
 
     return total;
 }
 
 
-double GeoGerry::Multi_Shape::get_perimeter() {
+double GeoGerry::Multi_Polygon::get_perimeter() {
     /*
         @desc:
             gets sum perimeter of a multi shape object
@@ -438,22 +438,21 @@ double GeoGerry::Multi_Shape::get_perimeter() {
     */
 
     double p = 0;
-    for (Shape shape : border)
+    for (Polygon shape : border)
         p += shape.get_perimeter();
 
     return p;
 }
 
 
-bool get_bordering(Shape s0, Shape s1) {
+bool get_bordering(Polygon s0, Polygon s1) {
     /*
         @desc: gets whether or not two shapes touch each other
-        @params: `Shape` s0, `Shape` s1: shapes to check bordering
+        @params: `Polygon` s0, `Polygon` s1: shapes to check bordering
         @return: `bool` shapes are boording
     */
     
     // create paths array from polygon
-    cout << "x" << endl;
 	ClipperLib::Paths subj;
     subj.push_back(ring_to_path(s0.hull));
 
@@ -468,21 +467,21 @@ bool get_bordering(Shape s0, Shape s1) {
     c.AddPaths(clip, ClipperLib::ptClip, true);
     c.Execute(ClipperLib::ctUnion, solutions, ClipperLib::pftPositive);
 
-    Multi_Shape ms = paths_to_multi_shape(solutions);
+    Multi_Polygon ms = paths_to_multi_shape(solutions);
     return (ms.border.size() == 1);
 }
 
 
-bool get_bordering(Multi_Shape s0, Shape s1) {
+bool get_bordering(Multi_Polygon s0, Polygon s1) {
     /*
         @desc: gets whether or not two shapes touch each other
-        @params: `Multi_Shape` s0, `Shape` s1: shapes to check bordering
+        @params: `Multi_Polygon` s0, `Polygon` s1: shapes to check bordering
         @return: `bool` shapes are boording
     */
 
     // create paths array from polygon
 	ClipperLib::Paths subj;
-    for (Shape s : s0.border)
+    for (Polygon s : s0.border)
         subj.push_back(ring_to_path(s.hull));
 
     ClipperLib::Paths clip;
@@ -498,27 +497,27 @@ bool get_bordering(Multi_Shape s0, Shape s1) {
     c.Execute(ClipperLib::ctXor, xsolutions, ClipperLib::pftNonZero);
     c.Execute(ClipperLib::ctUnion, usolutions, ClipperLib::pftNonZero);
 
-    Multi_Shape msx = paths_to_multi_shape(xsolutions);
-    Multi_Shape msu = paths_to_multi_shape(usolutions);
+    Multi_Polygon msx = paths_to_multi_shape(xsolutions);
+    Multi_Polygon msu = paths_to_multi_shape(usolutions);
 
     return (msu.border.size() == s0.border.size() && msx.holes.size() == 0);
 }
 
 
-bool get_bordering(Multi_Shape s0, Multi_Shape s1) {
+bool get_bordering(Multi_Polygon s0, Multi_Polygon s1) {
     /*
         @desc: gets whether or not two shapes touch each other
-        @params: `Multi_Shape` s0, `Multi_Shape` s1: shapes to check bordering
+        @params: `Multi_Polygon` s0, `Multi_Polygon` s1: shapes to check bordering
         @return: `bool` shapes are boording
     */
 
     // create paths array from polygon
 	ClipperLib::Paths subj;
-    for (Shape s : s0.border)
+    for (Polygon s : s0.border)
         subj.push_back(ring_to_path(s.hull));
 
     ClipperLib::Paths clip;
-    for (Shape s : s1.border)
+    for (Polygon s : s1.border)
         clip.push_back(ring_to_path(s.hull));
 
     ClipperLib::Paths usolutions;
@@ -531,8 +530,8 @@ bool get_bordering(Multi_Shape s0, Multi_Shape s1) {
     c.Execute(ClipperLib::ctXor, xsolutions, ClipperLib::pftNonZero);
     c.Execute(ClipperLib::ctUnion, usolutions, ClipperLib::pftNonZero);
 
-    Multi_Shape msx = paths_to_multi_shape(xsolutions);
-    Multi_Shape msu = paths_to_multi_shape(usolutions);
+    Multi_Polygon msx = paths_to_multi_shape(xsolutions);
+    Multi_Polygon msu = paths_to_multi_shape(usolutions);
 
     return (msu.border.size() < s0.border.size() + s1.border.size() && msx.holes.size() <= s0.holes.size() + s1.holes.size());
 }
@@ -581,7 +580,7 @@ bool get_inside(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1) {
     return true;
 }
 
-bool get_inside_b(GeoGerry::Multi_Shape s0, GeoGerry::Shape s1) {
+bool get_inside_b(GeoGerry::Multi_Polygon s0, GeoGerry::Polygon s1) {
     /*
         @desc:
             gets whether or not s0 is inside of 
@@ -594,7 +593,7 @@ bool get_inside_b(GeoGerry::Multi_Shape s0, GeoGerry::Shape s1) {
         @return: `bool` `s0` inside `s1`
     */
 
-    for (Shape s : s0.border)
+    for (Polygon s : s0.border)
         for (coordinate c : s.hull.border)
             if (point_in_ring(c, s1.hull)) return true;
 
@@ -629,7 +628,7 @@ p_index_set get_inner_boundary_precincts(Precinct_Group shape) {
     */
 
     p_index_set boundary_precincts;
-    Multi_Shape exterior_border;
+    Multi_Polygon exterior_border;
     exterior_border.border = shape.border;
 
     int i = 0;
@@ -663,7 +662,7 @@ GeoGerry::p_index_set get_inner_boundary_precincts(p_index_set precincts, State 
     for (p_index p : precincts)
         pg.add_precinct(state.precincts[p]);
 
-    Multi_Shape border = generate_exterior_border(pg);
+    Multi_Polygon border = generate_exterior_border(pg);
 
     int i = 0;
     for (Precinct p : pg.precincts) {
@@ -677,7 +676,7 @@ GeoGerry::p_index_set get_inner_boundary_precincts(p_index_set precincts, State 
 }
 
 
-p_index_set get_bordering_shapes(vector<Shape> shapes, Shape shape) {
+p_index_set get_bordering_shapes(vector<Polygon> shapes, Polygon shape) {
     /*
         @desc:
             returns set of indices corresponding to the Precinct_Groups that
@@ -692,7 +691,7 @@ p_index_set get_bordering_shapes(vector<Shape> shapes, Shape shape) {
     return vec;
 }
 
-p_index_set get_bordering_shapes(vector<Precinct_Group> shapes, Shape shape) {
+p_index_set get_bordering_shapes(vector<Precinct_Group> shapes, Polygon shape) {
     /*
         returns set of indices corresponding to the Precinct_Groups that
         border with the Precinct_Group[index] shape.
@@ -722,7 +721,7 @@ p_index_set get_bordering_shapes(vector<Community> shapes, Community shape) {
 }
 
 
-p_index_set get_bordering_shapes(vector<Community> shapes, Shape shape) {
+p_index_set get_bordering_shapes(vector<Community> shapes, Polygon shape) {
     /*
         returns set of indices corresponding to the Precinct_Groups that
         border with the Precinct_Group[index] shape.xs
@@ -762,7 +761,7 @@ p_index_set get_bordering_precincts(Precinct_Group shape, int p_index) {
     return precincts;
 }
 
-unit_interval Shape::get_compactness() {
+unit_interval Polygon::get_compactness() {
     /*
         An implementation of the Schwartzberg compactness score.
         Returns the ratio of the perimeter of a shape to the
@@ -771,11 +770,10 @@ unit_interval Shape::get_compactness() {
 
     double circle_radius = sqrt(this->get_area() / PI);
     double circumference = 2 * circle_radius * PI;
-    // std::cout << this->get_area() << ", " << circumference << ", " << this->get_perimeter();
     return (circumference / this->get_perimeter());
 }
 
-unit_interval Multi_Shape::get_compactness() {
+unit_interval Multi_Polygon::get_compactness() {
     /*
         An implementation of the Schwartzberg compactness score.
         Returns the ratio of the perimeter of a shape to the
@@ -784,7 +782,6 @@ unit_interval Multi_Shape::get_compactness() {
 
     double circle_radius = sqrt(this->get_area() / PI);
     double circumference = 2 * circle_radius * PI;
-    // std::cout << this->get_area() << ", " << circumference << ", " << this->get_perimeter() << std::endl;
     return (circumference / this->get_perimeter());
 }
 
@@ -847,7 +844,7 @@ double get_median_partisanship(Precinct_Group pg) {
     return median;
 }
 
-Multi_Shape generate_exterior_border(Precinct_Group precinct_group) {
+Multi_Polygon generate_exterior_border(Precinct_Group precinct_group) {
     /*
         Get the exterior border of a shape with interior components.
         Equivalent to 'dissolve' in mapshaper - remove bordering edges.
@@ -882,7 +879,7 @@ Multi_Shape generate_exterior_border(Precinct_Group precinct_group) {
 ClipperLib::Path ring_to_path(GeoGerry::LinearRing ring) {
     /*
         Creates a clipper Path object from a
-        given Shape object by looping through points
+        given Polygon object by looping through points
     */
 
     ClipperLib::Path p;
@@ -911,7 +908,7 @@ GeoGerry::LinearRing path_to_ring(ClipperLib::Path path) {
     return s;
 }
 
-ClipperLib::Paths shape_to_paths(GeoGerry::Shape shape) {
+ClipperLib::Paths shape_to_paths(GeoGerry::Polygon shape) {
 
     if (shape.hull.border[0] != shape.hull.border[shape.hull.border.size() - 1])
         shape.hull.border.push_back(shape.hull.border[0]);
@@ -932,10 +929,10 @@ ClipperLib::Paths shape_to_paths(GeoGerry::Shape shape) {
 }
 
 
-GeoGerry::Multi_Shape paths_to_multi_shape(ClipperLib::Paths paths) {
+GeoGerry::Multi_Polygon paths_to_multi_shape(ClipperLib::Paths paths) {
     /*
         @desc: 
-              Create a Multi_Shape object from a clipper Paths
+              Create a Multi_Polygon object from a clipper Paths
               (multi path) object through nested iteration
 
         @params: `ClipperLib::Paths` paths: A
@@ -945,7 +942,7 @@ GeoGerry::Multi_Shape paths_to_multi_shape(ClipperLib::Paths paths) {
             it's actually needed
     */
 
-    Multi_Shape ms;
+    Multi_Polygon ms;
     ReversePaths(paths);
 
     for (ClipperLib::Path path : paths) {
@@ -953,7 +950,7 @@ GeoGerry::Multi_Shape paths_to_multi_shape(ClipperLib::Paths paths) {
             GeoGerry::LinearRing border = path_to_ring(path);
             if (border.border[0] == border.border[border.border.size() - 1]) {
                 // border.border.insert(border.border.begin(), border.border[border.border.size() - 1]);
-                GeoGerry::Shape s(border);
+                GeoGerry::Polygon s(border);
                 ms.border.push_back(s);
             }
         }
@@ -968,19 +965,19 @@ GeoGerry::Multi_Shape paths_to_multi_shape(ClipperLib::Paths paths) {
     return ms;
 }
 
-Multi_Shape poly_tree_to_shape(ClipperLib::PolyTree tree) {
+Multi_Polygon poly_tree_to_shape(ClipperLib::PolyTree tree) {
     /*
         Loops through top-level children of a
         PolyTree to access outer-level polygons. Returns
         a multi_shape object containing these outer polys.
     */
    
-    Multi_Shape ms;
+    Multi_Polygon ms;
     
     for (ClipperLib::PolyNode* polynode : tree.Childs) {
         // if (polynode->IsHole()) x++;
         GeoGerry::LinearRing s = path_to_ring(polynode->Contour);
-        Shape shape(s);
+        Polygon shape(s);
         ms.border.push_back(shape);
     }
 
@@ -1002,7 +999,7 @@ p_index_set get_ext_bordering_precincts(Precinct_Group precincts, State state) {
     */
 
     p_index_set bordering_pre;
-    Multi_Shape border = generate_exterior_border(precincts);
+    Multi_Polygon border = generate_exterior_border(precincts);
 
     for (int i = 0; i < state.precincts.size(); i++) {
         if (!(std::find(precincts.precincts.begin(), precincts.precincts.end(), state.precincts[i]) != precincts.precincts.end())) {
@@ -1027,7 +1024,7 @@ GeoGerry::p_index_set get_ext_bordering_precincts(GeoGerry::Precinct_Group preci
     */
 
     p_index_set bordering_pre;
-    Multi_Shape border = generate_exterior_border(precincts);
+    Multi_Polygon border = generate_exterior_border(precincts);
 
     for (int i = 0; i < state.precincts.size(); i++) {
         if (std::find(available_pre.begin(), available_pre.end(), i) != available_pre.end()) {
@@ -1115,7 +1112,7 @@ p_index_set get_giveable_precincts(Community c, Communities cs) {
     p_index_set borders = get_inner_boundary_precincts(c);
     p_index_set exchangeable_precincts;
 
-    // Multi_Shape ms(c.border);
+    // Multi_Polygon ms(c.border);
     // GeoDraw::Canvas canvas(900, 900);
 
     for (p_index p : borders) {
@@ -1157,7 +1154,7 @@ vector<array<int, 2>> get_takeable_precincts(Community c, Communities cs) {
 }
 
 
-Shape generate_gon(coordinate c, double radius, int n) {
+Polygon generate_gon(coordinate c, double radius, int n) {
     /*
         Takes a radius, center, and number of sides to generate
         a regular polygon around that center with that radius
@@ -1173,7 +1170,7 @@ Shape generate_gon(coordinate c, double radius, int n) {
     }
 
     LinearRing lr(coords);
-    return Shape(lr);
+    return Polygon(lr);
 }
 
 
@@ -1185,7 +1182,7 @@ p_index get_first_precinct(Precinct_Group available_precincts, Communities commu
 
     for (p_index pre : precincts) {
         for (Community community : communities) {
-            Multi_Shape border = generate_exterior_border(community);
+            Multi_Polygon border = generate_exterior_border(community);
             if (get_bordering(border, available_precincts.precincts[pre])) {
                 if (!creates_island(available_precincts, available_precincts.precincts[pre])) {
                     ret = pre;
@@ -1243,7 +1240,7 @@ p_index get_first_precinct(Precinct_Group available_precincts, Communities commu
 // geos::geom::Geometry* shape_to_poly(GeoGerry::LinearRing shape) {
 //     /*
 //         Creates a GEOS library polygon object from a
-//         given Shape object by looping through points
+//         given Polygon object by looping through points
 //     */
 
 //     // blank holes vector
@@ -1255,10 +1252,10 @@ p_index get_first_precinct(Precinct_Group available_precincts, Communities commu
 //     return poly;
 // }
 
-// geos::geom::Geometry::NonConstVect multi_shape_to_poly(GeoGerry::Multi_Shape ms) {
+// geos::geom::Geometry::NonConstVect multi_shape_to_poly(GeoGerry::Multi_Polygon ms) {
 //     geos::geom::Geometry::NonConstVect geoms;
 
-//     for (Shape s : ms.border) {
+//     for (Polygon s : ms.border) {
 //         geos::geom::Geometry* geo = shape_to_poly(s.hull);
 //         geoms.push_back(geo);
 //     }
@@ -1266,13 +1263,13 @@ p_index get_first_precinct(Precinct_Group available_precincts, Communities commu
 //     return geoms;
 // }
 
-// Shape poly_to_shape(const geos::geom::Geometry* path) {
+// Polygon poly_to_shape(const geos::geom::Geometry* path) {
 //     /*
 //         Creates a shape object from a clipper Path
 //         object by looping through points
 //     */
 
-//     Shape s;
+//     Polygon s;
     
 //     // write coordinates in path to vector of Coordinates
 //     std::unique_ptr<geos::geom::CoordinateSequence> points = path->getCoordinates();
@@ -1287,13 +1284,13 @@ p_index get_first_precinct(Precinct_Group available_precincts, Communities commu
 //     return s;
 // }
 
-// Multi_Shape* multipoly_to_shape(MultiPolygon* paths) {
+// Multi_Polygon* multipoly_to_shape(MultiPolygon* paths) {
 //     /*
-//         Create a Multi_Shape object from a clipper Paths
+//         Create a Multi_Polygon object from a clipper Paths
 //         (multi path) object through nested iteration
 //     */
 
-//     Multi_Shape* ms;
+//     Multi_Polygon* ms;
     
 //     return ms;
 // }

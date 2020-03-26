@@ -27,23 +27,23 @@ using namespace GeoGerry;
 using namespace GeoDraw;
 
 
-vector<unit_interval> State::quantify_gerrymandering(vector<Multi_Shape> districts, Communities base_communities) {
+vector<unit_interval> State::quantify_gerrymandering(vector<Multi_Polygon> districts, Communities base_communities) {
     // use 
     vector<unit_interval> vals;
 
-    for (Multi_Shape district : districts) {
+    for (Multi_Polygon district : districts) {
         unit_interval score = 0;
         vector<Community> inside = {};
-        vector<Multi_Shape> intersections = {};
+        vector<Multi_Polygon> intersections = {};
 
         for (Community base_community : base_communities) {
             ClipperLib::Paths subj;
-            for (Shape s : district.border)
+            for (Polygon s : district.border)
                 for (ClipperLib::Path p : shape_to_paths(s))
                     subj.push_back(p);
 
             ClipperLib::Paths clip;
-            for (Shape s : base_community.border)
+            for (Polygon s : base_community.border)
                 for (ClipperLib::Path p : shape_to_paths(s))
                     clip.push_back(p);
             
@@ -57,7 +57,7 @@ vector<unit_interval> State::quantify_gerrymandering(vector<Multi_Shape> distric
 
             if (solutions.size() > 0) {
                 inside.push_back(base_community);
-                Multi_Shape ms = paths_to_multi_shape(solutions);
+                Multi_Polygon ms = paths_to_multi_shape(solutions);
                 intersections.push_back(ms);
             }
         }

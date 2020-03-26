@@ -38,10 +38,10 @@ void GeoDraw::Canvas::add_shape(GeoGerry::LinearRing s, bool f, Color c, int t) 
 }
 
 
-void GeoDraw::Canvas::add_shape(GeoGerry::Shape s, bool f, Color c, int t) {
+void GeoDraw::Canvas::add_shape(GeoGerry::Polygon s, bool f, Color c, int t) {
     /*
         @desc: Add a shape object to the screen
-        @params: `Shape` s: Shape object to add
+        @params: `Polygon` s: Polygon object to add
         @return: void
     */
 
@@ -57,14 +57,14 @@ void GeoDraw::Canvas::add_shape(GeoGerry::Shape s, bool f, Color c, int t) {
 }
 
 
-void GeoDraw::Canvas::add_shape(GeoGerry::Multi_Shape s, bool f, Color c, int t) {
+void GeoDraw::Canvas::add_shape(GeoGerry::Multi_Polygon s, bool f, Color c, int t) {
     /*
         @desc: Add a shape object to the screen
-        @params: `Shape` s: Shape object to add
+        @params: `Polygon` s: Polygon object to add
         @return: void
     */
 
-    for (GeoGerry::Shape shape : s.border) {
+    for (GeoGerry::Polygon shape : s.border) {
         Outline outline(shape.hull, c, t, f);
         outlines.push_back(outline);
 
@@ -81,7 +81,7 @@ void GeoDraw::Canvas::add_shape(GeoGerry::Multi_Shape s, bool f, Color c, int t)
 void GeoDraw::Canvas::add_shape(GeoGerry::Precinct_Group s, bool f, Color c, int t) {
     /*
         @desc: Add a shape object to the screen
-        @params: `Shape` s: Shape object to add
+        @params: `Polygon` s: Polygon object to add
         @return: void
     */
 
@@ -98,7 +98,7 @@ void GeoDraw::Canvas::add_shape(GeoGerry::Precinct_Group s, bool f, Color c, int
 
 void GeoDraw::Canvas::add_shape(GeoGerry::Communities s, bool f, GeoDraw::Color c, int t) {
     for (GeoGerry::Community community : s) {
-        for (GeoGerry::Shape shape : community.border) {
+        for (GeoGerry::Polygon shape : community.border) {
             Outline outline(shape.hull, c, t, f);
             outlines.push_back(outline);
 

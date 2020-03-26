@@ -96,9 +96,9 @@ namespace GeoDraw {
         }
 
         // add shape to the canvas
-        void add_shape(GeoGerry::Shape s, bool = false, Color = Color(0,0,0), int = 1);
+        void add_shape(GeoGerry::Polygon s, bool = false, Color = Color(0,0,0), int = 1);
         void add_shape(GeoGerry::LinearRing s, bool = false, Color = Color(0,0,0), int = 1);
-        void add_shape(GeoGerry::Multi_Shape s, bool = false, Color = Color(0,0,0), int = 1);
+        void add_shape(GeoGerry::Multi_Polygon s, bool = false, Color = Color(0,0,0), int = 1);
         void add_shape(GeoGerry::Precinct_Group s, bool = false, Color = Color(0,0,0), int = 1);
         void add_shape(GeoGerry::Communities s, bool = false, Color = Color(0,0,0), int = 1);
         void clear();
