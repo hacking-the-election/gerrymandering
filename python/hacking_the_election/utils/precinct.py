@@ -35,7 +35,7 @@ class Precinct:
         # should be shapely polygon
         self.coords = coords
         # centroid will be in list form, i.e. [35.274923, 71.47102]
-        self.centroid = list(coords.centroid)
+        self.centroid = list(self.coords.centroid.coords[0])
         self.id = geoid
         # used for data visualization
         self.community = None
