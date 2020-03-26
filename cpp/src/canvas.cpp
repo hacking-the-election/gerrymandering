@@ -11,7 +11,7 @@
 #include "../include/geometry.hpp"
 
 int RECURSION_STATE = 0;
-double PADDING = (2.0/5.0);
+double PADDING = (3.0/4.0);
 
 GeoGerry::coordinate i_average(GeoGerry::bounding_box n) {
     double y = n[0] + n[1];
@@ -409,13 +409,13 @@ void GeoDraw::Canvas::draw() {
 
     int px = (int)((double)x * (1.0-PADDING) / 2.0), py = (int)((double)y * (1.0-PADDING) / 2.0);
     translate(px, py, false);
-    if (ratio_top < ratio_right) {
-        // center vertically
-        std::cout << "x" << std::endl;
-        int t = (int)((((double)y - ((double)py * 2.0)) - (double)this->box[0]) / 2.0);
-        std::cout << t << std::endl;
-        translate(0, t, false);
-    }
+    // if (ratio_top < ratio_right) {
+    //     // center vertically
+    //     std::cout << "x" << std::endl;
+    //     int t = (int)((((double)y - ((double)py * 2.0)) - (double)this->box[0]) / 2.0);
+    //     std::cout << t << std::endl;
+    //     translate(0, t, false);
+    // }
 
     rasterize_shapes();
 

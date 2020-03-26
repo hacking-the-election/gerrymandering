@@ -7,6 +7,7 @@
  visualizations.
 ========================================*/
 
+#pragma once
 #include "shape.hpp"
 #include <SDL2/SDL.h>
 

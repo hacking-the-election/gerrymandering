@@ -10,24 +10,30 @@
 #include <algorithm>                  // for std::find and std::distance
 #include <numeric>                    // include std::iota
 #include <iomanip>                    // setprecision for debug
+#include <iterator>
 
+#include <boost/range/iterator_range.hpp>
+#include <boost/filesystem.hpp>
+
+#include "../include/term_disp.hpp"
 #include "../include/shape.hpp"       // class definitions
 #include "../include/canvas.hpp"      // class definitions
 #include "../include/util.hpp"        // array modification functions
 #include "../include/geometry.hpp"    // exterior border generation
 
-#define VERBOSE 1  // print progress messages
-
+namespace fs = boost::filesystem;
 using namespace rapidjson;
+
+#define VERBOSE 1  // print progress *
 const long int c = pow(2, 18);
 
 // constant id strings
 //ndv	nrv	geoid10	GEOID10	POP100
-const std::string election_id_header = "geoid10";
-const std::vector<std::string> d_head = {"ndv"};
-const std::vector<std::string> r_head = {"nrv"};
-const std::string geodata_id = "GEOID10";
-const std::string population_id = "POP100";
+std::string election_id_header = "geoid10";
+std::vector<std::string> d_head = {"ndv"};
+std::vector<std::string> r_head = {"nrv"};
+std::string geodata_id = "GEOID10";
+std::string population_id = "POP100";
 
 std::vector<std::vector<std::string > > parse_sv(std::string, std::string);
 bool check_column(std::vector<std::vector<std::string> >, int);
@@ -664,7 +670,7 @@ int hole_count(GeoGerry::Precinct_Group pg) {
 }
 
 
-GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON, std::string voter_data, std::string district_geoJSON) {
+GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON, std::string voter_data, std::string district_geoJSON, std::vector<std::vector<std::string> > opts) {
     /*
         @desc:
             Parse precinct and district geojson, along with
@@ -680,6 +686,12 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
 
     //! Should probably allocate memory with malloc
     //! Will be some outrageously large vectors here
+
+    election_id_header = opts[0][0];
+    geodata_id = opts[1][0];
+    d_head = opts[2];
+    r_head = opts[3];
+    population_id = opts[4][0];
 
     // generate shapes from coordinates
     if (VERBOSE) std::cout << "generating coordinate array from precinct file..." << std::endl;
@@ -724,7 +736,7 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
 }
 
 
-GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON, std::string district_geoJSON) {
+GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON, std::string district_geoJSON, std::vector<std::vector<std::string> > opts) {
         /*
         @desc:
             Parse precinct and district geojson, along with
@@ -737,6 +749,10 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
 
         @return: `State` parsed state object
     */
+
+    d_head = opts[0];
+    r_head = opts[1];
+    population_id = opts[2][0];
 
     // generate shapes from coordinates
     if (VERBOSE) std::cout << "generating coordinate array from precinct file..." << std::endl;
@@ -769,4 +785,250 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
     if (VERBOSE) std::cout << "state serialized!" << std::endl;
 
     return state; // return the state object
+}
+
+
+/*
+    Write and read state file to and from binary
+
+    Any instance of & operator is overloaded for 
+    reading and writing, to avoid duplicate methods
+    (see boost documentation for more information)
+*/
+
+void GeoGerry::State::write_binary(std::string path) {
+    std::ofstream ofs(path); // open output stream
+    boost::archive::binary_oarchive oa(ofs); // open archive stream
+    oa << *this; // put this pointer into stream
+    ofs.close(); // close stream
+}
+
+
+GeoGerry::State GeoGerry::State::read_binary(std::string path) {
+    GeoGerry::State state = GeoGerry::State(); // blank state object
+
+    std::ifstream ifs(path); // open input stream
+    boost::archive::binary_iarchive ia(ifs); // open archive stream
+    ia >> state; // read into state object
+
+    return state; // return state object
+}
+
+
+void GeoGerry::Precinct_Group::write_binary(std::string path) {
+    std::ofstream ofs(path); // open output stream
+    boost::archive::binary_oarchive oa(ofs); // open archive stream
+    oa << *this; // put this pointer into stream
+    ofs.close(); // close stream
+}
+
+
+GeoGerry::Precinct_Group GeoGerry::Precinct_Group::read_binary(std::string path) {
+    GeoGerry::Precinct_Group pg = GeoGerry::Precinct_Group(); // blank object
+    std::ifstream ifs(path); // open input stream
+    boost::archive::binary_iarchive ia(ifs); // open archive stream
+    ia >> pg;
+    return pg; // return precinct group object
+}
+
+
+template<class Archive> void GeoGerry::LinearRing::serialize(Archive & ar, const unsigned int version) {
+    ar & border;
+}
+
+
+template<class Archive> void GeoGerry::State::serialize(Archive & ar, const unsigned int version) {
+    // write districts, precincts, name, and border
+    ar & state_districts;
+    ar & precincts;
+    ar & islands;
+    ar & name;
+    ar & border;
+    ar & pop;
+}
+
+
+template<class Archive> void GeoGerry::Multi_Shape::serialize(Archive & ar, const unsigned int version) {
+    ar & border;
+    ar & shape_id;
+    ar & pop;
+}
+
+/*
+    The following are serialization methods written
+    to make sure that each sub-nested shape is actually
+    written to the binary file
+
+    ! this could probably be better structured
+    TODO: Make sure that this actually is necessary
+*/
+
+template<class Archive> void GeoGerry::Precinct_Group::serialize(Archive & ar, const unsigned int version) {
+    // push id and border into the archive stream
+    ar & id;
+    ar & border;
+    ar & pop;
+    // ar & precincts;
+}
+
+
+template<class Archive> void GeoGerry::Precinct::serialize(Archive & ar, const unsigned int version) {
+    // push shape, border and vote data
+    ar & shape_id;
+    ar & hull;
+    ar & holes;
+    ar & dem;            
+    ar & rep;
+    ar & pop;
+}
+
+
+template<class Archive> void GeoGerry::Shape::serialize(Archive & ar, const unsigned int version) {
+    // push shape id and border to archive streamm
+    ar & shape_id;
+    ar & hull;
+    ar & holes;
+    ar & pop;
+}
+
+
+void GeoGerry::State::save_communities(std::string write_path, Communities communities) {
+    /*
+        Saves a community to a file at a specific point in the
+        pipeline. Useful for visualization and checks.
+
+        Save structure is as follows:
+            write_path/
+                community_1
+                ...
+                community_n
+    */
+
+    int c_index = 0;
+    std::string file = "";
+
+    for (Community c : communities) {
+        file += c.save_frame() + "\n";
+        c_index++;
+    }
+
+    writef(file, write_path);
+}
+
+
+void GeoGerry::State::read_communities(std::string read_path) {
+    this->state_communities = Community::load_frame(read_path, *this);
+    for (int i = 0; i < state_communities.size(); i++)
+        state_communities[i].border = generate_exterior_border(state_communities[i]).border;
+
+    return;
+}
+
+
+void GeoGerry::State::playback_communities(std::string read_path) {
+    GeoDraw::Anim animation(150);
+
+    fs::path p(read_path);
+    std::vector<fs::directory_entry> v;
+
+    if (fs::is_directory(p)) {
+        std::copy(fs::directory_iterator(p), fs::directory_iterator(), std::back_inserter(v));
+        for (std::vector<fs::directory_entry>::const_iterator it = v.begin(); it != v.end();  ++ it ){
+            GeoDraw::Canvas canvas(900, 900);
+            Communities cs = Community::load_frame((*it).path().string(), *this);
+            for (Community c : cs)
+                canvas.add_shape(generate_exterior_border(c));
+            animation.frames.push_back(canvas);
+        }
+    }
+
+    animation.playback();
+    
+    return;
+}
+
+
+std::string geojson_header = "{\"type\": \"FeatureCollection\", \"features\":[";
+
+
+std::string GeoGerry::LinearRing::to_json() {
+    /*
+        @desc: converts a linear ring into a json array of coords
+        @params: none
+        @return: `string` json array
+    */
+
+    std::string str = "[";
+    for (GeoGerry::coordinate c : border)
+        str += "[" + std::to_string(c[0]) + ", " + std::to_string(c[1]) + "],";
+
+    str = str.substr(0, str.size() - 1);
+    str += "]";
+
+    return str;
+}
+
+
+std::string GeoGerry::Precinct_Group::to_json() {
+    /*
+        @desc:
+            converts a Precinct_Group object into a geojson document
+            for viewing in mapshaper or elsewhere
+
+        @params: none
+        @return: `string` json array
+    */
+
+    std::string str = geojson_header;
+    
+    for (GeoGerry::Precinct p : precincts) {
+        str += "{\"type\":\"Feature\",\"geometry\":{\"type\":\"Polygon\",\"coordinates\":[";
+        str += p.hull.to_json();
+        for (GeoGerry::LinearRing hole : p.holes)
+            str += "," + hole.to_json();
+        str += "]}},";
+    }
+
+    str = str.substr(0, str.size() - 1); // remove comma
+    str += "]}";
+    return str;
+}
+
+
+std::string GeoGerry::Shape::to_json() {
+    /*
+        @desc: Converts a normal shape object into geojson
+        @params: none
+        @return: `string` geojson object
+    */
+
+    std::string str = geojson_header;
+    str += hull.to_json();
+    str += "]}}";
+
+    return str;
+}
+
+
+std::string GeoGerry::Multi_Shape::to_json() {
+    /*
+        @desc: Converts a multiple shape object into geojson
+        @params: none
+        @return: `string` geojson object
+    */
+
+    std::string str = geojson_header + "{\"type\":\"Feature\",\"geometry\":{\"type\":\"MultiPolygon\",\"coordinates\":[";
+    for (Shape s : border) {
+        str += "[";
+        str += s.hull.to_json();
+        for (LinearRing h : s.holes) {
+            str += h.to_json();
+        }
+        str += "],";
+    }
+    
+    str = str.substr(0, str.size() - 1);
+    str += "]}}";
+
+    return str;
 }

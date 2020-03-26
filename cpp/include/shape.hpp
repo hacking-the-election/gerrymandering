@@ -127,14 +127,8 @@ class LinearRing {
         coordinate_set border;
 
         // add operator overloading for object equality
-        friend bool operator== (LinearRing l1, LinearRing l2) {
-            return (l1.border == l2.border);
-        }
-
-        // add operator overloading for object inequality
-        friend bool operator!= (LinearRing l1, LinearRing l2) {
-            return (l1.border != l2.border);
-        }
+        friend bool operator== (LinearRing l1, LinearRing l2);
+        friend bool operator!= (LinearRing l1, LinearRing l2);
 
         // for boost serialization
         friend class boost::serialization::access;
@@ -192,14 +186,8 @@ class Shape {
         virtual double get_compactness();
 
         // add operator overloading for object equality
-        friend bool operator== (Shape p1, Shape p2) {
-            return (p1.hull == p2.hull && p1.holes == p2.holes);
-        }
-
-        // add operator overloading for object inequality
-        friend bool operator!= (Shape p1, Shape p2) {
-            return (p1.hull != p2.hull || p1.holes != p2.holes);
-        }
+        friend bool operator== (Shape p1, Shape p2);
+        friend bool operator!= (Shape p1, Shape p2);
 
         // for boost serialization
         friend class boost::serialization::access;
@@ -254,14 +242,8 @@ class Precinct : public Shape {
         std::vector<int> get_voter_data();  // get data in {dem, rep} format
 
         // add operator overloading for object equality
-        friend bool operator== (Precinct p1, Precinct p2) {
-            return (p1.hull == p2.hull && p1.holes == p2.holes && p1.dem == p2.dem && p1.rep == p2.rep && p1.pop == p2.pop);
-        }
-
-        // add operator overloading for object inequality
-        friend bool operator!= (Precinct p1, Precinct p2) {
-            return (p1.hull != p2.hull || p1.holes != p2.holes || p1.dem != p2.dem || p1.rep != p2.rep || p1.pop != p2.pop);
-        }
+        friend bool operator== (Precinct p1, Precinct p2);
+        friend bool operator!= (Precinct p1, Precinct p2);
 
         // for boost serialization
         friend class boost::serialization::access;
@@ -313,14 +295,8 @@ class Multi_Shape : public Shape {
         std::vector<Shape> border;
 
         // add operator overloading for object equality
-        friend bool operator== (Multi_Shape& s1, Multi_Shape& s2) {
-            return (s1.border == s2.border);
-        }
-
-        // add operator overloading for object inequality
-        friend bool operator!= (Multi_Shape& s1, Multi_Shape& s2) {
-            return (s1.border != s2.border);
-        }
+        friend bool operator== (Multi_Shape& s1, Multi_Shape& s2);
+        friend bool operator!= (Multi_Shape& s1, Multi_Shape& s2);
 };
 
 
@@ -411,8 +387,8 @@ class State : public Precinct_Group {
         };
 
         // generate a file from proper raw input
-        static State generate_from_file(std::string precinct_geoJSON, std::string voter_data, std::string district_geoJSON);
-        static State generate_from_file(std::string precinct_geoJSON, std::string district_geoJSON);
+        static State generate_from_file(std::string precinct_geoJSON, std::string voter_data, std::string district_geoJSON, std::vector<std::vector<std::string> >);
+        static State generate_from_file(std::string precinct_geoJSON, std::string district_geoJSON, std::vector<std::vector<std::string> > opts);
 
         // serialize and read to and from binary, json
         void write_binary(std::string path);
