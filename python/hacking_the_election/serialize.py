@@ -5,6 +5,7 @@ data into graph of hacking_the_election.precinct.Precinct objects.
 
 
 import json
+from os.path import dirname
 import pickle
 import sys
 
@@ -14,7 +15,7 @@ from shapely.geometry import Polygon, MultiPolygon
 from hacking_the_election.utils.precinct import Precinct
 
 
-def create_graph(election_file, geo_file, pop_file):
+def create_graph(election_file, geo_file, pop_file, state):
     """
     Takes data from inputted files and returns all precincts
     as graph with Precinct objects as nodes.
@@ -28,15 +29,16 @@ def create_graph(election_file, geo_file, pop_file):
     with open(geo_file, "r") as f:
         geodata = json.load(f)
 
+    with open(f"{dirname(__file__)}/state_metadata.pickle", "r") as f:
+        state_metadata = json.load(f)[state]
+    
     precinct_graph = Graph()
-    for i in range(1, len(election_data)):
-        precinct_graph.add_node(i, Precinct({}, {}, 0, [], str(i)))
 
     return precinct_graph
 
 
 if __name__ == "__main__":
     
-    precinct_graph = create_graph(sys.argv[1:4])
-    with open(sys.argv[4], "wb+") as f:
+    precinct_graph = create_graph(sys.argv[1:5])
+    with open(sys.argv[5], "wb+") as f:
         pickle.dump(precinct_graph)
