@@ -7,29 +7,30 @@ CV := -std=c++11
 
 # filepaths
 BIN := bin
-BINARIES := $(BINDIR)/serialize_state $(BINDIR)/generate_communities
-STATE_OBJECTS = build/parse.o build/canvas.o build/parse.o build/geometry.o build/util.o
 BUILD = build
+BINARIES := $(BIN)/serialize_state $(BIN)/generate_communities
+STATE_OBJECTS = $(BUILD)/parse.o $(BUILD)/canvas.o $(BUILD)/geometry.o $(BUILD)/util.o $(BUILD)/shape.o
 
 # libraries
 BOOST = -lboost_serialization -lboost_filesystem
 SDL = -lSDL2 -lSDL2main
 
-all: compile
+all: serialize_state
 #all: state_serializer
 
-compile: setup dependencies $(STATE_OBJECTS) clipper
-	@echo dependencies done
-	$(CC) -std=c++$(CV) $(STATE_OBJECTS) clipper.o $(BOOST) $(SDL) -o $(BIN)/serialize_state
+serialize_state: setup dependencies $(STATE_OBJECTS) clipper src/script/serialize_state.cpp
+	$(CC) $(CV) src/script/serialize_state.cpp -c -o $(BUILD)/serialize_state.o
+	$(CC) $(CV) $(BUILD)/serialize_state.o $(STATE_OBJECTS) $(BUILD)/clipper.o $(BOOST) $(SDL) -o $(BIN)/serialize_state
+
 
 dependencies: lib/rapidjson/include/rapidjson/rapidjson.h.dependency
 
 # object file targets:
-%.o: src/%.cpp
+*/%.o: src/%.cpp
 	$(CC) $(CV) $< -c -o $@
 
-clipper:
-	$(CC) lib/clipper/clipper.cpp -c -o build/clipper.o
+clipper: lib/clipper/clipper.cpp
+	$(CC) $< -c -o $(BUILD)/clipper.o
 
 %.dependency: %
 	@printf "checking for "
@@ -41,7 +42,6 @@ ifeq (,$(wildcard $<))
 else
 	@echo "no"
 endif
-
 
 setup:
 	mkdir -p $(BIN) $(BUILD)
