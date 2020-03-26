@@ -5,10 +5,26 @@ data in our project's data files: the precinct.
 
 
 class Precinct:
-    """
-    Class containing precinct voter, population, and geodata.
-    
-    Should be pointed to by node in graph.Graph object.
+    """Class containing voter, population, and geo data for a single precinct.
+    Should be pointed to by node in `pygraph.classes.graph.graph` object.
+
+    :param rep_data: Republican voter counts corresponding to elections.
+    :type rep_data: dict
+
+    Example value for `rep_data`: 
+    ``{"ush_r_06": 832, "uss_r_06": 123}``
+
+    :param dem_data: Democrat voter counts corresponding to elections.
+    :type dem_data: dict
+
+    :param pop: Population of the precinct.
+    :type pop: int
+
+    :param coords: Geometric shape of precinct.
+    :type coords: `shapely.geometry.Polygon`
+
+    :param geoid: GEOID or similar identifier string for precinct.
+    :type geoid: str
     """
 
     def __init__(self, rep_data, dem_data, pop, coords, geoid):
