@@ -34,9 +34,13 @@ def _list_to_multipolygon(multipolygon_list):
 
 
 def geojson_to_shapely(geojson):
-    """
-    Takes either multipolygon or polygon in geojson format and returns
-    shapely.geometry.Polygon or shapely.geometry.MultiPolygon object.
+    """Takes shape in geojson format and returns shapely object.
+
+    :param geojson: List of coords in geojson format.
+    :type geojson: 3d or 4d list
+
+    :return: A shapely object containing the same information as `geojson`
+    :rtype: `shapely.geometry.Polygon` or `shapely.geometry.MultiPolygon`
     """
 
     if isinstance(geojson[0][0][0], list):
@@ -48,10 +52,19 @@ def geojson_to_shapely(geojson):
 
 
 def get_if_bordering(shape1, shape2, inside=False):
-    """
-    Returns whether or not two shapes (shapely polygons) are bordering as a bool
-    If `inside` is `True`, then the function will assume that `shape2` is
-    inside `shape1`. Therefore order or arguments matters.
+    """Determines whether or not two shapes (shapely polygons) are bordering
+    
+    :param shape1: One of the shapes being considered.
+    :type shape1: `shapely.geometry.Polygon` or `shapely.geometry.MultiPolygon`
+
+    :param shape2: The other shape being considered.
+    :type shape2: `shapely.geometry.Polygon` or `shapely.geometry.MultiPolygon`
+
+    :param inside: Whether or not `shape2` is inside `shape1`. Order matters if this is `True`, defaults to `False`
+    :type inside: bool, optional
+
+    :return: Whether or not `shape1` and `shape2` are bordering.
+    :rtype: bool
     """
     if inside:
         difference = shape1.difference(shape2)
