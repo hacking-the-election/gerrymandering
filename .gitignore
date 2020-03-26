@@ -12,6 +12,8 @@ hacking_the_election.egg-info
 **/*compactness.pickle
 **/*partisanship.pickle
 **/*population.pickle
+tmp*
+
 
 # sphinx documentation
 python/docs/
