@@ -61,7 +61,8 @@ def get_if_bordering(shape1, shape2, inside=False):
             # |____   |        ____         |____    |
             # |____|  | minus |____| equals  ____|   |
             # |_______|                     |________|
-            # The border of the difference and the subtrahend is this:
+            # The border of the difference between the
+            # difference and the subtrahend is this:
             # ________
             # |       |
             #         |
