@@ -60,7 +60,7 @@ class Community:
         """
         self.population = sum([p.population for p in self.precincts.values()])
 
-    def take_precinct(self, precinct):
+    def take_precinct(self, precinct, update=[]):
         """Adds a precinct to this community.
         
         :param precinct: The precinct to add to this community.
@@ -70,7 +70,16 @@ class Community:
         self.precincts[precinct.id] = precinct
         precinct.community = self.id
 
-    def give_precinct(self, other, precinct_id):
+        if "coords" in update:
+            self.coords = unary_union([self.coords, precinct.coords])
+        update.remove("coords")
+        for attr in update:
+            try:
+                exec(f"self.update_{attr}()")
+            except AttributeError:
+                raise ValueError(f"No such attribute as {attr} in Community instance.")
+
+    def give_precinct(self, other, precinct_id, update=set()):
         """Gives a precinct to a different community.
 
         :param other: The community to give the precinct to.
@@ -78,6 +87,9 @@ class Community:
 
         :param precinct_id: The id of the precinct to give to the other community. (Must be in self.precincts.keys())
         :type precinct_id: str
+
+        :param update: Set of attribute names of this class that should be updated after adding this precinct.
+        :type update: set of string
         """
 
         try:
@@ -85,4 +97,13 @@ class Community:
         except KeyError:
             raise ValueError(f"Precinct {precinct_id} not in community {self.id}")
         del self.precincts[precinct_id]
-        other.take_precinct(precinct)
+        other.take_precinct(precinct, update)
+
+        if "coords" in update:
+            self.coords = self.coords.difference(precinct.coords)
+        update.remove("coords")
+        for attr in update:
+            try:
+                exec(f"self.update_{attr}()")
+            except AttributeError:
+                raise ValueError(f"No such attribute as {attr} in Community instance.")
