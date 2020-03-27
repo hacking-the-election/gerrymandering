@@ -1,9 +1,51 @@
 # Hacking the Election
 
-This repository represents all the code written for the research project *Hacking the Election: Measuring and Solving Gerrymandering in Today’s Political System*. It includes Python and C++ code for parsing data, measuring gerrymandering, and an algorithm for redistricting.
+This repository represents all the code written for the research project *Hacking the Election: Measuring and Solving Gerrymandering in Today’s Political System*. It includes Python and C++ for parsing data, measuring gerrymandering, and an algorithm for redistricting.
 
 Once it is completed, more information on this science fair project will be available on the website at [hacking-the-election.github.io](https://hacking-the-election.github.io)
 
-## OS Compatability
-- Any software written in C++ will be Linux and macOS compatible.
+---
+
+## Installing Data
+All of our code is ran from raw data collected from the following sources:
+- [Harvard Election Data Archives](https://projects.iq.harvard.edu/eda/home)
+- [nvkelso/election-geodata](https://github.com/nvkelso/election-geodata)
+- [California Election Database](https://statewidedatabase.org/)
+- [mgg-states](https://github.com/mggg-states)
+- [Open Precincts](https://openprecincts.org)
+
+To install *only* our selection of data, and not our code along with it, the individual data repository can be cloned:
+```
+git clone 'https://github.com/hacking-the-election/data'
+```
+This includes all of the raw data, as well as binary `state` files for each language. This data repository is additionally included in this gerrymandering repository as a [git submodule](https://github.blog/2016-02-01-working-with-submodules/). To clone and install:
+```
+git clone --recursive https://github.com/hacking-the-election/gerrymandering
+```
+
+---
+
+## C++
+
+### Installation
+```bash
+git clone "https://github.com/hacking-the-election/gerrymandering"
+cd gerrymandering/cpp
+make all
+```
+
+### OS Compatability
+- All code will be compileable on macOS and Linux
+- Binary distributions will be available after completion of all code
+  
+---  
+  
+## Python
+
+### Installation
+```python
+pip do some magic
+```
+
+### OS Compatability
 - Any software written in Python will be Windows and macOS compatible.
