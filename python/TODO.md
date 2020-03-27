@@ -34,3 +34,7 @@
    - Node colors based on partisanship
 - community algorithm: save frame after every precinct change
    - Colors based on partisanship
+
+## Style
+
+- Add documentation for instance attributes

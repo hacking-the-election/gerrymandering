@@ -3,6 +3,13 @@ A class representing political communities
 """
 
 
+from shapely.geometry import Polygon
+from shapely.ops import unary_union
+
+from hacking_the_election.utils.geometry import get_compactness
+from hacking_the_election.utils.stats import average, get_standard_deviation
+
+
 class Community:
     """Political communities - groups of precincts.
 
@@ -15,11 +22,43 @@ class Community:
         self.id = community_id
 
         self.precincts = {}  # Dict maps precinct ids to precinct objects.
+        self.coords = Polygon()  # Geometric shape of the community.
         self.partisanship = 0
         self.partisanship_stdev = 0
         self.compactness = 0
         self.population = 0
-        self.coords = None
+
+    # The following functions exist so that certain attributes don't
+    # have to be calculated when they aren't needed right away.
+
+    def update_coords(self):
+        """Update the coords attribute for this community
+        """
+        self.coords = unary_union([p.coords for p in self.precincts.values()])
+
+    def update_partisanship(self):
+        """Updates the partisanship attribute for this community.
+        """
+        self.partisanship = average(
+            [p.partisanship for p in self.precincts.values()]
+        )
+
+    def update_partisanship_stdev(self):
+        """Updates the partisanship_stdev attribute for this community.
+        """
+        self.partisanship_stdev = get_standard_deviation(
+            [p.partisnaship for p in self.precincts.values()]
+        )
+
+    def update_compactness(self):
+        """Update the compactness attribute for this community.
+        """
+        self.compactness = get_compactness(self.coords)
+
+    def update_population(self):
+        """Update the population attribute for this community.
+        """
+        self.population = sum([p.population for p in self.precincts.values()])
 
     def take_precinct(self, precinct):
         """Adds a precinct to this community.
