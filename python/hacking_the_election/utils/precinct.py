@@ -31,6 +31,11 @@ class Precinct:
 
         self.rep_data = rep_data
         self.dem_data = dem_data
+        
+        total_rep = sum(self.rep_data.values())
+        total_dem = sum(self.dem_data.values())
+        self.partisanship = total_rep / (total_rep + total_dem)
+
         self.pop = pop
         # should be shapely polygon
         self.coords = coords
