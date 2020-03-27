@@ -4,7 +4,7 @@ Graph theory related functions and classes.
 
 
 def remove_edges_to(node, graph):
-    """Removes all edges connected to a node. In-place on a graph.
+    """Returns and removes all edges connected to a node. In-place on a graph.
 
     :param node: The node to remove the edges from.
     :type node: int
@@ -12,9 +12,12 @@ def remove_edges_to(node, graph):
     :param graph: The graph that contains `node`
     :type graph: `pygraph.classes.graph.graph`
     """
+    removed_edges = []
     for edge in graph.edges():
         if node in edge:
+            removed_edges.append(edge)
             graph.del_edge(edge)
+    return removed_edges
 
 
 def get_discontinuous_components(graph):
