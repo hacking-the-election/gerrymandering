@@ -2,6 +2,8 @@
 """
 
 
+from copy import deepcopy
+
 from hacking_the_election.utils.community import Community
 from hacking_the_election.utils.exceptions import CommunityCompleteException
 from hacking_the_election.utils.graph import get_discontinuous_components, remove_edges_to
@@ -78,3 +80,33 @@ def create_initial_configuration(precinct_graph, precincts, n_communities):
     :return: A list of communities. Each is a contiguous shape with a number of precincts within 1 of that of all the other communities.
     :rtype: list of class:`hacking_the_election.utils.community.Community`
     """
+    
+    # Nothing having to do with islands is required here,
+    # since that is taken care of in the creation of hte graph.
+    community_sizes = (len(precincts) // n_communities) \
+                    + (len(precincts) % n_communities)
+
+    # Sets of node identifiers for each community
+    community_node_groups = [set() for _ in range(n_communities)]
+    # Call create_community `n_communities` - 1 times.
+    # The remaining nodes belong to the last community.
+    tmp_graph = deepcopy(precinct_graph)
+    for community_node_group, community_size in zip(community_node_groups[:-1],
+                                                    community_sizes[:-1]):
+        _create_community(tmp_graph, community_size, community_node_group)
+        for node in community_node_group:
+            tmp_graph.del_node(node)
+    
+    # Last community.
+    for node in tmp_graph.nodes():
+        community_node_groups[-1].add(node)
+    
+    # The final output list of `Community` objects.
+    communities = []
+    for i, community_node_group in enumerate(community_node_groups):
+        community_precincts = []
+        for node in community_node_group:
+            community_precincts.append(precinct_graph.node_attributes(node)[0])
+        communities.append(Community(community_precincts, i))
+
+    return communities
