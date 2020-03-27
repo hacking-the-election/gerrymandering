@@ -4,8 +4,7 @@ A class representing political communities
 
 
 class Community:
-    """
-    Political communities - groups of precincts.
+    """Political communities - groups of precincts.
     """
 
     def __init__(self, precincts, community_id):
