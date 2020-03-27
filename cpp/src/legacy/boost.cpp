@@ -22,7 +22,7 @@ boost_polygon ring_to_boost_poly(LinearRing shape) {
 
 LinearRing boost_poly_to_ring(boost_polygon poly) {
     /*
-        Convert from a boost polygon into a Shape object.
+        Convert from a boost polygon into a Polygon object.
         Loop over each point in the polygon, add it to the
         shape's border.
     */
@@ -38,7 +38,7 @@ LinearRing boost_poly_to_ring(boost_polygon poly) {
 }
 
 
-Shape boost_poly_to_shape(boost_multi_polygon poly) {
+Polygon boost_poly_to_shape(boost_multi_polygon poly) {
     /*
         overload the poly_to_shape function to work with multipolygons
         loop over each polygon, use same process to add to shape's border
@@ -56,6 +56,6 @@ Shape boost_poly_to_shape(boost_multi_polygon poly) {
         }
     }
 
-    Shape shape(b);
+    Polygon shape(b);
     return shape;
 }

@@ -11,29 +11,14 @@
 
 #pragma once // avoid multiple includes
 
-#include <iostream>
 #include <string>
 #include <vector>
-#include <sstream>
-#include <fstream>
-#include <map>
-#include <array> 
-#include <exception>
-#include <math.h>
-#include <algorithm>
-
-// for the rapidjson parser
-#include "../lib/rapidjson/include/rapidjson/document.h"
-#include "../lib/rapidjson/include/rapidjson/writer.h"
-#include "../lib/rapidjson/include/rapidjson/stringbuffer.h"
 
 // for boost binary serialization
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/array.hpp>
-
-#include "../lib/clipper/clipper.hpp"
 
 /*
     structure of class definitions:
@@ -46,13 +31,14 @@
 namespace GeoGerry {
 
 class LinearRing;      // a group of lines
-class Shape;           // Exterior and optional interior LinearRings (for holes)
-class Multi_Shape;     // A group of Shapes
+class Polygon;         // Exterior and optional interior LinearRings (for holes)
+class Multi_Polygon;   // A group of Polygons
 class Precinct;        // Voter block class
 class Precinct_Group;  // A group of precincts
 class State;           // Contains arrays of the above, as well as methods for various algorithms
 class Exceptions;      // for any error to be thrown
 class Community;       // list of precinct id's
+class Graph;           // precinct indices as vertices and edges
 
 // simplify the coordinate modification system
 typedef std::array<long int, 2> coordinate;              // a list in form {x1, y1}
@@ -136,36 +122,36 @@ class LinearRing {
 };
 
 
-class Shape {
+class Polygon {
     /* 
         Contains a public border of a LinearRing object
         and a public vector of linearRings for holes.
 
-        Shape objects may contain hole(s), but do not have
+        Polygon objects may contain hole(s), but do not have
         multiple exterior borders
     */
 
     public: 
 
-        Shape(){}; // default constructor
+        Polygon(){}; // default constructor
 
-        Shape(LinearRing shape) {
+        Polygon(LinearRing shape) {
             // no holes in shape
             hull = shape;
         }
 
         // overload constructor for adding id
-        Shape(LinearRing shape, std::string id) {
+        Polygon(LinearRing shape, std::string id) {
             hull = shape;
             shape_id = id;
         }
 
-        Shape(LinearRing ext, std::vector<LinearRing> interior) {
+        Polygon(LinearRing ext, std::vector<LinearRing> interior) {
             hull = ext;
             holes = interior;
         }
 
-        Shape(LinearRing ext, std::vector<LinearRing> interior, std::string id) {
+        Polygon(LinearRing ext, std::vector<LinearRing> interior, std::string id) {
             hull = ext;
             holes = interior;
             shape_id = id;
@@ -177,7 +163,7 @@ class Shape {
         std::string shape_id;                 // the shape's ID, if applicable
         virtual std::string to_json();
 
-        // geometric methods, overwritten in Shape class
+        // geometric methods, overwritten in Polygon class
 
         virtual double get_area();            // return (area of shape - area of holes)
         virtual double get_perimeter();       // total perimeter of holes + hull
@@ -186,8 +172,8 @@ class Shape {
         virtual double get_compactness();
 
         // add operator overloading for object equality
-        friend bool operator== (Shape p1, Shape p2);
-        friend bool operator!= (Shape p1, Shape p2);
+        friend bool operator== (Polygon p1, Polygon p2);
+        friend bool operator!= (Polygon p1, Polygon p2);
 
         // for boost serialization
         friend class boost::serialization::access;
@@ -197,7 +183,7 @@ class Shape {
         int is_part_of_multi_polygon = -1; // for parsing rules
 };
 
-class Precinct : public Shape {
+class Precinct : public Polygon {
 
     // Derived shape class for defining a precinct
 
@@ -205,34 +191,34 @@ class Precinct : public Shape {
 
         Precinct(){} // default constructor
 
-        Precinct(LinearRing ext, int demV, int repV) : Shape(ext) {
+        Precinct(LinearRing ext, int demV, int repV) : Polygon(ext) {
             // assigning vote data
             dem = demV;
             rep = repV;
         }
 
-        Precinct(LinearRing ext, std::vector<LinearRing> interior, int demV, int repV) : Shape(ext, interior) {
+        Precinct(LinearRing ext, std::vector<LinearRing> interior, int demV, int repV) : Polygon(ext, interior) {
             // assigning vote data
             dem = demV;
             rep = repV;
         }
 
 
-        Precinct(LinearRing ext, int demV, int repV, std::string id) : Shape(ext, id) {
+        Precinct(LinearRing ext, int demV, int repV, std::string id) : Polygon(ext, id) {
             // overloaded constructor for adding shape id
             dem = demV;
             rep = repV;
         }
 
 
-        Precinct(LinearRing ext, int demV, int repV, int popu, std::string id) : Shape(ext, id) {
+        Precinct(LinearRing ext, int demV, int repV, int popu, std::string id) : Polygon(ext, id) {
             // overloaded constructor for adding shape id
             dem = demV;
             rep = repV;
             pop = popu;
         }
 
-        Precinct(LinearRing ext, std::vector<LinearRing> interior, int demV, int repV, std::string id) : Shape(ext, interior, id) {
+        Precinct(LinearRing ext, std::vector<LinearRing> interior, int demV, int repV, std::string id) : Polygon(ext, interior, id) {
             // overloaded constructor for adding shape id
             dem = demV;
             rep = repV;
@@ -254,29 +240,29 @@ class Precinct : public Shape {
 };
 
 
-class Multi_Shape : public Shape {
+class Multi_Polygon : public Polygon {
 
     // A class containing a vector of shapes
 
     public: 
 
-        Multi_Shape(){}; // default constructor
-        Multi_Shape(std::vector<Shape> s) {
+        Multi_Polygon(){}; // default constructor
+        Multi_Polygon(std::vector<Polygon> s) {
             // constructor with assignment
             border = s;
         }
         
-        Multi_Shape(std::vector<Shape> s, std::string t_id) {
+        Multi_Polygon(std::vector<Polygon> s, std::string t_id) {
             // constructor with assignment
             border = s;
             shape_id = t_id;
         }
 
-        Multi_Shape(std::vector<Precinct> s) {
+        Multi_Polygon(std::vector<Precinct> s) {
             // constructor with assignment
             for (Precinct p : s) {
                 // copy precinct data to shape object
-                Shape s = Shape(p.hull, p.holes, p.shape_id);
+                Polygon s = Polygon(p.hull, p.holes, p.shape_id);
                 border.push_back(s);
             }
         }
@@ -292,15 +278,22 @@ class Multi_Shape : public Shape {
         friend class boost::serialization::access;
         template<class Archive> void serialize(Archive & ar, const unsigned int version);
 
-        std::vector<Shape> border;
+        std::vector<Polygon> border;
 
         // add operator overloading for object equality
-        friend bool operator== (Multi_Shape& s1, Multi_Shape& s2);
-        friend bool operator!= (Multi_Shape& s1, Multi_Shape& s2);
+        friend bool operator== (Multi_Polygon& s1, Multi_Polygon& s2);
+        friend bool operator!= (Multi_Polygon& s1, Multi_Polygon& s2);
 };
 
 
-class Precinct_Group : public Multi_Shape {
+class Graph {
+    public:
+        std::vector<p_index> vertices;
+        std::vector<std::array<p_index, 2> > edges;
+};
+
+
+class Precinct_Group : public Multi_Polygon {
 
     /* 
         Derived class for defining a district
@@ -315,20 +308,19 @@ class Precinct_Group : public Multi_Shape {
         virtual void add_precinct_n(Precinct pre);
 
         Precinct_Group(){};
-        Precinct_Group(std::vector<Shape> shapes)
-            : Multi_Shape(shapes) {}; // call the superclass constructor
+        Precinct_Group(std::vector<Polygon> shapes)
+            : Multi_Polygon(shapes) {}; // call the superclass constructor
         
-        Precinct_Group(std::vector<Precinct> shapes) : Multi_Shape(shapes) {
+        Precinct_Group(std::vector<Precinct> shapes) : Multi_Polygon(shapes) {
             precincts = shapes;
         };
 
-        // serialize and read to and from binary
-        void write_binary(std::string path);
-        static Precinct_Group read_binary(std::string path);
         double get_ratio();
         std::string to_json();
-
         int get_population();
+
+        Graph network;
+
         // for boost serialization
         friend class boost::serialization::access;
         template<class Archive> void serialize(Archive & ar, const unsigned int version);
@@ -349,13 +341,7 @@ class Community : public Precinct_Group {
     */
 
     public:
-
-        bool is_linked = false;                            // whether or not this community has a linked counterpart
-        std::vector<std::vector
-            <std::vector<int> > > link_position;           // gives island and precinct link location: { { {0, 1}, {2, 0} }, { {0, 1}, {2, 0} } } - first island, second precinct linked to third island, first precinct
-        std::vector<int> location;                         // indexes of island it's located on
-        std::vector<int> size;                             // number of precincts initially in community -  if this is on multiple islands it has multiple elements
-        
+        int size;
         Community(){}
 
         std::string save_frame();
@@ -380,7 +366,7 @@ class State : public Precinct_Group {
 
         State(){}; // default constructor
 
-        State(std::vector<Multi_Shape> districts, std::vector<Precinct> state_precincts, std::vector<Shape> shapes) : Precinct_Group(shapes) {
+        State(std::vector<Multi_Polygon> districts, std::vector<Precinct> state_precincts, std::vector<Polygon> shapes) : Precinct_Group(shapes) {
             // simple assignment constructor
             state_districts = districts;
             precincts = state_precincts;
@@ -393,7 +379,6 @@ class State : public Precinct_Group {
         // serialize and read to and from binary, json
         void write_binary(std::string path);
         static State read_binary(std::string path);
-        // std::string to_json();
 
         // for boost serialization
         friend class boost::serialization::access;
@@ -417,7 +402,7 @@ class State : public Precinct_Group {
 
         // return precinct that can be added to the current precinct that won't create islands in the state
         p_index get_addable_precinct(p_index_set available_precincts, p_index current_precinct);
-        std::vector<unit_interval> quantify_gerrymandering(std::vector<Multi_Shape> districts, Communities base_communities);
+        std::vector<unit_interval> quantify_gerrymandering(std::vector<Multi_Polygon> districts, Communities base_communities);
 
         // write out communities at a certain point in time
         void save_communities(std::string write_path, Communities communities);
@@ -430,7 +415,7 @@ class State : public Precinct_Group {
         std::vector<p_index_set> islands; // defines which precincts align to which islands
 
         // arrays of shapes in state
-        std::vector<Multi_Shape> state_districts;
+        std::vector<Multi_Polygon> state_districts;
         Communities state_communities;
 };
 }

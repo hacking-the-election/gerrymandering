@@ -3,11 +3,10 @@ Script for serializing precinct-level election, geo, and population
 data.
 
 Data is serialized into 2 files:
- - .xml file containing graph.
- - .pickle file containing Precinct objects.
+ - .pickle file containing graph with nodes containing Precinct objects
 
 Usage:
-python3 serialize.py [election_file] [geo_file] [pop_file] [state] [output.pickle] [output.xml]
+python3 serialize.py [election_file] [geo_file] [pop_file] [state] [output.pickle]
 """
 
 
@@ -74,6 +73,16 @@ def create_graph(election_file, geo_file, pop_file, state):
     with open(geo_file, "r") as f:
         geodata = json.load(f)
 
+    if pop_file != "none":
+        if pop_file[-4:] == ".json":
+            with open(pop_file, "r") as f:
+                popdata = json.load(f)
+        elif pop_file[-4:] == ".tab":
+            with open(pop_file, 'r') as f:
+                popdata = f.read().strip()
+    else:
+        popdata = False
+
     with open(f"{dirname(__file__)}/state_metadata.pickle", "r") as f:
         state_metadata = json.load(f)[state]
     dem_keys = state_metadata[state]["dem_keys"]
@@ -91,7 +100,7 @@ def create_graph(election_file, geo_file, pop_file, state):
     precinct_election_data = {}
     # If election data in geodata file...
     if election_file == "none":
-
+        seperate_election_data = "no"
         # Fill precinct_election_data
         for precinct in geodata["features"]:
             properties = precinct["properties"]
@@ -102,15 +111,16 @@ def create_graph(election_file, geo_file, pop_file, state):
             ]
     # If there is an election data file...
     else:
+        seperate_election_data = "yes"
         # If the election data file is a .json file
         if election_file[-4:] == ".json":
              # Fill precinct_election_data
-            for precinct in election_data["features"]:
-                properties = precinct["properties"]
-                precinct_id = "".join(properties[json_id] for json_id in json_ids)
-                precinct_election_data[precinct_id] = [
-                    {key: convert_to_int(properties[key]) for key in dem_keys},
-                    {key: convert_to_int(properties[key]) for key in rep_keys}
+            for precinct1 in election_data["features"]:
+                properties1 = precinct1["properties"]
+                precinct_id1 = "".join(properties1[json_id] for json_id in json_ids)
+                precinct_election_data[precinct_id1] = [
+                    {key: convert_to_int(properties1[key]) for key in dem_keys},
+                    {key: convert_to_int(properties1[key]) for key in rep_keys}
                 ]
         # If the election data file is a .tab file
         elif election_file[-4:] == ".tab":
@@ -141,24 +151,50 @@ def create_graph(election_file, geo_file, pop_file, state):
                     {election_column_names[i]: precinct[i]
                     for i in rep_key_col_indices}
                 ]
+        else:
+            raise AttributeError
 
     # then find population
     # {precinct_id : population}
     pop = {}
+    if popdata:
+        if pop_file[-4:] == ".json":
+            for precinct2 in popdata["features"]:
+                properties2 = precinct2["properties"]
+                precinct_id2 = "".join(properties2[json_id] for json_id in json_ids)
+                pop[precinct_id2] = sum([properties2[key] for key in json_pops])
+        # individual conditionals for states
+        else:
+            raise AttributeError
+    else:
+        # find where population is stored, either election or geodata
+        try:
+            _ = geodata["features"][0]["properties"][json_pops[0]]
+        except ValueError:
+            # population is in election data
+            pop_col_indices = [i for i, header in enumerate(election_data[0]) if header in json_pops]
+            # find which indexes have population data
+            for row in election_data[1:]:
+                precinct_id3 = row[ele_id_col_index]
+                precinct_populations = [row[i] for i in pop_col_indices]
+                pop[precinct_id3] = sum(precinct_populations)
+        else:
+            # population is in geodata
+            for precinct3 in geodata["features"]:
+                
+                properties3 = precinct3["properties"]
+                precinct_id4 = "".join(properties3[json_id] for json_id in json_ids)
+                precinct_populations = [properties3[key] for key in json_pops]
+                pop[precinct_id4] = sum(precinct_populations)
 
 
-
-    return write(precinct_graph), precincts
+    return precinct_graph
 
 
 if __name__ == "__main__":
     
-    precinct_graph, precincts = create_graph(sys.argv[1:5])
+    precinct_graph = create_graph(sys.argv[1:5])
 
-    # Save precincts as pickle
+    # Save graph as pickle
     with open(sys.argv[5], "wb+") as f:
-        pickle.dump(precincts)
-
-    # Save graph with precinct ids as XML
-    with open(sys.argv[6], "w+") as f:
-        f.write(precinct_graph)
+        pickle.dump(precinct_graph)

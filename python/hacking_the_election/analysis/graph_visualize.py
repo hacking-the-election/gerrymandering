@@ -1,5 +1,6 @@
+import pickle
+
 from pygraph.classes.graph import graph
-from pygraph.readwrite.markup import read
 from hacking_the_election.utils.precinct import Precinct
 
 def visualize_graph(graph, colors=False, graph_from_file=None, save=None):
@@ -10,7 +11,7 @@ def visualize_graph(graph, colors=False, graph_from_file=None, save=None):
     If save is a file path, saves matplotlib graph to file.
     """
     if graph_from_file != None:
-        with open(graph, 'r') as f:
-            graph_to_visualize = read(f)
+        with open(graph, 'rb') as f:
+            graph_to_visualize = pickle.load(f)
     else:
         graph_to_visualize = graph
