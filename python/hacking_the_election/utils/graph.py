@@ -29,24 +29,6 @@ def remove_all_edges(node, graph):
     return edges_removed_graph
 
 
-def _get_component(tree_root, graph):
-    """Finds all the nodes in the same component of a graph as a specific node. Implements breadth-first search algorithm.
-
-    Implementation translated from pseudocode found here: https://en.wikipedia.org/wiki/Breadth-first_search
-    
-    :param tree_root: The node to find the component of.
-    :type tree_root: int
-
-    :param graph: The graph that contains `node`
-    :type graph: `pygraph.classes.graph.graph`
-
-    :return: The set of nodes that are in the same component of `graph` as `tree_root`
-    :rtype: set of int
-    """
-
-    
-
-
 def get_discontinuous_components(graph):
     """Finds number of discontinuous components of a graph. Implements breadth-first search algorithm.
 
