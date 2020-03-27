@@ -30,33 +30,35 @@ def _create_community(graph, group_size, group):
     # Precincts that can be added without separating the graph.
     eligible_precincts = set()
     for node in graph_nodes:
-        eligibility_conditions = [
-            node not in group,
-            len(get_discontinuous_components(graph)) == len(group) + 1
-        ]
-        if all(eligibility_conditions):
+
+        if node in group:
+            continue
+
+        # This is temporary.
+        # Just to see if removing this precinct would make an island.
+        removed_edges = remove_edges_to(node, graph)
+        if get_discontinuous_components(graph) == len(group) + 1:
             # Logic for second condition:
             # Each time a precinct is added to the group,
             # it is completely disconnected from the graph.
             # This means that the number of components should always be
             # the number of precincts in the group + 1.
             eligible_precincts.add(node)
+        for edge in removed_edges:
+            graph.add_edge(edge)
     
     tried_precincts = set()
-    while True:
-        try:
-            selected_precinct = min(
-                eligible_precincts - tried_precincts
-            )
-        except ValueError:
-            # All eligible precincts have been tried.
-            return
+    # While not all eligible precincts have been tried.
+    while tried_precincts != eligible_precincts:
+        selected_precinct = min(
+            eligible_precincts - tried_precincts
+        )
         
-        group.append(selected_precinct)
+        group.add(selected_precinct)
         removed_edges = remove_edges_to(selected_precinct, graph)
         if len(group) == group_size:
             raise CommunityCompleteException
-        _create_community(graph)
+        _create_community(graph, group_size, group)
         # Above call didn't raise error, so the algorithm has
         # backtracked and the value at this step needs to be changed.
 
@@ -65,6 +67,9 @@ def _create_community(graph, group_size, group):
             graph.add_edge(edge)
         group.remove(selected_precinct)
         tried_precincts.add(selected_precinct)
+
+    # Backtrack (goes back down ot lower levels of recursion):
+    return
 
 
 
@@ -96,7 +101,10 @@ def create_initial_configuration(precinct_graph, precincts, n_communities):
     tmp_graph = deepcopy(precinct_graph)
     for community_node_group, community_size in zip(community_node_groups[:-1],
                                                     community_sizes[:-1]):
-        _create_community(tmp_graph, community_size, community_node_group)
+        try:
+            _create_community(tmp_graph, community_size, community_node_group)
+        except CommunityCompleteException:
+            pass
         for node in community_node_group:
             tmp_graph.del_node(node)
     
