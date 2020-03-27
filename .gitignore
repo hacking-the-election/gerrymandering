@@ -13,6 +13,7 @@ hacking_the_election.egg-info
 **/*partisanship.pickle
 **/*population.pickle
 tmp*
+python/notebooks/.ipynb_checkpoints
 
 
 # sphinx documentation
@@ -30,7 +31,3 @@ cpp/test/test
 cpp/lib/clipper/
 cpp/test_data/
 *.o
-
-
-# notebooks
-notebooks/.ipynb_checkpoints

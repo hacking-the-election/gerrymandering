@@ -6,7 +6,10 @@ from copy import deepcopy
 
 from hacking_the_election.utils.community import Community
 from hacking_the_election.utils.exceptions import CommunityCompleteException
-from hacking_the_election.utils.graph import get_discontinuous_components, remove_edges_to
+from hacking_the_election.utils.graph import (
+    get_discontinuous_components,
+    remove_edges_to
+)
 
 
 def _create_community(graph, group_size, group):
