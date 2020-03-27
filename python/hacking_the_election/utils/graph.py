@@ -3,30 +3,18 @@ Graph theory related functions and classes.
 """
 
 
-import random
-from copy import deepcopy
-
-
-def remove_all_edges(node, graph):
-    """Removes all edges connected to a node. 
+def remove_edges_to(node, graph):
+    """Removes all edges connected to a node. In-place on a graph.
 
     :param node: The node to remove the edges from.
     :type node: int
 
     :param graph: The graph that contains `node`
     :type graph: `pygraph.classes.graph.graph`
-
-    :return: Graph with all edges connected to `node` removed.
-    :rtype: `pygraph.classes.graph.graph`
     """
-
-    edges_removed_graph = deepcopy(graph)
-
-    for edge in edges_removed_graph.edges():
+    for edge in graph.edges():
         if node in edge:
-            edges_removed_graph.del_edge(edge)
-
-    return edges_removed_graph
+            graph.del_edge(edge)
 
 
 def get_discontinuous_components(graph):
@@ -48,7 +36,7 @@ def get_discontinuous_components(graph):
 
     # While not all nodes have been discovered.
     while discovered_nodes != graph_nodes:
-        start_v = random.sample(graph_nodes -  discovered_nodes, 1)[0]
+        start_v = min(graph_nodes -  discovered_nodes, 1)
 
         # Search all nodes in `start_v`'s component.
         queue = []
