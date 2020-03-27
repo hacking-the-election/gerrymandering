@@ -107,9 +107,8 @@ def create_initial_configuration(precinct_graph, precincts, n_communities):
     # The final output list of `Community` objects.
     communities = []
     for i, community_node_group in enumerate(community_node_groups):
-        community_precincts = []
+        community = Community(i)
         for node in community_node_group:
-            community_precincts.append(precinct_graph.node_attributes(node)[0])
-        communities.append(Community(community_precincts, i))
+            community.take_precinct(precinct_graph.node_attributes(node)[0])
 
     return communities
