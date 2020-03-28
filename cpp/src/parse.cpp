@@ -679,18 +679,30 @@ GeoGerry::Graph generate_graph(GeoGerry::Precinct_Group pg) {
     GeoGerry::Graph graph;
 
     for (int i = 0; i < pg.precincts.size(); i++) {
+        std::cout << "on precinct " << i << std::endl;
         graph.vertices.push_back(i);
-        GeoGerry::p_index_set precincts = get_bordering_precincts(pg, i);
+        GeoGerry::p_index_set precincts = {};
+
+        for (int j = i + 1; j < pg.precincts.size(); j++) {
+            if (get_bordering(pg.precincts[i], pg.precincts[j])) {
+                precincts.push_back(j);
+            }
+        }
 
         for (GeoGerry::p_index border : precincts) {
             GeoGerry::p_index higher = (border > i) ? border : i;
             GeoGerry::p_index lower = (border <= i) ? border : i;
             std::array<int, 2> edge = {higher, lower};
 
-            if (std::find(graph.edges.begin(), graph.edges.end(), edge) == graph.edges.end())
+            if (!(std::find(graph.edges.begin(), graph.edges.end(), edge) != graph.edges.end())) {
                 graph.edges.push_back(edge);
+                // std::cout << edge[0] << ", " << edge[1] << std::endl;
+            }
         }
     }
+
+    std::cout << graph.edges.size() << ", " << graph.vertices.size() << std::endl;
+    return graph;
 }
 
 
@@ -792,258 +804,12 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
     State state = State(district_shapes, pre_group.precincts, state_shape_v);
     Multi_Polygon sborder = generate_exterior_border(state);
     state.border = sborder.border;
-    std::cout << sborder.border.size() << std::endl;
+    // std::cout << sborder.border.size() << std::endl;
 
     // sort files into
-    if (VERBOSE) std::cout << "sorting precincts into islands from exterior state border..." << std::endl;
-    state.islands = sort_precincts(sborder, pre_group);
+    // if (VERBOSE) std::cout << "sorting precincts into islands from exterior state border..." << std::endl;
+    // state.islands = sort_precincts(sborder, pre_group);
     if (VERBOSE) std::cout << "state serialized!" << std::endl;
 
     return state; // return the state object
-}
-
-
-/*
-    Write and read state file to and from binary
-
-    Any instance of & operator is overloaded for 
-    reading and writing, to avoid duplicate methods
-    (see boost documentation for more information)
-*/
-
-void GeoGerry::State::write_binary(std::string path) {
-    std::ofstream ofs(path); // open output stream
-    boost::archive::binary_oarchive oa(ofs); // open archive stream
-    oa << *this; // put this pointer into stream
-    ofs.close(); // close stream
-}
-
-
-GeoGerry::State GeoGerry::State::read_binary(std::string path) {
-    GeoGerry::State state = GeoGerry::State(); // blank state object
-
-    std::ifstream ifs(path); // open input stream
-    boost::archive::binary_iarchive ia(ifs); // open archive stream
-    ia >> state; // read into state object
-
-    return state; // return state object
-}
-
-
-// void GeoGerry::Precinct_Group::write_binary(std::string path) {
-//     std::ofstream ofs(path); // open output stream
-//     boost::archive::binary_oarchive oa(ofs); // open archive stream
-//     oa << *this; // put this pointer into stream
-//     ofs.close(); // close stream
-// }
-
-
-// GeoGerry::Precinct_Group GeoGerry::Precinct_Group::read_binary(std::string path) {
-//     GeoGerry::Precinct_Group pg = GeoGerry::Precinct_Group(); // blank object
-//     std::ifstream ifs(path); // open input stream
-//     boost::archive::binary_iarchive ia(ifs); // open archive stream
-//     ia >> pg;
-//     return pg; // return precinct group object
-// }
-
-
-template<class Archive> void GeoGerry::LinearRing::serialize(Archive & ar, const unsigned int version) {
-    ar & border;
-}
-
-
-template<class Archive> void GeoGerry::State::serialize(Archive & ar, const unsigned int version) {
-    // write districts, precincts, name, and border
-    ar & state_districts;
-    ar & precincts;
-    ar & islands;
-    ar & name;
-    ar & border;
-    ar & pop;
-}
-
-
-template<class Archive> void GeoGerry::Multi_Polygon::serialize(Archive & ar, const unsigned int version) {
-    ar & border;
-    ar & shape_id;
-    ar & pop;
-}
-
-/*
-    The following are serialization methods written
-    to make sure that each sub-nested shape is actually
-    written to the binary file
-
-    ! this could probably be better structured
-    TODO: Make sure that this actually is necessary
-*/
-
-template<class Archive> void GeoGerry::Precinct_Group::serialize(Archive & ar, const unsigned int version) {
-    // push id and border into the archive stream
-    ar & id;
-    ar & border;
-    ar & pop;
-    // ar & precincts;
-}
-
-
-template<class Archive> void GeoGerry::Precinct::serialize(Archive & ar, const unsigned int version) {
-    // push shape, border and vote data
-    ar & shape_id;
-    ar & hull;
-    ar & holes;
-    ar & dem;            
-    ar & rep;
-    ar & pop;
-}
-
-
-template<class Archive> void GeoGerry::Polygon::serialize(Archive & ar, const unsigned int version) {
-    // push shape id and border to archive streamm
-    ar & shape_id;
-    ar & hull;
-    ar & holes;
-    ar & pop;
-}
-
-
-void GeoGerry::State::save_communities(std::string write_path, Communities communities) {
-    /*
-        Saves a community to a file at a specific point in the
-        pipeline. Useful for visualization and checks.
-
-        Save structure is as follows:
-            write_path/
-                community_1
-                ...
-                community_n
-    */
-
-    int c_index = 0;
-    std::string file = "";
-
-    for (Community c : communities) {
-        file += c.save_frame() + "\n";
-        c_index++;
-    }
-
-    writef(file, write_path);
-}
-
-
-void GeoGerry::State::read_communities(std::string read_path) {
-    this->state_communities = Community::load_frame(read_path, *this);
-    for (int i = 0; i < state_communities.size(); i++)
-        state_communities[i].border = generate_exterior_border(state_communities[i]).border;
-
-    return;
-}
-
-
-void GeoGerry::State::playback_communities(std::string read_path) {
-    GeoDraw::Anim animation(150);
-
-    fs::path p(read_path);
-    std::vector<fs::directory_entry> v;
-
-    if (fs::is_directory(p)) {
-        std::copy(fs::directory_iterator(p), fs::directory_iterator(), std::back_inserter(v));
-        for (std::vector<fs::directory_entry>::const_iterator it = v.begin(); it != v.end();  ++ it ){
-            GeoDraw::Canvas canvas(900, 900);
-            Communities cs = Community::load_frame((*it).path().string(), *this);
-            for (Community c : cs)
-                canvas.add_shape(generate_exterior_border(c));
-            animation.frames.push_back(canvas);
-        }
-    }
-
-    animation.playback();
-    
-    return;
-}
-
-
-std::string geojson_header = "{\"type\": \"FeatureCollection\", \"features\":[";
-
-
-std::string GeoGerry::LinearRing::to_json() {
-    /*
-        @desc: converts a linear ring into a json array of coords
-        @params: none
-        @return: `string` json array
-    */
-
-    std::string str = "[";
-    for (GeoGerry::coordinate c : border)
-        str += "[" + std::to_string(c[0]) + ", " + std::to_string(c[1]) + "],";
-
-    str = str.substr(0, str.size() - 1);
-    str += "]";
-
-    return str;
-}
-
-
-std::string GeoGerry::Precinct_Group::to_json() {
-    /*
-        @desc:
-            converts a Precinct_Group object into a geojson document
-            for viewing in mapshaper or elsewhere
-
-        @params: none
-        @return: `string` json array
-    */
-
-    std::string str = geojson_header;
-    
-    for (GeoGerry::Precinct p : precincts) {
-        str += "{\"type\":\"Feature\",\"geometry\":{\"type\":\"Polygon\",\"coordinates\":[";
-        str += p.hull.to_json();
-        for (GeoGerry::LinearRing hole : p.holes)
-            str += "," + hole.to_json();
-        str += "]}},";
-    }
-
-    str = str.substr(0, str.size() - 1); // remove comma
-    str += "]}";
-    return str;
-}
-
-
-std::string GeoGerry::Polygon::to_json() {
-    /*
-        @desc: Converts a normal shape object into geojson
-        @params: none
-        @return: `string` geojson object
-    */
-
-    std::string str = geojson_header;
-    str += hull.to_json();
-    str += "]}}";
-
-    return str;
-}
-
-
-std::string GeoGerry::Multi_Polygon::to_json() {
-    /*
-        @desc: Converts a multiple shape object into geojson
-        @params: none
-        @return: `string` geojson object
-    */
-
-    std::string str = geojson_header + "{\"type\":\"Feature\",\"geometry\":{\"type\":\"MultiPolygon\",\"coordinates\":[";
-    for (Polygon s : border) {
-        str += "[";
-        str += s.hull.to_json();
-        for (LinearRing h : s.holes) {
-            str += h.to_json();
-        }
-        str += "],";
-    }
-    
-    str = str.substr(0, str.size() - 1);
-    str += "]}}";
-
-    return str;
 }
