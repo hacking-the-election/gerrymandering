@@ -100,7 +100,7 @@ def create_graph(election_file, geo_file, pop_file, state):
     precinct_election_data = {}
     # If election data in geodata file...
     if election_file == "none":
-        seperate_election_data = "no"
+        seperate_election_data = False
         # Fill precinct_election_data
         for precinct in geodata["features"]:
             properties = precinct["properties"]
@@ -111,7 +111,7 @@ def create_graph(election_file, geo_file, pop_file, state):
             ]
     # If there is an election data file...
     else:
-        seperate_election_data = "yes"
+        seperate_election_data = True
         # If the election data file is a .json file
         if election_file[-4:] == ".json":
              # Fill precinct_election_data
@@ -159,10 +159,10 @@ def create_graph(election_file, geo_file, pop_file, state):
     pop = {}
     if popdata:
         if pop_file[-4:] == ".json":
-            for precinct2 in popdata["features"]:
-                properties2 = precinct2["properties"]
-                precinct_id2 = "".join(properties2[json_id] for json_id in json_ids)
-                pop[precinct_id2] = sum([properties2[key] for key in json_pops])
+            for pop_precinct in popdata["features"]:
+                pop_properties = pop_precinct["properties"]
+                pop_precinct_id = "".join(pop_properties[json_id] for json_id in json_ids)
+                pop[pop_precinct_id] = sum([pop_properties[key] for key in json_pops])
         # individual conditionals for states
         else:
             raise AttributeError
@@ -175,16 +175,15 @@ def create_graph(election_file, geo_file, pop_file, state):
             pop_col_indices = [i for i, header in enumerate(election_data[0]) if header in json_pops]
             # find which indexes have population data
             for row in election_data[1:]:
-                precinct_id3 = row[ele_id_col_index]
+                pop_precinct_id = row[ele_id_col_index]
                 precinct_populations = [row[i] for i in pop_col_indices]
-                pop[precinct_id3] = sum(precinct_populations)
+                pop[pop_precinct_id] = sum(precinct_populations)
         else:
             # population is in geodata
-            for precinct3 in geodata["features"]:
-                
-                properties3 = precinct3["properties"]
-                precinct_id4 = "".join(properties3[json_id] for json_id in json_ids)
-                precinct_populations = [properties3[key] for key in json_pops]
+            for geodata_pop_precinct in geodata["features"]:
+                geodata_pop_properties = geodata_pop_precinct["properties"]
+                geodata_pop_precinct_id = "".join(geodata_pop_properties[json_id] for json_id in json_ids)
+                precinct_populations = [geodata_pop_properties[key] for key in json_pops]
                 pop[precinct_id4] = sum(precinct_populations)
 
 
