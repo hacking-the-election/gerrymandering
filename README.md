@@ -42,10 +42,19 @@ make all
   
 ## Python
 
+*This code will only work with a python version >=3.8.0*
+
 ### Installation
-```python
-pip do some magic
+```bash
+git clone "https://github.com/hacking-the-election/gerrymandering"
+cd gerrymandering/python
+pip install -e .
 ```
+
+If you would like to install without pip, you likely know what you're doing.
+All dependencies are listed in `python/requirements.txt`
+
+This package will be availalbe on PyPI sometime in the future.
 
 ### OS Compatability
 - Any software written in Python will be Windows and macOS compatible.
