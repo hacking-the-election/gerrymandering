@@ -10,7 +10,7 @@ int main() {
     
     Anim animation(80);
     for (int i = 4; i < 45; i++) {
-        Shape s = generate_gon({0,0}, 1000, i);
+        Polygon s = generate_gon({0,0}, 1000, i);
         Canvas canvas(800, 800);
         canvas.add_shape(s);
         animation.frames.push_back(canvas);

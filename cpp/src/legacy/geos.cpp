@@ -4,7 +4,7 @@
  
  For conversion of types into the GEOS
  (Geometry Engine, Open Source) library.
- Since the python library Shapely is built
+ Since the python library Polygonly is built
  on top of this, it may become useful for
  faster unions, and other clipping.
 ========================================*/
@@ -20,7 +20,7 @@ using namespace geos::operation;
 #include "../../include/geometry.hpp"
 #include "../../include/shape.hpp"   // class definitions
 
-Multi_Shape generate_exterior_border(Precinct_Group precinct_group) {
+Multi_Polygon generate_exterior_border(Precinct_Group precinct_group) {
     /*
         Get the exterior border of a shape with interior components.
         Equivalent to 'dissolve' in mapshaper - remove bordering edges
@@ -36,7 +36,7 @@ Multi_Shape generate_exterior_border(Precinct_Group precinct_group) {
     MultiPolygon* polys = newFactory->createMultiPolygon(geoms);
     unique_ptr<Geometry> u = polys->getBoundary();//geounion::UnaryUnionOp::Union(polys);
 
-    Multi_Shape border;
+    Multi_Polygon border;
     for (int i = 0; i < u->getNumGeometries(); i++) {
         const Geometry* geo = u->getGeometryN(i);
         border.border.push_back(poly_to_shape(geo));
@@ -66,10 +66,10 @@ Point* create_point(double x, double y) {
     return p;
 }
 
-Geometry* shape_to_poly(Shape shape) {
+Geometry* shape_to_poly(Polygon shape) {
     /*
         Creates a GEOS library polygon object from a
-        given Shape object by looping through points
+        given Polygon object by looping through points
     */
    cout << "b" << endl;
 
@@ -87,13 +87,13 @@ Geometry* shape_to_poly(Shape shape) {
     return poly;
 }
 
-Shape poly_to_shape(const Geometry* path) {
+Polygon poly_to_shape(const Geometry* path) {
     /*
         Creates a shape object from a clipper Path
         object by looping through points
     */
 
-    Shape s;
+    Polygon s;
     
     // write coordinates in path to vector of Coordinates
     std::unique_ptr <CoordinateSequence> points = path->getCoordinates();
@@ -108,13 +108,13 @@ Shape poly_to_shape(const Geometry* path) {
     return s;
 }
 
-Multi_Shape* multipoly_to_shape(MultiPolygon* paths) {
+Multi_Polygon* multipoly_to_shape(MultiPolygon* paths) {
     /*
-        Create a Multi_Shape object from a clipper Paths
+        Create a Multi_Polygon object from a clipper Paths
         (multi path) object through nested iteration
     */
 
-    Multi_Shape* ms;
+    Multi_Polygon* ms;
     
     return ms;
 }

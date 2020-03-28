@@ -1,19 +1,36 @@
 # TODO
-For the list of everything C++ related I need to do right now.
 
-## Serializing
-- Don't fix district inheritance issue until after serializing (make district a `Shape`, not `Precinct_Group`).
-- Use better structure with `Multi_Polygon` class
-- Finish serializing files:
-    - [ ] Look into voter registration format, add parsing function
+The list of everything C++ related that needs to get done.
 
-## Communities Algorithm
+## Long Term
+- Serialize all files
+- Real time visualization
+- Fully completed canvas class
+- Unit tests for geometry
+- Documentation
 
-- Add `save_output` function for each step for previews and visualization
+## Serialization
+- Make `Graph` by finding vertices and edges
+- `Community` should be a child of `Graph` where nodes have id's and pop/voter info
+- Finish parsing files:
+    - Look into voter registration format, add parsing function
+    - Finish `build_data.list` for automation, finish `build_data.sh`
 
-### Geometric Todo:
-- Fix outer shell algorithm
-- Base `boundary_precincts` off of outer shell algorithm
+### Graphics
+- Speed up fill algorithm
+- Add graph visualization
+- Export as `png`, `svg`, `mp4`
 
-### Random Generation
-- Add body for `get_addable_precinct` - implementation of step 1 precinct iteration
+### Scripts
+- [ ] Add `draw_communities` with arguments for animation, random fill color
+
+
+### Algorithm
+- #### Communities
+    - Better structure for execution
+    - New initial config implementation with backtracing
+    - Update refinement processes
+
+- #### Quantification
+    - Update to use population weighted by area
+    - Something else

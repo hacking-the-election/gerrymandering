@@ -3,6 +3,8 @@ Various useful geometric functions.
 """
 
 
+import math
+
 from shapely.geometry import (
     LinearRing,
     MultiPolygon,
@@ -97,3 +99,21 @@ def get_if_bordering(shape1, shape2, inside=False):
         # Polygon, but they may still be intersecting.
         # return isinstance(clip([shape1, shape2], UNION), Polygon)
         return isinstance(shape1.intersection(shape2), MultiLineString)
+
+
+def get_compactness(polygon):
+    """Calculates the Schwartzberg compactness score for a polygon
+
+    Formula obtained from here: https://fisherzachary.github.io/public/r-output.html
+
+    :param polygon: Polygon to find compactness of.
+    :type polygon: `shapely.geometry.Polygon`
+
+    :return: Schwartberg compactness of `polygon`.
+    :rtype: float
+    """
+
+    area = polygon.area
+    circumeference = 2 * math.pi * math.sqrt(area / math.pi)
+    perimeter = polygon.coords.length
+    return circumeference / perimeter

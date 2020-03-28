@@ -54,9 +54,11 @@ int GeoGerry::Precinct_Group::get_population() {
     return total;
 }
 
+
 void GeoGerry::Precinct_Group::add_precinct_n(Precinct pre) {
     precincts.push_back(pre);
 }
+
 
 void GeoGerry::Precinct_Group::remove_precinct(GeoGerry::Precinct pre) {
     /*
@@ -69,7 +71,7 @@ void GeoGerry::Precinct_Group::remove_precinct(GeoGerry::Precinct pre) {
         precincts.erase(std::remove(precincts.begin(), precincts.end(), pre), precincts.end());
 
         ClipperLib::Paths subj;
-        for (Shape shape : this->border)
+        for (Polygon shape : this->border)
             subj.push_back(ring_to_path(shape.hull));
 
         ClipperLib::Paths clip;
@@ -103,7 +105,7 @@ void GeoGerry::Precinct_Group::add_precinct(GeoGerry::Precinct pre) {
         border.push_back(pre.hull);
     else {
         ClipperLib::Paths subj;
-        for (Shape shape : border)
+        for (Polygon shape : border)
             subj.push_back(ring_to_path(shape.hull));
 
         ClipperLib::Paths clip;
@@ -178,34 +180,42 @@ GeoGerry::Communities GeoGerry::Community::load_frame(std::string read_path, Sta
     return cs;
 }
 
+
 bool GeoGerry::operator== (GeoGerry::LinearRing l1, GeoGerry::LinearRing l2) {
     return (l1.border == l2.border);
 }
+
 
 bool GeoGerry::operator!= (GeoGerry::LinearRing l1, GeoGerry::LinearRing l2) {
     return (l1.border != l2.border);
 }
 
-bool GeoGerry::operator== (GeoGerry::Shape p1, GeoGerry::Shape p2) {
+
+bool GeoGerry::operator== (GeoGerry::Polygon p1, GeoGerry::Polygon p2) {
     return (p1.hull == p2.hull && p1.holes == p2.holes);
 }
 
-bool GeoGerry::operator!= (GeoGerry::Shape p1, GeoGerry::Shape p2) {
+
+bool GeoGerry::operator!= (GeoGerry::Polygon p1, GeoGerry::Polygon p2) {
     return (p1.hull != p2.hull || p1.holes != p2.holes);
 }
+
 
 bool GeoGerry::operator== (GeoGerry::Precinct p1, GeoGerry::Precinct p2) {
     return (p1.hull == p2.hull && p1.holes == p2.holes && p1.dem == p2.dem && p1.rep == p2.rep && p1.pop == p2.pop);
 }
 
+
 bool GeoGerry::operator!= (GeoGerry::Precinct p1, GeoGerry::Precinct p2) {
     return (p1.hull != p2.hull || p1.holes != p2.holes || p1.dem != p2.dem || p1.rep != p2.rep || p1.pop != p2.pop);
 }
 
-bool GeoGerry::operator== (GeoGerry::Multi_Shape& s1, GeoGerry::Multi_Shape& s2) {
+
+bool GeoGerry::operator== (GeoGerry::Multi_Polygon& s1, GeoGerry::Multi_Polygon& s2) {
     return (s1.border == s2.border);
 }
 
-bool GeoGerry::operator!= (GeoGerry::Multi_Shape& s1, GeoGerry::Multi_Shape& s2) {
+
+bool GeoGerry::operator!= (GeoGerry::Multi_Polygon& s1, GeoGerry::Multi_Polygon& s2) {
     return (s1.border != s2.border);
 }
