@@ -260,8 +260,6 @@ GeoDraw::Pixel GeoDraw::Canvas::get_pixel(GeoGerry::coordinate c) {
 void GeoDraw::Canvas::flood_fill(GeoGerry::coordinate coord, Color c) {
     Color co = this->get_pixel(coord).color;
     this->flood_fill_util(coord, co, c);
-    std::cout << "z" << std::endl;
-
     return;
 }
 
@@ -343,6 +341,7 @@ void GeoDraw::Canvas::rasterize_edges() {
         }
     }
 }
+
 
 void GeoDraw::Canvas::rasterize_shapes() {
     /*
@@ -467,10 +466,20 @@ void GeoDraw::Anim::playback() {
     
     std::vector<Uint32*> backgrounds;
     for (Canvas c : frames) {
+        memset(c.background, 255, c.x * c.y * sizeof(Uint32));
         GeoGerry::bounding_box b = c.get_bounding_box();
         c.translate(-b[2], -b[1], true);
+
+        double ratio_top = ceil((double) c.box[0]) / (double) (c.x);   // the rounded ratio of top:top
+        double ratio_right = ceil((double) c.box[3]) / (double) (c.y); // the rounded ratio of side:side
+        double scale_factor = 1 / ((ratio_top > ratio_right) ? ratio_top : ratio_right); 
+        c.scale(scale_factor * PADDING);
+
+        int px = (int)((double)c.x * (1.0-PADDING) / 2.0), py = (int)((double)c.y * (1.0-PADDING) / 2.0);
+        c.translate(px, py, false);
         c.rasterize_shapes();
         backgrounds.push_back(c.background);
+
     }
 
     Uint32* background = new Uint32[frames[0].x * frames[0].y];
