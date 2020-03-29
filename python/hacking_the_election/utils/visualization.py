@@ -13,7 +13,7 @@ def modify_coords(coords, bounds):
     :param coords: The points to squish.
     :type coords: list of (2-list of float or shapely.geometry.Point)
 
-    :param bounds: The box in which the inputted coords must be squished into. In format `[min_x, min_y, max_x, max_y]`
+    :param bounds: The box in which the inputted coords must be squished into. In format `[max_x, max_y]` (mins are 0).
     :type bounds: list of float
 
     :return: A list of coords that are squished into the bounds.
@@ -33,24 +33,22 @@ def modify_coords(coords, bounds):
         X.append(point[0])
         Y.append(point[1])
 
-    # Dilate
-    bigger_ratio = "X" if (abs(1 - (bounds[2] / max(X)))
-                       > abs(1 - (bounds[3] / max(Y)))) else "Y"
-    farthest_bound = bounds[2] if bigger_ratio == "X" else bounds[3]
-    dilation_factor = (min(eval(bigger_ratio)) + farthest_bound) \
-                    / max(eval(bigger_ratio))
-    for point in coords:
-        for i in range(len(point)):
-            point[i] *= dilation_factor
-    
-    for p, point in enumerate(coords):
-        X[p] = point[0]
-        Y[p] = point[1]
-
     # Translate
-    translation_vector = (bounds[0] - min(X), bounds[1] - min(Y))
+    min_x = min(X)
+    min_y = min(Y)
+    for p, point in enumerate(coords):
+        new_x = point[0] - min_x - (0.01 * bounds[1])
+        new_y = point[1] - min_y - (0.01 * bounds[1])
+
+    # Dilate
+    dilation_factor = max((0.99 * bounds[0]) / max(X),
+                          (0.99 * bounds[1]) / max(Y))
     for point in coords:
-        point[0] -= translation_vector[0]
-        point[1] -= translation_vector[1]
+        for c, coord in enumerate(point):
+            point[c] *= dilation_factor
+
+    # Reflect
+    for point in coords:
+        point[1] = bounds[1] - point[1]
 
     return coords

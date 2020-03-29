@@ -33,13 +33,29 @@ def visualize_graph(graph, output_path, coords, colors=None):
     graph_nodes = graph.nodes()
 
     modified_coords = modify_coords(
-        [coords(node) for node in graph_nodes], [0, 0, 1000, 1000]
+        [coords(node) for node in graph_nodes], [1000, 1000]
     )
-    if colors:
+    node_coords = {node: point for node, point
+                   in zip(graph_nodes, modified_coords)}
+    if colors is not None:
         node_colors = [colors(node) for node in graph_nodes]
+    else:
+        node_colors = [(0, 0, 0) for _ in graph_nodes]
 
-    for center, node in zip(modified_coords, graph_nodes):
-        pass
+    for center, node, color in zip(modified_coords, graph_nodes, node_colors):
+        draw.ellipse(
+            [(center[0] - 1, center[1] - 1),
+             (center[0] + 1, center[1] + 1)],
+            fill=color
+        )
+
+        for neighbor in graph.neighbors(node):
+            draw.line(
+                [tuple(center),
+                 tuple(node_coords[neighbor])],
+                fill=(0, 0, 0),
+                width=1
+        )
 
     graph_image.save(output_path)
 
@@ -52,4 +68,4 @@ if __name__ == "__main__":
     with open(sys.argv[1], "rb") as f:
         graph = pickle.load(f)
 
-    visualize_graph(graph, sys.argv[2], lambda node: graph.node_attributes(node).centroid)
+    visualize_graph(graph, sys.argv[2], lambda node: graph.node_attributes(node)[0].centroid)
