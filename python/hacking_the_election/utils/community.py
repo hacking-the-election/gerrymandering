@@ -72,7 +72,7 @@ class Community:
 
         if "coords" in update:
             self.coords = unary_union([self.coords, precinct.coords])
-        update.remove("coords")
+            update.remove("coords")
         for attr in update:
             try:
                 exec(f"self.update_{attr}()")
@@ -101,7 +101,7 @@ class Community:
 
         if "coords" in update:
             self.coords = self.coords.difference(precinct.coords)
-        update.remove("coords")
+            update.remove("coords")
         for attr in update:
             try:
                 exec(f"self.update_{attr}()")
