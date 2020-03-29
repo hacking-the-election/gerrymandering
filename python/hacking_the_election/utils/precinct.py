@@ -27,7 +27,7 @@ class Precinct:
     :type geoid: str
     """
 
-    def __init__(self, rep_data, dem_data, pop, coords, geoid):
+    def __init__(self, rep_data, dem_data, pop, coords, state, precinct_id):
 
         self.rep_data = rep_data
         self.dem_data = dem_data
@@ -45,6 +45,7 @@ class Precinct:
         self.coords = coords
         # centroid will be in list form, i.e. [35.274923, 71.47102]
         self.centroid = list(self.coords.centroid.coords[0])
-        self.id = geoid
-
+        self.state = state
+        self.id = precinct_id
+        # used for data visualization
         self.community = None

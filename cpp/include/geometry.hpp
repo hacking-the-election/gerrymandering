@@ -12,15 +12,13 @@
 
 #define PI 3.14159265358979323846264338327950288
 
+enum clip_type {UNION, INTERSECTION, DIFFERENCE, XOR};
+
 GeoGerry::segment coords_to_seg(GeoGerry::coordinate c1, GeoGerry::coordinate c2);
 
 double get_distance(GeoGerry::coordinate c1, GeoGerry::coordinate c2);
 double get_distance(std::array<long long int, 2> c1, std::array<long long int, 2> c2);
 double get_distance(GeoGerry::segment s);
-
-// coordinate manipulation for gui draw methods
-GeoGerry::bounding_box normalize_coordinates(GeoGerry::Polygon* shape);
-GeoGerry::coordinate_set resize_coordinates(GeoGerry::bounding_box box, GeoGerry::coordinate_set shape, int screenX, int screenY);
 
 // get outside border from a group of precincts
 GeoGerry::Multi_Polygon generate_exterior_border(GeoGerry::Precinct_Group p);

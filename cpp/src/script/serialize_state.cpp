@@ -10,6 +10,7 @@
  - election data from harvard dataverse
 ========================================*/
 
+#include <iostream>
 #include "../../include/shape.hpp"
 #include "../../include/canvas.hpp"
 #include "../../include/util.hpp"
@@ -108,7 +109,7 @@ int main(int argc, char* argv[]) {
     state.write_binary(write_path);  // write as binary
     
     cout << "precincts:\t" << state.precincts.size() << endl;
-    cout << "districts:\t" << state.state_districts.size() << endl;
+    cout << "districts:\t" << state.districts.size() << endl;
 
     int dem = 0, rep = 0, pop = 0;
 

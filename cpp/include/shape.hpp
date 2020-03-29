@@ -303,9 +303,14 @@ class Precinct_Group : public Multi_Polygon {
     public:
         std::vector<Precinct> precincts;  // array of precinct objects
 
-        virtual void add_precinct(Precinct pre);
         virtual void remove_precinct(Precinct pre);
+        virtual void remove_precinct_n(Precinct pre);
+        virtual void remove_precinct(p_index pre);
+        virtual void remove_precinct_n(p_index pre);
+
+        virtual void add_precinct(Precinct pre);
         virtual void add_precinct_n(Precinct pre);
+        
 
         Precinct_Group(){};
         Precinct_Group(std::vector<Polygon> shapes)
@@ -318,8 +323,6 @@ class Precinct_Group : public Multi_Polygon {
         double get_ratio();
         std::string to_json();
         int get_population();
-
-        Graph network;
 
         // for boost serialization
         friend class boost::serialization::access;
@@ -348,7 +351,6 @@ class Community : public Precinct_Group {
         static Communities load_frame(std::string read_path, State precinct_list);
 };
 
-
 class State : public Precinct_Group {
     /*
         Derived shape class for defining a state.
@@ -357,18 +359,15 @@ class State : public Precinct_Group {
         Contains methods for generating from binary files
         or from raw data with proper district + precinct data
         and serialization methods for binary and json.
-        
-        This is where the algorithmic methods are defined,
-        for communities and for quantification
     */
 
     public:
 
         State(){}; // default constructor
 
-        State(std::vector<Multi_Polygon> districts, std::vector<Precinct> state_precincts, std::vector<Polygon> shapes) : Precinct_Group(shapes) {
+        State(std::vector<Multi_Polygon> t_districts, std::vector<Precinct> state_precincts, std::vector<Polygon> shapes) : Precinct_Group(shapes) {
             // simple assignment constructor
-            state_districts = districts;
+            districts = t_districts;
             precincts = state_precincts;
         };
 
@@ -376,46 +375,14 @@ class State : public Precinct_Group {
         static State generate_from_file(std::string precinct_geoJSON, std::string voter_data, std::string district_geoJSON, std::vector<std::vector<std::string> >);
         static State generate_from_file(std::string precinct_geoJSON, std::string district_geoJSON, std::vector<std::vector<std::string> > opts);
 
+        Graph network;
+        std::string name = "no_name";
+        std::vector<Multi_Polygon> districts;
+
         // serialize and read to and from binary, json
         void write_binary(std::string path);
         static State read_binary(std::string path);
-
-        // for boost serialization
         friend class boost::serialization::access;
         template<class Archive> void serialize(Archive & ar, const unsigned int version);
-
-        // for the community generation algorithm
-        void generate_communities(int num_communities, double compactness_tolerance, double partisanship_tolerance, double population_tolerance, std::string writedir);
-        bool give_precinct(p_index precinct, p_index community, int t_type, bool animate);
-        bool give_precinct(p_index precinct, p_index community, p_index give_community, bool animate, bool p);
-
-        // initial random configuration of communities
-        void generate_initial_communities(int num_communities);
-
-        // for the iterative methods
-        void save_iteration_data(Communities cs, std::string folder, int iteration);
-        void refine_compactness(double compactness_tolerance);
-        p_index get_next_community(double compactness_tolerance, int process);
-        void refine_partisan(double partisanship_tolerance);
-        void refine_population(double population_tolerance);
-        void refine_communities(double part, double popt, double compt, std::string write_dir);
-
-        // return precinct that can be added to the current precinct that won't create islands in the state
-        p_index get_addable_precinct(p_index_set available_precincts, p_index current_precinct);
-        std::vector<unit_interval> quantify_gerrymandering(std::vector<Multi_Polygon> districts, Communities base_communities);
-
-        // write out communities at a certain point in time
-        void save_communities(std::string write_path, Communities communities);
-        void read_communities(std::string write_path);
-        void playback_communities(std::string read_path);
-
-        // name of state
-        std::string name = "no_name";
-
-        std::vector<p_index_set> islands; // defines which precincts align to which islands
-
-        // arrays of shapes in state
-        std::vector<Multi_Polygon> state_districts;
-        Communities state_communities;
 };
 }

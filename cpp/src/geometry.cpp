@@ -465,7 +465,7 @@ bool get_bordering(Polygon s0, Polygon s1) {
     // execute union on paths array
     c.AddPaths(subj, ClipperLib::ptSubject, true);
     c.AddPaths(clip, ClipperLib::ptClip, true);
-    c.Execute(ClipperLib::ctUnion, solutions, ClipperLib::pftPositive);
+    c.Execute(ClipperLib::ctUnion, solutions, ClipperLib::pftNonZero);
 
     Multi_Polygon ms = paths_to_multi_shape(solutions);
     return (ms.border.size() == 1);
