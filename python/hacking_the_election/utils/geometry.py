@@ -78,7 +78,7 @@ def get_if_bordering(shape1, shape2, inside=False):
     else:
         # Doesn't work if one shape is inside the other because it'll
         # always return false because their intersection would be a
-        # Polygon, but they may still be intersecting.
+        # Polygon, but they may still be bordering.
         # return isinstance(clip([shape1, shape2], UNION), Polygon)
         return isinstance(shape1.intersection(shape2), MultiLineString)
 

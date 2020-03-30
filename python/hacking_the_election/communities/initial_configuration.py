@@ -91,8 +91,10 @@ def create_initial_configuration(precinct_graph, precincts, n_communities):
     
     # Nothing having to do with islands is required here,
     # since that is taken care of in the creation of hte graph.
-    community_sizes = (len(precincts) // n_communities) \
-                    + (len(precincts) % n_communities)
+    s = len(precincts) // n_communities
+    community_sizes = [s for _ in range(n_communities)]
+    for i in range(len(precincts) % n_communities):
+        community_sizes[i] += 1
 
     # Sets of node identifiers for each community
     community_node_groups = [set() for _ in range(n_communities)]
@@ -118,5 +120,6 @@ def create_initial_configuration(precinct_graph, precincts, n_communities):
         community = Community(i)
         for node in community_node_group:
             community.take_precinct(precinct_graph.node_attributes(node)[0])
+        communities.append(community)
 
     return communities

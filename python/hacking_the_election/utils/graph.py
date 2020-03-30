@@ -15,8 +15,11 @@ def remove_edges_to(node, graph):
     removed_edges = []
     for edge in graph.edges():
         if node in edge:
-            removed_edges.append(edge)
-            graph.del_edge(edge)
+            try:
+                graph.del_edge(edge)
+                removed_edges.append(edge)
+            except ValueError:
+                pass
     return removed_edges
 
 
@@ -39,7 +42,7 @@ def get_discontinuous_components(graph):
 
     # While not all nodes have been discovered.
     while discovered_nodes != graph_nodes:
-        start_v = min(graph_nodes -  discovered_nodes, 1)
+        start_v = min(graph_nodes -  discovered_nodes)
 
         # Search all nodes in `start_v`'s component.
         queue = []
