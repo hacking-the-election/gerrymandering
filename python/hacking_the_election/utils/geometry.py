@@ -13,28 +13,6 @@ from shapely.geometry import (
 )
 
 
-def _list_to_polygon(polygon_list):
-    """
-    Takes a polygon in geojson format and returns
-    shapely.geometry.Polygon object.
-    """
-
-    # Change coordinates to tuples.
-    polygon_list = [[tuple(coord) for coord in linear_ring]
-                    for linear_ring in polygon_list]
-    return Polygon(polygon_list[0], polygon_list[1:])
-
-
-def _list_to_multipolygon(multipolygon_list):
-    """
-    Takes a mulyipolygon in geojson format and returns
-    shapely.geometry.MultiPolygon object.
-    """
-
-    polygons = [_list_to_polygon(polygon) for polygon in multipolygon_list]
-    return MultiPolygon(polygons)
-
-
 def geojson_to_shapely(geojson):
     """Takes shape in geojson format and returns shapely object.
 
@@ -46,9 +24,13 @@ def geojson_to_shapely(geojson):
     """
 
     if isinstance(geojson[0][0][0], list):
-        return _list_to_multipolygon(geojson)
+        polygons = [[[tuple(coord) for coord in linear_ring]
+                         for linear_ring in polygon] for polygon in multipolygon_list]
+        return MultiPolygon(polygons)
     elif isinstance(geojson[0][0][0], float):
-        return _list_to_polygon(geojson)
+        polygon_list = [[tuple(coord) for coord in linear_ring]
+                         for linear_ring in geojson]
+        return Polygon(polygon_list[0], polygon_list[1:])
     else:
         raise ValueError("invalid geojson")
 
@@ -117,3 +99,4 @@ def get_compactness(polygon):
     circumeference = 2 * math.pi * math.sqrt(area / math.pi)
     perimeter = polygon.coords.length
     return circumeference / perimeter
+

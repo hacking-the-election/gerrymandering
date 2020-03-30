@@ -223,7 +223,7 @@ def create_graph(election_file, geo_file, pop_file, state):
                 pop[precinct_id4] = sum(precinct_populations)
 
     for precinct in geodata["features"]:
-        pass
+        coordinate_data = precinct["geometry"]["coordinates"]
 
     return precinct_graph
 
