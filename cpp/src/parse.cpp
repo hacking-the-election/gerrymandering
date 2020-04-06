@@ -676,11 +676,17 @@ int hole_count(GeoGerry::Precinct_Group pg) {
 
 
 GeoGerry::Graph generate_graph(GeoGerry::Precinct_Group pg) {
+
     GeoGerry::Graph graph;
+    for (int i = 0; i < pg.precincts.size(); i++) {
+        GeoGerry::Node n;
+        graph.vertices.push_back(n);
+    }
 
     for (int i = 0; i < pg.precincts.size(); i++) {
         std::cout << "on precinct " << i << std::endl;
-        graph.vertices.push_back(i);
+        graph.vertices[i].precinct = &pg.precincts[i];
+
         GeoGerry::p_index_set precincts = {};
 
         for (int j = i + 1; j < pg.precincts.size(); j++) {
@@ -692,16 +698,33 @@ GeoGerry::Graph generate_graph(GeoGerry::Precinct_Group pg) {
         for (GeoGerry::p_index border : precincts) {
             GeoGerry::p_index higher = (border > i) ? border : i;
             GeoGerry::p_index lower = (border <= i) ? border : i;
-            std::array<int, 2> edge = {higher, lower};
 
+            std::array<int, 2> edge = {higher, lower};
+            std::array<int, 2> lh = {lower, higher};
+            
             if (!(std::find(graph.edges.begin(), graph.edges.end(), edge) != graph.edges.end())) {
                 graph.edges.push_back(edge);
-                // std::cout << edge[0] << ", " << edge[1] << std::endl;
+            }
+
+            if (!(std::find(graph.vertices[higher].edges.begin(),
+                  graph.vertices[higher].edges.end(), edge) 
+                != graph.vertices[higher].edges.end())) {
+
+                graph.vertices[higher].edges.push_back(edge);
+            }
+
+
+            if (!(std::find(graph.vertices[lower].edges.begin(),
+                  graph.vertices[lower].edges.end(), lh) 
+                != graph.vertices[lower].edges.end())) {
+
+                graph.vertices[lower].edges.push_back(lh);
             }
         }
     }
 
     std::cout << graph.edges.size() << ", " << graph.vertices.size() << std::endl;
+    std::cout << "precinct 0 has " << graph.vertices[0].edges.size() << " edges and " << graph.vertices[0].precinct->hull.border.size() << " coordinates" << std::endl;
     return graph;
 }
 
