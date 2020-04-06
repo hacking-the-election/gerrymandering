@@ -12,6 +12,7 @@
 
 using namespace std;
 
+
 string readf(string path) {
    
     /*
@@ -30,6 +31,7 @@ string readf(string path) {
     return buffer.str();
 };
 
+
 void writef(string contents, string path) {
     /*
         Write a string to a file. This method appends
@@ -40,6 +42,7 @@ void writef(string contents, string path) {
     of << contents;
     of.close();
 }
+
 
 vector<string> split(string str, string del) {
     
@@ -66,6 +69,7 @@ vector<string> split(string str, string del) {
     return array;
 }
 
+
 std::string join(std::vector<std::string> str, std::string del) {
     if (str.size() == 0)
         return "";
@@ -85,6 +89,7 @@ bool is_number(string token) {
 
     return regex_match(token, regex( ( "((\\+|-)?[[:digit:]]+)(\\.(([[:digit:]]+)?))?" ) ));
 }
+
 
 int rand_num(int start, int end) {
     /*

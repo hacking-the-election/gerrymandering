@@ -7,12 +7,13 @@
  state object
 ========================================*/
 
-#include "../../../include/shape.hpp"
-#include "../../../include/util.hpp"
-#include "../../../include/geometry.hpp"
-#include "../../../include/canvas.hpp"
 #include <chrono> 
 #include <boost/filesystem.hpp>
+
+#include "../include/shape.hpp"
+#include "../include/util.hpp"
+#include "../include/geometry.hpp"
+#include "../include/canvas.hpp"
 
 using namespace boost::filesystem;
 using namespace std;
@@ -37,7 +38,6 @@ int main(int argc, char* argv[]) {
     string read_path = string(argv[1]);
     State state = State::read_binary(read_path);
 
-    cout << "generating communities from given parameters..." << endl;
     path p = string(argv[2]) + "/base_communities";
     create_directory(p);
     path p2 = string(argv[2]) + "/districts";
@@ -49,7 +49,6 @@ int main(int argc, char* argv[]) {
 
     int districts_in_state = state.state_districts.size();
     state.generate_initial_communities(districts_in_state);
-//    state.read_communities("test_data/ia_init");
     Communities initial_config = state.state_communities;
 
     state.refine_communities(0.085, 0.125, 0.375, string(argv[2]) + "/base_communities");
@@ -59,6 +58,6 @@ int main(int argc, char* argv[]) {
     state.state_communities = initial_config;
     state.refine_communities(0.10, 0.01, 0.425, string(argv[2]) + "/districts");
     state.save_communities(string(argv[2]) + "/districts/districts", state.state_communities);
-    // write as binary
+
     return 0;
 }

@@ -1,10 +1,9 @@
 /*=======================================
- generate_communities.cpp:      k-vernooy
- last modified:                Sat, Feb 8
+ draw_community.cpp:            k-vernooy
+ last modified:                Sun, Apr 5
  
- Run community generation algorithm and 
- print coordinates as geojson for a given
- state object
+ Reads a state object and draws its
+ community object list to a canvas
 ========================================*/
 
 #include "../../include/shape.hpp"

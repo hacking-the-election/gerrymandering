@@ -11,21 +11,25 @@
 ========================================*/
 
 #include <iostream>
-#include "../../include/shape.hpp"
-#include "../../include/canvas.hpp"
-#include "../../include/util.hpp"
-#include "../../include/term_disp.hpp"
+#include "../include/shape.hpp"
+#include "../include/canvas.hpp"
+#include "../include/util.hpp"
+#include "../include/term_disp.hpp"
 
 using namespace std;
 using namespace GeoGerry;
 
 
 int main(int argc, char* argv[]) {
-    /* parsing data into a binary state object
-       takes 3 arguments:
-           precinct geoJSON
-           precinct voter data
-           district geoJSON     
+    /* 
+        @desc: parse data into a binary state object
+
+        @params:
+           `string` precinct_geoJSON: path to precinct geodata
+           `string` voter_data: (opt) path to precinct voter data
+           `string` district_geoJSON: path to district geodata
+
+        @return: `int` status
     */
 
     string KEY = "--keys=";  // prefix to find specified options

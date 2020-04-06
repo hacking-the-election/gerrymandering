@@ -1,6 +1,6 @@
 /*===============================================
- community.cpp:                        k-vernooy
- last modified:                     Fri, Feb 28
+ gerrymandering.cpp:                   k-vernooy
+ last modified:                       Sun, Apr 5
 
  Definition of the gerrymandering quantification
  algorithm, given a district plan and base
@@ -10,17 +10,18 @@
  more information on this project.
  
  This algorithm has been implemented in C++ and in
- Python. If you're interested in contributing to the
- open source political movement, please contact us
- at: hacking.the.election@gmail.com
+ Python. If you're interested in contributing to
+ this open source gerrymandering project, please
+ contact us at: hacking.the.election@gmail.com
 ===============================================*/
+
 
 #include <math.h>    // for rounding functions
 
-#include "../../../include/shape.hpp"    // class definitions
-#include "../../../include/util.hpp"     // array modification functions
-#include "../../../include/geometry.hpp" // geometry modification, border functions
-#include "../../../include/canvas.hpp" // geometry modification, border functions
+#include "../../include/shape.hpp"    // class definitions
+#include "../../include/util.hpp"     // array modification functions
+#include "../../include/geometry.hpp" // geometry modification, border functions
+#include "../../include/canvas.hpp" // geometry modification, border functions
 
 using namespace std;
 using namespace GeoGerry;
