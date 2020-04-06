@@ -34,7 +34,11 @@ class Precinct:
         
         total_rep = sum(self.rep_data.values())
         total_dem = sum(self.dem_data.values())
-        self.partisanship = total_rep / (total_rep + total_dem)
+        try:
+            self.partisanship = total_rep / (total_rep + total_dem)
+        except ZeroDivisionError:
+            # No voters in precinct.
+            self.partisanship = 0
 
         self.pop = pop
         # should be shapely polygon
