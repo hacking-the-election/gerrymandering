@@ -1,4 +1,10 @@
 .PHONY: all
+.ONESHELL:
+
+
+#==================================
+# Define variables
+#==================================
 
 # compiler options
 CC := g++
@@ -14,23 +20,44 @@ STATE_OBJECTS := $(BUILD)/parse.o $(BUILD)/canvas.o $(BUILD)/geometry.o $(BUILD)
 # libraries
 BOOST := -lboost_serialization -lboost_filesystem
 SDL := -lSDL2 -lSDL2main
+LIBS := $(BOOST) $(SDL)
+
+
 
 all: serialize_state
-#all: state_serializer
 
-serialize_state: setup dependencies $(STATE_OBJECTS) $(BUILD)/clipper.o src/script/serialize_state.cpp
-	$(CC) $(CV) src/script/serialize_state.cpp -c -o $(BUILD)/serialize_state.o
-	$(CC) $(CV) $(BUILD)/serialize_state.o $(STATE_OBJECTS) $(BUILD)/clipper.o $(BOOST) $(SDL) -o $(BIN)/serialize_state
+#====================================
+# Binary targets for end compilations
+#====================================
+
+serialize_state: serialize_state.bin
+generate_communities: generate_communities.bin
+
+#====================================
+# binary recipe for script dir files
+#====================================
+
+%.bin: setup dependencies $(STATE_OBJECTS) $(BUILD)/clipper.o script/%.cpp
+	$(CC) $(CV) $(CFLAGS) script/$(shell echo $@ | cut -d '.' -f 1).cpp -c -o $(BUILD)/$(shell echo $@ | cut -d '.' -f 1).o
+	$(CC) $(CV) $(CFLAGS) $(BUILD)/$(shell echo $@ | cut -d '.' -f 1).o $(STATE_OBJECTS) $(BUILD)/clipper.o $(LIBS) -o $(BIN)/$(shell echo $@ | cut -d '.' -f 1)
 
 
-dependencies: lib/rapidjson/include/rapidjson/rapidjson.h.dependency
-
+#=================================
 # object file targets:
+#=================================
+
 */%.o: src/%.cpp
 	$(CC) $(CV) $< -c -o $@
 
 $(BUILD)/clipper.o: lib/clipper/clipper.cpp
 	$(CC) $< -c -o $(BUILD)/clipper.o
+
+
+#==================================
+# files that must exist to compile
+#==================================
+
+dependencies: lib/rapidjson/include/rapidjson/rapidjson.h.dependency
 
 %.dependency: %
 	@printf "checking for "
@@ -42,6 +69,11 @@ ifeq (,$(wildcard $<))
 else
 	@echo "no"
 endif
+
+
+#===================================
+# Directory system modification
+#===================================
 
 setup:
 	mkdir -p $(BIN) $(BUILD)
