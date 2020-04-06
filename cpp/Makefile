@@ -8,7 +8,7 @@
 
 # compiler options
 CC := g++
-CFLAGS := -Wall -pedantic -Wextra
+CFLAGS := -O2 -Wall -pedantic -Wextra
 CV := -std=c++11
 
 # filepaths

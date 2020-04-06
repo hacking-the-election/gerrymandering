@@ -13,17 +13,30 @@
 int RECURSION_STATE = 0;
 double PADDING = (3.0/4.0);
 
+
+GeoDraw::Pixel::Pixel() {
+    color = Color(-1,-1,-1);
+}
+
 GeoGerry::coordinate i_average(GeoGerry::bounding_box n) {
+    /*
+        @desc: Finds center of bounding box through averaging coords
+        @params: `bounding_box` b: bounding box to average
+        @return: `coordinate` center of box
+    */
+
     double y = n[0] + n[1];
     double x = n[2] + n[3];
     
     return {(int)(x / (double) 2), (int)(y / (double) 2)};
 }
 
+
 void GeoDraw::Pixel::draw(SDL_Renderer* renderer) {
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, 255);
     SDL_RenderDrawPoint(renderer, x, y);
 }
+
 
 void GeoDraw::Canvas::add_shape(GeoGerry::LinearRing s, bool f, Color c, int t) {
     /*
@@ -107,6 +120,22 @@ void GeoDraw::Canvas::add_shape(GeoGerry::Communities s, bool f, GeoDraw::Color 
                 holes.push_back(hole);
             }
         }
+    }
+}
+
+
+void GeoDraw::Canvas::add_graph(GeoGerry::Graph g) {
+    for (GeoGerry::Node node : g.vertices) {
+        double area = node.precinct->get_area();
+        double r = sqrt(area / PI);
+        this->add_shape(generate_gon(node.precinct->get_center(), r, 30), true, Color(255,50,50), 1);
+    }
+
+    for (std::array<int, 2> edge : g.edges) {
+        GeoGerry::coordinate c1 = g.vertices[g.get_node(edge[0])].precinct->get_center();
+        GeoGerry::coordinate c2 = g.vertices[g.get_node(edge[1])].precinct->get_center();
+        GeoGerry::LinearRing lr({c1, c2});
+        this->add_shape(lr);
     }
 }
 
@@ -234,11 +263,10 @@ void GeoDraw::Canvas::scale(double scale_factor) {
 
 void GeoDraw::Canvas::flood_fill_util(GeoGerry::coordinate coord, Color c1, Color c2) {
     RECURSION_STATE++;
-    // if (RECURSION_STATE > 50000) return;
  
     if (coord[0] < 0 || coord[0] > x || coord[1] < 0 || coord[1] > y) return;
     if (this->get_pixel({coord[0], coord[1]}).color != c1) return;
-    this->pixels.push_back(Pixel(coord[0], coord[1], c2));
+    this->pixels[coord[0]][coord[1]] = Pixel(coord[0], coord[1], c2);
 
     flood_fill_util({coord[0] + 1, coord[1]}, c1, c2);
     flood_fill_util({coord[0] - 1, coord[1]}, c1, c2);
@@ -250,12 +278,10 @@ void GeoDraw::Canvas::flood_fill_util(GeoGerry::coordinate coord, Color c1, Colo
 
 
 GeoDraw::Pixel GeoDraw::Canvas::get_pixel(GeoGerry::coordinate c) {
-    for (Pixel p : pixels) {
-        if (p.x == c[0] && p.y == c[1]) return p;
-    }
-
-    return (Pixel(-1, -1, Color(255,255,255)));
+    return this->pixels[c[0]][c[1]];
 }
+
+
 
 void GeoDraw::Canvas::flood_fill(GeoGerry::coordinate coord, Color c) {
     Color co = this->get_pixel(coord).color;
@@ -276,22 +302,7 @@ void GeoDraw::Canvas::fill_shapes() {
 
 
 GeoGerry::coordinate GeoDraw::Outline::get_representative_point() {
-    // GeoGerry::bounding_box box = get_bounding_box(*this);
-    // GeoGerry::coordinate c = i_average(box);
-
-    // int m = 4;
-
-    // while (!point_in_ring(c, this->border)) {
-    //     //
-    //     for (int i = 0; i < m; i++) {
-
-    //     }
-
-    //     m *= 4;
-    // }
-
-    return {150, 150};
-    // return {0,0};
+    return this->border.get_center();
 }
 
 
@@ -331,7 +342,7 @@ void GeoDraw::Canvas::rasterize_edges() {
                 for (int i = -(o.line_thickness - 1); i <= (o.line_thickness - 1); i++) {
                     for (int j = -(o.line_thickness - 1); j <= (o.line_thickness - 1); j++) {
                         Pixel p((int)xv + i, (int)yv + j, o.color);
-                        this->pixels.push_back(p);
+                        this->pixels[xv + i][yv + j] = p;
                     }
                 }
 
@@ -357,15 +368,17 @@ void GeoDraw::Canvas::rasterize_shapes() {
     this->rasterize_edges();
     this->fill_shapes();
 
-    for (Pixel p : pixels) {
-        int total = (x * y) - 1;
-        int start = p.y * x - p.x;
+    for (std::vector<Pixel> pr : pixels) {
+        for (Pixel p : pr) {
+            if (p.color.r != -1) {
+                int total = (x * y) - 1;
+                int start = p.y * x - p.x;
 
-        if (total - start < x * y && total - start >= 0) 
-            this->background[total - start] = p.get_uint();
+                if (total - start < x * y && total - start >= 0) 
+                    this->background[total - start] = p.get_uint();
+            }
+        }
     }
-
-    // fill_shapes();
 
     return;
 }
@@ -396,7 +409,8 @@ void GeoDraw::Canvas::draw() {
         @return: void
     */
 
-    // size and position coordinates in the right wuat
+    // size and position coordinates in the right quad
+    this->pixels = std::vector<std::vector<Pixel> > (x, std::vector<Pixel>(y));
     memset(background, 255, x * y * sizeof(Uint32));
     get_bounding_box();
     translate(-box[2], -box[1], true);

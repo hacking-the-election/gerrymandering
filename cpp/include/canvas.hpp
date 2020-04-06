@@ -37,15 +37,18 @@ namespace GeoDraw {
         Color(int rx, int gx, int bx) : r(rx), g(gx), b(bx) {};
     };
 
+
     class Pixel {
         public:
 
-        Color color;
-        int x, y;
-        Uint32 get_uint();
-        Pixel(int ax, int ay, Color c) : x(ax), y(ay), color(c) {}
-        void draw(SDL_Renderer* renderer);
+            Color color;
+            int x, y;
+            Uint32 get_uint();
+            Pixel();
+            Pixel(int ax, int ay, Color c) : color(c), x(ax), y(ay) {}
+            void draw(SDL_Renderer* renderer);
     };
+
 
     class Outline {
         public:
@@ -71,7 +74,7 @@ namespace GeoDraw {
         std::vector<Outline> holes;                  // shapes to be drawn individually
 
         // meta information
-        std::vector<Pixel> pixels;        // the pixel array to write to screen
+        std::vector<std::vector<Pixel> > pixels;        // the pixel array to write to screen
 
         public:
 
@@ -101,6 +104,9 @@ namespace GeoDraw {
         void add_shape(GeoGerry::Multi_Polygon s, bool = false, Color = Color(0,0,0), int = 1);
         void add_shape(GeoGerry::Precinct_Group s, bool = false, Color = Color(0,0,0), int = 1);
         void add_shape(GeoGerry::Communities s, bool = false, Color = Color(0,0,0), int = 1);
+
+        void add_graph(GeoGerry::Graph s);
+
         void clear();
         void resize_window(int x, int y);
         void draw();

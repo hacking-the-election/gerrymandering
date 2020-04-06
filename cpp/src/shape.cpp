@@ -232,6 +232,15 @@ GeoGerry::Communities GeoGerry::Community::load_frame(std::string read_path, Sta
 }
 
 
+int GeoGerry::Graph::get_node(int id) {
+    for (int i = 0; i < this->vertices.size(); i++) {
+        if (this->vertices[i].id == id) return i;
+    }
+
+    return -1;
+}
+
+
 bool GeoGerry::operator== (GeoGerry::LinearRing l1, GeoGerry::LinearRing l2) {
     return (l1.border == l2.border);
 }
@@ -515,3 +524,4 @@ std::string GeoGerry::Multi_Polygon::to_json() {
 
     return str;
 }
+

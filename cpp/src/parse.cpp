@@ -680,6 +680,7 @@ GeoGerry::Graph generate_graph(GeoGerry::Precinct_Group pg) {
     GeoGerry::Graph graph;
     for (int i = 0; i < pg.precincts.size(); i++) {
         GeoGerry::Node n;
+        n.id = i;
         graph.vertices.push_back(n);
     }
 
@@ -725,6 +726,11 @@ GeoGerry::Graph generate_graph(GeoGerry::Precinct_Group pg) {
 
     std::cout << graph.edges.size() << ", " << graph.vertices.size() << std::endl;
     std::cout << "precinct 0 has " << graph.vertices[0].edges.size() << " edges and " << graph.vertices[0].precinct->hull.border.size() << " coordinates" << std::endl;
+    
+    GeoDraw::Canvas c(900,900);
+    c.add_graph(graph);
+    c.draw();
+
     return graph;
 }
 

@@ -322,6 +322,7 @@ class Graph {
         std::vector<Node> vertices;
         std::vector<std::array<int, 2> > edges;
 
+        int get_node(int id);
         void sort();
 };
 
