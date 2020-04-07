@@ -12,7 +12,12 @@
 #include <SDL2/SDL.h>
 
 namespace GeoDraw {
-    
+
+    class Canvas;
+    class Color;
+    class Outline;
+    class Pixel;
+
     class Color {
         public:
         int r, g, b;
@@ -56,11 +61,21 @@ namespace GeoDraw {
             Color color;
             int line_thickness;
             bool filled;
+
             GeoGerry::coordinate get_representative_point();
+            
+            std::vector<std::vector<Pixel> > pixels;
+            Pixel get_pixel(GeoGerry::coordinate c);
+            void rasterize(Canvas& canvas);
+
+            // modify canvas attributes
+            void flood_fill_util(GeoGerry::coordinate coord, Color c1, Color c2, Canvas& canvas);
+            void flood_fill(GeoGerry::coordinate, Color c, Canvas& canvas);
 
             Outline(GeoGerry::LinearRing lr, Color c, int th, bool f) :
                 border(lr), color(c), line_thickness(th), filled(f) {}
     };
+
 
     class Canvas {
         /*
@@ -73,10 +88,10 @@ namespace GeoDraw {
         std::vector<Outline> outlines;               // shapes to be drawn individually
         std::vector<Outline> holes;                  // shapes to be drawn individually
 
+        public:
+
         // meta information
         std::vector<std::vector<Pixel> > pixels;        // the pixel array to write to screen
-
-        public:
 
         GeoGerry::bounding_box box;       // the outer bounding box
         GeoGerry::bounding_box get_bounding_box();   // calculate bounding box of coordinates
@@ -84,13 +99,8 @@ namespace GeoDraw {
         int x, y;                         // dimensions of the screen
 
         // modify canvas attributes
-        void flood_fill_util(GeoGerry::coordinate coord, Color c1, Color c2);
-        void flood_fill(GeoGerry::coordinate, Color c);
         void translate(long int x, long int y, bool b);      // move the outlines by x and y
         void scale(double scale_factor);             // scale the shapes by scale factor
-        void rasterize_shapes();                     // determine pixel positions and values for coordiantes
-        void rasterize_edges();                      // generate edges
-        void fill_shapes();                          // fill shapes with solid color
         Pixel get_pixel(GeoGerry::coordinate c);
 
         Canvas(int dx, int dy) : x(dx), y(dy) {
