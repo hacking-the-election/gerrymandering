@@ -19,8 +19,18 @@ int RECURSION_STATE = 0;
 double PADDING = (3.0/4.0);
 
 
+
 GeoDraw::Pixel::Pixel() {
     color = Color(-1,-1,-1);
+}
+
+
+std::array<int, 3> GeoDraw::interpolate_rgb(std::array<int, 3> rgb1, std::array<int, 3> rgb2, double interpolator) {
+    int r = round(rgb1[0] + (double)(rgb2[0] - rgb1[0]) * interpolator);
+    int g = round(rgb1[1] + (double)(rgb2[1] - rgb1[1]) * interpolator);
+    int b = round(rgb1[2] + (double)(rgb2[2] - rgb1[2]) * interpolator);
+
+    return {r, g, b};
 }
 
 
@@ -136,12 +146,16 @@ void GeoDraw::Canvas::add_graph(GeoGerry::Graph g) {
         GeoGerry::coordinate c1 = g.vertices[g.get_node(edge[0])].precinct->get_center();
         GeoGerry::coordinate c2 = g.vertices[g.get_node(edge[1])].precinct->get_center();
         GeoGerry::LinearRing lr({c1, c2});
-        this->add_shape(lr, false, Color(100, 170, 255), 1);
+        this->add_shape(lr, false, Color(0, 0, 0), 1);
     }
 
+    
     for (GeoGerry::Node node : g.vertices) {
-        // this->add_shape(*(node.precinct));
-        this->add_shape(generate_gon(node.precinct->get_center(), 1000, 30), true, Color(40, 100, 190), 2);
+        std::array<int, 3> rgb = interpolate_rgb({252, 3, 3}, {3, 61, 252}, node.precinct->get_ratio());
+        Color color(rgb[0], rgb[1], rgb[2]);
+        if (node.precinct->get_ratio() == -1) color = Color(0,0,0);
+        
+        this->add_shape(generate_gon(node.precinct->get_center(), node.precinct->pop, 30), true, color, 2);
     }
 }
 
@@ -269,7 +283,7 @@ void GeoDraw::Canvas::scale(double scale_factor) {
 
 void GeoDraw::Outline::flood_fill_util(GeoGerry::coordinate coord, Color c1, Color c2, Canvas& canvas) {
     RECURSION_STATE++;
-    if (RECURSION_STATE > 3000) return;
+    if (RECURSION_STATE > 10000) return;
 
     if (coord[0] < 0 || coord[0] > pixels.size() || coord[1] < 0 || coord[1] > pixels[0].size()) return;
     if (this->get_pixel({coord[0], coord[1]}).color != c1) return;
@@ -346,10 +360,34 @@ void GeoDraw::Outline::rasterize(Canvas& canvas) {
         double yv = (double) y0;
 
         for (int i = 0; i <= steps; i++) {
-            for (int i = -(this->line_thickness - 1); i <= (this->line_thickness - 1); i++) {
-                for (int j = -(this->line_thickness - 1); j <= (this->line_thickness - 1); j++) {
-                    if (filled) this->pixels[xv + i][yv + j] = Pixel((int)xv + i, (int)yv + j, this->color);
-                    canvas.pixels[xv + i][yv + j] = Pixel((int)xv + i, (int)yv + j, this->color);
+         
+            if (filled) this->pixels[xv][yv] = Pixel((int)xv, (int)yv, this->color);
+            canvas.pixels[xv][yv] = Pixel((int)xv , (int)yv, this->color);
+            
+            if (abs(dx) > abs(dy)) {
+                // up/down
+                int add = 0;
+                for (int i = 1; i <= ceil((double)(line_thickness - 1) / 2.0); i++) {
+                    for (int f = 1; f >= -1; f -= 2) {
+                        if (filled) this->pixels[xv][yv + (i * f)] = Pixel((int)xv, (int)yv + (i * f), this->color);
+                        canvas.pixels[xv][yv + (i * f)] = Pixel((int)xv, (int)yv + (i * f), this->color);
+                        add++;
+
+                        if (add == line_thickness - 1) break;
+                    }
+                }
+            }
+            else {
+                // left/right
+                int add = 0;
+                for (int i = 1; i <= ceil((double)(line_thickness - 1) / 2.0); i++) {
+                    for (int f = 1; f >= -1; f -= 2) {
+                        if (filled) this->pixels[xv + (i * f)][yv] = Pixel((int)xv + (i * f), (int)yv, this->color);
+                        canvas.pixels[xv + (i * f)][yv] = Pixel((int)xv + (i * f), (int)yv, this->color);
+                        add++;
+
+                        if (add == line_thickness - 1) break;
+                    }
                 }
             }
 
