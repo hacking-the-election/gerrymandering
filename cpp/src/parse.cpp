@@ -262,13 +262,13 @@ std::vector<GeoGerry::Precinct> parse_precinct_data(std::string geoJSON) {
         int pop = 0;
 
         // see if the geoJSON contains the shape id
-        if (shapes["features"][i]["properties"].HasMember(geodata_id.c_str())) {
-            id = shapes["features"][i]["properties"][geodata_id.c_str()].GetString();
-        }
-        else {
-            std::cout << "\e[31merror: \e[0mYou have no precinct id." << std::endl;
-            std::cout << "If future k-vernooy runs into this error, it means that GEOID10 in your geoJSON in your voter data is missing. To fix... maybe try a loose comparison of the names?" << std::endl;
-        }
+        // if (shapes["features"][i]["properties"].HasMember(geodata_id.c_str())) {
+        //     id = shapes["features"][i]["properties"][geodata_id.c_str()].GetString();
+        // }
+        // else {
+        //     std::cout << "\e[31merror: \e[0mYou have no precinct id." << std::endl;
+        //     std::cout << "If future k-vernooy runs into this error, it means that GEOID10 in your geoJSON in your voter data is missing. To fix... maybe try a loose comparison of the names?" << std::endl;
+        // }
 
         // get voter data from geodata
         int demv = 0;
@@ -726,11 +726,6 @@ GeoGerry::Graph generate_graph(GeoGerry::Precinct_Group pg) {
 
     std::cout << graph.edges.size() << ", " << graph.vertices.size() << std::endl;
     std::cout << "precinct 0 has " << graph.vertices[0].edges.size() << " edges and " << graph.vertices[0].precinct->hull.border.size() << " coordinates" << std::endl;
-    
-    GeoDraw::Canvas c(900,900);
-    c.add_graph(graph);
-    c.draw();
-
     return graph;
 }
 
@@ -833,11 +828,9 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
     State state = State(district_shapes, pre_group.precincts, state_shape_v);
     Multi_Polygon sborder = generate_exterior_border(state);
     state.border = sborder.border;
-    // std::cout << sborder.border.size() << std::endl;
 
-    // sort files into
-    // if (VERBOSE) std::cout << "sorting precincts into islands from exterior state border..." << std::endl;
-    // state.islands = sort_precincts(sborder, pre_group);
+    state.network = generate_graph(pre_group);
+
     if (VERBOSE) std::cout << "state serialized!" << std::endl;
 
     return state; // return the state object

@@ -1,6 +1,6 @@
 .PHONY: all
-.ONESHELL:
-
+.ONESHELL: all
+.PRECIOUS: %.o
 
 #==================================
 # Define variables

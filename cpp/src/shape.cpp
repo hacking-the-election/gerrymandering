@@ -346,6 +346,19 @@ template<class Archive> void GeoGerry::Multi_Polygon::serialize(Archive & ar, co
     ar & pop;
 }
 
+
+template<class Archive> void GeoGerry::Node::serialize(Archive & ar, const unsigned int version) {
+    ar & id;
+    ar & precinct;
+    ar & edges;
+}
+
+
+template<class Archive> void GeoGerry::Graph::serialize(Archive & ar, const unsigned int version) {
+    ar & vertices;
+    ar & edges;
+}
+
 /*
     The following are serialization methods written
     to make sure that each sub-nested shape is actually

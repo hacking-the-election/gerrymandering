@@ -314,6 +314,11 @@ class Node {
         int id;
 
         std::vector<std::array<int, 2> > edges;
+
+
+        // for boost serialization
+        friend class boost::serialization::access;
+        template<class Archive> void serialize(Archive & ar, const unsigned int version);
 };
 
 
@@ -324,6 +329,11 @@ class Graph {
 
         int get_node(int id);
         void sort();
+
+
+        // for boost serialization
+        friend class boost::serialization::access;
+        template<class Archive> void serialize(Archive & ar, const unsigned int version);
 };
 
 

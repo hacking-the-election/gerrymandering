@@ -32,8 +32,12 @@ int main(int argc, char* argv[]) {
     GeoGerry::Polygon shape(t);
 
     GeoDraw::Canvas canvas(600,600);
-    canvas.add_shape(shape, true, GeoDraw::Color(255, 50, 50), 1);
-    canvas.draw();
+
+    for (int i = 1; i < 11; i++) {
+        canvas.add_shape(shape, false, GeoDraw::Color(255, 50, 50), i);
+        canvas.draw();
+        canvas.clear();
+    }
     
     // assert_equal("checking area function", area(shape), 0.5);
     // assert_equal("testing center coord 1", center(shape)[0], 0.333333);

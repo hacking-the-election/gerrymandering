@@ -8,8 +8,12 @@
 ========================================*/
 
 #pragma once
-#include "shape.hpp"
+
+#include <array>
 #include <SDL2/SDL.h>
+
+#include "shape.hpp"
+
 
 namespace GeoDraw {
 
@@ -17,6 +21,10 @@ namespace GeoDraw {
     class Color;
     class Outline;
     class Pixel;
+
+
+    std::array<int, 3> interpolate_rgb(std::array<int, 3> rgb1, std::array<int, 3> rgb2, double interpolator);
+
 
     class Color {
         public:

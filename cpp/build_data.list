@@ -5,5 +5,12 @@
 #   r_head
 #   population_id 
 
-# list of different arguments to build the data library
+
+# alabama
 bin/serialize_state ../../data/raw/alabama/geodata.json ../../data/raw/alabama/election_data.tab ../../data/raw/alabama/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 ../../data/bin/cpp/alabama.dat
+
+# vermont
+bin/serialize_state ../../data/raw/vermont/geodata.json ../../data/raw/vermont/election_data.tab ../../data/raw/vermont/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 ../../data/bin/cpp/vermont.dat
+
+# idaho
+bin/serialize_state ../../data/raw/idaho/geodata.json ../../data/raw/idaho/election_data.tab ../../data/raw/idaho/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 ../../data/raw/bin/cpp/idaho.dat
