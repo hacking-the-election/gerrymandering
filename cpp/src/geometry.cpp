@@ -249,6 +249,28 @@ segments GeoGerry::Multi_Polygon::get_segments() {
 }
 
 
+boost_polygon ring_to_boost_poly(LinearRing shape) {
+    /*
+        Converts a shape object into a boost polygon object
+        by looping over each point and manually adding it to a 
+        boost polygon using assign_points and vectors
+    */
+
+    boost_polygon poly;
+
+    // create vector of boost points
+    std::vector<boost_point> points;
+
+    for (coordinate c : shape.border) 
+        points.push_back(boost_point(c[0],c[1])),
+
+    assign_points(poly, points);
+    correct(poly);
+
+    return poly;
+}
+
+
 coordinate GeoGerry::LinearRing::get_center() {
     /* 
         @desc: Gets the centroid of a polygon with coords
@@ -256,32 +278,30 @@ coordinate GeoGerry::LinearRing::get_center() {
         @params: none
         @return: coordinate of centroid
     */
-    float centroidX = 0, centroidY = 0;
-    float det = 0, tempDet = 0;
-    unsigned int j = 0;
-    int nVertices = border.size();
 
-    for (int i = 0; i < nVertices; i++) {
-        // closed polygon
-        if (i + 1 == nVertices)
-        	j = 0;
-		else
-			j = i + 1;
+    // float area = 0.0f;
+    // float Cx = 0.0f;
+    // float Cy = 0.0f;
+    // float tmp = 0.0f;
+    // int k;
 
-		// compute the determinant
-		tempDet = border[i][0] * border[j][1] - border[j][0] * border[i][1];
-		det += tempDet;
+    // for (int i = 0; i < border.size(); i++) {
+    //     k = (i + 1) % (border.size());
+    //     tmp = border[i][0] * border[k][1] - 
+    //           border[k][0] * border[i][1];
+        
+    //     area += tmp;
+    //     Cx += (border[i][0] + border[k][0]) * tmp;
+    //     Cy += (border[i][1] + border[k][1]) * tmp;
+    // }
 
-		centroidX += (border[i][0] + border[j][0]) * tempDet;
-		centroidY += (border[i][1] + border[j][1]) * tempDet;
-	}
+    // area *= 0.5f;
+    // Cx *= 1.0f / (6.0f * area);
+    // Cy *= 1.0f / (6.0f * area);
+    boost_point x;
+    boost::geometry::centroid(ring_to_boost_poly(*this), x);
 
-	// divide by the total mass of the polygon
-	centroidX /= 3*det;
-	centroidY /= 3*det;
-
-    coordinate centroid = {(long int)centroidX, (long int)centroidY};
-    return centroid;
+    return {x.x(), x.y()};
 }
 
 
@@ -297,14 +317,16 @@ double GeoGerry::LinearRing::get_area() {
     */
 
     double area = 0;
-    int points = border.size() - 1; // last index of border
 
     for ( int i = 0; i < border.size(); i++ ) {
-        area += (border[points][0] + border[i][0]) * (border[points][1] - border[i][1]);
-        points = i;
+        int j;
+        if (i == border.size() - 1) j = 0;
+        else j = i + 1;
+
+        area += (border[i][0] * border[j][1]) - (border[i][1] * border[j][0]);
     }
 
-    return (area / 2);
+    return (area / 2.0);
 }
 
 

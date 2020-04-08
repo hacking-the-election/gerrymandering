@@ -1,6 +1,5 @@
 .PHONY: all
 .ONESHELL: all
-.PRECIOUS: %.o
 
 #==================================
 # Define variables
@@ -23,7 +22,7 @@ SDL := -lSDL2 -lSDL2main
 LIBS := $(BOOST) $(SDL)
 
 
-
+.SECONDARY: $(STATE_OBJECTS)
 all: serialize_state
 
 #====================================

@@ -724,6 +724,10 @@ GeoGerry::Graph generate_graph(GeoGerry::Precinct_Group pg) {
         }
     }
 
+    GeoDraw::Canvas canvas(900, 900);
+    canvas.add_graph(graph);
+    canvas.draw();
+
     std::cout << graph.edges.size() << ", " << graph.vertices.size() << std::endl;
     std::cout << "precinct 0 has " << graph.vertices[0].edges.size() << " edges and " << graph.vertices[0].precinct->hull.border.size() << " coordinates" << std::endl;
     return graph;

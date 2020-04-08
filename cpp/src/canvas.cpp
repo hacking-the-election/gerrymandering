@@ -154,12 +154,15 @@ void GeoDraw::Canvas::add_graph(GeoGerry::Graph g) {
         std::array<int, 3> rgb = interpolate_rgb({252, 3, 3}, {3, 61, 252}, node.precinct->get_ratio());
         Color color(rgb[0], rgb[1], rgb[2]);
         if (node.precinct->get_ratio() == -1) color = Color(0,0,0);
-        
-        this->add_shape(generate_gon(node.precinct->get_center(), node.precinct->pop, 30), true, color, 2);
+
+        int t = 400;
+        if (node.precinct->pop > 400) t = node.precinct->pop;
+
+        this->add_shape(generate_gon(node.precinct->get_center(), t, 40), true, color, 2);
     }
 }
 
-        
+
 void GeoDraw::Canvas::resize_window(int dx, int dy) {
     x = dx;
     y = dy;
@@ -283,7 +286,7 @@ void GeoDraw::Canvas::scale(double scale_factor) {
 
 void GeoDraw::Outline::flood_fill_util(GeoGerry::coordinate coord, Color c1, Color c2, Canvas& canvas) {
     RECURSION_STATE++;
-    if (RECURSION_STATE > 10000) return;
+    if (RECURSION_STATE > 9000) return;
 
     if (coord[0] < 0 || coord[0] > pixels.size() || coord[1] < 0 || coord[1] > pixels[0].size()) return;
     if (this->get_pixel({coord[0], coord[1]}).color != c1) return;
