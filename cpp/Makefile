@@ -1,6 +1,5 @@
 .PHONY: all
-.ONESHELL:
-
+.ONESHELL: all
 
 #==================================
 # Define variables
@@ -8,7 +7,7 @@
 
 # compiler options
 CC := g++
-CFLAGS := -Wall -pedantic -Wextra
+CFLAGS := -O2 -Wall -pedantic -Wextra
 CV := -std=c++11
 
 # filepaths
@@ -23,7 +22,7 @@ SDL := -lSDL2 -lSDL2main
 LIBS := $(BOOST) $(SDL)
 
 
-
+.SECONDARY: $(STATE_OBJECTS)
 all: serialize_state
 
 #====================================
@@ -32,6 +31,7 @@ all: serialize_state
 
 serialize_state: serialize_state.bin
 generate_communities: generate_communities.bin
+draw_communities: draw_community.bin
 
 #====================================
 # binary recipe for script dir files

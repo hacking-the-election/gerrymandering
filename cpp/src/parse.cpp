@@ -262,13 +262,13 @@ std::vector<GeoGerry::Precinct> parse_precinct_data(std::string geoJSON) {
         int pop = 0;
 
         // see if the geoJSON contains the shape id
-        if (shapes["features"][i]["properties"].HasMember(geodata_id.c_str())) {
-            id = shapes["features"][i]["properties"][geodata_id.c_str()].GetString();
-        }
-        else {
-            std::cout << "\e[31merror: \e[0mYou have no precinct id." << std::endl;
-            std::cout << "If future k-vernooy runs into this error, it means that GEOID10 in your geoJSON in your voter data is missing. To fix... maybe try a loose comparison of the names?" << std::endl;
-        }
+        // if (shapes["features"][i]["properties"].HasMember(geodata_id.c_str())) {
+        //     id = shapes["features"][i]["properties"][geodata_id.c_str()].GetString();
+        // }
+        // else {
+        //     std::cout << "\e[31merror: \e[0mYou have no precinct id." << std::endl;
+        //     std::cout << "If future k-vernooy runs into this error, it means that GEOID10 in your geoJSON in your voter data is missing. To fix... maybe try a loose comparison of the names?" << std::endl;
+        // }
 
         // get voter data from geodata
         int demv = 0;
@@ -676,11 +676,18 @@ int hole_count(GeoGerry::Precinct_Group pg) {
 
 
 GeoGerry::Graph generate_graph(GeoGerry::Precinct_Group pg) {
+
     GeoGerry::Graph graph;
+    for (int i = 0; i < pg.precincts.size(); i++) {
+        GeoGerry::Node n;
+        n.id = i;
+        graph.vertices.push_back(n);
+    }
 
     for (int i = 0; i < pg.precincts.size(); i++) {
         std::cout << "on precinct " << i << std::endl;
-        graph.vertices.push_back(i);
+        graph.vertices[i].precinct = &pg.precincts[i];
+
         GeoGerry::p_index_set precincts = {};
 
         for (int j = i + 1; j < pg.precincts.size(); j++) {
@@ -692,16 +699,37 @@ GeoGerry::Graph generate_graph(GeoGerry::Precinct_Group pg) {
         for (GeoGerry::p_index border : precincts) {
             GeoGerry::p_index higher = (border > i) ? border : i;
             GeoGerry::p_index lower = (border <= i) ? border : i;
-            std::array<int, 2> edge = {higher, lower};
 
+            std::array<int, 2> edge = {higher, lower};
+            std::array<int, 2> lh = {lower, higher};
+            
             if (!(std::find(graph.edges.begin(), graph.edges.end(), edge) != graph.edges.end())) {
                 graph.edges.push_back(edge);
-                // std::cout << edge[0] << ", " << edge[1] << std::endl;
+            }
+
+            if (!(std::find(graph.vertices[higher].edges.begin(),
+                  graph.vertices[higher].edges.end(), edge) 
+                != graph.vertices[higher].edges.end())) {
+
+                graph.vertices[higher].edges.push_back(edge);
+            }
+
+
+            if (!(std::find(graph.vertices[lower].edges.begin(),
+                  graph.vertices[lower].edges.end(), lh) 
+                != graph.vertices[lower].edges.end())) {
+
+                graph.vertices[lower].edges.push_back(lh);
             }
         }
     }
 
+    GeoDraw::Canvas canvas(900, 900);
+    canvas.add_graph(graph);
+    canvas.draw();
+
     std::cout << graph.edges.size() << ", " << graph.vertices.size() << std::endl;
+    std::cout << "precinct 0 has " << graph.vertices[0].edges.size() << " edges and " << graph.vertices[0].precinct->hull.border.size() << " coordinates" << std::endl;
     return graph;
 }
 
@@ -804,11 +832,9 @@ GeoGerry::State GeoGerry::State::generate_from_file(std::string precinct_geoJSON
     State state = State(district_shapes, pre_group.precincts, state_shape_v);
     Multi_Polygon sborder = generate_exterior_border(state);
     state.border = sborder.border;
-    // std::cout << sborder.border.size() << std::endl;
 
-    // sort files into
-    // if (VERBOSE) std::cout << "sorting precincts into islands from exterior state border..." << std::endl;
-    // state.islands = sort_precincts(sborder, pre_group);
+    state.network = generate_graph(pre_group);
+
     if (VERBOSE) std::cout << "state serialized!" << std::endl;
 
     return state; // return the state object

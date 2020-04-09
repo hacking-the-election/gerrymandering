@@ -6,11 +6,13 @@
  community object list to a canvas
 ========================================*/
 
+#include <iostream>
+#include <boost/filesystem.hpp>
+
 #include "../../include/shape.hpp"
 #include "../../include/util.hpp"
 #include "../../include/geometry.hpp"
 #include "../../include/canvas.hpp"
-#include <boost/filesystem.hpp>
 
 using namespace std;
 using namespace GeoGerry;

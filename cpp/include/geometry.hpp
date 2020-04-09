@@ -7,13 +7,24 @@
 ========================================*/
 
 #pragma once
+
+#include <boost/geometry.hpp>
+#include <boost/geometry/geometries/point_xy.hpp>
+#include <boost/geometry/geometries/polygon.hpp>
+
+typedef boost::geometry::model::d2::point_xy<long int> boost_point;
+typedef boost::geometry::model::polygon<boost_point> boost_polygon;
+
 #include "shape.hpp"
 #include "../lib/clipper/clipper.hpp"
 
+using namespace boost::geometry;
 #define PI 3.14159265358979323846264338327950288
 
 enum clip_type {UNION, INTERSECTION, DIFFERENCE, XOR};
 
+
+boost_polygon ring_to_boost_poly(GeoGerry::LinearRing shape);
 GeoGerry::segment coords_to_seg(GeoGerry::coordinate c1, GeoGerry::coordinate c2);
 
 double get_distance(GeoGerry::coordinate c1, GeoGerry::coordinate c2);

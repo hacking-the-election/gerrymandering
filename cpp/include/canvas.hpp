@@ -8,11 +8,24 @@
 ========================================*/
 
 #pragma once
-#include "shape.hpp"
+
+#include <array>
 #include <SDL2/SDL.h>
 
+#include "shape.hpp"
+
+
 namespace GeoDraw {
-    
+
+    class Canvas;
+    class Color;
+    class Outline;
+    class Pixel;
+
+
+    std::array<int, 3> interpolate_rgb(std::array<int, 3> rgb1, std::array<int, 3> rgb2, double interpolator);
+
+
     class Color {
         public:
         int r, g, b;
@@ -37,15 +50,18 @@ namespace GeoDraw {
         Color(int rx, int gx, int bx) : r(rx), g(gx), b(bx) {};
     };
 
+
     class Pixel {
         public:
 
-        Color color;
-        int x, y;
-        Uint32 get_uint();
-        Pixel(int ax, int ay, Color c) : x(ax), y(ay), color(c) {}
-        void draw(SDL_Renderer* renderer);
+            Color color;
+            int x, y;
+            Uint32 get_uint();
+            Pixel();
+            Pixel(int ax, int ay, Color c) : color(c), x(ax), y(ay) {}
+            void draw(SDL_Renderer* renderer);
     };
+
 
     class Outline {
         public:
@@ -53,11 +69,21 @@ namespace GeoDraw {
             Color color;
             int line_thickness;
             bool filled;
+
             GeoGerry::coordinate get_representative_point();
+            
+            std::vector<std::vector<Pixel> > pixels;
+            Pixel get_pixel(GeoGerry::coordinate c);
+            void rasterize(Canvas& canvas);
+
+            // modify canvas attributes
+            void flood_fill_util(GeoGerry::coordinate coord, Color c1, Color c2, Canvas& canvas);
+            void flood_fill(GeoGerry::coordinate, Color c, Canvas& canvas);
 
             Outline(GeoGerry::LinearRing lr, Color c, int th, bool f) :
                 border(lr), color(c), line_thickness(th), filled(f) {}
     };
+
 
     class Canvas {
         /*
@@ -70,10 +96,10 @@ namespace GeoDraw {
         std::vector<Outline> outlines;               // shapes to be drawn individually
         std::vector<Outline> holes;                  // shapes to be drawn individually
 
-        // meta information
-        std::vector<Pixel> pixels;        // the pixel array to write to screen
-
         public:
+
+        // meta information
+        std::vector<std::vector<Pixel> > pixels;        // the pixel array to write to screen
 
         GeoGerry::bounding_box box;       // the outer bounding box
         GeoGerry::bounding_box get_bounding_box();   // calculate bounding box of coordinates
@@ -81,13 +107,8 @@ namespace GeoDraw {
         int x, y;                         // dimensions of the screen
 
         // modify canvas attributes
-        void flood_fill_util(GeoGerry::coordinate coord, Color c1, Color c2);
-        void flood_fill(GeoGerry::coordinate, Color c);
         void translate(long int x, long int y, bool b);      // move the outlines by x and y
         void scale(double scale_factor);             // scale the shapes by scale factor
-        void rasterize_shapes();                     // determine pixel positions and values for coordiantes
-        void rasterize_edges();                      // generate edges
-        void fill_shapes();                          // fill shapes with solid color
         Pixel get_pixel(GeoGerry::coordinate c);
 
         Canvas(int dx, int dy) : x(dx), y(dy) {
@@ -101,6 +122,9 @@ namespace GeoDraw {
         void add_shape(GeoGerry::Multi_Polygon s, bool = false, Color = Color(0,0,0), int = 1);
         void add_shape(GeoGerry::Precinct_Group s, bool = false, Color = Color(0,0,0), int = 1);
         void add_shape(GeoGerry::Communities s, bool = false, Color = Color(0,0,0), int = 1);
+
+        void add_graph(GeoGerry::Graph s);
+
         void clear();
         void resize_window(int x, int y);
         void draw();

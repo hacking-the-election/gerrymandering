@@ -7,23 +7,52 @@
  visualizations.
 ========================================*/
 
+#include <iostream>
+
 #include "../include/canvas.hpp"
 #include "../include/geometry.hpp"
+
+using std::cout;
+using std::endl;
 
 int RECURSION_STATE = 0;
 double PADDING = (3.0/4.0);
 
+
+
+GeoDraw::Pixel::Pixel() {
+    color = Color(-1,-1,-1);
+}
+
+
+std::array<int, 3> GeoDraw::interpolate_rgb(std::array<int, 3> rgb1, std::array<int, 3> rgb2, double interpolator) {
+    int r = round(rgb1[0] + (double)(rgb2[0] - rgb1[0]) * interpolator);
+    int g = round(rgb1[1] + (double)(rgb2[1] - rgb1[1]) * interpolator);
+    int b = round(rgb1[2] + (double)(rgb2[2] - rgb1[2]) * interpolator);
+
+    return {r, g, b};
+}
+
+
 GeoGerry::coordinate i_average(GeoGerry::bounding_box n) {
+    /*
+        @desc: Finds center of bounding box through averaging coords
+        @params: `bounding_box` b: bounding box to average
+        @return: `coordinate` center of box
+    */
+
     double y = n[0] + n[1];
     double x = n[2] + n[3];
     
     return {(int)(x / (double) 2), (int)(y / (double) 2)};
 }
 
+
 void GeoDraw::Pixel::draw(SDL_Renderer* renderer) {
     SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, 255);
     SDL_RenderDrawPoint(renderer, x, y);
 }
+
 
 void GeoDraw::Canvas::add_shape(GeoGerry::LinearRing s, bool f, Color c, int t) {
     /*
@@ -110,7 +139,30 @@ void GeoDraw::Canvas::add_shape(GeoGerry::Communities s, bool f, GeoDraw::Color 
     }
 }
 
-        
+
+void GeoDraw::Canvas::add_graph(GeoGerry::Graph g) {
+
+    for (std::array<int, 2> edge : g.edges) {
+        GeoGerry::coordinate c1 = g.vertices[g.get_node(edge[0])].precinct->get_center();
+        GeoGerry::coordinate c2 = g.vertices[g.get_node(edge[1])].precinct->get_center();
+        GeoGerry::LinearRing lr({c1, c2});
+        this->add_shape(lr, false, Color(0, 0, 0), 1);
+    }
+
+    
+    for (GeoGerry::Node node : g.vertices) {
+        std::array<int, 3> rgb = interpolate_rgb({252, 3, 3}, {3, 61, 252}, node.precinct->get_ratio());
+        Color color(rgb[0], rgb[1], rgb[2]);
+        if (node.precinct->get_ratio() == -1) color = Color(0,0,0);
+
+        int t = 400;
+        if (node.precinct->pop > 400) t = node.precinct->pop;
+
+        this->add_shape(generate_gon(node.precinct->get_center(), t, 40), true, color, 2);
+    }
+}
+
+
 void GeoDraw::Canvas::resize_window(int dx, int dy) {
     x = dx;
     y = dy;
@@ -232,118 +284,51 @@ void GeoDraw::Canvas::scale(double scale_factor) {
 }
 
 
-void GeoDraw::Canvas::flood_fill_util(GeoGerry::coordinate coord, Color c1, Color c2) {
+void GeoDraw::Outline::flood_fill_util(GeoGerry::coordinate coord, Color c1, Color c2, Canvas& canvas) {
     RECURSION_STATE++;
-    // if (RECURSION_STATE > 50000) return;
- 
-    if (coord[0] < 0 || coord[0] > x || coord[1] < 0 || coord[1] > y) return;
-    if (this->get_pixel({coord[0], coord[1]}).color != c1) return;
-    this->pixels.push_back(Pixel(coord[0], coord[1], c2));
+    if (RECURSION_STATE > 9000) return;
 
-    flood_fill_util({coord[0] + 1, coord[1]}, c1, c2);
-    flood_fill_util({coord[0] - 1, coord[1]}, c1, c2);
-    flood_fill_util({coord[0], coord[1] + 1}, c1, c2);
-    flood_fill_util({coord[0], coord[1] - 1}, c1, c2);
+    if (coord[0] < 0 || coord[0] > pixels.size() || coord[1] < 0 || coord[1] > pixels[0].size()) return;
+    if (this->get_pixel({coord[0], coord[1]}).color != c1) return;
+    
+    Pixel p(coord[0], coord[1], c2);
+    this->pixels[coord[0]][coord[1]] = p;
+    canvas.pixels[coord[0]][coord[1]] = p;
+
+    flood_fill_util({coord[0] + 1, coord[1]}, c1, c2, canvas);
+    flood_fill_util({coord[0] - 1, coord[1]}, c1, c2, canvas);
+    flood_fill_util({coord[0], coord[1] + 1}, c1, c2, canvas);
+    flood_fill_util({coord[0], coord[1] - 1}, c1, c2, canvas);
 
     return;
 }
 
 
 GeoDraw::Pixel GeoDraw::Canvas::get_pixel(GeoGerry::coordinate c) {
-    for (Pixel p : pixels) {
-        if (p.x == c[0] && p.y == c[1]) return p;
-    }
-
-    return (Pixel(-1, -1, Color(255,255,255)));
+    return this->pixels[c[0]][c[1]];
 }
 
-void GeoDraw::Canvas::flood_fill(GeoGerry::coordinate coord, Color c) {
+
+GeoDraw::Pixel GeoDraw::Outline::get_pixel(GeoGerry::coordinate c) {
+    return this->pixels[c[0]][c[1]];
+}
+
+
+void GeoDraw::Outline::flood_fill(GeoGerry::coordinate coord, Color c, Canvas& canvas) {
+    RECURSION_STATE = 0;
     Color co = this->get_pixel(coord).color;
-    this->flood_fill_util(coord, co, c);
+    this->flood_fill_util(coord, co, c, canvas);
     return;
 }
 
-
-void GeoDraw::Canvas::fill_shapes() {
-    for (Outline outline : outlines) {
-        if (outline.filled) {
-            this->flood_fill(outline.get_representative_point(), outline.color);
-        }
-    }
-
-    return;
-}
 
 
 GeoGerry::coordinate GeoDraw::Outline::get_representative_point() {
-    // GeoGerry::bounding_box box = get_bounding_box(*this);
-    // GeoGerry::coordinate c = i_average(box);
-
-    // int m = 4;
-
-    // while (!point_in_ring(c, this->border)) {
-    //     //
-    //     for (int i = 0; i < m; i++) {
-
-    //     }
-
-    //     m *= 4;
-    // }
-
-    return {150, 150};
-    // return {0,0};
+    return this->border.get_center();
 }
 
 
-void GeoDraw::Canvas::rasterize_edges() {
-    /*
-        @desc:
-            Converts coordinates into pixel array, writes
-            to the pixels array contained in the object
-            
-        @params: none
-        @return: void
-    */
-
-    int dx, dy, x0, x1, y0, y1;
-
-    for (Outline o : outlines) {
-        for (GeoGerry::segment s : o.border.get_segments()) {
-            x0 = s[0];
-            y0 = s[1];
-            x1 = s[2];
-            y1 = s[3];
-
-            // Pixel p0(x0, y0, o.color);
-            // this->pixels.push_back(p0);
-            dx = x1 - x0;
-            dy = y1 - y0;
-
-            int steps = abs(dx) > abs(dy) ? abs(dx) : abs(dy);
-
-            double xinc = (double) dx / (double) steps;
-            double yinc = (double) dy / (double) steps;
-
-            double xv = (double) x0;
-            double yv = (double) y0;
-
-            for (int i = 0; i <= steps; i++) {
-                for (int i = -(o.line_thickness - 1); i <= (o.line_thickness - 1); i++) {
-                    for (int j = -(o.line_thickness - 1); j <= (o.line_thickness - 1); j++) {
-                        Pixel p((int)xv + i, (int)yv + j, o.color);
-                        this->pixels.push_back(p);
-                    }
-                }
-
-                xv += xinc;
-                yv += yinc;
-            }
-        }
-    }
-}
-
-
-void GeoDraw::Canvas::rasterize_shapes() {
+void GeoDraw::Outline::rasterize(Canvas& canvas) {
     /*
         @desc:
             scales an array of coordinates to fit on a screen
@@ -354,18 +339,69 @@ void GeoDraw::Canvas::rasterize_shapes() {
         @return: void
     */
 
-    this->rasterize_edges();
-    this->fill_shapes();
 
-    for (Pixel p : pixels) {
-        int total = (x * y) - 1;
-        int start = p.y * x - p.x;
+    if (filled) this->pixels = std::vector<std::vector<Pixel> > (canvas.x, std::vector<Pixel>(canvas.y, Pixel()));
+    int dx, dy, x0, x1, y0, y1;
 
-        if (total - start < x * y && total - start >= 0) 
-            this->background[total - start] = p.get_uint();
+    for (GeoGerry::segment s : this->border.get_segments()) {
+        x0 = s[0];
+        y0 = s[1];
+        x1 = s[2];
+        y1 = s[3];
+
+        // Pixel p0(x0, y0, o.color);
+        // this->pixels.push_back(p0);
+        dx = x1 - x0;
+        dy = y1 - y0;
+
+        int steps = abs(dx) > abs(dy) ? abs(dx) : abs(dy);
+
+        double xinc = (double) dx / (double) steps;
+        double yinc = (double) dy / (double) steps;
+
+        double xv = (double) x0;
+        double yv = (double) y0;
+
+        for (int i = 0; i <= steps; i++) {
+         
+            if (filled) this->pixels[xv][yv] = Pixel((int)xv, (int)yv, this->color);
+            canvas.pixels[xv][yv] = Pixel((int)xv , (int)yv, this->color);
+            
+            if (abs(dx) > abs(dy)) {
+                // up/down
+                int add = 0;
+                for (int i = 1; i <= ceil((double)(line_thickness - 1) / 2.0); i++) {
+                    for (int f = 1; f >= -1; f -= 2) {
+                        if (filled) this->pixels[xv][yv + (i * f)] = Pixel((int)xv, (int)yv + (i * f), this->color);
+                        canvas.pixels[xv][yv + (i * f)] = Pixel((int)xv, (int)yv + (i * f), this->color);
+                        add++;
+
+                        if (add == line_thickness - 1) break;
+                    }
+                }
+            }
+            else {
+                // left/right
+                int add = 0;
+                for (int i = 1; i <= ceil((double)(line_thickness - 1) / 2.0); i++) {
+                    for (int f = 1; f >= -1; f -= 2) {
+                        if (filled) this->pixels[xv + (i * f)][yv] = Pixel((int)xv + (i * f), (int)yv, this->color);
+                        canvas.pixels[xv + (i * f)][yv] = Pixel((int)xv + (i * f), (int)yv, this->color);
+                        add++;
+
+                        if (add == line_thickness - 1) break;
+                    }
+                }
+            }
+
+            xv += xinc;
+            yv += yinc;
+        }
     }
 
-    // fill_shapes();
+    if (this->filled) {
+        this->flood_fill(this->get_representative_point(), this->color, canvas);
+    }
 
     return;
 }
@@ -396,7 +432,8 @@ void GeoDraw::Canvas::draw() {
         @return: void
     */
 
-    // size and position coordinates in the right wuat
+    // size and position coordinates in the right quad
+    this->pixels = std::vector<std::vector<Pixel> > (x, std::vector<Pixel>(y));
     memset(background, 255, x * y * sizeof(Uint32));
     get_bounding_box();
     translate(-box[2], -box[1], true);
@@ -408,6 +445,7 @@ void GeoDraw::Canvas::draw() {
 
     int px = (int)((double)x * (1.0-PADDING) / 2.0), py = (int)((double)y * (1.0-PADDING) / 2.0);
     translate(px, py, false);
+
     // if (ratio_top < ratio_right) {
     //     // center vertically
     //     std::cout << "x" << std::endl;
@@ -416,7 +454,22 @@ void GeoDraw::Canvas::draw() {
     //     translate(0, t, false);
     // }
 
-    rasterize_shapes();
+    for (int i = 0; i < outlines.size(); i++) {
+        // cout << "Rasterizing " << i << endl;
+        outlines[i].rasterize(*this);
+    }
+
+    for (std::vector<Pixel> pr : this->pixels) {
+        for (Pixel p : pr) {
+            if (p.color.r != -1) {
+                int total = (x * y) - 1;
+                int start = p.y * x - p.x;
+
+                if (total - start < x * y && total - start >= 0) 
+                    this->background[total - start] = p.get_uint();
+            }
+        }
+    }
 
     SDL_Init(SDL_INIT_VIDEO);
 
@@ -463,67 +516,68 @@ void GeoDraw::Anim::playback() {
     /*
         Play back an animation object
     */
-    
-    std::vector<Uint32*> backgrounds;
-    for (Canvas c : frames) {
-        memset(c.background, 255, c.x * c.y * sizeof(Uint32));
-        GeoGerry::bounding_box b = c.get_bounding_box();
-        c.translate(-b[2], -b[1], true);
+   
+    return;
+    // std::vector<Uint32*> backgrounds;
+    // for (Canvas c : frames) {
+    //     memset(c.background, 255, c.x * c.y * sizeof(Uint32));
+    //     GeoGerry::bounding_box b = c.get_bounding_box();
+    //     c.translate(-b[2], -b[1], true);
 
-        double ratio_top = ceil((double) c.box[0]) / (double) (c.x);   // the rounded ratio of top:top
-        double ratio_right = ceil((double) c.box[3]) / (double) (c.y); // the rounded ratio of side:side
-        double scale_factor = 1 / ((ratio_top > ratio_right) ? ratio_top : ratio_right); 
-        c.scale(scale_factor * PADDING);
+    //     double ratio_top = ceil((double) c.box[0]) / (double) (c.x);   // the rounded ratio of top:top
+    //     double ratio_right = ceil((double) c.box[3]) / (double) (c.y); // the rounded ratio of side:side
+    //     double scale_factor = 1 / ((ratio_top > ratio_right) ? ratio_top : ratio_right); 
+    //     c.scale(scale_factor * PADDING);
 
-        int px = (int)((double)c.x * (1.0-PADDING) / 2.0), py = (int)((double)c.y * (1.0-PADDING) / 2.0);
-        c.translate(px, py, false);
-        c.rasterize_shapes();
-        backgrounds.push_back(c.background);
+    //     int px = (int)((double)c.x * (1.0-PADDING) / 2.0), py = (int)((double)c.y * (1.0-PADDING) / 2.0);
+    //     c.translate(px, py, false);
+    //     c.rasterize_shapes();
+    //     backgrounds.push_back(c.background);
 
-    }
+    // }
 
-    Uint32* background = new Uint32[frames[0].x * frames[0].y];
-    memset(background, 255, frames[0].x * frames[0].y * sizeof(Uint32));
+    // Uint32* background = new Uint32[frames[0].x * frames[0].y];
+    // memset(background, 255, frames[0].x * frames[0].y * sizeof(Uint32));
 
-    SDL_Init(SDL_INIT_VIDEO);
+    // SDL_Init(SDL_INIT_VIDEO);
 
-    // initialize window
-    SDL_Event event;
-    SDL_Window* window = SDL_CreateWindow("Drawing", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, frames[0].x, frames[0].y, 0);
-    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 0);
-    SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, frames[0].x, frames[0].y);
+    // // initialize window
+    // SDL_Event event;
+    // SDL_Window* window = SDL_CreateWindow("Drawing", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, frames[0].x, frames[0].y, 0);
+    // SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 0);
+    // SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, frames[0].x, frames[0].y);
 
-    SDL_SetWindowResizable(window, SDL_TRUE);
-    SDL_UpdateTexture(texture, NULL, background, frames[0].x * sizeof(Uint32));
-    SDL_RenderPresent(renderer);
-    SDL_PollEvent(&event);
-    SDL_Delay(200);
+    // SDL_SetWindowResizable(window, SDL_TRUE);
+    // SDL_UpdateTexture(texture, NULL, background, frames[0].x * sizeof(Uint32));
+    // SDL_RenderPresent(renderer);
+    // SDL_PollEvent(&event);
+    // SDL_Delay(200);
 
-    for (int i = 0; i < backgrounds.size() - 1; i++) {
-        Uint32* bg = backgrounds[i];
-        SDL_UpdateTexture(texture, NULL, bg, frames[0].x * sizeof(Uint32));
-        SDL_PollEvent(&event);
-        SDL_Delay(delay);
-        SDL_RenderClear(renderer);
-        SDL_RenderCopy(renderer, texture, NULL, NULL);
-        SDL_RenderPresent(renderer);
-    }
+    // for (int i = 0; i < backgrounds.size() - 1; i++) {
+    //     Uint32* bg = backgrounds[i];
+    //     SDL_UpdateTexture(texture, NULL, bg, frames[0].x * sizeof(Uint32));
+    //     SDL_PollEvent(&event);
+    //     SDL_Delay(delay);
+    //     SDL_RenderClear(renderer);
+    //     SDL_RenderCopy(renderer, texture, NULL, NULL);
+    //     SDL_RenderPresent(renderer);
+    // }
 
-    bool quit = false;
+    // bool quit = false;
 
-    while (!quit) {
-        SDL_UpdateTexture(texture, NULL, backgrounds[backgrounds.size() - 1], frames[0].x * sizeof(Uint32));
-        SDL_WaitEvent(&event);
-        if (event.type == SDL_QUIT) quit = true;
+    // while (!quit) {
+    //     SDL_UpdateTexture(texture, NULL, backgrounds[backgrounds.size() - 1], frames[0].x * sizeof(Uint32));
+    //     SDL_WaitEvent(&event);
+    //     if (event.type == SDL_QUIT) quit = true;
 
-        SDL_RenderClear(renderer);
-        SDL_RenderCopy(renderer, texture, NULL, NULL);
-        SDL_RenderPresent(renderer);
-    }
+    //     SDL_RenderClear(renderer);
+    //     SDL_RenderCopy(renderer, texture, NULL, NULL);
+    //     SDL_RenderPresent(renderer);
+    // }
 
-    // destroy arrays and SDL objects
-    SDL_DestroyTexture(texture);
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow( window );
-    SDL_Quit();
+    // // destroy arrays and SDL objects
+    // SDL_DestroyTexture(texture);
+    // SDL_DestroyRenderer(renderer);
+    // SDL_DestroyWindow( window );
+    // SDL_Quit();
 }

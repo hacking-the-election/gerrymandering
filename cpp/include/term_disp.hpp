@@ -3,12 +3,12 @@
 
 const std::string 
 
-RED = "\e[31m",
-GREEN = "\e[32m",
-YELLOW = "\e[33m",
-BLUE = "\e[34m",
-PURPLE = "\e[35m",
-RESET = "\e[0m",
+RED = "\x1b[31m",
+GREEN = "\x1b[32m",
+YELLOW = "\x1b[33m",
+BLUE = "\x1b[34m",
+PURPLE = "\x1b[35m",
+RESET = "\x1b[0m",
 C = ",",
 N = "\n",
 OQ = "\"",

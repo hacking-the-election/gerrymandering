@@ -33,12 +33,17 @@ namespace GeoGerry {
 class LinearRing;      // a group of lines
 class Polygon;         // Exterior and optional interior LinearRings (for holes)
 class Multi_Polygon;   // A group of Polygons
+
 class Precinct;        // Voter block class
 class Precinct_Group;  // A group of precincts
 class State;           // Contains arrays of the above, as well as methods for various algorithms
-class Exceptions;      // for any error to be thrown
-class Community;       // list of precinct id's
+
+class Node;            // A vertex on a graph
 class Graph;           // precinct indices as vertices and edges
+class Community;       // list of precinct id's
+
+class Exceptions;      // for any error to be thrown
+
 
 // simplify the coordinate modification system
 typedef std::array<long int, 2> coordinate;              // a list in form {x1, y1}
@@ -57,7 +62,19 @@ typedef int p_index;                       // defines an index in an array
 typedef std::vector<p_index> p_index_set;  // vector of indices in an array
 typedef std::array<int, 2> seg_index;      // {p_index, segment_index};
 
-enum processes { PARTISANSHIP, COMPACTNESS, POPULATION };
+
+enum processes { 
+    /*
+        For communication between functions
+        about which algorithmic process the communities
+        algorithm is running
+    */
+
+    PARTISANSHIP, 
+    COMPACTNESS, 
+    POPULATION 
+};
+
 
 class Exceptions {
     /*
@@ -74,7 +91,7 @@ class Exceptions {
         
         struct CreatesIsland : public std::exception {
             const char* what() const throw() {
-                return "This precinct exchange would create an island";
+                return "Precinct exchange creates an island";
             }
         };
 
@@ -91,7 +108,7 @@ class LinearRing {
         Contains a mandatory `border` property that contains
         a simple coordiante_set - a sequence of lines.
         
-        Basically just a wrapper for the coordinate_set typedef
+        Basically a wrapper for the coordinate_set typedef
         with extended method functionality
     */
 
@@ -286,10 +303,37 @@ class Multi_Polygon : public Polygon {
 };
 
 
+class Node {
+    /*
+        A vertex on the `Graph` class, containing
+        precinct information and edge information
+    */
+    
+    public:
+        Precinct* precinct;
+        int id;
+
+        std::vector<std::array<int, 2> > edges;
+
+
+        // for boost serialization
+        friend class boost::serialization::access;
+        template<class Archive> void serialize(Archive & ar, const unsigned int version);
+};
+
+
 class Graph {
     public:
-        std::vector<p_index> vertices;
-        std::vector<std::array<p_index, 2> > edges;
+        std::vector<Node> vertices;
+        std::vector<std::array<int, 2> > edges;
+
+        int get_node(int id);
+        void sort();
+
+
+        // for boost serialization
+        friend class boost::serialization::access;
+        template<class Archive> void serialize(Archive & ar, const unsigned int version);
 };
 
 
