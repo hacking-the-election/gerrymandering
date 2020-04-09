@@ -62,6 +62,8 @@ def create_graph(election_file, geo_file, pop_file, state):
 
     dem_keys = state_metadata[state]["dem_keys"]
     rep_keys = state_metadata[state]["rep_keys"]
+    # keys for third parties, if applicable
+    other_keys = state_metadata[state]["other_keys"]
     json_ids  = state_metadata[state]["geo_id"]
     json_pops = state_metadata[state]["pop_key"]
     ele_ids   = state_metadata[state]["ele_id"]
@@ -224,7 +226,9 @@ def create_graph(election_file, geo_file, pop_file, state):
 
     for precinct in geodata["features"]:
         coordinate_data = precinct["geometry"]["coordinates"]
-
+        geo_id = "".join([precinct["properties"][json_id] for json_id in json_ids])
+        precinct_pop = pop[geo_id]
+        
     return precinct_graph
 
 

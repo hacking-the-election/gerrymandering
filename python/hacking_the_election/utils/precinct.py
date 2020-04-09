@@ -27,18 +27,8 @@ class Precinct:
     :type geoid: str
     """
 
-    def __init__(self, rep_data, dem_data, pop, coords, state, precinct_id):
-
-        self.rep_data = rep_data
-        self.dem_data = dem_data
-        
-        total_rep = sum(self.rep_data.values())
-        total_dem = sum(self.dem_data.values())
-        try:
-            self.partisanship = total_rep / (total_rep + total_dem)
-        except ZeroDivisionError:
-            # No voters in precinct.
-            self.partisanship = 0
+    def __init__(self, pop, coords, state, precinct_id, rep_data, dem_data, 
+                 green_data=None, lib_data=None, reform_data=None, ind_data=None, const_data=None):
 
         self.pop = pop
         # should be shapely polygon
@@ -49,3 +39,50 @@ class Precinct:
         self.id = precinct_id
         # used for data visualization
         self.community = None
+        
+        self.rep_data = rep_data
+        self.dem_data = dem_data
+        # Many of the following attributes may be none
+        # Green Party of the United States
+        self.green_data = green_data
+        # Libertarian Party
+        self.lib_data = lib_data
+        # Reform Party of the United States of America
+        self.reform_data = reform_data
+        # Votes for Independents (and writeins, if applicable)
+        self.ind_data = ind_data
+        # Constitution Party
+        self.const_data = const_data
+        
+        total_rep = sum(self.rep_data.values())
+        total_dem = sum(self.dem_data.values())
+        if green_data:
+            total_green = sum(self.green_data.values())
+        else:
+            total_green = 0
+
+        if lib_data:
+            total_lib = sum(self.lib_data.values())
+        else:
+            total_lib = 0
+
+        if reform_data:
+            total_reform = sum(self.reform_data.values())
+        else:
+            total_reform = 0
+
+        if ind_data:
+            total_ind = sum(self.ind_data.values())
+        else:
+            total_ind = 0
+
+        if const_data:
+            total_const = sum(self.const_data.values())
+        else:
+            total_const = 0
+            
+        try:
+            self.partisanship = total_rep / (total_rep + total_dem)
+        except ZeroDivisionError:
+            # No voters in precinct.
+            self.partisanship = 0
