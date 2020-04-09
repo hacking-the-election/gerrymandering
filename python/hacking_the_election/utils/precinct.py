@@ -2,7 +2,7 @@
 A class representing the smallest unit of voter
 data in our project's data files: the precinct.
 """
-
+from stats import standard_deviation
 
 class Precinct:
     """Class containing voter, population, and geo data for a single precinct.
@@ -54,35 +54,47 @@ class Precinct:
         # Constitution Party
         self.const_data = const_data
         
+        # number of parties with data
+        self.num_parties_data = 0
         total_rep = sum(self.rep_data.values())
         total_dem = sum(self.dem_data.values())
         if green_data:
-            total_green = sum(self.green_data.values())
+            self.total_green = sum(self.green_data.values())
+            self.num_parties_data += 1
         else:
-            total_green = 0
+            self.total_green = 0
 
         if lib_data:
-            total_lib = sum(self.lib_data.values())
+            self.total_lib = sum(self.lib_data.values())
+            self.num_parties_data += 1
         else:
-            total_lib = 0
+            self.total_lib = 0
 
         if reform_data:
-            total_reform = sum(self.reform_data.values())
+            self.total_reform = sum(self.reform_data.values())
+            self.num_parties_data += 1
         else:
-            total_reform = 0
+            self.total_reform = 0
 
         if ind_data:
-            total_ind = sum(self.ind_data.values())
+            self.total_ind = sum(self.ind_data.values())
+            self.num_parties_data += 1
         else:
-            total_ind = 0
+            self.total_ind = 0
 
         if const_data:
-            total_const = sum(self.const_data.values())
+            self.total_const = sum(self.const_data.values())
+            self.num_parties_data += 1
         else:
-            total_const = 0
-            
-        try:
-            self.partisanship = total_rep / (total_rep + total_dem)
-        except ZeroDivisionError:
-            # No voters in precinct.
-            self.partisanship = 0
+            self.total_const = 0
+
+        self.total_votes = sum(self.total_dem + self.total_rep + self.total_green + self.total_lib + self.total_reform + self.total_ind + self.total_const)
+
+        self.percent_dem = self.total_dem / self.total_votes
+        self.percent_rep = self.total_rep / self.total_votes
+
+        self.percent_green = self.total_green / self.total_votes
+        self.percent_lib = self.total_lib / self.total_votes
+        self.percent_reform = self.total_reform / self.total_votes
+        self.percent_ind = self.total_ind / self.total_votes
+        self.percent_const = self.total_const / self.total_votes
