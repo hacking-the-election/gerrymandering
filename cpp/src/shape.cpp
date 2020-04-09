@@ -11,8 +11,13 @@
 #include "../include/shape.hpp"     // class definitions
 #include "../include/geometry.hpp"  // class definitions
 #include "../include/util.hpp"      // split and join
+#include <iostream>
+
+using std::cout;
+using std::endl;
 
 #define REP  // use rep / (dem + rep) as ratio
+
 
 double GeoGerry::Precinct::get_ratio() {
     // retrieve ratio from precinct
@@ -289,114 +294,6 @@ bool GeoGerry::operator!= (GeoGerry::Multi_Polygon& s1, GeoGerry::Multi_Polygon&
     (see boost documentation for more information)
 */
 
-void GeoGerry::State::write_binary(std::string path) {
-    std::ofstream ofs(path); // open output stream
-    boost::archive::binary_oarchive oa(ofs); // open archive stream
-    oa << *this; // put this pointer into stream
-    ofs.close(); // close stream
-}
-
-
-GeoGerry::State GeoGerry::State::read_binary(std::string path) {
-    GeoGerry::State state = GeoGerry::State(); // blank state object
-
-    std::ifstream ifs(path); // open input stream
-    boost::archive::binary_iarchive ia(ifs); // open archive stream
-    ia >> state; // read into state object
-
-    return state; // return state object
-}
-
-
-// void GeoGerry::Precinct_Group::write_binary(std::string path) {
-//     std::ofstream ofs(path); // open output stream
-//     boost::archive::binary_oarchive oa(ofs); // open archive stream
-//     oa << *this; // put this pointer into stream
-//     ofs.close(); // close stream
-// }
-
-
-// GeoGerry::Precinct_Group GeoGerry::Precinct_Group::read_binary(std::string path) {
-//     GeoGerry::Precinct_Group pg = GeoGerry::Precinct_Group(); // blank object
-//     std::ifstream ifs(path); // open input stream
-//     boost::archive::binary_iarchive ia(ifs); // open archive stream
-//     ia >> pg;
-//     return pg; // return precinct group object
-// }
-
-
-template<class Archive> void GeoGerry::LinearRing::serialize(Archive & ar, const unsigned int version) {
-    ar & border;
-}
-
-
-template<class Archive> void GeoGerry::State::serialize(Archive & ar, const unsigned int version) {
-    // write districts, precincts, name, and border
-    ar & districts;
-    ar & precincts;
-    ar & name;
-    ar & border;
-    ar & pop;
-}
-
-
-template<class Archive> void GeoGerry::Multi_Polygon::serialize(Archive & ar, const unsigned int version) {
-    ar & border;
-    ar & shape_id;
-    ar & pop;
-}
-
-
-template<class Archive> void GeoGerry::Node::serialize(Archive & ar, const unsigned int version) {
-    ar & id;
-    ar & precinct;
-    ar & edges;
-}
-
-
-template<class Archive> void GeoGerry::Graph::serialize(Archive & ar, const unsigned int version) {
-    ar & vertices;
-    ar & edges;
-}
-
-/*
-    The following are serialization methods written
-    to make sure that each sub-nested shape is actually
-    written to the binary file
-
-    ! this could probably be better structured
-    TODO: Make sure that this actually is necessary
-*/
-
-template<class Archive> void GeoGerry::Precinct_Group::serialize(Archive & ar, const unsigned int version) {
-    // push id and border into the archive stream
-    ar & id;
-    ar & border;
-    ar & pop;
-    // ar & precincts;
-}
-
-
-template<class Archive> void GeoGerry::Precinct::serialize(Archive & ar, const unsigned int version) {
-    // push shape, border and vote data
-    ar & shape_id;
-    ar & hull;
-    ar & holes;
-    ar & dem;            
-    ar & rep;
-    ar & pop;
-}
-
-
-template<class Archive> void GeoGerry::Polygon::serialize(Archive & ar, const unsigned int version) {
-    // push shape id and border to archive streamm
-    ar & shape_id;
-    ar & hull;
-    ar & holes;
-    ar & pop;
-}
-
-
 // void GeoGerry::State::save_communities(std::string write_path, Communities communities) {
 //     /*
 //         Saves a community to a file at a specific point in the
@@ -538,3 +435,51 @@ std::string GeoGerry::Multi_Polygon::to_json() {
     return str;
 }
 
+
+void GeoGerry::State::write_binary(std::string path) {
+
+    std::ofstream ofs(path);
+    boost::archive::binary_oarchive oa(ofs);
+    oa << *this;
+
+    return;
+}
+
+
+namespace boost {
+    namespace serialization {
+        template<class Archive>
+        void serialize(Archive & ar, GeoGerry::State& s, const unsigned int version) {
+            ar & s.network;
+        }
+
+        template<class Archive>
+        void serialize(Archive & ar, GeoGerry::Graph& s, const unsigned int version) {
+            ar & s.edges;
+            ar & s.vertices;
+        }
+
+        template<class Archive>
+        void serialize(Archive & ar, GeoGerry::Node& s, const unsigned int version) {
+            cout << "A" << endl;
+            s.precinct->pop = 0;
+            s.precinct->is_part_of_multi_polygon = 0;
+            s.precinct->shape_id = "";
+            s.precinct->dem = 2;
+            s.precinct->rep = 2;
+            s.precinct->pop = 2;
+            cout << "A" << endl;
+            ar & s.precinct;
+            cout << "B" << endl;
+            ar & s.edges;
+            ar & s.id;
+        }
+
+        template<class Archive>
+        void serialize(Archive & ar, GeoGerry::Precinct& s, const unsigned int version) {
+            ar & s.dem;
+            ar & s.rep;
+            ar & s.pop;
+        }
+    }
+}
