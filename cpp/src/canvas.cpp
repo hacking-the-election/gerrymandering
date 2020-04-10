@@ -146,7 +146,7 @@ void GeoDraw::Canvas::add_graph(GeoGerry::Graph g) {
         GeoGerry::coordinate c1 = g.vertices[g.get_node(edge[0])].precinct->get_center();
         GeoGerry::coordinate c2 = g.vertices[g.get_node(edge[1])].precinct->get_center();
         GeoGerry::LinearRing lr({c1, c2});
-        this->add_shape(lr, false, Color(0, 0, 0), 1);
+        this->add_shape(lr, false, Color(200, 200, 200), 1);
     }
 
     
@@ -155,8 +155,12 @@ void GeoDraw::Canvas::add_graph(GeoGerry::Graph g) {
         Color color(rgb[0], rgb[1], rgb[2]);
         if (node.precinct->get_ratio() == -1) color = Color(0,0,0);
 
-        int t = 400;
-        if (node.precinct->pop > 400) t = node.precinct->pop;
+        int factor = 1;
+        int t = 2000;
+        if (node.precinct->pop * factor > 2000) t = node.precinct->pop * factor;
+
+        // if (!point_in_ring(node.precinct->get_center(), generate_gon(node.precinct->get_center(), t, 40).hull))
+        //     cout << "not in ring" << endl;
 
         this->add_shape(generate_gon(node.precinct->get_center(), t, 40), true, color, 2);
     }
@@ -286,7 +290,7 @@ void GeoDraw::Canvas::scale(double scale_factor) {
 
 void GeoDraw::Outline::flood_fill_util(GeoGerry::coordinate coord, Color c1, Color c2, Canvas& canvas) {
     RECURSION_STATE++;
-    if (RECURSION_STATE > 9000) return;
+    if (RECURSION_STATE > 10000) return;
 
     if (coord[0] < 0 || coord[0] > pixels.size() || coord[1] < 0 || coord[1] > pixels[0].size()) return;
     if (this->get_pixel({coord[0], coord[1]}).color != c1) return;
@@ -310,14 +314,15 @@ GeoDraw::Pixel GeoDraw::Canvas::get_pixel(GeoGerry::coordinate c) {
 
 
 GeoDraw::Pixel GeoDraw::Outline::get_pixel(GeoGerry::coordinate c) {
+    // if (c[0] >= pixels.size() || c[0] < 0 || c[1] >= pixels[0].size() || c[1] < 0)
+    //     return Pixel(-1,-1, Color(-1,-1,-1));
     return this->pixels[c[0]][c[1]];
 }
 
 
 void GeoDraw::Outline::flood_fill(GeoGerry::coordinate coord, Color c, Canvas& canvas) {
     RECURSION_STATE = 0;
-    Color co = this->get_pixel(coord).color;
-    this->flood_fill_util(coord, co, c, canvas);
+    this->flood_fill_util(coord, Color(-1,-1,-1), c, canvas);
     return;
 }
 
@@ -342,7 +347,7 @@ void GeoDraw::Outline::rasterize(Canvas& canvas) {
 
     if (filled) this->pixels = std::vector<std::vector<Pixel> > (canvas.x, std::vector<Pixel>(canvas.y, Pixel()));
     int dx, dy, x0, x1, y0, y1;
-
+    
     for (GeoGerry::segment s : this->border.get_segments()) {
         x0 = s[0];
         y0 = s[1];
@@ -399,6 +404,7 @@ void GeoDraw::Outline::rasterize(Canvas& canvas) {
         }
     }
 
+
     if (this->filled) {
         this->flood_fill(this->get_representative_point(), this->color, canvas);
     }
@@ -433,6 +439,7 @@ void GeoDraw::Canvas::draw() {
     */
 
     // size and position coordinates in the right quad
+    cout << "A" << endl;
     this->pixels = std::vector<std::vector<Pixel> > (x, std::vector<Pixel>(y));
     memset(background, 255, x * y * sizeof(Uint32));
     get_bounding_box();
@@ -454,10 +461,14 @@ void GeoDraw::Canvas::draw() {
     //     translate(0, t, false);
     // }
 
+    cout << "A" << endl;
+
     for (int i = 0; i < outlines.size(); i++) {
         // cout << "Rasterizing " << i << endl;
         outlines[i].rasterize(*this);
     }
+
+    cout << "A" << endl;
 
     for (std::vector<Pixel> pr : this->pixels) {
         for (Pixel p : pr) {

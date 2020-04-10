@@ -8,11 +8,12 @@
 
 #include <iostream>
 #include <boost/filesystem.hpp>
+#include <iomanip>
 
-#include "../../include/shape.hpp"
-#include "../../include/util.hpp"
-#include "../../include/geometry.hpp"
-#include "../../include/canvas.hpp"
+#include "../include/shape.hpp"
+#include "../include/util.hpp"
+#include "../include/geometry.hpp"
+#include "../include/canvas.hpp"
 
 using namespace std;
 using namespace GeoGerry;
@@ -26,19 +27,21 @@ int main(int argc, char* argv[]) {
         See community.cpp for the implementation of the algorithm
     */
 
-    if (argc != 3) {
-        cerr << "draw_community: usage: <state.dat> <saved_community>" << endl;
-        return 1;
-    }
-
-    // read binary file from path
-    State state = State::read_binary(string(argv[1]));
-    state.read_communities(string(argv[2]));
-
     // draw communities
     Canvas canvas(900, 900);
-    canvas.add_shape(state.state_communities);
-    canvas.draw();
 
+    vector<string> files = {"../../data/bin/cpp/vermont.dat", "../../data/bin/cpp/new_hampshire.dat", "../../data/bin/cpp/delaware.dat"};
+    LinearRing test_poly = State::read_binary(files[0]).precincts[0].hull;
+
+    cout << test_poly.get_center()[0] << ", "  << test_poly.get_center()[1] << endl;
+
+    for (string file : files) {
+        // read binary file from path
+        State state = State::read_binary(file);
+        canvas.add_graph(state.network);
+    }
+
+    cout << "drawing" << endl;
+    canvas.draw();
     return 0;
 }

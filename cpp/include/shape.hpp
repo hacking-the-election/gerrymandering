@@ -1,6 +1,6 @@
 /*=======================================
  shape.hpp:                     k-vernooy
- last modified:               Fri, Feb 28
+ last modified:              Thurs, Apr 9
  
  Class definitions and method declarations
  for shapes, precincts, states, and 
@@ -19,6 +19,8 @@
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/array.hpp>
+#include <boost/serialization/base_object.hpp>
+
 
 /*
     structure of class definitions:
@@ -175,9 +177,10 @@ class Polygon {
         }
 
 
-        LinearRing hull;                 // array of coordinates - ext border
+        LinearRing hull;                      // array of coordinates - ext border
         std::vector<LinearRing> holes;        // array of holes in shape
         std::string shape_id;                 // the shape's ID, if applicable
+        
         virtual std::string to_json();
 
         // geometric methods, overwritten in Polygon class
@@ -199,6 +202,7 @@ class Polygon {
         int pop = 0; // total population
         int is_part_of_multi_polygon = -1; // for parsing rules
 };
+
 
 class Precinct : public Polygon {
 
@@ -310,11 +314,14 @@ class Node {
     */
     
     public:
-        Precinct* precinct;
+
         int id;
+        Precinct* precinct;
+
+        Node() {};
+        Node(Precinct* precinct) : precinct(precinct) {};
 
         std::vector<std::array<int, 2> > edges;
-
 
         // for boost serialization
         friend class boost::serialization::access;
@@ -395,6 +402,7 @@ class Community : public Precinct_Group {
         static Communities load_frame(std::string read_path, State precinct_list);
 };
 
+
 class State : public Precinct_Group {
     /*
         Derived shape class for defining a state.
@@ -426,6 +434,7 @@ class State : public Precinct_Group {
         // serialize and read to and from binary, json
         void write_binary(std::string path);
         static State read_binary(std::string path);
+
         friend class boost::serialization::access;
         template<class Archive> void serialize(Archive & ar, const unsigned int version);
 };
