@@ -30,7 +30,7 @@
 namespace fs = boost::filesystem;
 using namespace rapidjson;
 
-#define VERBOSE 1  // print progress *
+#define VERBOSE 1  // print progress
 const long int c = pow(2, 18);
 
 // constant id strings
@@ -679,14 +679,13 @@ GeoGerry::Graph generate_graph(GeoGerry::Precinct_Group pg) {
 
     GeoGerry::Graph graph;
     for (int i = 0; i < pg.precincts.size(); i++) {
-        GeoGerry::Node n;
+        GeoGerry::Node n(&pg.precincts[i]);
         n.id = i;
         graph.vertices.push_back(n);
     }
 
     for (int i = 0; i < pg.precincts.size(); i++) {
         std::cout << "on precinct " << i << std::endl;
-        graph.vertices[i].precinct = &pg.precincts[i];
 
         GeoGerry::p_index_set precincts = {};
 
@@ -724,9 +723,9 @@ GeoGerry::Graph generate_graph(GeoGerry::Precinct_Group pg) {
         }
     }
 
-    GeoDraw::Canvas canvas(900, 900);
-    canvas.add_graph(graph);
-    canvas.draw();
+    // GeoDraw::Canvas canvas(900, 900);
+    // canvas.add_graph(graph);
+    // canvas.draw();
 
     std::cout << graph.edges.size() << ", " << graph.vertices.size() << std::endl;
     std::cout << "precinct 0 has " << graph.vertices[0].edges.size() << " edges and " << graph.vertices[0].precinct->hull.border.size() << " coordinates" << std::endl;

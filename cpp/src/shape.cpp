@@ -11,6 +11,8 @@
 #include "../include/shape.hpp"     // class definitions
 #include "../include/geometry.hpp"  // class definitions
 #include "../include/util.hpp"      // split and join
+
+#include <new>
 #include <iostream>
 
 using std::cout;
@@ -446,12 +448,62 @@ void GeoGerry::State::write_binary(std::string path) {
 }
 
 
+GeoGerry::State GeoGerry::State::read_binary(std::string path) {
+    State state;
+
+    std::ifstream ifs(path);
+    boost::archive::binary_iarchive ia(ifs);
+    ia >> state;
+    
+    for (int i = 0; i < state.network.vertices.size(); i++) {
+        state.network.vertices[i].precinct = &state.precincts[i];
+    }
+
+    return state;
+}
+
+
 namespace boost {
     namespace serialization {
+
         template<class Archive>
         void serialize(Archive & ar, GeoGerry::State& s, const unsigned int version) {
+            ar & s.districts;
             ar & s.network;
+            ar & s.name;
+            ar & boost::serialization::base_object<GeoGerry::Precinct_Group>(s);
         }
+
+
+        template<class Archive>
+        void serialize(Archive & ar, GeoGerry::Precinct_Group& s, const unsigned int version) {
+            ar & s.precincts;
+            ar & boost::serialization::base_object<GeoGerry::Multi_Polygon>(s);
+        }
+
+
+        template<class Archive>
+        void serialize(Archive & ar, GeoGerry::Multi_Polygon& s, const unsigned int version) {
+            ar & s.border;
+            ar & s.shape_id;
+        }
+
+
+        template<class Archive>
+        void serialize(Archive & ar, GeoGerry::Polygon& s, const unsigned int version) {
+            ar & s.hull;
+            ar & s.holes;
+            ar & s.shape_id;
+            ar & s.pop;
+            ar & s.is_part_of_multi_polygon;
+        }
+
+
+        template<class Archive>
+        void serialize(Archive & ar, GeoGerry::LinearRing& s, const unsigned int version) {
+            ar & s.border;
+        }
+
 
         template<class Archive>
         void serialize(Archive & ar, GeoGerry::Graph& s, const unsigned int version) {
@@ -459,27 +511,20 @@ namespace boost {
             ar & s.vertices;
         }
 
+
         template<class Archive>
         void serialize(Archive & ar, GeoGerry::Node& s, const unsigned int version) {
-            cout << "A" << endl;
-            s.precinct->pop = 0;
-            s.precinct->is_part_of_multi_polygon = 0;
-            s.precinct->shape_id = "";
-            s.precinct->dem = 2;
-            s.precinct->rep = 2;
-            s.precinct->pop = 2;
-            cout << "A" << endl;
-            ar & s.precinct;
-            cout << "B" << endl;
+            // ar & s.precinct;
             ar & s.edges;
             ar & s.id;
         }
+
 
         template<class Archive>
         void serialize(Archive & ar, GeoGerry::Precinct& s, const unsigned int version) {
             ar & s.dem;
             ar & s.rep;
-            ar & s.pop;
+            ar & boost::serialization::base_object<GeoGerry::Polygon>(s);
         }
     }
 }

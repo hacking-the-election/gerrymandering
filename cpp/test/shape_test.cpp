@@ -23,8 +23,6 @@ using namespace std;
 // }
 
 int main(int argc, char* argv[]) {
-    // GeoGerry::Multi_Polygon ms = paths_to_multi_shape(solutions);
-    // return (ms.border.size() == 1);
 
     GeoDraw::Color green(17, 255, 0);
     GeoDraw::Color blue(0, 17, 255);
