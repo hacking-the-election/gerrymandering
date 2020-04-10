@@ -100,3 +100,13 @@ def get_compactness(polygon):
     perimeter = polygon.coords.length
     return circumeference / perimeter
 
+def area(polygon):
+    """
+    Calculates the area of a json polygon
+
+    :param polygon: polygon of which area you wish to find
+    :type polygon: Polygon[LinearRing[Point[3,2]]
+
+    :return: area of polygon.
+    :rtype: float
+    """
