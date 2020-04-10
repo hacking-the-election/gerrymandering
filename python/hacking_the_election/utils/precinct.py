@@ -2,7 +2,7 @@
 A class representing the smallest unit of voter
 data in our project's data files: the precinct.
 """
-
+from stats import standard_deviation
 
 class Precinct:
     """Class containing voter, population, and geo data for a single precinct.
@@ -27,18 +27,8 @@ class Precinct:
     :type geoid: str
     """
 
-    def __init__(self, rep_data, dem_data, pop, coords, state, precinct_id):
-
-        self.rep_data = rep_data
-        self.dem_data = dem_data
-        
-        total_rep = sum(self.rep_data.values())
-        total_dem = sum(self.dem_data.values())
-        try:
-            self.partisanship = total_rep / (total_rep + total_dem)
-        except ZeroDivisionError:
-            # No voters in precinct.
-            self.partisanship = 0
+    def __init__(self, pop, coords, state, precinct_id, rep_data, dem_data, 
+                 green_data=None, lib_data=None, reform_data=None, ind_data=None, const_data=None):
 
         self.pop = pop
         # should be shapely polygon
@@ -49,3 +39,51 @@ class Precinct:
         self.id = precinct_id
         # used for data visualization
         self.community = None
+        
+        
+        # number of parties with data
+        self.num_parties_data = 0
+
+        self.total_rep = rep_data
+        self.total_dem = dem_data
+        # Green Party of the United States
+        if green_data:
+            self.total_green = green_data
+            self.num_parties_data += 1
+        else:
+            self.total_green = 0
+        # Libertarian Party
+        if lib_data:
+            self.total_lib = lib_data
+            self.num_parties_data += 1
+        else:
+            self.total_lib = 0
+        # Reform Party of the United States of America
+        if reform_data:
+            self.total_reform = reform_data
+            self.num_parties_data += 1
+        else:
+            self.total_reform = 0
+        # Independents
+        if ind_data:
+            self.total_ind = ind_data
+            self.num_parties_data += 1
+        else:
+            self.total_ind = 0
+        # Constitution Party
+        if const_data:
+            self.total_const = const_data
+            self.num_parties_data += 1
+        else:
+            self.total_const = 0
+
+        self.total_votes = sum(self.total_dem + self.total_rep + self.total_green + self.total_lib + self.total_reform + self.total_ind + self.total_const)
+
+        self.percent_dem = self.total_dem / self.total_votes
+        self.percent_rep = self.total_rep / self.total_votes
+
+        self.percent_green = self.total_green / self.total_votes
+        self.percent_lib = self.total_lib / self.total_votes
+        self.percent_reform = self.total_reform / self.total_votes
+        self.percent_ind = self.total_ind / self.total_votes
+        self.percent_const = self.total_const / self.total_votes

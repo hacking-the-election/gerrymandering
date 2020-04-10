@@ -31,7 +31,7 @@ def average(values, weights=[]):
         return sum(values) / len(values)
 
 
-def get_standard_deviation(values, weights=[]):
+def standard_deviation(values, weights=[]):
     """Gets standard deviation of a set of numbers.
     
     :param values: The values to find the standard deviation of.
