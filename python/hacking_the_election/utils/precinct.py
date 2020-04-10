@@ -40,50 +40,39 @@ class Precinct:
         # used for data visualization
         self.community = None
         
-        self.rep_data = rep_data
-        self.dem_data = dem_data
-        # Many of the following attributes may be none
-        # Green Party of the United States
-        self.green_data = green_data
-        # Libertarian Party
-        self.lib_data = lib_data
-        # Reform Party of the United States of America
-        self.reform_data = reform_data
-        # Votes for Independents (and writeins, if applicable)
-        self.ind_data = ind_data
-        # Constitution Party
-        self.const_data = const_data
         
         # number of parties with data
         self.num_parties_data = 0
-        total_rep = sum(self.rep_data.values())
-        total_dem = sum(self.dem_data.values())
+
+        self.total_rep = rep_data
+        self.total_dem = dem_data
+        # Green Party of the United States
         if green_data:
-            self.total_green = sum(self.green_data.values())
+            self.total_green = green_data
             self.num_parties_data += 1
         else:
             self.total_green = 0
-
+        # Libertarian Party
         if lib_data:
-            self.total_lib = sum(self.lib_data.values())
+            self.total_lib = lib_data
             self.num_parties_data += 1
         else:
             self.total_lib = 0
-
+        # Reform Party of the United States of America
         if reform_data:
-            self.total_reform = sum(self.reform_data.values())
+            self.total_reform = reform_data
             self.num_parties_data += 1
         else:
             self.total_reform = 0
-
+        # Independents
         if ind_data:
-            self.total_ind = sum(self.ind_data.values())
+            self.total_ind = ind_data
             self.num_parties_data += 1
         else:
             self.total_ind = 0
-
+        # Constitution Party
         if const_data:
-            self.total_const = sum(self.const_data.values())
+            self.total_const = const_data
             self.num_parties_data += 1
         else:
             self.total_const = 0

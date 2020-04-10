@@ -39,15 +39,18 @@ class Community:
     def update_partisanship(self):
         """Updates the partisanship attribute for this community.
         """
-        self.partisanship = average(
-            [p.partisanship for p in self.precincts.values()]
-        )
+        self.partisanship = [average(
+            [p.attribute for p in self.precincts.values()]) for attribute in 
+            [percent_dem, percent_rep, percent_green, percent_lib, percent_reform, percent_ind, percent_const]
+        ]
 
     def update_partisanship_stdev(self):
         """Updates the partisanship_stdev attribute for this community.
         """
-        self.partisanship_stdev = get_standard_deviation(
-            [p.partisnaship for p in self.precincts.values()]
+        self.partisanship_stdev = [get_standard_deviation(
+            [p.attribute for p in self.precincts.values()] for attribute in 
+            [percent_dem, percent_rep, percent_green, percent_lib, percent_reform, percent_ind, percent_const]
+        ]
         )
 
     def update_compactness(self):
