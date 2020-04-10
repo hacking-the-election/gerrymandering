@@ -6,14 +6,45 @@
 #   population_id 
 
 
-bin/serialize_state ../../data/raw/vermont/geodata.json ../../data/raw/vermont/election_data.tab ../../data/raw/vermont/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 ../../data/bin/cpp/vermont.dat
-bin/serialize_state ../../data/raw/new\ hampshire/geodata.json ../../data/raw/new\ hampshire/district.json --keys=NDV,NRV,POP100 ../../data/bin/cpp/new_hampshire.dat
-bin/serialize_state ../../data/raw/delaware/geodata.json ../../data/raw/delaware/election_data.tab ../../data/raw/delaware/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 ../../data/bin/cpp/delaware.dat
-bin/serialize_state ../../data/raw/idaho/geodata.json ../../data/raw/idaho/election_data.tab ../../data/raw/idaho/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 ../../data/bin/cpp/idaho.dat
-
 bin/serialize_state ../../data/raw/alabama/geodata.json ../../data/raw/alabama/election_data.tab ../../data/raw/alabama/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 ../../data/bin/cpp/alabama.dat
 bin/serialize_state ../../data/raw/alaska/geodata.json ../../data/raw/alaska/election_data.tab ../../data/raw/alaska/district.json --keys=geoid10,GEOID10,ndv,nrv,TOTPOP ../../data/bin/cpp/alaska.dat
 bin/serialize_state ../../data/raw/arizona/geodata.json ../../data/raw/arizona/election_data.tab ../../data/raw/arizona/district.json --keys=geoid10,GEOID10,ndv,nrv,TOTPOP ../../data/bin/cpp/arizona.dat
 
 bin/serialize_state ../../data/raw/colorado/geodata.json ../../data/raw/colorado/election_data.tab ../../data/raw/colorado/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 ../../data/bin/cpp/colorado.dat
 bin/serialize_state ../../data/raw/connecticut/geodata.json ../../data/raw/connecticut/election_data.tab ../../data/raw/connecticut/district.json --keys=geoid10,GEOID10,democrat,republican,POP100 ../../data/bin/cpp/connecticut.dat
+bin/serialize_state ../../data/raw/delaware/geodata.json ../../data/raw/delaware/election_data.tab ../../data/raw/delaware/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 ../../data/bin/cpp/delaware.dat
+bin/serialize_state ../../data/raw/georgia/geodata.json ../../data/raw/georgia/district.json --keys={PRES16D,SEN16D},{PRES16R,SEN16R},TOTPOP ../../data/bin/cpp/georgia.dat
+bin/serialize_state ../../data/raw/hawaii/geodata.json ../../data/raw/hawaii/election_data.tab ../../data/raw/hawaii/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 ../../data/bin/cpp/hawaii.dat
+bin/serialize_state ../../data/raw/idaho/geodata.json ../../data/raw/idaho/election_data.tab ../../data/raw/idaho/district.json --keys=geoid10,GEOID10,t_nv_d,t_nv_r,POP100 ../../data/bin/cpp/idaho.dat
+bin/serialize_state ../../data/raw/illinois/geodata.json ../../data/raw/illinois/election_data.tab ../../data/raw/illinois/district.json --keys=GeoId2,GEOID10,Obama,McCain,TOTAL_POPU ../../data/bin/cpp/illinois.dat
+bin/serialize_state ../../data/raw/indiana/geodata.json ../../data/raw/indiana/election_data.tab ../../data/raw/indiana/district.json --keys=geoid10,GEOID10,ndv,nrv,POP10 ../../data/bin/cpp/indiana.dat
+bin/serialize_state ../../data/raw/iowa/geodata.json ../../data/raw/iowa/election_data.tab ../../data/raw/iowa/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 ../../data/bin/cpp/iowa.dat
+bin/serialize_state ../../data/raw/kansas/geodata.json ../../data/raw/kansas/election_data.tab ../../data/raw/kansas/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 ../../data/bin/cpp/kansas.dat
+bin/serialize_state ../../data/raw/louisiana/geodata.json ../../data/raw/louisiana/election_data.tab ../../data/raw/louisiana/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 ../../data/bin/cpp/louisiana.dat
+
+bin/serialize_state ../../data/raw/massachusetts/geodata.json ../../data/raw/massachusetts/election_data.tab ../../data/raw/massachusetts/district.json --keys=geoid10,GEOID10,democrat,republican,POP100 ../../data/bin/cpp/massachusetts.dat
+bin/serialize_state ../../data/raw/michigan/geodata.json ../../data/raw/michigan/election_data.tab ../../data/raw/michigan/district.json --keys=GEOID10,GEOID10,{PRS08DEM,GOV06DEM,AG06DEM,SOS06DEM},{PRS08REP,GOV06REP,AG06REP,SOS06REP},TOTPOP ../../data/bin/cpp/michigan.dat
+
+bin/serialize_state ../../data/raw/mississippi/geodata.json ../../data/raw/mississippi/election_data.tab ../../data/raw/mississippi/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 ../../data/bin/cpp/mississippi.dat
+bin/serialize_state ../../data/raw/missouri/geodata.json ../../data/raw/missouri/election_data.tab ../../data/raw/missouri/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 ../../data/bin/cpp/missouri.dat
+bin/serialize_state ../../data/raw/nebraska/geodata.json ../../data/raw/nebraska/election_data.tab ../../data/raw/nebraska/district.json --keys=geoid10,GEOID10,ndv_0608,nrv_0608,POP100 ../../data/bin/cpp/nebraska.dat
+bin/serialize_state ../../data/raw/nevada/geodata.json ../../data/raw/nevada/election_data.tab ../../data/raw/nevada/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 ../../data/bin/cpp/nevada.dat
+bin/serialize_state ../../data/raw/new\ hampshire/geodata.json ../../data/raw/new\ hampshire/district.json --keys=NDV,NRV,POP100 ../../data/bin/cpp/new_hampshire.dat
+bin/serialize_state ../../data/raw/new\ jersey/geodata.json ../../data/raw/new\ jersey/district.json --keys=NDV,NRV,POP100 ../../data/bin/cpp/new_jersey.dat
+bin/serialize_state ../../data/raw/new\ mexico/geodata.json ../../data/raw/new\ mexico/election_data.tab ../../data/raw/new\ mexico/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 ../../data/bin/cpp/new_mexico.dat
+bin/serialize_state ../../data/raw/new\ york/geodata.json ../../data/raw/new\ york/district.json --keys=NDV,NRV,POP100 ../../data/bin/cpp/new_york.dat
+bin/serialize_state ../../data/raw/north\ carolina/geodata.json ../../data/raw/north\ carolina/election_data.tab ../../data/raw/north\ carolina/district.json --keys=vtd_key,GEOID10,ndv,nrv,PL10AA_TOT ../../data/bin/cpp/north_carolina.dat
+bin/serialize_state ../../data/raw/north\ dakota/geodata.json ../../data/raw/north\ dakota/election_data.tab ../../data/raw/north\ dakota/district.json --keys=geoid10,GEOID10,ndv,nrv,TOTPOP ../../data/bin/cpp/north_dakota.dat
+bin/serialize_state ../../data/raw/oklahoma/geodata.json ../../data/raw/oklahoma/election_data.tab ../../data/raw/oklahoma/district.json --keys=geoid10,GEOID10,ndv,ndr,VAP ../../data/bin/cpp/oklahoma.dat
+bin/serialize_state ../../data/raw/pennsylvania/geodata.json ../../data/raw/pennsylvania/election_data.tab ../../data/raw/pennsylvania/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 ../../data/bin/cpp/pennsylvania.dat
+
+bin/serialize_state ../../data/raw/south\ dakota/geodata.json ../../data/raw/south\ dakota/election_data.tab ../../data/raw/south\ dakota/district.json --keys=geoid10,GEOID10,ndv,nrv,TOTPOP ../../data/bin/cpp/south_dakota.dat
+bin/serialize_state ../../data/raw/tennesse/geodata.json ../../data/raw/tennesse/election_data.tab ../../data/raw/tennesse/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 ../../data/bin/cpp/tennesse.dat
+
+bin/serialize_state ../../data/raw/texas/geodata.json ../../data/raw/texas/district.json --keys=NV_D,NV_R,vap ../../data/bin/cpp/texas.dat
+bin/serialize_state ../../data/raw/utah/geodata.json ../../data/raw/utah/district.json --keys={PRES16D,SEN16D,GOV16D},{PRES16R,SEN16R,GOV16R},TOTPOP ../../data/bin/cpp/utah.dat
+bin/serialize_state ../../data/raw/vermont/geodata.json ../../data/raw/vermont/election_data.tab ../../data/raw/vermont/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 ../../data/bin/cpp/vermont.dat
+bin/serialize_state ../../data/raw/virginia/geodata.json ../../data/raw/virginia/district.json --keys=G16DPRS,G16RPRS,TOTPOP ../../data/bin/cpp/virginia.dat
+bin/serialize_state ../../data/raw/washington/geodata.json ../../data/raw/washington/election_data.tab ../../data/raw/washington/district.json --keys=geoid10,GEOID10,ndv_08,nrv_08,POP100 ../../data/bin/cpp/washington.dat
+bin/serialize_state ../../data/raw/wisconsin/geodata.json ../../data/raw/wisconsin/district.json --keys=NDV,NDR,PERSONS ../../data/bin/cpp/wisconsin.dat
+bin/serialize_state ../../data/raw/wyoming/geodata.json ../../data/raw/wyoming/election_data.tab ../../data/raw/wyoming/district.json --keys=geoid10,GEOID10,ndv_08,nrv_08,VAP ../../data/bin/cpp/wyoming.dat
