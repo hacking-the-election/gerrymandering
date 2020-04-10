@@ -79,4 +79,4 @@ setup:
 	mkdir -p $(BIN) $(BUILD)
 
 clean:
-	rm -f $(BIN)/ $(BUILD)/
+	rm -rf $(BIN)/ $(BUILD)/

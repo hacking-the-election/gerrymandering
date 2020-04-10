@@ -25,8 +25,10 @@ done
 echo "all data present"
 cmds=$(cat build_data.list | cut -d '#' -f 1 | grep .)
 
-for i in "$cmds"; do
-    # echo "building $(echo "$i" | cut -d ' ' -f 2 | rev | cut -d '/' -f2 | rev)"
-    echo "$i"
+
+IFS=$'\n'
+
+for i in $cmds; do
+    printf "\nbuilding $(echo "$i" | cut -d ' ' -f 2 | rev | cut -d '/' -f2 | rev)\n\n"
     eval "$i"
 done
