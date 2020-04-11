@@ -20,7 +20,7 @@ from pygraph.readwrite.markup import write
 from shapely.geometry import Polygon, MultiPolygon
 
 from hacking_the_election.utils.precinct import Precinct
-from hacking_the_election.utils.serialization import compare_ids
+from hacking_the_election.utils.serialization import compare_ids, split_multipolygons
 
 def convert_to_int(string):
     """
@@ -160,7 +160,7 @@ def create_graph(election_file, geo_file, pop_file, state):
 
     # Get election data. If needed, converts election data ids to geodata ids 
     # using election_data_to_geodata, thus all keys are those of geodata.
-    # {precinct_id: [{dem1:data,dem2:data}, {rep1:data,rep2:data}], [{green:data}, {lib:data}] as neeeded}
+    # {precinct_id: [{dem:data}, {rep:data}], [{green:data}, {lib:data}] as neeeded}
     precinct_election_data = {}
     # If there is an election data file...
     if election_data_type:
@@ -286,6 +286,16 @@ def create_graph(election_file, geo_file, pop_file, state):
                 geodata_pop_precinct_id = "".join(geodata_pop_properties[json_id] for json_id in json_ids)
                 precinct_populations = [geodata_pop_properties[key] for key in json_pops]
                 pop[precinct_id4] = sum(precinct_populations)
+
+    # Create a geodata dictionary
+    geodata_dict = {
+        "".join(precinct["properties"][json_id] for json_id in json_ids) :
+        precinct["geometry"]["coordinates"]
+        for precinct in geodata["features"]
+    }
+
+    # Remove multipolygons from our dictionaries. (This is so our districts/communities stay contiguous)
+    split_multipolygons(geodata_dict, pop, precinct_election_data)
 
     for precinct in geodata["features"]:
         coordinate_data = precinct["geometry"]["coordinates"]
