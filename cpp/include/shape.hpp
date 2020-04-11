@@ -30,7 +30,7 @@
         - Derived state class - has array of precincts + districts
 */
 
-namespace GeoGerry {
+namespace Geometry {
 
 class LinearRing;      // a group of lines
 class Polygon;         // Exterior and optional interior LinearRings (for holes)
@@ -322,7 +322,7 @@ class Node {
         Node(Precinct* precinct) : precinct(precinct) {};
 
         std::vector<std::array<int, 2> > edges;
-
+        
         // for boost serialization
         friend class boost::serialization::access;
         template<class Archive> void serialize(Archive & ar, const unsigned int version);
@@ -335,8 +335,9 @@ class Graph {
         std::vector<std::array<int, 2> > edges;
 
         int get_node(int id);
-        void sort();
 
+        void sort_by_degree();
+        int get_num_components();
 
         // for boost serialization
         friend class boost::serialization::access;

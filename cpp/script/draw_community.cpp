@@ -16,8 +16,8 @@
 #include "../include/canvas.hpp"
 
 using namespace std;
-using namespace GeoGerry;
-using namespace GeoDraw;
+using namespace Geometry;
+using namespace Graphics;
 
 
 int main(int argc, char* argv[]) {
@@ -30,16 +30,9 @@ int main(int argc, char* argv[]) {
     // draw communities
     Canvas canvas(900, 900);
 
-    vector<string> files = {"../../data/bin/cpp/vermont.dat", "../../data/bin/cpp/new_hampshire.dat", "../../data/bin/cpp/delaware.dat"};
-    LinearRing test_poly = State::read_binary(files[0]).precincts[0].hull;
-
-    cout << test_poly.get_center()[0] << ", "  << test_poly.get_center()[1] << endl;
-
-    for (string file : files) {
-        // read binary file from path
-        State state = State::read_binary(file);
-        canvas.add_graph(state.network);
-    }
+    // read binary file from path
+    State state = State::read_binary(argv[1]);
+    canvas.add_graph(state.network);
 
     cout << "drawing" << endl;
     canvas.draw();

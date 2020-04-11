@@ -2,9 +2,9 @@
 #include "../include/geometry.hpp"
 #include "../include/canvas.hpp"
 
-using namespace GeoGerry;
+using namespace Geometry;
 using namespace std;
-using namespace GeoDraw;
+using namespace Graphics;
 
 int main() {
     

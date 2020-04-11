@@ -15,7 +15,7 @@
 #include "shape.hpp"
 
 
-namespace GeoDraw {
+namespace Graphics {
 
     class Canvas;
     class Color;
@@ -65,22 +65,22 @@ namespace GeoDraw {
 
     class Outline {
         public:
-            GeoGerry::LinearRing border;
+            Geometry::LinearRing border;
             Color color;
             int line_thickness;
             bool filled;
 
-            GeoGerry::coordinate get_representative_point();
+            Geometry::coordinate get_representative_point();
             
             std::vector<std::vector<Pixel> > pixels;
-            Pixel get_pixel(GeoGerry::coordinate c);
+            Pixel get_pixel(Geometry::coordinate c);
             void rasterize(Canvas& canvas);
 
             // modify canvas attributes
-            void flood_fill_util(GeoGerry::coordinate coord, Color c1, Color c2, Canvas& canvas);
-            void flood_fill(GeoGerry::coordinate, Color c, Canvas& canvas);
+            void flood_fill_util(Geometry::coordinate coord, Color c1, Color c2, Canvas& canvas);
+            void flood_fill(Geometry::coordinate, Color c, Canvas& canvas);
 
-            Outline(GeoGerry::LinearRing lr, Color c, int th, bool f) :
+            Outline(Geometry::LinearRing lr, Color c, int th, bool f) :
                 border(lr), color(c), line_thickness(th), filled(f) {}
     };
 
@@ -101,15 +101,15 @@ namespace GeoDraw {
         // meta information
         std::vector<std::vector<Pixel> > pixels;        // the pixel array to write to screen
 
-        GeoGerry::bounding_box box;       // the outer bounding box
-        GeoGerry::bounding_box get_bounding_box();   // calculate bounding box of coordinates
+        Geometry::bounding_box box;       // the outer bounding box
+        Geometry::bounding_box get_bounding_box();   // calculate bounding box of coordinates
         Uint32* background;
         int x, y;                         // dimensions of the screen
 
         // modify canvas attributes
         void translate(long int x, long int y, bool b);      // move the outlines by x and y
         void scale(double scale_factor);             // scale the shapes by scale factor
-        Pixel get_pixel(GeoGerry::coordinate c);
+        Pixel get_pixel(Geometry::coordinate c);
 
         Canvas(int dx, int dy) : x(dx), y(dy) {
             background = new Uint32[dx * dy];
@@ -117,13 +117,13 @@ namespace GeoDraw {
         }
 
         // add shape to the canvas
-        void add_shape(GeoGerry::Polygon s, bool = false, Color = Color(0,0,0), int = 1);
-        void add_shape(GeoGerry::LinearRing s, bool = false, Color = Color(0,0,0), int = 1);
-        void add_shape(GeoGerry::Multi_Polygon s, bool = false, Color = Color(0,0,0), int = 1);
-        void add_shape(GeoGerry::Precinct_Group s, bool = false, Color = Color(0,0,0), int = 1);
-        void add_shape(GeoGerry::Communities s, bool = false, Color = Color(0,0,0), int = 1);
+        void add_shape(Geometry::Polygon s, bool = false, Color = Color(0,0,0), int = 1);
+        void add_shape(Geometry::LinearRing s, bool = false, Color = Color(0,0,0), int = 1);
+        void add_shape(Geometry::Multi_Polygon s, bool = false, Color = Color(0,0,0), int = 1);
+        void add_shape(Geometry::Precinct_Group s, bool = false, Color = Color(0,0,0), int = 1);
+        void add_shape(Geometry::Communities s, bool = false, Color = Color(0,0,0), int = 1);
 
-        void add_graph(GeoGerry::Graph s);
+        void add_graph(Geometry::Graph s);
 
         void clear();
         void resize_window(int x, int y);

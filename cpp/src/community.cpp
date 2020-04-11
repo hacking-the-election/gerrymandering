@@ -32,8 +32,8 @@
 #include "../../../include/canvas.hpp" // geometry modification, border functions
 
 using namespace std;
-using namespace GeoGerry;
-using namespace GeoDraw;
+using namespace Geometry;
+using namespace Graphics;
 using namespace boost::filesystem;
 
 #define VERBOSE 1
