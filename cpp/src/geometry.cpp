@@ -279,29 +279,29 @@ coordinate GeoGerry::LinearRing::get_center() {
         @return: coordinate of centroid
     */
 
-    // long int Cx = 0, Cy = 0;
+    long int Cx = 0, Cy = 0;
 
-    // if (border[0] != border[border.size() - 1])
-    //     border.push_back(border[0]);
+    if (border[0] != border[border.size() - 1])
+        border.push_back(border[0]);
 
-    // for (int i = 0; i < border.size() - 1; i++) {
-    //     long int x1 = border[i][0];
-    //     long int y1 = border[i][1];
-    //     long int x2 = border[i + 1][0];
-    //     long int y2 = border[i + 1][1];
+    for (int i = 0; i < border.size() - 1; i++) {
+        long int x1 = border[i][0];
+        long int y1 = border[i][1];
+        long int x2 = border[i + 1][0];
+        long int y2 = border[i + 1][1];
 
-    //     Cx -= (x1 + x2) * ((x1 * y2) - (x2 * y1));
-    //     Cy -= (y1 + y2) * ((x1 * y2) - (x2 * y1));
-    // }
+        Cx -= (x1 + x2) * ((x1 * y2) - (x2 * y1));
+        Cy -= (y1 + y2) * ((x1 * y2) - (x2 * y1));
+    }
 
-    // Cx = round(1.0 / (6.0 * this->get_area()) * (double) Cx);
-    // Cy = round(1.0 / (6.0 * this->get_area()) * (double) Cy);
+    Cx = round(1.0 / (6.0 * this->get_area()) * (double) Cx);
+    Cy = round(1.0 / (6.0 * this->get_area()) * (double) Cy);
 
-    // return {Cx, Cy};
+    return {Cx, Cy};
 
-    boost_point x;
-    boost::geometry::centroid(ring_to_boost_poly(*this), x);
-    return {(long int)x.x(), (long int)x.y()};
+    // boost_point x;
+    // boost::geometry::centroid(ring_to_boost_poly(*this), x);
+    // return {(long int)x.x(), (long int)x.y()};
 }
 
 
