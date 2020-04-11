@@ -20,7 +20,7 @@ from pygraph.readwrite.markup import write
 from shapely.geometry import Polygon, MultiPolygon
 
 from hacking_the_election.utils.precinct import Precinct
-from hacking_the_election.utils.serialization import compare_ids, split_multipolygons
+from hacking_the_election.utils.serialization import compare_ids, split_multipolygons, combine_holypolygons
 
 def convert_to_int(string):
     """
@@ -296,6 +296,8 @@ def create_graph(election_file, geo_file, pop_file, state):
 
     # Remove multipolygons from our dictionaries. (This is so our districts/communities stay contiguous)
     split_multipolygons(geodata_dict, pop, precinct_election_data)
+
+    combine_holypolygons(geodata_dict, pop, precinct_election_data)
 
     for precinct in geodata["features"]:
         coordinate_data = precinct["geometry"]["coordinates"]

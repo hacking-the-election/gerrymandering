@@ -100,13 +100,28 @@ def get_compactness(polygon):
     perimeter = polygon.coords.length
     return circumeference / perimeter
 
-def area(polygon):
+def area(ring):
     """
-    Calculates the area of a json polygon
+    Calculates the area of a json ring
 
-    :param polygon: polygon of which area you wish to find
-    :type polygon: Polygon[LinearRing[Point[3,2]]
+    :param ring: polygon of which area you wish to find
+    :type ring: LinearRing[Point[3,2]
 
     :return: area of polygon.
     :rtype: float
     """
+    left_area = 0
+    right_area = 0
+    for i, point in enumerate(ring):
+        if i == 0:
+            left_area += float(point[0]) * float(ring[len(ring) - 1][1])
+            right_area += float(point[1]) * float(ring[len(ring) - 1][0])
+        elif i == (len(ring) - 1):
+            break
+        else:
+            left_area += float(point[0]) * float(ring[i + 1][1])
+            right_area += float(point[1]) * float(ring[i + 1][0])
+
+    return abs(left_area - right_area) / 2
+        
+

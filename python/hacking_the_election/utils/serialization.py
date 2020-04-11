@@ -4,7 +4,8 @@ pickling raw data as hacking_the_election.Precinct objects.
 """
 
 from shapely.geometry import MultiPolygon
-from hacking_the_election.utils.geometry import area
+from hacking_the_election.utils.geometry import area, geojson_to_shapely
+from hacking_the_election.utils.exceptions import MultiPolygonFoundException
 
 def compare_ids(non_geodata_ids, geodata_ids):
     """
@@ -12,10 +13,10 @@ def compare_ids(non_geodata_ids, geodata_ids):
     Prints statistics about missing ids.
 
     :param non_geodata_ids: non_geodata_ids of precincts
-    :type: list
+    :type non_geodata_ids: list
 
     :param geodata_ids: geodata_ids of precincts
-    :type: list
+    :type geodata_ids: list
 
     :return: dictionary converting election_data_ids to geodata_ids 
     :rtype: {non_geodata_ids : geodata_id}
@@ -43,13 +44,13 @@ def split_multipolygons(geodata, pop_data, election_data):
     within total area (1/2 of area means 1/2 of pop, 1/2 of votes)
 
     :param geodata: Coordinate data for precincts
-    :type: dictionary of ids and Polygons
+    :type geodata: dictionary of ids and polygons
 
     :param pop_data: Population data for precincts
-    :type: dictionary of ids and ints (or floats)
+    :type pop_data: dictionary of ids and ints (or floats)
 
     :param election_data: Election data for various parties for precincts
-    :type: dictionary of ids and lists with dictionaries of parties and results inside (see serialize.py)
+    :type election_data: dictionary of ids and lists with dictionaries of parties and results inside (see serialize.py)
 
     :return: none
     :rtype: none
@@ -96,5 +97,77 @@ def split_multipolygons(geodata, pop_data, election_data):
 
     print(f"Multipolygons found: {len(multipolygon_ids)}")
     print(f"Polygons created: {len(newpolygon_ids)}")
+
+def combine_holypolygons(geodata, pop_data, election_data):
+    """
+    Precincts that are inside holes need to be removed in order to preserve contiguity of districts.
+    This function detects precincts inside holes and combines them with the precinct they are in.
+    This function only works when run after split_multipolygons().
+
+    :param geodata: Coordinate data for precincts
+    :type geodata: dictionary of ids and polygons
+
+    :param pop_data: Population data for precincts
+    :type pop_data: dictionary of ids and floats
+
+    :param election_data: Voting/Election data for precincts
+    :type election_data: dictionary of ids and lists with dictionaries of parties and election results inside (see serialize.py)
+    """
+
+    # Test for multipolygons
+    for precinct_id, precinct_coords in geodata:
+        try: 
+            _ = precinct_coords[0][0][0][0]
+        except: 
+            pass
+        else: 
+            raise MultiPolygonFoundException
+    
+    # So we don't end up checking more than we need to
+    already_checked_holes = []
+    holes = []
+    for precinct_id, precinct_coords in geodata.items():
+        # If there is more than one linear ring, there is a hole in this precinct.
+        if len(precinct_coords) > 1:
+            already_checked_holes.append(precinct_id)
+            precinct_hole_num = len(precinct_coords) - 1
+
+            total_pop = pop_data[precinct_id]
+            total_election = election_data[precinct_id]
+            
+            new_precinct_coords = geojson_to_shapely(precinct_coords)
+            for check_id, check_coords in geodata.items():
+                if check_id in already_checked_holes:
+                    continue
+                
+                # Convert polygons to 'shapely.geometry.Polygon's
+                new_check_coords = geojson_to_shapely(check_coords)
+
+                if new_check_coords.within(new_precinct_coords[0]):
+                    holes.apend(check_id)
+                    total_pop += pop_data[check_id]
+                    new_election_data = []
+                    for party_num, party_dict in enumerate(total_election):
+                        party = list(party_dict.keys())[0]
+                        result = list(party_dict.values())[0]
+                        result += list(election_data[check_id][party_num].values())[0]
+                        new_election_data.append({party : result})
+                    total_election = new_election_data
+
+            # Assign new data for precinct with holes to data dictionaries 
+            pop_data[precinct_id] = total_pop
+            election_data[precinct_id] = total_election
+    for check_id in holes:
+        del pop[check_id]
+        del election_data[check_id]
+
+    print(f"Precincts with holes Found: {len(already_checked_holes)}")
+    print(f"Precincts in holes Found {len(holes)}")
+
+
+
+
+
+
 
 
