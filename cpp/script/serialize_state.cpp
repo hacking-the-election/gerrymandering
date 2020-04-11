@@ -17,7 +17,7 @@
 #include "../include/term_disp.hpp"
 
 using namespace std;
-using namespace GeoGerry;
+using namespace Geometry;
 
 
 int main(int argc, char* argv[]) {

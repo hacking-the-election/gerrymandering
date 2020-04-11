@@ -21,7 +21,7 @@ const long int c = pow(10, 18);
 const long int d = pow(10, 9);
 const long int l = pow(2, 6);
 
-using namespace GeoGerry;
+using namespace Geometry;
 using namespace std;
 
 #include <chrono>
@@ -41,7 +41,7 @@ segment coords_to_seg(coordinate c1, coordinate c2) {
     /*
         @desc: combines coordinates into a segment array
         @params: `c1`, `c2`: coordinates 1 and 2 in segment
-        @return: `GeoGerry::segment` a segment with the coordinates provided
+        @return: `Geometry::segment` a segment with the coordinates provided
     */
 
     segment s = {{ c1[0], c1[1], c2[0], c2[1] }};
@@ -184,7 +184,7 @@ bool get_overlap(segment s0, segment s1) {
 }
 
 
-segments GeoGerry::LinearRing::get_segments() {
+segments Geometry::LinearRing::get_segments() {
     /*
         @desc:
             returns a vector of segments from the
@@ -216,7 +216,7 @@ segments GeoGerry::LinearRing::get_segments() {
 }
 
 
-segments GeoGerry::Polygon::get_segments() {
+segments Geometry::Polygon::get_segments() {
     /*
         @desc: get list of all segments in a shape, including hole LinearRings array
         @params: none
@@ -233,7 +233,7 @@ segments GeoGerry::Polygon::get_segments() {
 }
 
 
-segments GeoGerry::Multi_Polygon::get_segments() {
+segments Geometry::Multi_Polygon::get_segments() {
     /*
         @desc: get a list of all segments in a multi_shape, for each shape, including holes
         @params: none
@@ -271,7 +271,7 @@ boost_polygon ring_to_boost_poly(LinearRing shape) {
 }
 
 
-coordinate GeoGerry::LinearRing::get_center() {
+coordinate Geometry::LinearRing::get_center() {
     /* 
         @desc: Gets the centroid of a polygon with coords
         @ref: https://en.wikipedia.org/wiki/Centroid#Centroid_of_polygon
@@ -305,7 +305,7 @@ coordinate GeoGerry::LinearRing::get_center() {
 }
 
 
-double GeoGerry::LinearRing::get_area() {
+double Geometry::LinearRing::get_area() {
     /*
         @desc:
             returns the area of a linear ring, using latitude * long
@@ -330,7 +330,7 @@ double GeoGerry::LinearRing::get_area() {
 }
 
 
-double GeoGerry::LinearRing::get_perimeter() {
+double Geometry::LinearRing::get_perimeter() {
     /*
         @desc: returns the perimeter of a LinearRing object by summing distance
         @params: none
@@ -345,7 +345,7 @@ double GeoGerry::LinearRing::get_perimeter() {
 }
 
 
-coordinate GeoGerry::Polygon::get_center() {
+coordinate Geometry::Polygon::get_center() {
     /*
         @desc:
             returns average centroid from list of `holes`
@@ -357,7 +357,7 @@ coordinate GeoGerry::Polygon::get_center() {
 
     coordinate center = hull.get_center();
 
-    for (GeoGerry::LinearRing lr : holes) {
+    for (Geometry::LinearRing lr : holes) {
         coordinate nc = lr.get_center();
         center[0] += nc[0];
         center[1] += nc[1];
@@ -368,7 +368,7 @@ coordinate GeoGerry::Polygon::get_center() {
 }
 
 
-coordinate GeoGerry::Multi_Polygon::get_center() {
+coordinate Geometry::Multi_Polygon::get_center() {
     /*
         @desc:
             returns average centroid from list of `holes`
@@ -383,7 +383,7 @@ coordinate GeoGerry::Multi_Polygon::get_center() {
     for (Polygon s : border) {
         coordinate center = s.hull.get_center();
 
-        for (GeoGerry::LinearRing lr : s.holes) {
+        for (Geometry::LinearRing lr : s.holes) {
             coordinate nc = lr.get_center();
             center[0] += nc[0];
             center[1] += nc[1];
@@ -398,7 +398,7 @@ coordinate GeoGerry::Multi_Polygon::get_center() {
 }
 
 
-double GeoGerry::Polygon::get_area() {
+double Geometry::Polygon::get_area() {
     /*
         @desc:
             gets the area of the hull of a shape
@@ -409,14 +409,14 @@ double GeoGerry::Polygon::get_area() {
     */
 
     double area = hull.get_area();
-    for (GeoGerry::LinearRing h : holes)
+    for (Geometry::LinearRing h : holes)
         area -= h.get_area();
 
     return area;
 }
 
 
-double GeoGerry::Polygon::get_perimeter() {
+double Geometry::Polygon::get_perimeter() {
     /*
         @desc:
             gets the sum perimeter of all LinearRings
@@ -427,7 +427,7 @@ double GeoGerry::Polygon::get_perimeter() {
     */
 
     double perimeter = hull.get_perimeter();
-    for (GeoGerry::LinearRing h : holes)
+    for (Geometry::LinearRing h : holes)
         perimeter += h.get_perimeter();
 
     return perimeter;
@@ -449,7 +449,7 @@ double Multi_Polygon::get_area() {
 }
 
 
-double GeoGerry::Multi_Polygon::get_perimeter() {
+double Geometry::Multi_Polygon::get_perimeter() {
     /*
         @desc:
             gets sum perimeter of a multi shape object
@@ -559,7 +559,7 @@ bool get_bordering(Multi_Polygon s0, Multi_Polygon s1) {
 }
 
 
-bool point_in_ring(GeoGerry::coordinate coord, GeoGerry::LinearRing lr) {
+bool point_in_ring(Geometry::coordinate coord, Geometry::LinearRing lr) {
     /*
         @desc:
             gets whether or not a point is in a ring using
@@ -583,7 +583,7 @@ bool point_in_ring(GeoGerry::coordinate coord, GeoGerry::LinearRing lr) {
     return (!(ClipperLib::PointInPolygon(p, path) == 0));
 }
 
-bool get_inside(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1) {
+bool get_inside(Geometry::LinearRing s0, Geometry::LinearRing s1) {
     /*
         @desc:
             gets whether or not s0 is inside of 
@@ -602,7 +602,7 @@ bool get_inside(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1) {
     return true;
 }
 
-bool get_inside_b(GeoGerry::Multi_Polygon s0, GeoGerry::Polygon s1) {
+bool get_inside_b(Geometry::Multi_Polygon s0, Geometry::Polygon s1) {
     /*
         @desc:
             gets whether or not s0 is inside of 
@@ -623,7 +623,7 @@ bool get_inside_b(GeoGerry::Multi_Polygon s0, GeoGerry::Polygon s1) {
 }
 
 
-bool get_inside_first(GeoGerry::LinearRing s0, GeoGerry::LinearRing s1) {
+bool get_inside_first(Geometry::LinearRing s0, Geometry::LinearRing s1) {
     /*
         @desc:
             gets whether or not the first point of s0 is
@@ -666,7 +666,7 @@ p_index_set get_inner_boundary_precincts(Precinct_Group shape) {
 }
 
 
-GeoGerry::p_index_set get_inner_boundary_precincts(p_index_set precincts, State state) {
+Geometry::p_index_set get_inner_boundary_precincts(p_index_set precincts, State state) {
     /*
         @desc:
             gets an array of indices that correspond
@@ -754,7 +754,7 @@ p_index_set get_bordering_shapes(vector<Community> shapes, Polygon shape) {
     for (p_index i = 0; i < shapes.size(); i++) {
         if (shapes[i] != shape && get_bordering(shapes[i], shape)) vec.push_back(i);
         // else {
-            // GeoDraw::Canvas c(900, 900);
+            // Graphics::Canvas c(900, 900);
             // c.add_shape(generate_exterior_border(shapes[i]));
             // c.add_shape(shape);
             // cout << "do not border... to debug draw here" << endl;
@@ -898,7 +898,7 @@ Multi_Polygon generate_exterior_border(Precinct_Group precinct_group) {
     return paths_to_multi_shape(solutions);
 }
 
-ClipperLib::Path ring_to_path(GeoGerry::LinearRing ring) {
+ClipperLib::Path ring_to_path(Geometry::LinearRing ring) {
     /*
         Creates a clipper Path object from a
         given Polygon object by looping through points
@@ -911,13 +911,13 @@ ClipperLib::Path ring_to_path(GeoGerry::LinearRing ring) {
     return p;
 }
 
-GeoGerry::LinearRing path_to_ring(ClipperLib::Path path) {
+Geometry::LinearRing path_to_ring(ClipperLib::Path path) {
     /*
         Creates a shape object from a clipper Path
         object by looping through points
     */
 
-    GeoGerry::LinearRing s;
+    Geometry::LinearRing s;
 
     for (ClipperLib::IntPoint point : path ) {
         coordinate p = {point.X, point.Y};
@@ -930,7 +930,7 @@ GeoGerry::LinearRing path_to_ring(ClipperLib::Path path) {
     return s;
 }
 
-ClipperLib::Paths shape_to_paths(GeoGerry::Polygon shape) {
+ClipperLib::Paths shape_to_paths(Geometry::Polygon shape) {
 
     if (shape.hull.border[0] != shape.hull.border[shape.hull.border.size() - 1])
         shape.hull.border.push_back(shape.hull.border[0]);
@@ -938,7 +938,7 @@ ClipperLib::Paths shape_to_paths(GeoGerry::Polygon shape) {
     ClipperLib::Paths p;
     p.push_back(ring_to_path(shape.hull));
     
-    for (GeoGerry::LinearRing ring : shape.holes) {
+    for (Geometry::LinearRing ring : shape.holes) {
         if (ring.border[0] != ring.border[ring.border.size() - 1])
             ring.border.push_back(ring.border[0]);
 
@@ -951,7 +951,7 @@ ClipperLib::Paths shape_to_paths(GeoGerry::Polygon shape) {
 }
 
 
-GeoGerry::Multi_Polygon paths_to_multi_shape(ClipperLib::Paths paths) {
+Geometry::Multi_Polygon paths_to_multi_shape(ClipperLib::Paths paths) {
     /*
         @desc: 
               Create a Multi_Polygon object from a clipper Paths
@@ -969,17 +969,17 @@ GeoGerry::Multi_Polygon paths_to_multi_shape(ClipperLib::Paths paths) {
 
     for (ClipperLib::Path path : paths) {
         if (!ClipperLib::Orientation(path)) {
-            GeoGerry::LinearRing border = path_to_ring(path);
+            Geometry::LinearRing border = path_to_ring(path);
             if (border.border[0] == border.border[border.border.size() - 1]) {
                 // border.border.insert(border.border.begin(), border.border[border.border.size() - 1]);
-                GeoGerry::Polygon s(border);
+                Geometry::Polygon s(border);
                 ms.border.push_back(s);
             }
         }
         else {
             // std::cout << "hole" << std::endl;
             ReversePath(path);
-            GeoGerry::LinearRing hole = path_to_ring(path);
+            Geometry::LinearRing hole = path_to_ring(path);
             ms.holes.push_back(hole);
         }
     }
@@ -998,7 +998,7 @@ Multi_Polygon poly_tree_to_shape(ClipperLib::PolyTree tree) {
     
     for (ClipperLib::PolyNode* polynode : tree.Childs) {
         // if (polynode->IsHole()) x++;
-        GeoGerry::LinearRing s = path_to_ring(polynode->Contour);
+        Geometry::LinearRing s = path_to_ring(polynode->Contour);
         Polygon shape(s);
         ms.border.push_back(shape);
     }
@@ -1032,7 +1032,7 @@ p_index_set get_ext_bordering_precincts(Precinct_Group precincts, State state) {
     return bordering_pre;
 }
 
-GeoGerry::p_index_set get_ext_bordering_precincts(GeoGerry::Precinct_Group precincts, GeoGerry::p_index_set available_pre, GeoGerry::State state) {
+Geometry::p_index_set get_ext_bordering_precincts(Geometry::Precinct_Group precincts, Geometry::p_index_set available_pre, Geometry::State state) {
     /*
         @desc: a method for getting the precincts in a state that
                border a precinct group. This is used in the communities
@@ -1060,7 +1060,7 @@ GeoGerry::p_index_set get_ext_bordering_precincts(GeoGerry::Precinct_Group preci
 }
 
 
-bool creates_island(GeoGerry::Precinct_Group set, GeoGerry::p_index remove) {
+bool creates_island(Geometry::Precinct_Group set, Geometry::p_index remove) {
     /*
         @desc: determines whether removing a precinct index from a set of
                precincts will create an island or not
@@ -1079,7 +1079,7 @@ bool creates_island(GeoGerry::Precinct_Group set, GeoGerry::p_index remove) {
 }
 
 
-bool creates_island(GeoGerry::p_index_set set, GeoGerry::p_index remove, GeoGerry::State precincts) {
+bool creates_island(Geometry::p_index_set set, Geometry::p_index remove, Geometry::State precincts) {
     /*
         @desc: determines whether removing a precinct index from a set of
                precincts will create an island or not
@@ -1114,7 +1114,7 @@ bool creates_island(GeoGerry::p_index_set set, GeoGerry::p_index remove, GeoGerr
 }
 
 
-bool creates_island(GeoGerry::Precinct_Group set, GeoGerry::Precinct precinct) {
+bool creates_island(Geometry::Precinct_Group set, Geometry::Precinct precinct) {
     int x = set.border.size();
     set.remove_precinct(precinct);
     int t = set.border.size();
@@ -1135,7 +1135,7 @@ p_index_set get_giveable_precincts(Community c, Communities cs) {
     p_index_set exchangeable_precincts;
 
     // Multi_Polygon ms(c.border);
-    // GeoDraw::Canvas canvas(900, 900);
+    // Graphics::Canvas canvas(900, 900);
 
     for (p_index p : borders) {
         for (Community c_p : cs) {
@@ -1259,7 +1259,7 @@ p_index get_first_precinct(Precinct_Group available_precincts, Communities commu
 //     return lr; // our LinearRing
 // }
 
-// geos::geom::Geometry* shape_to_poly(GeoGerry::LinearRing shape) {
+// geos::geom::Geometry* shape_to_poly(Geometry::LinearRing shape) {
 //     /*
 //         Creates a GEOS library polygon object from a
 //         given Polygon object by looping through points
@@ -1274,7 +1274,7 @@ p_index get_first_precinct(Precinct_Group available_precincts, Communities commu
 //     return poly;
 // }
 
-// geos::geom::Geometry::NonConstVect multi_shape_to_poly(GeoGerry::Multi_Polygon ms) {
+// geos::geom::Geometry::NonConstVect multi_shape_to_poly(Geometry::Multi_Polygon ms) {
 //     geos::geom::Geometry::NonConstVect geoms;
 
 //     for (Polygon s : ms.border) {

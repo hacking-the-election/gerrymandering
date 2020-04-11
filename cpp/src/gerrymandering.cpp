@@ -24,8 +24,8 @@
 #include "../../include/canvas.hpp" // geometry modification, border functions
 
 using namespace std;
-using namespace GeoGerry;
-using namespace GeoDraw;
+using namespace Geometry;
+using namespace Graphics;
 
 
 vector<unit_interval> State::quantify_gerrymandering(vector<Multi_Polygon> districts, Communities base_communities) {

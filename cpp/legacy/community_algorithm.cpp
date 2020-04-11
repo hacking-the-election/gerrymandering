@@ -32,8 +32,8 @@
 #include "../../../include/canvas.hpp" // geometry modification, border functions
 
 using namespace std;
-using namespace GeoGerry;
-using namespace GeoDraw;
+using namespace Geometry;
+using namespace Graphics;
 using namespace boost::filesystem;
 
 #define VERBOSE 1
@@ -1019,11 +1019,11 @@ void State::refine_communities(double part, double popt, double compt, string wr
     canvas.draw();
     
     full_animation.playback();
-    full_animation = GeoDraw::Anim(40);
+    full_animation = Graphics::Anim(40);
 }
 
 
-void GeoGerry::State::save_iteration_data(Communities cs, string folder, int iteration) {
+void Geometry::State::save_iteration_data(Communities cs, string folder, int iteration) {
     string compactness = readf(folder + "/compactness.list"),
            population = readf(folder + "/population.list"),
            stdev = readf(folder + "/partisan.list"),

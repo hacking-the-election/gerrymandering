@@ -16,8 +16,8 @@
 #include "../include/canvas.hpp"
 
 using namespace std;
-using namespace GeoGerry;
-using namespace GeoDraw;
+using namespace Geometry;
+using namespace Graphics;
 
 
 int main(int argc, char* argv[]) {
