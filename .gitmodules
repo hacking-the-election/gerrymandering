@@ -7,3 +7,6 @@
 [submodule "data"]
 	path = data
 	url = https://github.com/hacking-the-election/data
+[submodule "cpp/lib/Random-Access-Map"]
+	path = cpp/lib/Random-Access-Map
+	url = https://github.com/mabdelazim/Random-Access-Map
