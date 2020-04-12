@@ -27,28 +27,29 @@ def modify_coords(coords, bounds):
         for p, point in enumerate(coords):
             coords[p] = list(point.coords)[0]
 
-    X = []
-    Y = []
-    for point in coords:
-        X.append(point[0])
-        Y.append(point[1])
+    # Move to first quadrant.
+    min_x = min([point[0] for point in coords])
+    min_y = min([point[1] for point in coords])
+    for p in range(len(coords)):
+        coords[p][0] += abs(min_x)
+        coords[p][1] += abs(min_y)
 
-    # Translate
-    min_x = min(X)
-    min_y = min(Y)
-    for p, point in enumerate(coords):
-        new_x = point[0] - min_x - (0.01 * bounds[1])
-        new_y = point[1] - min_y - (0.01 * bounds[1])
+    # Dilate to fit within canvas
+    dilation_factor = max(max([point[0] for point in coords]) / bounds[0],
+                          max([point[1] for point in coords]) / bounds[1])
+    for p in range(len(coords)):
+        for c in range(2):
+            coords[p][c] *= dilation_factor
 
-    # Dilate
-    dilation_factor = max((0.99 * bounds[0]) / max(X),
-                          (0.99 * bounds[1]) / max(Y))
-    for point in coords:
-        for c, coord in enumerate(point):
-            point[c] *= dilation_factor
-
-    # Reflect
+    # Reflect because y is flipped in Pillow
     for point in coords:
         point[1] = bounds[1] - point[1]
+
+    # Center
+    max_x = max([point[0] for point in coords])
+    min_y = min([point[1] for point in coords])
+    for point in coords:
+        point[0] += (bounds[0] - max_x) / 2
+        point[1] -= min_y / 2
 
     return coords
