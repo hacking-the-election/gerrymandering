@@ -16,7 +16,7 @@ using std::cout;
 using std::endl;
 
 int RECURSION_STATE = 0;
-double PADDING = (3.0/4.0);
+double PADDING = (9.0/16.0);
 
 
 
@@ -26,11 +26,83 @@ Graphics::Pixel::Pixel() {
 
 
 std::array<int, 3> Graphics::interpolate_rgb(std::array<int, 3> rgb1, std::array<int, 3> rgb2, double interpolator) {
-    int r = round(rgb1[0] + (double)(rgb2[0] - rgb1[0]) * interpolator);
-    int g = round(rgb1[1] + (double)(rgb2[1] - rgb1[1]) * interpolator);
-    int b = round(rgb1[2] + (double)(rgb2[2] - rgb1[2]) * interpolator);
 
-    return {r, g, b};
+    return hsl_to_rgb(interpolate_hsl(rgb_to_hsl(rgb1), rgb_to_hsl(rgb2), interpolator));
+    // return hsl_to_rgb(rgb_to_hsl(rgb1));
+    // int r = round(rgb1[0] + (double)(rgb2[0] - rgb1[0]) * interpolator);
+    // int g = round(rgb1[1] + (double)(rgb2[1] - rgb1[1]) * interpolator);
+    // int b = round(rgb1[2] + (double)(rgb2[2] - rgb1[2]) * interpolator);
+
+    // return {r, g, b};
+}
+
+
+double Graphics::hue_to_rgb(double p, double q, double t) {	
+    if(t < 0) t += 1;	
+    if(t > 1) t -= 1;	
+    if(t < 1.0/6.0) return p + (q - p) * 6.0 * t;	
+    if(t < 1.0/2.0) return q;	
+    if(t < 2.0/3.0) return p + (q - p) * (2.0/3.0 - t) * 6.0;	
+    return p;	
+}	
+
+
+std::array<int, 3> Graphics::hsl_to_rgb(std::array<double, 3> hsl) {	
+    double r, g, b;	
+
+    if (hsl[1] == 0.0) {	
+        r = g = b = hsl[2]; // achromatic	
+    }	
+    else {	
+        double q = (hsl[2] < 0.5) ? hsl[2] * (1.0 + hsl[1]) : hsl[2] + hsl[1] - hsl[2] * hsl[1];	
+        // std::cout << std::endl << "q: " << q << ", " << hsl[2] << std::endl;	
+        double p = 2.0 * hsl[2] - q;	
+
+        r = hue_to_rgb(p, q, hsl[0] + 1.0/3.0);	
+        g = hue_to_rgb(p, q, hsl[0]);	
+        b = hue_to_rgb(p, q, hsl[0] - 1.0/3.0);	
+    }	
+
+    return { (int)(r * 255.0), (int)(g * 255.0), (int) (b * 255.0) };	
+}	
+
+
+std::array<double, 3> Graphics::rgb_to_hsl(std::array<int, 3> rgb) {
+    double r = (double) rgb[0] / 255.0;
+    double g = (double) rgb[1] / 255.0;
+    double b = (double) rgb[2] / 255.0;
+
+    double max = (double)*std::max_element(rgb.begin(), rgb.end()) / 255.0,
+           min = (double)*std::min_element(rgb.begin(), rgb.end()) / 255.0;
+
+    double h, s, l = (max + min) / 2.0;
+
+    if (max == min) {
+        h = 0.0;
+        s = 0.0; // achromatic
+    }
+    else {
+        double d = max - min;
+        s = (l > 0.5) ? (d / (2.0 - max - min)) : (d / (max + min));
+
+        if (max == r) h = (g - b) / d + ((g < b) ? 6.0 : 0.0);
+        else if (max == g) h = (b - r) / d + 2;
+        else h = (r - g) / d + 4;
+
+        h /= 6.0;
+    }
+
+    return { h, s, l };	
+}
+
+
+std::array<double, 3> Graphics::interpolate_hsl(std::array<double, 3> hsl1, std::array<double, 3> hsl2, double interpolator) {	
+
+    double h = hsl1[0] + (double)(hsl2[0] - hsl1[0]) * interpolator;
+    double s = hsl1[1] + (double)(hsl2[1] - hsl1[1]) * interpolator;
+    double l = hsl1[2] + (double)(hsl2[2] - hsl1[2]) * interpolator;
+
+    return {h,s,l};	
 }
 
 
@@ -115,8 +187,17 @@ void Graphics::Canvas::add_shape(Geometry::Precinct_Group s, bool f, Color c, in
     */
 
     for (Geometry::Precinct shape : s.precincts) {
-            Outline outline(shape.hull, c, t, f);
-            outlines.push_back(outline);
+        double r = shape.get_ratio();
+        std::array<int,3> rgb;
+        // if (r > 0.5) rgb = interpolate_rgb({0, 255, 0}, {252, 0, 0}, 2.0 * (shape.get_ratio() - 0.5));
+        // else if (r <= 0.5 && r >= 0.0) rgb = interpolate_rgb({0, 0, 255}, {0, 255, 0}, 2.0 * shape.get_ratio());
+        rgb = interpolate_rgb({0,0,255}, {255,0,0}, r);
+        if (shape.get_ratio() == -1) rgb = {0,0,0};
+
+        Outline outline(shape.hull, Color(rgb[0], rgb[1], rgb[2]), 1, true);
+        outlines.push_back(outline);
+        
+
         for (Geometry::LinearRing l : shape.holes) {
             Outline hole(l, c, t, f);
             holes.push_back(hole);
@@ -150,16 +231,18 @@ void Graphics::Canvas::add_graph(Geometry::Graph g) {
     }
 
     
-    for (Geometry::Node node : g.vertices) {
+    for (int i = 0; i < g.vertices.size(); i++) {
+        Geometry::Node node = *(g.vertices.begin() + i);
+
         std::array<int, 3> rgb = interpolate_rgb({3, 61, 252}, {252, 3, 3}, node.precinct->get_ratio());
         Color color(rgb[0], rgb[1], rgb[2]);
         if (node.precinct->get_ratio() == -1) color = Color(0,0,0);
 
-        int factor = 8;
-        int t = 3500;
-        if (node.precinct->pop * factor > 3500) t = node.precinct->pop * factor;
+        int factor = 3;
+        int t = 4500;
+        if (node.precinct->pop * factor > 4500) t = node.precinct->pop * factor;
 
-        this->add_shape(generate_gon(node.precinct->get_center(), t, 40), false, color, 2);
+        this->add_shape(generate_gon(node.precinct->get_center(), t, 40), true, color, 2);
     }
 }
 
@@ -287,7 +370,7 @@ void Graphics::Canvas::scale(double scale_factor) {
 
 void Graphics::Outline::flood_fill_util(Geometry::coordinate coord, Color c1, Color c2, Canvas& canvas) {
     RECURSION_STATE++;
-    if (RECURSION_STATE > 10000) return;
+    if (RECURSION_STATE > 9000) return;
 
     if (coord[0] < 0 || coord[0] > pixels.size() || coord[1] < 0 || coord[1] > pixels[0].size()) return;
     if (this->get_pixel({coord[0], coord[1]}).color != c1) return;
@@ -311,8 +394,8 @@ Graphics::Pixel Graphics::Canvas::get_pixel(Geometry::coordinate c) {
 
 
 Graphics::Pixel Graphics::Outline::get_pixel(Geometry::coordinate c) {
-    // if (c[0] >= pixels.size() || c[0] < 0 || c[1] >= pixels[0].size() || c[1] < 0)
-    //     return Pixel(-1,-1, Color(-1,-1,-1));
+    if (c[0] >= pixels.size() || c[0] < 0 || c[1] >= pixels[0].size() || c[1] < 0)
+        return Pixel(-1,-1, Color(-1,-1,-1));
     return this->pixels[c[0]][c[1]];
 }
 
@@ -340,8 +423,8 @@ void Graphics::Outline::rasterize(Canvas& canvas) {
         @return: void
     */
 
-
     if (filled) this->pixels = std::vector<std::vector<Pixel> > (canvas.x, std::vector<Pixel>(canvas.y, Pixel()));
+    
     int dx, dy, x0, x1, y0, y1;
     
     for (Geometry::segment s : this->border.get_segments()) {
@@ -363,7 +446,7 @@ void Graphics::Outline::rasterize(Canvas& canvas) {
 
         for (int i = 0; i <= steps; i++) {
          
-            // if (filled) this->pixels[xv][yv] = Pixel((int)xv, (int)yv, this->color);
+            if (filled) this->pixels[xv][yv] = Pixel((int)xv, (int)yv, this->color);
             canvas.pixels[xv][yv] = Pixel((int)xv , (int)yv, this->color);
             
             if (line_thickness > 1) {
@@ -372,7 +455,7 @@ void Graphics::Outline::rasterize(Canvas& canvas) {
                     int add = 0;
                     for (int i = 1; i <= ceil((double)(line_thickness - 1) / 2.0); i++) {
                         for (int f = 1; f >= -1; f -= 2) {
-                            // if (filled) this->pixels[xv][yv + (i * f)] = Pixel((int)xv, (int)yv + (i * f), this->color);
+                            if (filled) this->pixels[xv][yv + (i * f)] = Pixel((int)xv, (int)yv + (i * f), this->color);
                             canvas.pixels[xv][yv + (i * f)] = Pixel((int)xv, (int)yv + (i * f), this->color);
                             add++;
 
@@ -385,7 +468,7 @@ void Graphics::Outline::rasterize(Canvas& canvas) {
                     int add = 0;
                     for (int i = 1; i <= ceil((double)(line_thickness - 1) / 2.0); i++) {
                         for (int f = 1; f >= -1; f -= 2) {
-                            // if (filled) this->pixels[xv + (i * f)][yv] = Pixel((int)xv + (i * f), (int)yv, this->color);
+                            if (filled) this->pixels[xv + (i * f)][yv] = Pixel((int)xv + (i * f), (int)yv, this->color);
                             canvas.pixels[xv + (i * f)][yv] = Pixel((int)xv + (i * f), (int)yv, this->color);
                             add++;
 
@@ -400,11 +483,11 @@ void Graphics::Outline::rasterize(Canvas& canvas) {
         }
     }
 
+    if (this->filled) {
+        this->flood_fill(this->get_representative_point(), this->color, canvas);
+    }
 
-    std::vector<std::vector<Pixel> >().swap(this->pixels);
-    // if (this->filled) {
-    //     this->flood_fill(this->get_representative_point(), this->color, canvas);
-    // }
+    this->pixels.clear();
 
     return;
 }
@@ -436,7 +519,6 @@ void Graphics::Canvas::draw() {
     */
 
     // size and position coordinates in the right quad
-    cout << "A" << endl;
     this->pixels = std::vector<std::vector<Pixel> > (x, std::vector<Pixel>(y));
     memset(background, 255, x * y * sizeof(Uint32));
     get_bounding_box();
@@ -458,14 +540,11 @@ void Graphics::Canvas::draw() {
     //     translate(0, t, false);
     // }
 
-    cout << "A" << endl;
-
     for (int i = 0; i < outlines.size(); i++) {
         // cout << "Rasterizing " << i << endl;
         outlines[i].rasterize(*this);
     }
 
-    cout << "A" << endl;
 
     for (std::vector<Pixel> pr : this->pixels) {
         for (Pixel p : pr) {
