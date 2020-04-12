@@ -24,7 +24,10 @@ namespace Graphics {
 
 
     std::array<int, 3> interpolate_rgb(std::array<int, 3> rgb1, std::array<int, 3> rgb2, double interpolator);
-
+    double hue_to_rgb(double p, double q, double t);
+    std::array<int, 3> hsl_to_rgb(std::array<double, 3> hsl);
+    std::array<double, 3> rgb_to_hsl(std::array<int, 3> rgb);
+    std::array<double, 3> interpolate_hsl(std::array<double, 3> hsl1, std::array<double, 3> hsl2, double interpolator);
 
     class Color {
         public:

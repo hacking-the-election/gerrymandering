@@ -681,7 +681,7 @@ Geometry::Graph generate_graph(Geometry::Precinct_Group pg) {
     for (int i = 0; i < pg.precincts.size(); i++) {
         Geometry::Node n(&pg.precincts[i]);
         n.id = i;
-        graph.vertices.push_back(n);
+        graph.vertices[i] = n;
     }
 
     for (int i = 0; i < pg.precincts.size(); i++) {
@@ -696,6 +696,7 @@ Geometry::Graph generate_graph(Geometry::Precinct_Group pg) {
         }
 
         for (Geometry::p_index border : precincts) {
+            
             Geometry::p_index higher = (border > i) ? border : i;
             Geometry::p_index lower = (border <= i) ? border : i;
 

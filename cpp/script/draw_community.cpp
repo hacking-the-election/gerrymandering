@@ -14,6 +14,9 @@
 #include "../include/util.hpp"
 #include "../include/geometry.hpp"
 #include "../include/canvas.hpp"
+#include <chrono> 
+
+using namespace std::chrono; 
 
 using namespace std;
 using namespace Geometry;
@@ -32,9 +35,18 @@ int main(int argc, char* argv[]) {
 
     // read binary file from path
     State state = State::read_binary(argv[1]);
-    canvas.add_graph(state.network);
+    // canvas.add_graph(state.network);
 
     cout << "drawing" << endl;
+
+    // auto start = high_resolution_clock::now(); 
+    // cout << state.network.get_num_components() << endl;
+    // auto stop = high_resolution_clock::now(); 
+    // auto duration = duration_cast<microseconds>(stop - start); 
+    
+    // cout << duration.count() << endl; 
+
+    canvas.add_shape(state);
     canvas.draw();
     return 0;
 }

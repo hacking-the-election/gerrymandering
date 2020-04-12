@@ -13,11 +13,13 @@
 
 #include <string>
 #include <vector>
+#include <map>
 
 // for boost binary serialization
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/serialization/vector.hpp>
+#include <boost/serialization/map.hpp>
 #include <boost/serialization/array.hpp>
 #include <boost/serialization/base_object.hpp>
 
@@ -320,6 +322,8 @@ class Node {
 
         Node() {};
         Node(Precinct* precinct) : precinct(precinct) {};
+        
+        friend bool operator< (Node l1, Node l2);
 
         std::vector<std::array<int, 2> > edges;
         
@@ -331,13 +335,13 @@ class Node {
 
 class Graph {
     public:
-        std::vector<Node> vertices;
+        std::map<int, Node> vertices;
         std::vector<std::array<int, 2> > edges;
-
-        int get_node(int id);
 
         void sort_by_degree();
         int get_num_components();
+        void dfs_recursor(int v, std::vector<bool>& visited);
+        int get_node(int n);
 
         // for boost serialization
         friend class boost::serialization::access;

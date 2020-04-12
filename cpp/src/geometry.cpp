@@ -290,8 +290,8 @@ coordinate Geometry::LinearRing::get_center() {
         long int x2 = border[i + 1][0];
         long int y2 = border[i + 1][1];
 
-        Cx -= (x1 + x2) * ((x1 * y2) - (x2 * y1));
-        Cy -= (y1 + y2) * ((x1 * y2) - (x2 * y1));
+        Cx += (x1 + x2) * ((x1 * y2) - (x2 * y1));
+        Cy += (y1 + y2) * ((x1 * y2) - (x2 * y1));
     }
 
     Cx = round(1.0 / (6.0 * this->get_area()) * (double) Cx);
@@ -326,7 +326,7 @@ double Geometry::LinearRing::get_area() {
         area += (border[i][0] * border[j][1]) - (border[i][1] * border[j][0]);
     }
 
-    return abs(area / 2.0);
+    return area / 2.0;
 }
 
 

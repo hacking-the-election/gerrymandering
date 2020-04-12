@@ -14,7 +14,7 @@ CV := -std=c++11
 BIN := bin
 BUILD = build
 BINARIES := $(BIN)/serialize_state $(BIN)/generate_communities
-STATE_OBJECTS := $(BUILD)/parse.o $(BUILD)/canvas.o $(BUILD)/geometry.o $(BUILD)/util.o $(BUILD)/shape.o
+STATE_OBJECTS := $(BUILD)/parse.o $(BUILD)/canvas.o $(BUILD)/geometry.o $(BUILD)/util.o $(BUILD)/shape.o $(BUILD)/graph.o
 
 # libraries
 BOOST := -lboost_serialization -lboost_filesystem

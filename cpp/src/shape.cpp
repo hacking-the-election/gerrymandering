@@ -122,7 +122,7 @@ void Geometry::Precinct_Group::remove_precinct(Geometry::Precinct pre) {
     /*
         @desc: Removes a precinct from a Precinct Group and updates the border with a difference
         @params: `Precinct` pre: Precinct to be removed
-        @return: none
+        @return: `void`
     */
 
     if (std::find(precincts.begin(), precincts.end(), pre) != precincts.end()) {
@@ -287,6 +287,10 @@ bool Geometry::operator!= (Geometry::Multi_Polygon& s1, Geometry::Multi_Polygon&
     return (s1.border != s2.border);
 }
 
+
+bool Geometry::operator< (Node l1, Node l2) {
+    return (l1.edges.size() < l2.edges.size());
+}
 
 /*
     Write and read state file to and from binary
