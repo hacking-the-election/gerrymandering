@@ -11,7 +11,7 @@ from hacking_the_election.utils.precinct import Precinct
 from hacking_the_election.utils.visualization import modify_coords
 
 
-def visualize_graph(graph, output_path, coords, colors=None):
+def visualize_graph(graph, output_path, coords, colors=None, sizes=None):
     """Creates an image of a graph and saves it to a file.
 
     :param graph: The graph you want to visualize.
@@ -25,6 +25,9 @@ def visualize_graph(graph, output_path, coords, colors=None):
 
     :param colors: A function that outputs an rgb code for each node, defaults to None
     :type colors: (function that outputs list of 2 float) or NoneType
+
+    :param sizes: A function that outputs the radius for each node.
+    :type sizes: (function that outputs float) or NoneType
     """
 
     graph_image = Image.new("RGB", (1000, 1000), "white")
@@ -42,10 +45,16 @@ def visualize_graph(graph, output_path, coords, colors=None):
     else:
         node_colors = [(0, 0, 0) for _ in graph_nodes]
 
-    for center, node, color in zip(modified_coords, graph_nodes, node_colors):
+    if sizes is not None:
+        node_sizes = [sizes(node) for node in graph_nodes]
+    else:
+        node_sizes = [1 for _ in graph_nodes]
+
+    for center, node, color, r in zip(modified_coords, graph_nodes,
+                                         node_colors, node_sizes):
         draw.ellipse(
-            [(center[0] - 1, center[1] - 1),
-             (center[0] + 1, center[1] + 1)],
+            [(center[0] - r, center[1] - r),
+             (center[0] + r, center[1] + r)],
             fill=color
         )
 
