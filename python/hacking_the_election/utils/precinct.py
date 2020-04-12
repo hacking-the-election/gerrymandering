@@ -28,7 +28,7 @@ class Precinct:
     """
 
     def __init__(self, pop, coords, state, precinct_id, rep_data, dem_data, 
-                 green_data=None, lib_data=None, reform_data=None, ind_data=None, const_data=None):
+                 green_data=None, lib_data=None, reform_data=None, ind_data=None, const_data=None, other_data=None):
 
         self.pop = pop
         # should be shapely polygon
@@ -64,7 +64,7 @@ class Precinct:
             self.num_parties_data += 1
         else:
             self.total_reform = 0
-        # Independents
+        # Independent Party
         if ind_data:
             self.total_ind = ind_data
             self.num_parties_data += 1
@@ -77,7 +77,13 @@ class Precinct:
         else:
             self.total_const = 0
 
-        self.total_votes = sum(self.total_dem + self.total_rep + self.total_green + self.total_lib + self.total_reform + self.total_ind + self.total_const)
+        if other_data:
+            self.total_other = other_data
+            self.num_parties_data += 1
+        else:
+            self.total_other = 0
+
+        self.total_votes = sum(self.total_dem + self.total_rep + self.total_green + self.total_lib + self.total_reform + self.total_ind + self.total_const + self.total_other)
 
         self.percent_dem = self.total_dem / self.total_votes
         self.percent_rep = self.total_rep / self.total_votes
@@ -87,3 +93,5 @@ class Precinct:
         self.percent_reform = self.total_reform / self.total_votes
         self.percent_ind = self.total_ind / self.total_votes
         self.percent_const = self.total_const / self.total_votes
+
+        self.percent_other = self.total_other / self.total_votes
