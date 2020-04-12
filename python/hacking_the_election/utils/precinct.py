@@ -2,7 +2,10 @@
 A class representing the smallest unit of voter
 data in our project's data files: the precinct.
 """
-from stats import standard_deviation
+
+
+from hacking_the_election.utils.stats import standard_deviation
+
 
 class Precinct:
     """Class containing voter, population, and geo data for a single precinct.
@@ -44,46 +47,48 @@ class Precinct:
         # number of parties with data
         self.num_parties_data = 0
 
-        self.total_rep = rep_data
-        self.total_dem = dem_data
+        self.total_rep = sum(rep_data.values())
+        self.total_dem = sum(dem_data.values())
         # Green Party of the United States
         if green_data:
-            self.total_green = green_data
+            self.total_green = sum(green_data.values())
             self.num_parties_data += 1
         else:
             self.total_green = 0
         # Libertarian Party
         if lib_data:
-            self.total_lib = lib_data
+            self.total_lib = sum(lib_data.values())
             self.num_parties_data += 1
         else:
             self.total_lib = 0
         # Reform Party of the United States of America
         if reform_data:
-            self.total_reform = reform_data
+            self.total_reform = sum(reform_data.values())
             self.num_parties_data += 1
         else:
             self.total_reform = 0
         # Independent Party
         if ind_data:
-            self.total_ind = ind_data
+            self.total_ind = sum(ind_data.values())
             self.num_parties_data += 1
         else:
             self.total_ind = 0
         # Constitution Party
         if const_data:
-            self.total_const = const_data
+            self.total_const = sum(const_data.values())
             self.num_parties_data += 1
         else:
             self.total_const = 0
 
         if other_data:
-            self.total_other = other_data
+            self.total_other = sum(other_data.values())
             self.num_parties_data += 1
         else:
             self.total_other = 0
 
-        self.total_votes = sum(self.total_dem + self.total_rep + self.total_green + self.total_lib + self.total_reform + self.total_ind + self.total_const + self.total_other)
+        self.total_votes = (self.total_dem + self.total_rep + self.total_green
+                          + self.total_lib + self.total_reform + self.total_ind
+                          + self.total_const + self.total_other)
 
         self.percent_dem = self.total_dem / self.total_votes
         self.percent_rep = self.total_rep / self.total_votes
