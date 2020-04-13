@@ -10,3 +10,6 @@
 [submodule "cpp/lib/Random-Access-Map"]
 	path = cpp/lib/Random-Access-Map
 	url = https://github.com/mabdelazim/Random-Access-Map
+[submodule "cpp/lib/ordered-map"]
+	path = cpp/lib/ordered-map
+	url = https://github.com/Tessil/ordered-map
