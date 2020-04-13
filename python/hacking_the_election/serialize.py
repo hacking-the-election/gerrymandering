@@ -21,6 +21,7 @@ from shapely.geometry import Polygon, MultiPolygon
 
 from hacking_the_election.utils.precinct import Precinct
 from hacking_the_election.utils.serialization import compare_ids, split_multipolygons, combine_holypolygons
+from hacking_the_election.utils.geometry import geojson_to_shapely, get_if_bordering
 
 def convert_to_int(string):
     """
@@ -156,7 +157,7 @@ def create_graph(election_file, geo_file, pop_file, state):
         pop_data_type = False
 
     precincts = []
-    precinct_graph = graph()
+    unordered_precinct_graph = graph()
 
 
     # Get election data. If needed, converts election data ids to geodata ids 
@@ -325,11 +326,18 @@ def create_graph(election_file, geo_file, pop_file, state):
         for precinct in geodata["features"]
     }
 
+
     # Remove multipolygons from our dictionaries. (This is so our districts/communities stay contiguous)
     split_multipolygons(geodata_dict, pop, precinct_election_data)
 
     combine_holypolygons(geodata_dict, pop, precinct_election_data)
 
+    # Modify geodata_dict to use 'shapely.geometry.Polygon's
+    geodata_dict = {
+        "".join(precinct["properties"][json_id] for json_id in json_ids) :
+        geojson_to_shapely(precinct["geometry"]["coordinates"])
+        for precinct in geodata["features"]
+    }
 
     # Create list of Precinct objects
     precinct_list = []
@@ -340,19 +348,46 @@ def create_graph(election_file, geo_file, pop_file, state):
             (list(party_dict.values())[0])
             for party_dict in precinct_election_data[precinct_id]
         }
-        for result
         precinct_list.append(
             Precinct(precinct_pop, coordinate_data, state, precinct_id, **precinct_election)
         )
     
-    
-    return precinct_graph
+    # Add nodes to our unordered graph
+    for i, precinct in enumerate(precinct_list):
+        unordered_precinct_graph.add_node(i, attrs=[precinct])
+
+    # Add edges to our graph
+    for node in unordered_precinct_graph.nodes():
+        coordinate_data = unordered_precinct_graph.node_attributes(node)[0].coords
+        for check_node in unordered_precinct_graph.nodes():
+            if check_node == node:
+                continue
+            check_coordinate_data = unordered_precinct_graph.node_attributes(node)[0].coords
+            if get_if_bordering(coordinate_data, check_coordinate_data):
+                if unordered_precinct_graph.has_edge((node, check_node)):
+                   continue
+                else:
+                    unordered_precinct_graph.add_edge((node, check_node))
+
+    # Create list of nodes in ascending order by degree
+    ordered_nodes = sorted(unordered_precinct_graph.nodes(), key=lambda  n: len(unordered_precinct_graph.neighbors(n))) 
+
+    # Create graph
+    ordered_precinct_graph = graph()
+
+    # Add nodes from unordered graph to ordered
+    for node in unordered_precinct_graph.nodes():
+        ordered_precinct_graph.add_node(node, attrs=[unordered_precinct_graph.node_attributes(node)[0]])
+
+    # Then, add EDGES.
+    #
+    return unordered_precinct_graph
 
 
 if __name__ == "__main__":
     
-    precinct_graph = create_graph(sys.argv[1:5])
+    unordered_precinct_graph = create_graph(sys.argv[1:5])
 
     # Save graph as pickle
     with open(sys.argv[5], "wb+") as f:
-        pickle.dump(precinct_graph)
+        pickle.dump(unordered_precinct_graph)
