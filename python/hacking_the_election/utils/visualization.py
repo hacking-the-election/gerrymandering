@@ -35,8 +35,8 @@ def modify_coords(coords, bounds):
         coords[p][1] += abs(min_y)
 
     # Dilate to fit within canvas
-    dilation_factor = max(max([point[0] for point in coords]) / bounds[0],
-                          max([point[1] for point in coords]) / bounds[1])
+    dilation_factor = max((0.95 * bounds[0]) / max([point[0] for point in coords]),
+                          (0.95 * bounds[1]) / max([point[1] for point in coords]))
     for p in range(len(coords)):
         for c in range(2):
             coords[p][c] *= dilation_factor

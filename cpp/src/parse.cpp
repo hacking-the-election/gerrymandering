@@ -678,10 +678,11 @@ int hole_count(Geometry::Precinct_Group pg) {
 Geometry::Graph generate_graph(Geometry::Precinct_Group pg) {
 
     Geometry::Graph graph;
+    std::vector<Geometry::Node> nodes;
     for (int i = 0; i < pg.precincts.size(); i++) {
         Geometry::Node n(&pg.precincts[i]);
         n.id = i;
-        graph.vertices[i] = n;
+        nodes.push_back(n);
     }
 
     for (int i = 0; i < pg.precincts.size(); i++) {
@@ -707,29 +708,39 @@ Geometry::Graph generate_graph(Geometry::Precinct_Group pg) {
                 graph.edges.push_back(edge);
             }
 
-            if (!(std::find(graph.vertices[higher].edges.begin(),
-                  graph.vertices[higher].edges.end(), edge) 
-                != graph.vertices[higher].edges.end())) {
+            if (!(std::find(nodes[higher].edges.begin(),
+                  nodes[higher].edges.end(), edge) 
+                != nodes[higher].edges.end())) {
 
-                graph.vertices[higher].edges.push_back(edge);
+                nodes[higher].edges.push_back(edge);
             }
 
 
-            if (!(std::find(graph.vertices[lower].edges.begin(),
-                  graph.vertices[lower].edges.end(), lh) 
-                != graph.vertices[lower].edges.end())) {
+            if (!(std::find(nodes[lower].edges.begin(),
+                  nodes[lower].edges.end(), lh) 
+                != nodes[lower].edges.end())) {
 
-                graph.vertices[lower].edges.push_back(lh);
+                nodes[lower].edges.push_back(lh);
             }
         }
+    }
+
+    std::sort(nodes.begin(), nodes.end());
+
+    for (int i = 0; i < nodes.size() ; i++) {
+        graph.vertices.insert({nodes[i].id, nodes[i]});
     }
 
     // Graphics::Canvas canvas(900, 900);
     // canvas.add_graph(graph);
     // canvas.draw();
-
+    
     std::cout << graph.edges.size() << ", " << graph.vertices.size() << std::endl;
-    std::cout << "precinct 0 has " << graph.vertices[0].edges.size() << " edges and " << graph.vertices[0].precinct->hull.border.size() << " coordinates" << std::endl;
+
+    for (int i = 0; i < 100; i++) {
+        std::cout << i << " has " << (graph.vertices.begin() + i).value().edges.size() << std::endl;
+    }
+
     return graph;
 }
 

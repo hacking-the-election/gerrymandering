@@ -13,13 +13,14 @@
 
 #include <string>
 #include <vector>
-#include <map>
+
+#include "../lib/ordered-map/include/tsl/ordered_map.h"
+#include "../lib/ordered-map/include/tsl/ordered_set.h"
 
 // for boost binary serialization
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/serialization/vector.hpp>
-#include <boost/serialization/map.hpp>
 #include <boost/serialization/array.hpp>
 #include <boost/serialization/base_object.hpp>
 
@@ -323,7 +324,7 @@ class Node {
         Node() {};
         Node(Precinct* precinct) : precinct(precinct) {};
         
-        friend bool operator< (Node l1, Node l2);
+        friend bool operator< (const Node& l1, const Node& l2);
 
         std::vector<std::array<int, 2> > edges;
         
@@ -335,13 +336,12 @@ class Node {
 
 class Graph {
     public:
-        std::map<int, Node> vertices;
+        tsl::ordered_map<int, Node> vertices;
         std::vector<std::array<int, 2> > edges;
 
         void sort_by_degree();
         int get_num_components();
         void dfs_recursor(int v, std::vector<bool>& visited);
-        int get_node(int n);
 
         // for boost serialization
         friend class boost::serialization::access;

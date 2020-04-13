@@ -23,10 +23,29 @@ def remove_edges_to(node, graph):
     return removed_edges
 
 
-def get_discontinuous_components(graph):
-    """Finds number of discontinuous components of a graph. Implements breadth-first search algorithm.
+def dfs(graph, nodes, v):
+    """Finds all the nodes in a component of a graph containing a start node.
 
-    Breadth-first algorithm implementation translated from pseudocode found here: https://en.wikipedia.org/wiki/Breadth-first_search
+    Implementation of the depth-first search algorithm translated from wikipedia:
+    https://en.wikipedia.org/wiki/Depth-first_search#Pseudocode
+
+    :param graph: The graph to traverse.
+    :type graph: `pygraph.classes.graph.graph`
+
+    :param nodes: a set that will have nodes added to it as they are traversed.
+    :type nodes: set of int
+
+    :param v: The start node in the search tree
+    :type v: int
+    """
+    nodes.add(v)
+    for w in graph.neighbors(v):
+        if w not in nodes:
+            dfs(graph, nodes, w)
+
+
+def get_discontinuous_components(graph):
+    """Finds number of discontinuous components of a graph.
 
     :param graph: The graph that contains `node`
     :type graph: `pygraph.classes.graph.graph`
@@ -42,19 +61,8 @@ def get_discontinuous_components(graph):
 
     # While not all nodes have been discovered.
     while discovered_nodes != graph_nodes:
-        start_v = min(graph_nodes -  discovered_nodes)
-
         # Search all nodes in `start_v`'s component.
-        queue = []
-        discovered_nodes.add(start_v)
-        queue.append(start_v)
-        while queue != []:
-            v = queue.pop(0)
-            for w in graph.neighbors(v):
-                if w not in discovered_nodes:
-                    discovered_nodes.add(w)
-                    queue.append(w)
-        
+        dfs(graph, discovered_nodes, min(graph_nodes -  discovered_nodes))
         n_components += 1
 
     return n_components

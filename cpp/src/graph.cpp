@@ -49,8 +49,8 @@ void Graph::dfs_recursor(int v, std::vector<bool>& visited) {
 
     visited[v] = true; 
     
-    for (int i = 0; i < this->vertices[v].edges.size(); i++) {
-        int t_id = this->vertices[v].edges[i][1];
+    for (int i = 0; i < (vertices.begin() + v).value().edges.size(); i++) {
+        int t_id = (vertices.begin() + v).value().edges[i][1];
 
         if (!visited[t_id]) { 
             dfs_recursor(t_id, visited);
