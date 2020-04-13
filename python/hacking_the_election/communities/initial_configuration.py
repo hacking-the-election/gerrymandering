@@ -54,7 +54,7 @@ def _create_community(graph, group_size, group, calls):
     tried_precincts = set()
     # While not all eligible precincts have been tried.
     while tried_precincts != eligible_precincts:
-        selected_precinct = max(
+        selected_precinct = min(
             eligible_precincts - tried_precincts
         )
         
