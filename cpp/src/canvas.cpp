@@ -224,26 +224,25 @@ void Graphics::Canvas::add_shape(Geometry::Communities s, bool f, Graphics::Colo
 void Graphics::Canvas::add_graph(Geometry::Graph g) {
 
     for (std::array<int, 2> edge : g.edges) {
-        Geometry::coordinate c1 = g.vertices[g.get_node(edge[0])].precinct->get_center();
-        Geometry::coordinate c2 = g.vertices[g.get_node(edge[1])].precinct->get_center();
+        Geometry::coordinate c1 = g.vertices[edge[0]].precinct->get_center();
+        Geometry::coordinate c2 = g.vertices[edge[1]].precinct->get_center();
         Geometry::LinearRing lr({c1, c2});
         this->add_shape(lr, false, Color(200, 200, 200), 1);
     }
 
     
-    for (int i = 0; i < g.vertices.size(); i++) {
-        Geometry::Node node = *(g.vertices.begin() + i);
+    // for (int i = 0; i < g.vertices.size(); i++) {
+    //     Geometry::Node node = (g.vertices.begin() + i).value();
+    //     std::array<int, 3> rgb = interpolate_rgb({3, 61, 252}, {252, 3, 3}, node.precinct->get_ratio());
+    //     Color color(rgb[0], rgb[1], rgb[2]);
+    //     if (node.precinct->get_ratio() == -1) color = Color(0,0,0);
 
-        std::array<int, 3> rgb = interpolate_rgb({3, 61, 252}, {252, 3, 3}, node.precinct->get_ratio());
-        Color color(rgb[0], rgb[1], rgb[2]);
-        if (node.precinct->get_ratio() == -1) color = Color(0,0,0);
+    //     int factor = 3;
+    //     int t = 4500;
+    //     if (node.precinct->pop * factor > 4500) t = node.precinct->pop * factor;
 
-        int factor = 3;
-        int t = 4500;
-        if (node.precinct->pop * factor > 4500) t = node.precinct->pop * factor;
-
-        this->add_shape(generate_gon(node.precinct->get_center(), t, 40), true, color, 2);
-    }
+    //     this->add_shape(generate_gon(node.precinct->get_center(), t, 40), true, color, 2);
+    // }
 }
 
 

@@ -46,7 +46,7 @@ int main(int argc, char* argv[]) {
     
     // cout << duration.count() << endl; 
 
-    canvas.add_shape(state);
+    canvas.add_graph(state.network);
     canvas.draw();
     return 0;
 }

@@ -12,7 +12,13 @@
 #include "../include/geometry.hpp"  // class definitions
 #include "../include/util.hpp"      // split and join
 
-#include <new>
+
+#include <boost/serialization/split_free.hpp>
+#include <boost/serialization/utility.hpp>
+
+#include <cassert>
+#include <cstdint>
+#include <fstream>
 #include <iostream>
 
 using std::cout;
@@ -239,15 +245,6 @@ Geometry::Communities Geometry::Community::load_frame(std::string read_path, Sta
 }
 
 
-int Geometry::Graph::get_node(int id) {
-    for (int i = 0; i < this->vertices.size(); i++) {
-        if (this->vertices[i].id == id) return i;
-    }
-
-    return -1;
-}
-
-
 bool Geometry::operator== (Geometry::LinearRing l1, Geometry::LinearRing l2) {
     return (l1.border == l2.border);
 }
@@ -288,7 +285,7 @@ bool Geometry::operator!= (Geometry::Multi_Polygon& s1, Geometry::Multi_Polygon&
 }
 
 
-bool Geometry::operator< (Node l1, Node l2) {
+bool Geometry::operator< (const Node& l1, const Node& l2) {
     return (l1.edges.size() < l2.edges.size());
 }
 
@@ -443,22 +440,23 @@ std::string Geometry::Multi_Polygon::to_json() {
 
 
 void Geometry::State::write_binary(std::string path) {
-
+    cout << "writing binary" << endl;
     std::ofstream ofs(path);
     boost::archive::binary_oarchive oa(ofs);
+    cout << "A" << endl;
     oa << *this;
 
+    cout << "B" << endl;
     return;
 }
 
 
 Geometry::State Geometry::State::read_binary(std::string path) {
     State state;
-
     std::ifstream ifs(path);
     boost::archive::binary_iarchive ia(ifs);
     ia >> state;
-    
+
     for (int i = 0; i < state.network.vertices.size(); i++) {
         state.network.vertices[i].precinct = &state.precincts[i];
     }
@@ -467,15 +465,31 @@ Geometry::State Geometry::State::read_binary(std::string path) {
 }
 
 
+template<class Archive> class deserializer {
+    public:
+        deserializer(Archive& ar): m_ar(ar) {}
+        
+        template<typename T> T operator()() {
+            T t; 
+            m_ar & t; 
+            
+            return t;
+        }
+
+    private:
+        Archive& m_ar;
+};
+
+
 namespace boost {
     namespace serialization {
 
         template<class Archive>
         void serialize(Archive & ar, Geometry::State& s, const unsigned int version) {
-            ar & s.districts;
-            ar & s.network;
-            ar & s.name;
             ar & boost::serialization::base_object<Geometry::Precinct_Group>(s);
+            ar & s.districts;
+            ar & s.name;
+            ar & s.network;
         }
 
 
@@ -512,15 +526,33 @@ namespace boost {
         template<class Archive>
         void serialize(Archive & ar, Geometry::Graph& s, const unsigned int version) {
             ar & s.edges;
+
             ar & s.vertices;
         }
 
 
         template<class Archive>
         void serialize(Archive & ar, Geometry::Node& s, const unsigned int version) {
-            // ar & s.precinct;
             ar & s.edges;
             ar & s.id;
+        }
+
+
+        template<class Archive, class Key, class T>
+        void serialize(Archive & ar, tsl::ordered_map<Key, T>& map, const unsigned int version) {
+            split_free(ar, map, version); 
+        }
+
+        template<class Archive, class Key, class T>
+        void save(Archive & ar, const tsl::ordered_map<Key, T>& map, const unsigned int /*version*/) {
+            auto serializer = [&ar](const auto& v) { ar & v; };
+            map.serialize(serializer);
+        }
+
+        template<class Archive, class Key, class T>
+        void load(Archive & ar, tsl::ordered_map<Key, T>& map, const unsigned int /*version*/) {
+            deserializer<Archive> des = deserializer<Archive>(ar);
+            map = tsl::ordered_map<Key, T>::deserialize(des);
         }
 
 
@@ -528,6 +560,7 @@ namespace boost {
         void serialize(Archive & ar, Geometry::Precinct& s, const unsigned int version) {
             ar & s.dem;
             ar & s.rep;
+            ar & s.pop;
             ar & boost::serialization::base_object<Geometry::Polygon>(s);
         }
     }
