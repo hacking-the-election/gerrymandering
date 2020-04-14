@@ -22,6 +22,7 @@ from shapely.geometry import Polygon, MultiPolygon
 from hacking_the_election.utils.precinct import Precinct
 from hacking_the_election.utils.serialization import compare_ids, split_multipolygons, combine_holypolygons
 from hacking_the_election.utils.geometry import geojson_to_shapely, get_if_bordering
+from hacking_the_election.visualization.graph_visualization import visualize_graph
 
 def convert_to_int(string):
     """
@@ -376,12 +377,27 @@ def create_graph(election_file, geo_file, pop_file, state):
     ordered_precinct_graph = graph()
 
     # Add nodes from unordered graph to ordered
-    for node in unordered_precinct_graph.nodes():
-        ordered_precinct_graph.add_node(node, attrs=[unordered_precinct_graph.node_attributes(node)[0]])
+    for i, node in enumerate(ordered_nodes):
+        ordered_precinct_graph.add_node(i, attrs=[unordered_precinct_graph.node_attributes(node)[0]])
 
     # Then, add EDGES.
-    #
-    return unordered_precinct_graph
+    for node in ordered_nodes:
+        neighbors = unordered_precinct_graph.neighbors(node)
+        for neighbor in neighbors:
+            if ordered_precinct_graph.has_edge((ordered_nodes.index(node), ordered_nodes.index(neighbor))):
+                continue
+            else:
+                ordered_precinct_graph.add_edge((ordered_nodex.index(node), ordered_nodes.index(neighbor)))
+
+    # Visualize graph
+    visualize_graph(
+        ordered_precinct_graph,
+        None,
+        lambda n : graph.node_attributes(n)[0].centroid,
+        show=True
+    )
+
+    return ordered_precinct_graph
 
 
 if __name__ == "__main__":
