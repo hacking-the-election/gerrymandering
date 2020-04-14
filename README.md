@@ -51,7 +51,7 @@ cd gerrymandering/python
 pip install -e .
 ```
 
-If you would like to install without pip, you likely know what you're doing.
+If you would like to install without pip, you know what you're doing, or you really, _really_ don't know what you're doing.
 All dependencies are listed in `python/requirements.txt`
 
 This package will be availalbe on PyPI sometime in the future.

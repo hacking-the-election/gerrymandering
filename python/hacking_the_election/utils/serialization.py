@@ -55,8 +55,10 @@ def split_multipolygons(geodata, pop_data, election_data):
     :return: none
     :rtype: none
     """
+    # List of ids of multipolygons
     multipolygon_ids = []
-    newpolygon_ids = []
+    # Dictionary {precinct_id : [split_coords, split_pop, split_election]}
+    newpolygon_ids = {}
     for precinct_id, precinct_coords in geodata.items():
         try:
             # test for multipolygons
@@ -74,26 +76,32 @@ def split_multipolygons(geodata, pop_data, election_data):
             total_area = sum(area_list)
             total_pop = pop_data[precinct_id]
             total_election = election_data[precinct_id]
-            for i, area in enumerate(area_list):
+            for i, precinct_area in enumerate(area_list):
                 # Find the fraction that represents percent of area in this polygon
-                factor = area / total_area
+                factor = precinct_area / total_area
                 split_id = precinct_id + "_s" + str(i)
-                newpolygon_ids.append(split_id)
                 split_pop = factor * total_pop
                 split_election = [
                     {list(party_dict.keys())[0] : 
-                    (factor * list(party_dict.values()[0]))} 
+                    (factor * float(list(party_dict.values())[0]))} 
                     for party_dict in total_election
                 ]
-                # Add split multipolygons to dictionaries
-                election_data[split_id] = split_election
-                pop_data[split_id] = split_pop
-                geodata[split_id] = precinct_coords[i]
+                # Add split multipolygons to dictionary
+                newpolygon_ids[split_id] = [
+                    precinct_coords[i],
+                    split_pop,
+                    split_election,
+                ]
     # Delete multipolygons from original dictionaries.
     for multipolygon_id in multipolygon_ids:
         del geodata[multipolygon_id]
         del pop_data[multipolygon_id]
         del election_data[multipolygon_id]
+
+    for newpolygon_id, newpolygonlist in newpolygon_ids.items():
+        geodata[newpolygon_id] = newpolygonlist[0]
+        pop_data[newpolygon_id] = newpolygonlist[1]
+        election_data[newpolygon_id] = newpolygonlist[2]
 
     print(f"Multipolygons found: {len(multipolygon_ids)}")
     print(f"Polygons created: {len(newpolygon_ids)}")
@@ -115,7 +123,7 @@ def combine_holypolygons(geodata, pop_data, election_data):
     """
 
     # Test for multipolygons
-    for precinct_id, precinct_coords in geodata:
+    for precinct_id, precinct_coords in geodata.items():
         try: 
             _ = precinct_coords[0][0][0][0]
         except: 
@@ -143,7 +151,7 @@ def combine_holypolygons(geodata, pop_data, election_data):
                 # Convert polygons to 'shapely.geometry.Polygon's
                 new_check_coords = geojson_to_shapely(check_coords)
 
-                if new_check_coords.within(new_precinct_coords[0]):
+                if new_check_coords.within(new_precinct_coords):
                     holes.apend(check_id)
                     total_pop += pop_data[check_id]
                     new_election_data = []

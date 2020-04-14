@@ -13,3 +13,4 @@ class MultiPolygonFoundException(Exception):
     """
     To be raised when multipolygons are found in data.
     """
+

@@ -11,23 +11,26 @@ from hacking_the_election.utils.precinct import Precinct
 from hacking_the_election.utils.visualization import modify_coords
 
 
-def visualize_graph(graph, output_path, coords, colors=None, sizes=None):
+def visualize_graph(graph, output_path, coords, colors=None, sizes=None, show=False):
     """Creates an image of a graph and saves it to a file.
 
     :param graph: The graph you want to visualize.
     :type graph: `pygraph.classes.graph.graph`
 
-    :param output_path: Path to where image should be saved.
-    :type output_path: str
+    :param output_path: Path to where image should be saved. None if you don't want it to be saved.
+    :type output_path: str or NoneType
 
     :param coords: A function that outputs coordinates of a node.
     :type coords: function that outputs list of 2 float
 
     :param colors: A function that outputs an rgb code for each node, defaults to None
-    :type colors: (function that outputs list of 2 float) or NoneType
+    :type colors: (function that outputs tuple of 3 float) or NoneType
 
     :param sizes: A function that outputs the radius for each node.
     :type sizes: (function that outputs float) or NoneType
+
+    :param show: whether or not to show the image once generated.
+    :type show: bool
     """
 
     graph_image = Image.new("RGB", (1000, 1000), "white")
@@ -66,7 +69,10 @@ def visualize_graph(graph, output_path, coords, colors=None, sizes=None):
                 width=1
         )
 
-    graph_image.save(output_path)
+    if output_path is not None:
+        graph_image.save(output_path)
+    if show:
+        graph_image.show()
 
 
 if __name__ == "__main__":
