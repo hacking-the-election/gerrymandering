@@ -27,13 +27,13 @@ Graphics::Pixel::Pixel() {
 
 std::array<int, 3> Graphics::interpolate_rgb(std::array<int, 3> rgb1, std::array<int, 3> rgb2, double interpolator) {
 
-    return hsl_to_rgb(interpolate_hsl(rgb_to_hsl(rgb1), rgb_to_hsl(rgb2), interpolator));
+    // return hsl_to_rgb(interpolate_hsl(rgb_to_hsl(rgb1), rgb_to_hsl(rgb2), interpolator));
     // return hsl_to_rgb(rgb_to_hsl(rgb1));
-    // int r = round(rgb1[0] + (double)(rgb2[0] - rgb1[0]) * interpolator);
-    // int g = round(rgb1[1] + (double)(rgb2[1] - rgb1[1]) * interpolator);
-    // int b = round(rgb1[2] + (double)(rgb2[2] - rgb1[2]) * interpolator);
+    int r = round(rgb1[0] + (double)(rgb2[0] - rgb1[0]) * interpolator);
+    int g = round(rgb1[1] + (double)(rgb2[1] - rgb1[1]) * interpolator);
+    int b = round(rgb1[2] + (double)(rgb2[2] - rgb1[2]) * interpolator);
 
-    // return {r, g, b};
+    return {r, g, b};
 }
 
 
@@ -231,18 +231,18 @@ void Graphics::Canvas::add_graph(Geometry::Graph g) {
     }
 
     
-    // for (int i = 0; i < g.vertices.size(); i++) {
-    //     Geometry::Node node = (g.vertices.begin() + i).value();
-    //     std::array<int, 3> rgb = interpolate_rgb({3, 61, 252}, {252, 3, 3}, node.precinct->get_ratio());
-    //     Color color(rgb[0], rgb[1], rgb[2]);
-    //     if (node.precinct->get_ratio() == -1) color = Color(0,0,0);
+    for (int i = 0; i < g.vertices.size(); i++) {
+        Geometry::Node node = (g.vertices.begin() + i).value();
+        std::array<int, 3> rgb = interpolate_rgb({3, 61, 252}, {252, 3, 3}, node.precinct->get_ratio());
+        Color color(rgb[0], rgb[1], rgb[2]);
+        if (node.precinct->get_ratio() == -1) color = Color(0,0,0);
 
-    //     int factor = 3;
-    //     int t = 4500;
-    //     if (node.precinct->pop * factor > 4500) t = node.precinct->pop * factor;
+        int factor = 3;
+        int t = 4500;
+        if (node.precinct->pop * factor > 4500) t = node.precinct->pop * factor;
 
-    //     this->add_shape(generate_gon(node.precinct->get_center(), t, 40), true, color, 2);
-    // }
+        this->add_shape(generate_gon(node.precinct->get_center(), t, 40), true, color, 2);
+    }
 }
 
 

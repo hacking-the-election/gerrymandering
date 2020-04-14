@@ -26,10 +26,10 @@
 #include <numeric>   // include std::iota
 #include <boost/filesystem.hpp>
 
-#include "../../../include/shape.hpp"    // class definitions
-#include "../../../include/util.hpp"     // array modification functions
-#include "../../../include/geometry.hpp" // geometry modification, border functions
-#include "../../../include/canvas.hpp" // geometry modification, border functions
+#include "../include/shape.hpp"    // class definitions
+#include "../include/util.hpp"     // array modification functions
+#include "../include/geometry.hpp" // geometry modification, border functions
+#include "../include/canvas.hpp" // geometry modification, border functions
 
 using namespace std;
 using namespace Geometry;
@@ -37,3 +37,8 @@ using namespace Graphics;
 using namespace boost::filesystem;
 
 #define VERBOSE 1
+
+
+void generate_communities() {
+
+}

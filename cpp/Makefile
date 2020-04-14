@@ -8,7 +8,7 @@
 # compiler options
 CC := g++
 CFLAGS := -O2 -Wall -pedantic -Wextra
-CV := -std=c++11
+CV := -std=c++14
 
 # filepaths
 BIN := bin

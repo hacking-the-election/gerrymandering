@@ -443,10 +443,7 @@ void Geometry::State::write_binary(std::string path) {
     cout << "writing binary" << endl;
     std::ofstream ofs(path);
     boost::archive::binary_oarchive oa(ofs);
-    cout << "A" << endl;
     oa << *this;
-
-    cout << "B" << endl;
     return;
 }
 
