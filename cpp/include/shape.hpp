@@ -45,7 +45,6 @@ class State;           // Contains arrays of the above, as well as methods for v
 
 class Node;            // A vertex on a graph
 class Graph;           // precinct indices as vertices and edges
-class Community;       // list of precinct id's
 
 class Exceptions;      // for any error to be thrown
 
@@ -388,24 +387,6 @@ class Precinct_Group : public Multi_Polygon {
         int id; // the district id number
 };
 
-
-// for cleaner naming of types when writing community algorithm
-// typedef Precinct_Group Community;
-typedef std::vector<Community> Communities;
-
-class Community : public Precinct_Group {
-    /*
-        Contains a list of precincts, as well as information about
-        linking and where is it on an island list.
-    */
-
-    public:
-        int size;
-        Community(){}
-
-        std::string save_frame();
-        static Communities load_frame(std::string read_path, State precinct_list);
-};
 
 
 class State : public Precinct_Group {

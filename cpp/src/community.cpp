@@ -25,20 +25,36 @@
 #include <math.h>    // for rounding functions
 #include <numeric>   // include std::iota
 #include <boost/filesystem.hpp>
-
-#include "../include/shape.hpp"    // class definitions
-#include "../include/util.hpp"     // array modification functions
-#include "../include/geometry.hpp" // geometry modification, border functions
-#include "../include/canvas.hpp" // geometry modification, border functions
+   
+#include "../include/shape.hpp"       // class definitions
+#include "../include/community.hpp"   // class definitions
+#include "../include/util.hpp"        // array modification functions
+#include "../include/geometry.hpp"    // geometry modification, border functions
+#include "../include/canvas.hpp"      // geometry modification, border functions
 
 using namespace std;
 using namespace Geometry;
 using namespace Graphics;
 using namespace boost::filesystem;
 
+
 #define VERBOSE 1
+#define DEBUG 0
 
 
-void generate_communities() {
+Communities get_initial_configuration(Graph graph) {
+    
+// Get all the group sizes
+
+// 	Groups = [{} for each community]
+// Tmp_graph = copy of graph (so that the original graph doesn’t lose any edges)
+// For each group size except the last one:
+// _create_community(tmp_graph, group_size, groups[community])
+
+// Do the last community
+
+// Create communities out of precinct groups.
+
+// Return ‘em
 
 }
