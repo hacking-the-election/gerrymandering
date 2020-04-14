@@ -25,7 +25,7 @@ def geojson_to_shapely(geojson):
 
     if isinstance(geojson[0][0][0], list):
         polygons = [[[tuple(coord) for coord in linear_ring]
-                         for linear_ring in polygon] for polygon in multipolygon_list]
+                         for linear_ring in polygon] for polygon in geojson]
         return MultiPolygon(polygons)
     elif isinstance(geojson[0][0][0], float):
         polygon_list = [[tuple(coord) for coord in linear_ring]
