@@ -4,7 +4,7 @@ pickling raw data as hacking_the_election.Precinct objects.
 """
 
 from shapely.geometry import MultiPolygon
-from hacking_the_election.utils.geometry import area, geojson_to_shapely
+from hacking_the_election.utils.geometry import area, geojson_to_shapely, get_if_bordering
 from hacking_the_election.utils.exceptions import MultiPolygonFoundException
 
 def compare_ids(non_geodata_ids, geodata_ids):
@@ -143,32 +143,32 @@ def combine_holypolygons(geodata, pop_data, election_data):
             total_pop = pop_data[precinct_id]
             total_election = election_data[precinct_id]
             
-            new_precinct_coords = geojson_to_shapely(precinct_coords)
+            shapely_holes = [geojson_to_shapely(ring) for ring in precinct_coords[1:]]
             for check_id, check_coords in geodata.items():
                 if check_id in already_checked_holes:
                     continue
-                
                 # Convert polygons to 'shapely.geometry.Polygon's
                 new_check_coords = geojson_to_shapely(check_coords)
-
-                if new_check_coords.within(new_precinct_coords):
-                    holes.apend(check_id)
-                    total_pop += pop_data[check_id]
-                    new_election_data = []
-                    for party_num, party_dict in enumerate(total_election):
-                        party = list(party_dict.keys())[0]
-                        result = list(party_dict.values())[0]
-                        result += list(election_data[check_id][party_num].values())[0]
-                        new_election_data.append({party : result})
-                    total_election = new_election_data
+                
+                for hole in shapely_holes:
+                    if get_if_bordering(new_check_coords, hole):
+                        holes.append(check_id)
+                        total_pop += pop_data[check_id]
+                        new_election_data = []
+                        for party_num, party_dict in enumerate(total_election):
+                            party = list(party_dict.keys())[0]
+                            result = list(party_dict.values())[0]
+                            result += list(election_data[check_id][party_num].values())[0]
+                            new_election_data.append({party : result})
+                        total_election = new_election_data
 
             # Assign new data for precinct with holes to data dictionaries 
             pop_data[precinct_id] = total_pop
             election_data[precinct_id] = total_election
     for check_id in holes:
-        del pop[check_id]
+        del geodata[check_id]
+        del pop_data[check_id]
         del election_data[check_id]
-
     print(f"Precincts with holes Found: {len(already_checked_holes)}")
     print(f"Precincts in holes Found {len(holes)}")
 
