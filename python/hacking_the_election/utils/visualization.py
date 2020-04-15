@@ -30,16 +30,23 @@ def modify_coords(coords, bounds):
     # Move to first quadrant.
     min_x = min([point[0] for point in coords])
     min_y = min([point[1] for point in coords])
+
     for p in range(len(coords)):
-        coords[p][0] += abs(min_x)
-        coords[p][1] += abs(min_y)
+        coords[p][0] += -(min_x)
+        coords[p][1] += -(min_y)
+
+    # Get the bounding box dimensions
+    X = [point[0] for point in coords]
+    Y = [point[1] for point in coords]
+
+    bounding_box_width = max(X) - min(X)
+    bounding_box_length = max(Y) - min(Y)
 
     # Dilate to fit within canvas
-    dilation_factor = max((0.95 * bounds[0]) / max([point[0] for point in coords]),
-                          (0.95 * bounds[1]) / max([point[1] for point in coords]))
+    dilation_factor = max([bounding_box_width / bounds[0], bounding_box_length / bounds[1]])
     for p in range(len(coords)):
         for c in range(2):
-            coords[p][c] *= dilation_factor
+            coords[p][c] *= (1 / dilation_factor) * 0.95
 
     # Reflect because y is flipped in Pillow
     for point in coords:

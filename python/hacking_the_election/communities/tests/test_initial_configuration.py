@@ -24,7 +24,7 @@ class TestInitialConfiguration(unittest.TestCase):
             for y in range(10):
                 coords = Point(x * 10, y * 10).buffer(2)
                 precinct = Precinct(0, coords, "North Montana",
-                                    str(10*x + y), {"rep": 1}, {"dem": 2})
+                                    str(10*x + y), 1, 2)
                 G1.add_node(int(precinct.id), attrs=[precinct])
 
         # Add edges so that degree can be calculated.
@@ -58,9 +58,9 @@ class TestInitialConfiguration(unittest.TestCase):
 
         def colors(n):
             if G2.node_attributes(n)[0] in communities[0].precincts.values():
-                return (255, 17, 0)
+                return (105, 17, 0)
             else:
-                return (34, 0, 255)
+                return (34, 0, 105)
 
         visualize_graph(G2, None, lambda n: G2.node_attributes(n)[0].centroid,
                         colors=colors, sizes=lambda n: 10, show=True)
