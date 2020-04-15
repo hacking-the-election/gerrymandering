@@ -99,11 +99,11 @@ class Exceptions {
             }
         };
 
-        struct PrecinctNotInGroup : public std::exception {
+        struct CommunityComplete : public std::exception {
             const char* what() const throw() {
-                return "There is no precinct in this group to remove matching the parameter.";
+                return "Community finished recursion";
             }
-        };
+        }
 };
 
 
@@ -333,15 +333,21 @@ class Node {
 };
 
 
+typedef std::array<int, 2> Edge;
+
 class Graph {
     public:
         tsl::ordered_map<int, Node> vertices;
-        std::vector<std::array<int, 2> > edges;
+        std::vector<Edge> edges;
 
         void sort_by_degree();
         int get_num_components();
         void dfs_recursor(int v, std::vector<bool>& visited);
 
+        void add_edge(Edge edge);
+        std::vector<Edge> remove_edges_to(int id);
+        void remove_edge(Edge edge);
+        
         // for boost serialization
         friend class boost::serialization::access;
         template<class Archive> void serialize(Archive & ar, const unsigned int version);

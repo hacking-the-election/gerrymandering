@@ -39,14 +39,14 @@ int main(int argc, char* argv[]) {
 
     cout << "drawing" << endl;
 
-    // auto start = high_resolution_clock::now(); 
-    // cout << state.network.get_num_components() << endl;
-    // auto stop = high_resolution_clock::now(); 
-    // auto duration = duration_cast<microseconds>(stop - start); 
+    auto start = high_resolution_clock::now(); 
+    cout << state.network.get_num_components() << endl;
+    auto stop = high_resolution_clock::now(); 
+    auto duration = duration_cast<microseconds>(stop - start); 
     
-    // cout << duration.count() << endl; 
+    cout << duration.count() << endl; 
 
-    canvas.add_graph(state.network);
-    canvas.draw();
+    // canvas.add_graph(state.network);
+    // canvas.draw();
     return 0;
 }

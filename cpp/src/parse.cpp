@@ -577,6 +577,12 @@ Geometry::Precinct_Group combine_holes(Geometry::Precinct_Group pg) {
                 if (j != x && get_inside(p_c.hull, p.hull)) {
                     // precinct j is inside precinct x,
                     // add the appropriate data from j to x
+
+                    Graphics::Canvas canvas(600,600);
+                    canvas.add_shape(p_c, false, Graphics::Color(255, 0, 0), 2);
+                    canvas.add_shape(p, false, Graphics::Color(0, 255, 0), 2);
+                    canvas.draw();
+
                     demv += pg.precincts[j].dem;
                     repv += pg.precincts[j].rep;
                     pop += pg.precincts[j].pop;
@@ -737,9 +743,9 @@ Geometry::Graph generate_graph(Geometry::Precinct_Group pg) {
     
     std::cout << graph.edges.size() << ", " << graph.vertices.size() << std::endl;
 
-    for (int i = 0; i < 100; i++) {
-        std::cout << i << " has " << (graph.vertices.begin() + i).value().edges.size() << std::endl;
-    }
+    // for (int i = 0; i < 100; i++) {
+    //     std::cout << i << " has " << (graph.vertices.begin() + i).value().edges.size() << std::endl;
+    // }
 
     return graph;
 }

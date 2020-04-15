@@ -7,19 +7,17 @@
  state object
 ========================================*/
 
-#include <chrono> 
 #include <boost/filesystem.hpp>
 #include <iostream>
 
 
 #include "../include/shape.hpp"
-#include "../include/util.hpp"
 #include "../include/geometry.hpp"
 #include "../include/canvas.hpp"
+#include "../include/community.hpp"
 
 using namespace boost::filesystem;
 using namespace std;
-using namespace chrono;
 using namespace Geometry;
 using namespace Graphics;
 
@@ -40,6 +38,8 @@ int main(int argc, char* argv[]) {
     string read_path = string(argv[1]);
     State state = State::read_binary(read_path);
 
+    int n_communities = stoi(string(argv[2]));
+    get_initial_configuration(state.network, n_communities);
     
     return 0;
 }
