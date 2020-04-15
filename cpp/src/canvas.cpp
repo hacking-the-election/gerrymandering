@@ -17,7 +17,7 @@ using std::cout;
 using std::endl;
 
 int RECURSION_STATE = 0;
-double PADDING = (15.0/16.0);
+double PADDING = (11.0/16.0);
 
 
 
@@ -189,16 +189,10 @@ void Graphics::Canvas::add_shape(Geometry::Precinct_Group s, bool f, Color c, in
 
     for (Geometry::Precinct shape : s.precincts) {
         double r = shape.get_ratio();
-        std::array<int,3> rgb;
-        // if (r > 0.5) rgb = interpolate_rgb({0, 255, 0}, {252, 0, 0}, 2.0 * (shape.get_ratio() - 0.5));
-        // else if (r <= 0.5 && r >= 0.0) rgb = interpolate_rgb({0, 0, 255}, {0, 255, 0}, 2.0 * shape.get_ratio());
-        rgb = interpolate_rgb({0,0,255}, {255,0,0}, r);
-        if (shape.get_ratio() == -1) rgb = {0,0,0};
 
-        Outline outline(shape.hull, Color(rgb[0], rgb[1], rgb[2]), 1, true);
+        Outline outline(shape.hull, c, t, f);
         outlines.push_back(outline);
         
-
         for (Geometry::LinearRing l : shape.holes) {
             Outline hole(l, c, t, f);
             holes.push_back(hole);
@@ -207,19 +201,19 @@ void Graphics::Canvas::add_shape(Geometry::Precinct_Group s, bool f, Color c, in
 }
 
 
-void Graphics::Canvas::add_shape(Geometry::Communities s, bool f, Graphics::Color c, int t) {
-    for (Geometry::Community community : s) {
-        for (Geometry::Polygon shape : community.get_shape().border) {
-            Outline outline(shape.hull, c, t, f);
-            outlines.push_back(outline);
+// void Graphics::Canvas::add_shape(Geometry::Communities s, bool f, Graphics::Color c, int t) {
+//     for (Geometry::Community community : s) {
+//         for (Geometry::Polygon shape : community.get_shape().border) {
+//             Outline outline(shape.hull, c, t, f);
+//             outlines.push_back(outline);
 
-            for (Geometry::LinearRing l : shape.holes) {
-                Outline hole(l, c, t, f);
-                holes.push_back(hole);
-            }
-        }
-    }
-}
+//             for (Geometry::LinearRing l : shape.holes) {
+//                 Outline hole(l, c, t, f);
+//                 holes.push_back(hole);
+//             }
+//         }
+//     }
+// }
 
 
 void Graphics::Canvas::add_graph(Geometry::Graph g) {

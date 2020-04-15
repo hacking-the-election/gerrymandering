@@ -188,61 +188,61 @@ void Geometry::Precinct_Group::add_precinct(Geometry::Precinct pre) {
 }
 
 
-std::string Geometry::Community::save_frame() {
-    /*
-        @desc:
-            Saves a community configuration into a string by using
-            the precinct id's with a comma separated list.
-        @params: none
-        @return: `string` saved communities
-    */
+// std::string Geometry::Community::save_frame() {
+//     /*
+//         @desc:
+//             Saves a community configuration into a string by using
+//             the precinct id's with a comma separated list.
+//         @params: none
+//         @return: `string` saved communities
+//     */
 
-    std::string line;
-    for (Precinct p : precincts) {
-        line += "\"" + p.shape_id + "\", ";
-    }
+//     std::string line;
+//     for (Precinct p : precincts) {
+//         line += "\"" + p.shape_id + "\", ";
+//     }
 
-    line = line.substr(0, line.size() - 2);
-    // cout << line << endl;
-    return line;
-}
+//     line = line.substr(0, line.size() - 2);
+//     // cout << line << endl;
+//     return line;
+// }
 
 
-Geometry::Communities Geometry::Community::load_frame(std::string read_path, State precinct_list) {
-    /*
-        @desc:
-            Given file path and precinct reference, reads a saved
-            community configuration into an array of communities
-        @params:
-            `string` read_path: path to the saved community frame
-            `Geometry::State` precinct_list: reference to get precinct geodata given id's
-        @return: `Communities` loaded community array
-    */
+// Geometry::Communities Geometry::Community::load_frame(std::string read_path, State precinct_list) {
+//     /*
+//         @desc:
+//             Given file path and precinct reference, reads a saved
+//             community configuration into an array of communities
+//         @params:
+//             `string` read_path: path to the saved community frame
+//             `Geometry::State` precinct_list: reference to get precinct geodata given id's
+//         @return: `Communities` loaded community array
+//     */
 
-    Communities cs;
-    std::string file = readf(read_path);
-    std::stringstream fs(file);
-    std::string line;
+//     Communities cs;
+//     std::string file = readf(read_path);
+//     std::stringstream fs(file);
+//     std::string line;
 
-    while (getline(fs, line)) {
-        Community c;
-        std::vector<std::string> vals = split(line, "\"");
+//     while (getline(fs, line)) {
+//         Community c;
+//         std::vector<std::string> vals = split(line, "\"");
 
-        for (std::string v : vals) {
-            if (v != ", ") { // v contains a precinct id
-                for (Precinct p : precinct_list.precincts) {
-                    if (p.shape_id == v) {
-                        c.add_precinct_n(p);
-                    }
-                } 
-            }
-        }
+//         for (std::string v : vals) {
+//             if (v != ", ") { // v contains a precinct id
+//                 for (Precinct p : precinct_list.precincts) {
+//                     if (p.shape_id == v) {
+//                         c.add_precinct_n(p);
+//                     }
+//                 } 
+//             }
+//         }
 
-        cs.push_back(c);
-    }
+//         cs.push_back(c);
+//     }
 
-    return cs;
-}
+//     return cs;
+// }
 
 
 bool Geometry::operator== (Geometry::LinearRing l1, Geometry::LinearRing l2) {
@@ -289,6 +289,10 @@ bool Geometry::operator< (const Node& l1, const Node& l2) {
     return (l1.edges.size() < l2.edges.size());
 }
 
+
+bool Geometry::operator== (const Node& l1, const Node& l2) {
+    return (l1.id == l2.id);
+}
 /*
     Write and read state file to and from binary
 

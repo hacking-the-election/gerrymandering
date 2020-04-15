@@ -124,7 +124,7 @@ namespace Graphics {
         void add_shape(Geometry::LinearRing s, bool = false, Color = Color(0,0,0), int = 1);
         void add_shape(Geometry::Multi_Polygon s, bool = false, Color = Color(0,0,0), int = 1);
         void add_shape(Geometry::Precinct_Group s, bool = false, Color = Color(0,0,0), int = 1);
-        void add_shape(Geometry::Communities s, bool = false, Color = Color(0,0,0), int = 1);
+        // void add_shape(Geometry::Communities s, bool = false, Color = Color(0,0,0), int = 1);
 
         void add_graph(Geometry::Graph s);
 

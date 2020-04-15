@@ -31,10 +31,11 @@ namespace Geometry {
             std::vector<int> node_ids;
 
             void add_node(Node& node);
-            Precinct_Group get_shape();
+            Precinct_Group get_shape(Graph& graph);
     };
 
 }
+
 
 Geometry::Communities get_initial_configuration(Geometry::Graph graph, int n_communities);
 void create_community(Geometry::Graph& graph, int group_size, Geometry::Community& group);

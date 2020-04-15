@@ -99,11 +99,17 @@ class Exceptions {
             }
         };
 
+        struct PrecinctNotInGroup : public std::exception {
+            const char* what() const throw() {
+                return "No precinct in this precinct group matches the provided argument";
+            }
+        };
+
         struct CommunityComplete : public std::exception {
             const char* what() const throw() {
                 return "Community finished recursion";
             }
-        }
+        };
 };
 
 
@@ -318,12 +324,14 @@ class Node {
     public:
 
         int id;
+        bool in_group;
         Precinct* precinct;
 
         Node() {};
-        Node(Precinct* precinct) : precinct(precinct) {};
+        Node(Precinct* precinct) : precinct(precinct), in_group(false) {};
         
         friend bool operator< (const Node& l1, const Node& l2);
+        friend bool operator== (const Node& l1, const Node& l2);
 
         std::vector<std::array<int, 2> > edges;
         

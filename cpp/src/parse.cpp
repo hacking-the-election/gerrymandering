@@ -703,31 +703,7 @@ Geometry::Graph generate_graph(Geometry::Precinct_Group pg) {
         }
 
         for (Geometry::p_index border : precincts) {
-            
-            Geometry::p_index higher = (border > i) ? border : i;
-            Geometry::p_index lower = (border <= i) ? border : i;
-
-            std::array<int, 2> edge = {higher, lower};
-            std::array<int, 2> lh = {lower, higher};
-            
-            if (!(std::find(graph.edges.begin(), graph.edges.end(), edge) != graph.edges.end())) {
-                graph.edges.push_back(edge);
-            }
-
-            if (!(std::find(nodes[higher].edges.begin(),
-                  nodes[higher].edges.end(), edge) 
-                != nodes[higher].edges.end())) {
-
-                nodes[higher].edges.push_back(edge);
-            }
-
-
-            if (!(std::find(nodes[lower].edges.begin(),
-                  nodes[lower].edges.end(), lh) 
-                != nodes[lower].edges.end())) {
-
-                nodes[lower].edges.push_back(lh);
-            }
+            graph.add_edge({border, i});
         }
     }
 
