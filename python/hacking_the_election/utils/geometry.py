@@ -23,7 +23,10 @@ def geojson_to_shapely(geojson):
     :rtype: `shapely.geometry.Polygon` or `shapely.geometry.MultiPolygon`
     """
 
-    if isinstance(geojson[0][0][0], list):
+    if isinstance(geojson[0][0], float):
+        point_list = [(point[0], point[1]) for point in geojson]
+        return LinearRing(point_list)
+    elif isinstance(geojson[0][0][0], list):
         polygons = [[[tuple(coord) for coord in linear_ring]
                          for linear_ring in polygon] for polygon in geojson]
         return MultiPolygon(polygons)

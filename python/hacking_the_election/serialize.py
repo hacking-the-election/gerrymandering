@@ -358,6 +358,7 @@ def create_graph(election_file, geo_file, pop_file, state):
     for i, precinct in enumerate(precinct_list):
         unordered_precinct_graph.add_node(i, attrs=[precinct])
     print(time())
+
     # Add edges to our graph
     completed_precincts = []
     for node in unordered_precinct_graph.nodes():
@@ -366,17 +367,21 @@ def create_graph(election_file, geo_file, pop_file, state):
             # If the node being checked is the node we checking to
             if check_node == node:
                 continue
-            # If there is already an edge between the two
-            if unordered_precinct_graph.has_edge((node, check_node)):
-                continue
             # If the node being checked already has edges, then no point in checking
             if check_node in completed_precincts:
                 continue
-            check_coordinate_data = unordered_precinct_graph.node_attributes(node)[0].coords
+            # If there is already an edge between the two
+            if unordered_precinct_graph.has_edge((node, check_node)):
+                continue
+            check_coordinate_data = unordered_precinct_graph.node_attributes(check_node)[0].coords
             if get_if_bordering(coordinate_data, check_coordinate_data):
                 unordered_precinct_graph.add_edge((node, check_node))
         completed_precincts.append(node)
+
     print(time())
+    # The graph will have multiple representations, i.e. an "edge" going both ways, 
+    # but it's only considered one edge in has_edge(), add_edge(), delete_edge(), etc.
+    print('Edges: ', len(unordered_precinct_graph.edges())/2)
     # Create list of nodes in ascending order by degree
     ordered_nodes = sorted(unordered_precinct_graph.nodes(), key=lambda  n: len(unordered_precinct_graph.neighbors(n))) 
 
@@ -385,8 +390,6 @@ def create_graph(election_file, geo_file, pop_file, state):
     # Add nodes from unordered graph to ordered
     for i, node in enumerate(ordered_nodes):
         ordered_precinct_graph.add_node(i, attrs=[unordered_precinct_graph.node_attributes(node)[0]])
-
-    print(time())
     # Then, add EDGES.
     for node in ordered_nodes:
         neighbors = unordered_precinct_graph.neighbors(node)
@@ -395,22 +398,21 @@ def create_graph(election_file, geo_file, pop_file, state):
                 continue
             else:
                 ordered_precinct_graph.add_edge((ordered_nodes.index(node), ordered_nodes.index(neighbor)))
-    print(time())
-    # Visualize graph
-    visualize_graph(
-        ordered_precinct_graph,
-        None,
-        lambda n : ordered_precinct_graph.node_attributes(n)[0].centroid,
-        show=True
-    )
 
     return ordered_precinct_graph
 
 
 if __name__ == "__main__":
-    print(sys.argv[1:6])
     ordered_precinct_graph = create_graph(*sys.argv[1:5])
-
+    print(ordered_precinct_graph)
     # Save graph as pickle
     with open(sys.argv[5], "wb+") as f:
-        pickle.dump(ordered_precinct_graph)
+        pickle.dump(ordered_precinct_graph, f)
+
+    # Visualize graph
+    visualize_graph(
+        ordered_precinct_graph,
+        './hello.png',
+        lambda n : ordered_precinct_graph.node_attributes(n)[0].centroid,
+        show=True
+    )
