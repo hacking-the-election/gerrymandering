@@ -1,3 +1,5 @@
+import pickle
+import sys
 import unittest
 
 from shapely.geometry import Point
@@ -9,6 +11,14 @@ from hacking_the_election.communities.initial_configuration import \
 from hacking_the_election.utils.precinct import Precinct
 from hacking_the_election.visualization.graph_visualization import \
     visualize_graph
+
+
+vermont_path = "../data/bin/python/vermont.pickle"
+
+COLORS = {
+    0: (105, 17, 0),
+    1: (34, 0, 105)
+}
 
 
 class TestInitialConfiguration(unittest.TestCase):
@@ -47,24 +57,30 @@ class TestInitialConfiguration(unittest.TestCase):
                 except AdditionError:
                     pass
 
-        communities, calls = create_initial_configuration(G2, 2)
-        for c, community in enumerate(communities):
-            print(f"COMMUNITY {c}")
-            for precinct in community.precincts.values():
-                print(precinct.id)
-
-        print()
-        print(f"{calls=}")
-
-        def colors(n):
-            if G2.node_attributes(n)[0] in communities[0].precincts.values():
-                return (105, 17, 0)
-            else:
-                return (34, 0, 105)
+        communities = create_initial_configuration(G2, 2)
+        for community in communities:
+            print(f"COMMUNITY {community.id}")
+            print("\t".join(list(community.precincts.keys())))
 
         visualize_graph(G2, None, lambda n: G2.node_attributes(n)[0].centroid,
-                        colors=colors, sizes=lambda n: 10, show=True)
+                        colors=lambda n: COLORS[G2.node_attributes(n)[0].community],
+                        sizes=lambda n: 10, show=True)
+
+    def test_vermont(self):
+        
+        with open(vermont_path, "rb") as f:
+            vermont_graph = pickle.load(f)
+        
+        communities = create_initial_configuration(vermont_graph, 2)
+        visualize_graph(vermont_graph, None,
+                        lambda n: vermont_graph.node_attributes(n)[0].centroid,
+                        colors=lambda n: COLORS[vermont_graph.node_attributes(n)[0].community],
+                        sizes=lambda n: 10, show=True)
 
 
 if __name__ == "__main__":
-    unittest.main(__name__)
+    TestInitialConfiguration("test_grid_graph")()
+    if len(sys.argv) > 1 and sys.argv[1] == "vermont":
+        if len(sys.argv) > 2:
+            vermont_path = sys.argv[2]
+        TestInitialConfiguration("test_vermont")()
