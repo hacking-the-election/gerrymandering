@@ -25,7 +25,8 @@
 #include <math.h>    // for rounding functions
 #include <numeric>   // include std::iota
 #include <iostream>  // std::cout and std::endl
-   
+#include <random>
+
 #include "../include/shape.hpp"       // class definitions
 #include "../include/community.hpp"   // class definitions
 #include "../include/util.hpp"        // array modification functions
@@ -87,20 +88,23 @@ vector<int> _union(vector<int> x, int t) {
 
 void back_track(Graph& g, Graph& g2, vector<int>& selected, int last_group_len, int group_size) {
 
+    cout << "on a community of size " << last_group_len << endl;
+
     if (selected.size() == g.vertices.size()) {
         stop_init_config = true;
-        cout << "finished" << endl;
+        cout << "finished all communities" << endl;
         return;
     }
 
     stop_init_config = false;
     if (last_group_len == group_size) {
         // start a new group
+        cout << endl << "starting a new community" << endl;
         last_group_len = 0;
     }
 
     // check continuity of remaining part of graph
-    if (g2.get_num_components() > selected.size() + 2) {
+    if (g2.get_num_components() > selected.size() + 1) {
         cout << "more components than pres" << endl;
         return;
     }
@@ -110,9 +114,11 @@ void back_track(Graph& g, Graph& g2, vector<int>& selected, int last_group_len, 
     if (last_group_len == 0) {
         available.resize(g.vertices.size(), 0);
         std::iota(available.begin(), available.end(), 0);
+        vector<int> tmp = selected;
+        sort(tmp.begin(), tmp.end());
         
         vector<int> diff;
-        std::set_difference(available.begin(), available.end(), selected.begin(), selected.end(),
+        std::set_difference(available.begin(), available.end(), tmp.begin(), tmp.end(),
             std::inserter(diff, diff.begin()));
 
         available = diff;
@@ -121,29 +127,46 @@ void back_track(Graph& g, Graph& g2, vector<int>& selected, int last_group_len, 
         // find all nodes connected to current group
         for (int i = selected.size() - last_group_len; i < selected.size(); i++) {
             for (int t : g.get_neighbors(selected[i])) {
-                available.push_back(t);
+                if (!(std::find(available.begin(), available.end(), t) != available.end()))
+                   available.push_back(t);
             }
             // available = union(available, neighbors(G, node));
         }
 
+        vector<int> tmp = selected;
+        sort(tmp.begin(), tmp.end());
+        sort(available.begin(), available.end()); //@warn ahhhhh
+
         vector<int> diff;
-        std::set_difference(available.begin(), available.end(), selected.begin(), selected.end(),
+        std::set_difference(available.begin(), available.end(), tmp.begin(), tmp.end(),
             std::inserter(diff, diff.begin()));
 
         available = diff;
         // available = available-selected;
     }
 
+
     cout << available.size() << " available" << endl;
+    for (int a : available) cout << a << ", ";
+    cout << endl;
+
     if (available.size() == 0) return;
+        
+    std::shuffle(available.begin(), available.end(), std::random_device());
 
     // vector<int> last_selected = selected;
     for (int n : available) {
         
         g2.remove_edges_to(n);
         selected.push_back(n);
+        cout << "adding " << n << endl;
         back_track(g, g2, selected, last_group_len + 1, group_size);
-        // selected.pop_back();
+        cout << "removing " << n << endl;
+
+        if (last_group_len != 0) {
+            selected.pop_back();
+            last_group_len--;
+        }
 
         if (stop_init_config) {
             break;
@@ -233,6 +256,16 @@ void back_track(Graph& g, Graph& g2, vector<int>& selected, int last_group_len, 
 
 
 Communities get_initial_configuration(Graph graph, int n_communities) {
+    /*
+        @desc: determines a random list of community objects
+
+        @params:
+            `Geometry::Graph` graph: connection data
+            `int` n_communities: number of communities to generate
+
+        @return: `Communities` init config
+    */
+
 
     Graph init = graph;
     Communities communities(n_communities);
@@ -256,15 +289,23 @@ Communities get_initial_configuration(Graph graph, int n_communities) {
 
     back_track(graph, tmp_graph, list, 0, base);
 
+    cout << sizes[0] << endl;
+    cout << list.size() << endl;
     for (int size : sizes) {
         for (int x = index; x < index + size; x++) {
+            cout << list[x] << ", ";
             communities[comm_ind].node_ids.push_back(list[x]);
         }
 
+        cout << endl;
         index += size;
         comm_ind++;
     }
 
+    cout << endl;
+
+    cout << communities[0].node_ids.size() << endl;
+    cout << communities[1].node_ids.size() << endl;
 
     for (int i = 0; i < n_communities; i++)
         writef(communities[i].get_shape(init).to_json(), "t" + to_string(i) + ".json");

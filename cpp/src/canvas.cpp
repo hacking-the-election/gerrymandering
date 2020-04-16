@@ -222,9 +222,13 @@ void Graphics::Canvas::add_graph(Geometry::Graph g) {
         Geometry::coordinate c1 = g.vertices[edge[0]].precinct->get_center();
         Geometry::coordinate c2 = g.vertices[edge[1]].precinct->get_center();
         Geometry::LinearRing lr({c1, c2});
-        this->add_shape(lr, false, Color(200, 200, 200), 1);
+        this->add_shape(lr, false, Color(255, 0, 0), 2);
     }
 
+
+    for (int i = 0; i < g.vertices.size(); i++) {
+        this->add_shape(*(g.vertices.begin() + i).value().precinct);
+    }
     
     // for (int i = 0; i < g.vertices.size(); i++) {
     //     Geometry::Node node = (g.vertices.begin() + i).value();

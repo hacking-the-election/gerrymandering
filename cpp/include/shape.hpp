@@ -355,6 +355,8 @@ class Graph {
         void add_edge(Edge edge);
         std::vector<Edge> remove_edges_to(int id);
         void remove_edge(Edge edge);
+
+        std::vector<int> get_neighbors(int node);
         
         // for boost serialization
         friend class boost::serialization::access;
