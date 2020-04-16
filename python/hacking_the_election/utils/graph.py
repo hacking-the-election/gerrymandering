@@ -21,12 +21,15 @@ def remove_edges_to(node, graph):
 
     new_graph = deepcopy(graph)
 
-    for edge in new_graph.edges():
+    for edge in new_graph.edges()[:]:
         if node in edge:
             try:
                 new_graph.del_edge(edge)
             except ValueError:
+                # Edge was already deleted because it is a duplicate
+                # for the sake of undirected edges.
                 pass
+
     return new_graph
 
 
