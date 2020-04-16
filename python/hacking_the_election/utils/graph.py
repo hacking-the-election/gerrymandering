@@ -3,7 +3,8 @@ Graph theory related functions and classes.
 """
 
 
-from copy import deepcopy
+from pygraph.classes.graph import graph as Graph
+from pygraph.classes.exceptions import AdditionError
 
 
 def remove_edges_to(node, graph):
@@ -19,7 +20,14 @@ def remove_edges_to(node, graph):
     :rtype: `pygraph.classes.graph.graph`
     """
 
-    new_graph = deepcopy(graph)
+    new_graph = Graph()
+    for node in graph.nodes():
+        new_graph.add_node(node)
+    for edge in graph.edges():
+        try:
+            new_graph.add_edge(edge)
+        except AdditionError:
+            pass
 
     for edge in new_graph.edges()[:]:
         if node in edge:
