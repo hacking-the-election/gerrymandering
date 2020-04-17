@@ -33,5 +33,5 @@
     "new hampshire": {"party_data":{"dem_keys":["PRES_DEM08"],"rep_keys":["PRES_REP08"]},"ele_id":["none"],"geo_id":["GEOID10"],"pop_key":["VAP"]},
     "georgia": {"party_data":{"dem_keys":["PRES16D"], "rep_keys":["PRES16R"]}, "ele_id":["none"], "geo_id":["ID"],"pop_key":["POPULATION"]},
     "maryland":{"party_data":{"dem_keys":["PRES_DVOTE"], "rep_keys":["PRES_RVOTE"]}, "ele_id": ["none"], "geo_id":["COUNTY", "VTDST10"], "pop_key":["TOTAL_ELIGIBLE_VOTERS"]},
-    "new york": {"party_data":{"dem_keys":["NDV"],"rep_keys":["NRV"]},"ele_id":["none"],"geo_id":["GEOID10"],"pop_key":"none"}
+    "new york": {"party_data":{"dem_keys":["NDV"],"rep_keys":["NRV"]},"ele_id":["none"],"geo_id":["GEOID10"],"pop_key":["VAP"]}
 }

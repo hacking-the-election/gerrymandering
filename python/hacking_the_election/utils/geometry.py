@@ -12,30 +12,82 @@ from shapely.geometry import (
     Polygon
 )
 
+def _float_to_int(float_arg):
+    """
+    Converts float integer for geojson_to_shapely, if int_coords is True.
+    """
+    # converted = float_arg
+    # while int(converted) != converted:
+    #     converted *= 10
+    # return converted
+    return int(float_arg * (2 ** 18))
 
-def geojson_to_shapely(geojson):
+
+def geojson_to_shapely(geojson, int_coords=False):
     """Takes shape in geojson format and returns shapely object.
 
     :param geojson: List of coords in geojson format.
     :type geojson: 3d or 4d list
 
+    :param int_coords: Boolean that signals whether coords in geojson should be converted to integers
+    :type int_coords: boolean
     :return: A shapely object containing the same information as `geojson`
     :rtype: `shapely.geometry.Polygon` or `shapely.geometry.MultiPolygon`
     """
-
+    # If linear ring
     if isinstance(geojson[0][0], float):
-        point_list = [(point[0], point[1]) for point in geojson]
+        if int_coords:
+            point_list = [(_float_to_int(point[0]), _float_to_int(point[1])) for point in geojson]
+        else:
+            point_list = [tuple(point) for point in geojson]
+
         return LinearRing(point_list)
     elif isinstance(geojson[0][0][0], list):
-        polygons = [[[tuple(coord) for coord in linear_ring]
-                         for linear_ring in polygon] for polygon in geojson]
+        if int_coords:
+            polygons = [[[(_float_to_int(coord[0]), _float_to_int(coord[1])) for coord in linear_ring]
+                        for linear_ring in polygon] for polygon in geojson]
+        else:
+            polygons = [[[tuple(coord) for coord in linear_ring]
+                        for linear_ring in polygon] for polygon in geojson]
         return MultiPolygon(polygons)
     elif isinstance(geojson[0][0][0], float):
-        polygon_list = [[tuple(coord) for coord in linear_ring]
-                         for linear_ring in geojson]
+        if int_coords:
+            polygon_list = [[(_float_to_int(coord[0]), _float_to_int(coord[1])) for coord in linear_ring]
+                            for linear_ring in geojson]
+        else:
+            polygon_list = [[tuple(coord) for coord in linear_ring]
+                            for linear_ring in geojson]
         return Polygon(polygon_list[0], polygon_list[1:])
     else:
         raise ValueError("invalid geojson")
+
+
+def shapely_to_geojson(shape):
+    """Converts a shapely object into a list of coords using geojson protocol.
+
+    :param shape: A shape that will be converted to geojson.
+    :type shape: `shapely.geometry.Polygon` or `shapely.geometry.MultiPolygon`
+
+    :return: `shape` represented as geojson.
+    :rtype: list of list of list of float or list of list of list of list of float.
+    """
+
+    geojson = []
+    if isinstance(shape, MultiPolygon):
+        for polygon in shape.geoms:
+            geojson.append(shapely_to_geojson(polygon))
+    elif isinstance(shape, Polygon):
+        exterior_coords = []
+        for coord in list(polygon.exterior.coords):
+            exterior_coords.append(list(coord))
+        geojson.append([exterior_coords])
+        for interior in list(polygon.interiors):
+            geojson[-1].append([])
+            for coord in interior:
+                geojson[-1][-1].append(list(coord))
+    else:
+        raise TypeError("shapely_to_geojson only accepts arguments of type "
+                        "shapely.geometry.Polygon or shapely.geometry.MultiPolygon")
 
 
 def get_if_bordering(shape1, shape2, inside=False):
@@ -72,7 +124,7 @@ def get_if_bordering(shape1, shape2, inside=False):
             # You can see that if they were not bordering, the final
             # figure in the above illustration would be a closed figure.
 
-            # The final `!= (shape1 == shape2)` is an "exclusive or"
+            # The fill `!= (shape1 == shape2)` is an "exclusive or"
             return isinstance(
                 LinearRing(difference.exterior.coords).difference(shape2),
                 MultiLineString) != (shape1 == shape2)
@@ -82,7 +134,6 @@ def get_if_bordering(shape1, shape2, inside=False):
         # Doesn't work if one shape is inside the other because it'll
         # always return false because their intersection would be a
         # Polygon, but they may still be bordering.
-        # return isinstance(clip([shape1, shape2], UNION), Polygon)
         return isinstance(shape1.intersection(shape2), MultiLineString)
 
 
@@ -94,7 +145,7 @@ def get_compactness(polygon):
     :param polygon: Polygon to find compactness of.
     :type polygon: `shapely.geometry.Polygon`
 
-    :return: Schwartberg compactness of `polygon`.
+    :return: Schwartzberg compactness of `polygon`.
     :rtype: float
     """
 

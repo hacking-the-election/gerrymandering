@@ -1,4 +1,7 @@
 """Draws graphs (data structure)
+
+Usage:
+python3 graph_visualization.py <pickled_graph> (output_path | "None")
 """
 
 import pickle
@@ -32,12 +35,10 @@ def visualize_graph(graph, output_path, coords, colors=None, sizes=None, show=Fa
     :param show: whether or not to show the image once generated.
     :type show: bool
     """
-
     graph_image = Image.new("RGB", (1000, 1000), "white")
     draw = ImageDraw.Draw(graph_image, "RGB")
 
     graph_nodes = graph.nodes()
-
     modified_coords = modify_coords(
         [coords(node) for node in graph_nodes], [1000, 1000]
     )
@@ -52,7 +53,6 @@ def visualize_graph(graph, output_path, coords, colors=None, sizes=None, show=Fa
         node_sizes = [sizes(node) for node in graph_nodes]
     else:
         node_sizes = [1 for _ in graph_nodes]
-
     for center, node, color, r in zip(modified_coords, graph_nodes,
                                          node_colors, node_sizes):
         draw.ellipse(
@@ -68,7 +68,6 @@ def visualize_graph(graph, output_path, coords, colors=None, sizes=None, show=Fa
                 fill=(0, 0, 0),
                 width=1
         )
-
     if output_path is not None:
         graph_image.save(output_path)
     if show:
@@ -83,4 +82,4 @@ if __name__ == "__main__":
     with open(sys.argv[1], "rb") as f:
         graph = pickle.load(f)
 
-    visualize_graph(graph, sys.argv[2], lambda node: graph.node_attributes(node)[0].centroid)
+    visualize_graph(graph, eval(sys.argv[2]), lambda node: graph.node_attributes(node)[0].centroid, show=True)
