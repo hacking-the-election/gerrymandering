@@ -3,24 +3,31 @@ Graph theory related functions and classes.
 """
 
 
+from copy import deepcopy
+
+
 def remove_edges_to(node, graph):
-    """Returns and removes all edges connected to a node. In-place on a graph.
+    """Returns graph with all edges removed to a given node.
 
     :param node: The node to remove the edges from.
     :type node: int
 
     :param graph: The graph that contains `node`
     :type graph: `pygraph.classes.graph.graph`
+
+    :return: A graph that is equivalent to `graph`, except all the edges connected to `node`.
+    :rtype: `pygraph.classes.graph.graph`
     """
-    removed_edges = []
-    for edge in graph.edges():
+
+    new_graph = deepcopy(graph)
+
+    for edge in new_graph.edges():
         if node in edge:
             try:
-                graph.del_edge(edge)
-                removed_edges.append(edge)
+                new_graph.del_edge(edge)
             except ValueError:
                 pass
-    return removed_edges
+    return new_graph
 
 
 def dfs(graph, nodes, v):
