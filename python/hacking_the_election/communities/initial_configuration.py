@@ -4,124 +4,109 @@
 
 from copy import deepcopy
 
+from pygraph.classes.graph import graph
+from pygraph.classes.exceptions import AdditionError
+
 from hacking_the_election.utils.community import Community
 from hacking_the_election.utils.exceptions import CommunityCompleteException
 from hacking_the_election.utils.graph import (
-    get_discontinuous_components,
+    get_components,
     remove_edges_to
 )
 
 
-def _create_community(graph, group_size, group, calls):
-    """Implements backtracking algorithm for precinct choosing a group of precincts that doesnt make the group of unchosen precincts discontiguous.
+def _back_track(G, selected, G2, last_group_len, group_size):
+    """Implementation of backtracking algorithm to create contiguous groups out of graph of precincts.
 
-    :param graph: The graph from which to choose a group of precincts. Should not contain any precincts that belong to another community.
-    :type graph: `pygraph.classes.graph.graph`
+    :param G: The graph containing the precinct objects.
+    :type G: `pygraph.classes.graph.graph`
 
-    :param group_size: The number of precincts that are to be in this group.
+    :param selected: A list of nodes that will create contiguous groups when split into groups of length `group_size`.
+    :type selected: list of int
+
+    :param G2: The graph after removing the last selected node.
+    :type G2: `pygraph.classes.graph.graph`
+
+    :param last_group_len: The number of nodes selected for the last group.
+    :type last_group_len: int
+
+    :param group_size: Maximum allowed size for a group.
     :type group_size: int
-
-    :param group: set that precincts should be added to.
-    :type group: set of int
-
-    :param calls: a variable that stores the number of times this function was called.
-    :type calls: list
     """
-    calls.append(None)
 
-    graph_nodes = graph.nodes()
+    if len(selected) == len(G.nodes()):
+        raise CommunityCompleteException
 
-    # Precincts that can be added without separating the graph.
-    eligible_precincts = set()
-    for node in graph_nodes:
+    if last_group_len == group_size:
+        # Start a new group
+        last_group_len = 0
+    # Check continuity of remaining part of graph
+    if get_components(G2) > len(selected) + 2:
+        return
+    
+    available = []  # Nodes that can be added to the current group.
+    if last_group_len == 0:
+        # Can choose any node that is not already selected.
+        available = [node for node in G.nodes() if node not in selected]
+    else:
+        # Find all nodes bordering current group.
+        for node in selected[-last_group_len:]:
+            for neighbor in G.neighbors(node):
+                if neighbor not in available and neighbor not in selected:
+                    available.append(neighbor)
 
-        if node in group:
-            continue
-
-        # This is temporary.
-        # Just to see if removing this precinct would make an island.
-        removed_edges = remove_edges_to(node, graph)
-        if get_discontinuous_components(graph) == len(group) + 2:
-            # Logic for second condition:
-            # Each time a precinct is added to the group,
-            # it is completely disconnected from the graph.
-            # This means that the number of components should always be
-            # the number of precincts in the group + 2.
-            eligible_precincts.add(node)
-        for edge in removed_edges:
-            graph.add_edge(edge)
-
-    tried_precincts = set()
-    # While not all eligible precincts have been tried.
-    while tried_precincts != eligible_precincts:
-        selected_precinct = min(
-            eligible_precincts - tried_precincts
-        )
-        
-        group.add(selected_precinct)
-        removed_edges = remove_edges_to(selected_precinct, graph)
-        if len(group) == group_size:
-            raise CommunityCompleteException
-        _create_community(graph, group_size, group, calls)
-        # Above call didn't raise error, so the algorithm has
-        # backtracked and the value at this step needs to be changed.
-
-        # Undo edge removal.
-        for edge in removed_edges:
-            graph.add_edge(edge)
-        group.remove(selected_precinct)
-        tried_precincts.add(selected_precinct)
-
-    # Backtrack (goes back down to lower levels of recursion):
-    return
+    if len(available) == 0:
+        return
+    
+    for node in sorted(available):
+        selected.append(node)
+        _back_track(G, selected, remove_edges_to(node, G2),
+                    last_group_len + 1, group_size)
+        selected.remove(node)
 
 
 def create_initial_configuration(precinct_graph, n_communities):
-    """Randomly group precincts in a state creating contiguous shapes.
-    
-    :param precinct_graph: Graph containing all precincts in state as nodes with precinct ids as attributes.
-    :type precinct_graph: class:`pygraph.classes.graph.graph`
+    """Produces a list of contiguous communities based off of a state represented by a graph of precincts.
 
-    :param n_communities: Number of groups of precincts to return.
-    :type n_communities: `int`
+    :param precinct_graph: A graph containing all the precincts in a state. Edges exist between bordering precincts.
+    :type precinct_graph: `pygraph.classes.graph.graph`
 
-    :return: A list of communities. Each is a contiguous shape with a number of precincts within 1 of that of all the other communities. Also the number of times _create_community was called.
-    :rtype: list of class: `hacking_the_election.utils.community.Community` and int
+    :param n_communities: The number of communities to group the precincts into.
+    :type n_communities: int
+
+    :return: A list of communities that contain groups of bordering precincts.
+    :type: list of `hacking_the_election.utils.community.Community`
     """
+
+    n_precincts = len(precinct_graph.nodes())
+    if n_precincts % n_communities == 0:
+        group_size = n_precincts / n_communities
+    else:
+        group_size = (n_precincts // n_communities) + 1
+    group_size = int(group_size)
     
-    calls = []
-
-    # Nothing having to do with islands is required here,
-    # since that is taken care of in the creation of hte graph.
-    s = len(precinct_graph.nodes()) // n_communities
-    community_sizes = [s for _ in range(n_communities)]
-    for i in range(len(precinct_graph.nodes()) % n_communities):
-        community_sizes[i] += 1
-
-    # Sets of node identifiers for each community
-    community_node_groups = [set() for _ in range(n_communities)]
-    # Call create_community `n_communities` - 1 times.
-    # The remaining nodes belong to the last community.
-    tmp_graph = deepcopy(precinct_graph)
-    for community_node_group, community_size in zip(community_node_groups[:-1],
-                                                    community_sizes[:-1]):
+    light_graph = graph()  # A graph without the node attributes of heavy precinct objects.
+    for node in precinct_graph.nodes():
+        light_graph.add_node(node)
+    for edge in precinct_graph.edges():
         try:
-            _create_community(tmp_graph, community_size, community_node_group, calls)
-        except CommunityCompleteException:
+            light_graph.add_edge(edge)
+        except AdditionError:
             pass
-        for node in community_node_group:
-            tmp_graph.del_node(node)
     
-    # Last community.
-    for node in tmp_graph.nodes():
-        community_node_groups[-1].add(node)
-    
-    # The final output list of `Community` objects.
-    communities = []
-    for i, community_node_group in enumerate(community_node_groups):
-        community = Community(i)
-        for node in community_node_group:
-            community.take_precinct(precinct_graph.node_attributes(node)[0])
-        communities.append(community)
+    selected = []
+    try:
+        _back_track(light_graph, selected, deepcopy(light_graph), 0, group_size)
+    except CommunityCompleteException:
+        pass
 
-    return communities, len(calls)
+    node_groups = [selected[i:i + group_size] for i in range(0, len(selected), group_size)]
+    precinct_groups = [[precinct_graph.node_attributes(node)[0] for node in group]
+                       for group in node_groups]
+    communities = []
+    for i, group in enumerate(precinct_groups):
+        community = Community(i)
+        for precinct in group:
+            community.take_precinct(precinct)
+        communities.append(community)
+    return communities
