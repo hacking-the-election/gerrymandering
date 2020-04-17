@@ -10,5 +10,6 @@ setup(
         "Pillow",
         "colormap",
         "easydev",
-        "python-graph-core"
+        "python-graph-core",
+        "miniball"
     ])
