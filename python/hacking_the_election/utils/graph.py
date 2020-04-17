@@ -62,7 +62,7 @@ def dfs(graph, nodes, v):
             dfs(graph, nodes, w)
 
 
-def get_discontinuous_components(graph):
+def get_components(graph):
     """Finds number of discontinuous components of a graph.
 
     :param graph: The graph that contains `node`
