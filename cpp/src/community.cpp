@@ -84,11 +84,11 @@ vector<int> _union(vector<int> x, int t) {
 // discomp(): returns number of discontinuous components of the graph
 // removeEdgesTo(): removes all edges connected to a node
 
-void back_track(Graph& g, Graph& g2, vector<int>& selected, int last_group_len, int group_size) {
+vector<int> back_track(Graph g, Graph g2, vector<int> selected, int last_group_len, int group_size) {
     if (selected.size() == g.vertices.size()) {
         stop_init_config = true;
         cout << "finished all communities" << endl;
-        return;
+        return {-1};
     }
 
     stop_init_config = false;
@@ -101,7 +101,7 @@ void back_track(Graph& g, Graph& g2, vector<int>& selected, int last_group_len, 
     // check continuity of remaining part of graph
     if (g2.get_num_components() > selected.size() + 1) {
         cout << "more components than pres" << endl;
-        return;
+        return {-1};
     }
 
     vector<int> available;
@@ -141,37 +141,40 @@ void back_track(Graph& g, Graph& g2, vector<int>& selected, int last_group_len, 
         // available = available-selected;
     }
 
-    if (available.size() == 0) return;
 
-    vector<int> current;
-
-    for (int i = selected.size() - last_group_len; i < selected.size(); i++) {
-        current.push_back(selected[i]);
-    }
-
-    cout << endl;
-
-    Canvas canvas(700, 700);
-    Community s, a;
-    s.node_ids = current;
-    a.node_ids = available;
-
-    vector<int> state(g.vertices.size());
-    std::iota(state.begin(), state.end(), 0);
-    Community st;
-    st.node_ids = state;
-
-    canvas.add_shape(generate_exterior_border(st.get_shape(g)));
-    canvas.add_shape(s.get_shape(g), true, Color(0, 0, 255), 3);
-    canvas.add_shape(a.get_shape(g), true, Color(255, 0, 0), 2);
-    canvas.draw();
-
+    if (available.size() == 0) return {-1};
     std::shuffle(available.begin(), available.end(), std::random_device());
 
+
     for (int n : available) {        
-        g2.remove_edges_to(n);
+        vector<Edge> edges = g2.remove_edges_to(n);
         selected.push_back(n);
+        cout << edges.size() << " edges" << endl;
         cout << "adding " << n << endl;
+
+
+        vector<int> current;
+
+        for (int i = selected.size() - last_group_len; i < selected.size(); i++) {
+            current.push_back(selected[i]);
+        }
+
+        cout << endl;
+
+        Canvas canvas(700, 700);
+        Community s, a;
+        s.node_ids = current;
+        a.node_ids = available;
+
+        vector<int> state(g.vertices.size());
+        std::iota(state.begin(), state.end(), 0);
+        Community st;
+        st.node_ids = state;
+
+        canvas.add_shape(generate_exterior_border(st.get_shape(g)));
+        canvas.add_shape(s.get_shape(g), false, Color(0, 0, 255), 6);
+        canvas.add_shape(a.get_shape(g), false, Color(255, 0, 0), 2);
+        canvas.draw();
 
         back_track(g, g2, selected, last_group_len + 1, group_size);
         cout << "removing " << n << endl;
@@ -181,10 +184,12 @@ void back_track(Graph& g, Graph& g2, vector<int>& selected, int last_group_len, 
             last_group_len--;
         }
 
-        if (stop_init_config) {
-            break;
-        }
+        cout << "adding " << edges.size() << " edges" << endl;
+        for (int i = 0; i < edges.size(); i++) g2.add_edge(edges[i]);
+        if (stop_init_config) break;
     }
+
+    return selected;
 }
 
 
@@ -296,11 +301,8 @@ Communities get_initial_configuration(Graph graph, int n_communities) {
     int index = 0;
     int comm_ind = 0;
 
-
-    vector<int> list;
     Graph tmp_graph = graph;
-
-    back_track(graph, tmp_graph, list, 0, base);
+    vector<int> list = back_track(graph, tmp_graph, list, 0, base);
 
     cout << sizes[0] << endl;
     cout << list.size() << endl;
