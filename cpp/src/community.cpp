@@ -61,8 +61,6 @@ void Community::add_node(Node& node) {
 vector<int> Graph::get_neighbors(int node) {
     vector<int> t;
 
-    if (vertices[node].edges.size() == 0) cout << "BALLS" << endl;
-
     for (int i = 0; i < vertices[node].edges.size(); i++) {
         t.push_back(vertices[node].edges[i][1]);
     }
@@ -87,9 +85,6 @@ vector<int> _union(vector<int> x, int t) {
 // removeEdgesTo(): removes all edges connected to a node
 
 void back_track(Graph& g, Graph& g2, vector<int>& selected, int last_group_len, int group_size) {
-
-    cout << "on a community of size " << last_group_len << endl;
-
     if (selected.size() == g.vertices.size()) {
         stop_init_config = true;
         cout << "finished all communities" << endl;
@@ -125,17 +120,18 @@ void back_track(Graph& g, Graph& g2, vector<int>& selected, int last_group_len, 
     }
     else {
         // find all nodes connected to current group
+
         for (int i = selected.size() - last_group_len; i < selected.size(); i++) {
             for (int t : g.get_neighbors(selected[i])) {
-                if (!(std::find(available.begin(), available.end(), t) != available.end()))
-                   available.push_back(t);
+                if (!(std::find(available.begin(), available.end(), t) != available.end())) {
+                    available.push_back(t);
+                }
             }
-            // available = union(available, neighbors(G, node));
         }
 
         vector<int> tmp = selected;
         sort(tmp.begin(), tmp.end());
-        sort(available.begin(), available.end()); //@warn ahhhhh
+        sort(available.begin(), available.end()); // @warn ahhhhh
 
         vector<int> diff;
         std::set_difference(available.begin(), available.end(), tmp.begin(), tmp.end(),
@@ -145,21 +141,38 @@ void back_track(Graph& g, Graph& g2, vector<int>& selected, int last_group_len, 
         // available = available-selected;
     }
 
+    if (available.size() == 0) return;
 
-    cout << available.size() << " available" << endl;
-    for (int a : available) cout << a << ", ";
+    vector<int> current;
+
+    for (int i = selected.size() - last_group_len; i < selected.size(); i++) {
+        current.push_back(selected[i]);
+    }
+
     cout << endl;
 
-    if (available.size() == 0) return;
-        
+    Canvas canvas(700, 700);
+    Community s, a;
+    s.node_ids = current;
+    a.node_ids = available;
+
+    vector<int> state(g.vertices.size());
+    std::iota(state.begin(), state.end(), 0);
+    Community st;
+    st.node_ids = state;
+
+    canvas.add_shape(generate_exterior_border(st.get_shape(g)));
+    canvas.add_shape(s.get_shape(g), true, Color(0, 0, 255), 3);
+    canvas.add_shape(a.get_shape(g), true, Color(255, 0, 0), 2);
+    canvas.draw();
+
     std::shuffle(available.begin(), available.end(), std::random_device());
 
-    // vector<int> last_selected = selected;
-    for (int n : available) {
-        
+    for (int n : available) {        
         g2.remove_edges_to(n);
         selected.push_back(n);
         cout << "adding " << n << endl;
+
         back_track(g, g2, selected, last_group_len + 1, group_size);
         cout << "removing " << n << endl;
 
