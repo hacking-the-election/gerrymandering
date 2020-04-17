@@ -59,7 +59,7 @@ def create_graph(election_file, geo_file, pop_file, state):
     Returns graph with precinct ids stored in nodes (string of XML)
     and list of Precinct objects.
     """
-    print(time())
+    start_time = time()
     with open("./state_metadata.json", "r") as f:
         state_metadata = json.load(f)
 
@@ -126,8 +126,8 @@ def create_graph(election_file, geo_file, pop_file, state):
             # create a list of rows that are a list of values in that row
             election_data = [line.split("\t") for line in
                             election_file_contents.split("\n")]
-            ele_id_indices = [i for i, header in enumerate(election_data[0]) if header in ele_ids]
-            election_data_ids = [tostring("".join([election_data_row[ele_id_index] for ele_id_index in ele_id_indices]))
+            ele_id_col_indices = [i for i, header in enumerate(election_data[0]) if header in ele_ids]
+            election_data_ids = [tostring("".join([election_data_row[ele_id_index] for ele_id_index in ele_id_col_indices]))
                                  for election_data_row in election_data[1:]]
             geodata_ids = [tostring("".join([precinct["properties"][json_id] for json_id in json_ids])) 
                            for precinct in geodata["features"]]
@@ -196,9 +196,6 @@ def create_graph(election_file, geo_file, pop_file, state):
                     party_data.append({'ind': convert_to_int(properties1[ind_key])})
                 if const_key:
                     party_data.append({'const': convert_to_int(properties1[const_key])})
-                for key in [green_key, lib_key, reform_key, ind_key, const_key]:
-                    if key != None:
-                        party_data.append({green_key: convert_to_int(properties1[key])})
 
                 precinct_election_data[precinct_id1] = party_data
         # If the election data file is a .tab file
@@ -276,10 +273,29 @@ def create_graph(election_file, geo_file, pop_file, state):
             properties = precinct["properties"]
             precinct_id = tostring("".join(properties[json_id] for json_id in json_ids))
             precinct_election_data[precinct_id] = [
-                {key: convert_to_int(properties[key]) for key in dem_keys},
-                {key: convert_to_int(properties[key]) for key in rep_keys}
+                {'dem': convert_to_int(properties[dem_key])},
+                {'rep': convert_to_int(properties[rep_key])}
             ]
-    
+            if total_key:
+                party_data.append({'other': convert_to_int(properties[total_key]) - sum(
+                        [properties[key] for key in [green_key, lib_key, reform_key, ind_key, const_key] if key != None]
+                    )})
+            # If there is already a total_key, the other_key id is not needed.
+            elif other_key:
+                party_data.append({'other': convert_to_int(properties[other_key])})
+
+
+            if green_key:
+                party_data.append({'green': convert_to_int(properties[green_key])})
+            if lib_key:
+                party_data.append({'lib': convert_to_int(properties[lib_key])})
+            if reform_key:
+                party_data.append({'reform': convert_to_int(properties[reform_key])})
+            if ind_key:
+                party_data.append({'ind': convert_to_int(properties[ind_key])})
+            if const_key:
+                party_data.append({'const': convert_to_int(properties[const_key])})
+
 
     # Then find population. pop should have keys that use geodata ids
     # {precinct_id : population}
@@ -340,7 +356,6 @@ def create_graph(election_file, geo_file, pop_file, state):
         geojson_to_shapely(coords)
         for precinct, coords in geodata_dict.items()
     }
-
     # Create list of Precinct objects
     precinct_list = []
     for precinct_id, coordinate_data in geodata_dict.items():
@@ -357,7 +372,7 @@ def create_graph(election_file, geo_file, pop_file, state):
     # Add nodes to our unordered graph
     for i, precinct in enumerate(precinct_list):
         unordered_precinct_graph.add_node(i, attrs=[precinct])
-    print(time())
+    print(time() - start_time)
 
     # Add edges to our graph
     completed_precincts = []
@@ -378,10 +393,11 @@ def create_graph(election_file, geo_file, pop_file, state):
                 unordered_precinct_graph.add_edge((node, check_node))
         completed_precincts.append(node)
 
-    print(time())
+    print(time() - start_time)
     # The graph will have multiple representations, i.e. an "edge" going both ways, 
     # but it's only considered one edge in has_edge(), add_edge(), delete_edge(), etc.
     print('Edges: ', len(unordered_precinct_graph.edges())/2)
+    print('Nodes: ', len(unordered_precinct_graph.nodes()))
     # Create list of nodes in ascending order by degree
     ordered_nodes = sorted(unordered_precinct_graph.nodes(), key=lambda  n: len(unordered_precinct_graph.neighbors(n))) 
 
@@ -398,13 +414,13 @@ def create_graph(election_file, geo_file, pop_file, state):
                 continue
             else:
                 ordered_precinct_graph.add_edge((ordered_nodes.index(node), ordered_nodes.index(neighbor)))
-
+    print(time() - start_time)
     return ordered_precinct_graph
 
 
 if __name__ == "__main__":
     ordered_precinct_graph = create_graph(*sys.argv[1:5])
-    print(ordered_precinct_graph)
+
     # Save graph as pickle
     with open(sys.argv[5], "wb+") as f:
         pickle.dump(ordered_precinct_graph, f)
@@ -412,7 +428,8 @@ if __name__ == "__main__":
     # Visualize graph
     visualize_graph(
         ordered_precinct_graph,
-        './hello.png',
+        './graph.jpg',
         lambda n : ordered_precinct_graph.node_attributes(n)[0].centroid,
+        sizes=(lambda n : ordered_precinct_graph.node_attributes(n)[0].pop/500),
         show=True
     )
