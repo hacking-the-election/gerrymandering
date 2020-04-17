@@ -1,4 +1,7 @@
 """Draws graphs (data structure)
+
+Usage:
+python3 graph_visualization.py <pickled_graph> (output_path | "None")
 """
 
 import pickle
@@ -83,4 +86,4 @@ if __name__ == "__main__":
     with open(sys.argv[1], "rb") as f:
         graph = pickle.load(f)
 
-    visualize_graph(graph, sys.argv[2], lambda node: graph.node_attributes(node)[0].centroid)
+    visualize_graph(graph, eval(sys.argv[2]), lambda node: graph.node_attributes(node)[0].centroid, show=True)
