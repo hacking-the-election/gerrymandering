@@ -38,6 +38,34 @@ def geojson_to_shapely(geojson):
         raise ValueError("invalid geojson")
 
 
+def shapely_to_geojson(shape):
+    """Converts a shapely object into a list of coords using geojson protocol.
+
+    :param shape: A shape that will be converted to geojson.
+    :type shape: `shapely.geometry.Polygon` or `shapely.geometry.MultiPolygon`
+
+    :return: `shape` represented as geojson.
+    :rtype: list of list of list of float or list of list of list of list of float.
+    """
+
+    geojson = []
+    if isinstance(shape, MultiPolygon):
+        for polygon in shape.geoms:
+            geojson.append(shapely_to_geojson(polygon))
+    elif isinstance(shape, Polygon):
+        exterior_coords = []
+        for coord in list(polygon.exterior.coords):
+            exterior_coords.append(list(coord))
+        geojson.append([exterior_coords])
+        for interior in list(polygon.interiors):
+            geojson[-1].append([])
+            for coord in interior:
+                geojson[-1][-1].append(list(coord))
+    else:
+        raise TypeError("shapely_to_geojson only accepts arguments of type "
+                        "shapely.geometry.Polygon or shapely.geometry.MultiPolygon")
+
+
 def get_if_bordering(shape1, shape2, inside=False):
     """Determines whether or not two shapes (shapely polygons) are bordering
     
@@ -82,7 +110,6 @@ def get_if_bordering(shape1, shape2, inside=False):
         # Doesn't work if one shape is inside the other because it'll
         # always return false because their intersection would be a
         # Polygon, but they may still be bordering.
-        # return isinstance(clip([shape1, shape2], UNION), Polygon)
         return isinstance(shape1.intersection(shape2), MultiLineString)
 
 
@@ -94,7 +121,7 @@ def get_compactness(polygon):
     :param polygon: Polygon to find compactness of.
     :type polygon: `shapely.geometry.Polygon`
 
-    :return: Schwartberg compactness of `polygon`.
+    :return: Schwartzberg compactness of `polygon`.
     :rtype: float
     """
 
