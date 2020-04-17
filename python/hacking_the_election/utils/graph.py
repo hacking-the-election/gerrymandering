@@ -21,8 +21,8 @@ def remove_edges_to(node, graph):
     """
 
     new_graph = Graph()
-    for node in graph.nodes():
-        new_graph.add_node(node)
+    for vertex in graph.nodes():
+        new_graph.add_node(vertex)
     for edge in graph.edges():
         try:
             new_graph.add_edge(edge)
