@@ -3,7 +3,7 @@ Functions necessary for the serilization process of
 pickling raw data as hacking_the_election.Precinct objects.
 """
 
-from shapely.geometry import MultiPolygon
+from shapely.geometry import MultiPolygon, Polygon
 from hacking_the_election.utils.geometry import area, geojson_to_shapely, get_if_bordering
 from hacking_the_election.utils.exceptions import MultiPolygonFoundException
 
@@ -142,8 +142,9 @@ def combine_holypolygons(geodata, pop_data, election_data):
 
             total_pop = pop_data[precinct_id]
             total_election = election_data[precinct_id]
-            
-            shapely_holes = [geojson_to_shapely(ring) for ring in precinct_coords[1:]]
+            print(total_election, 'tetris')
+            shapely_holes = [Polygon(geojson_to_shapely(ring)) for ring in precinct_coords[1:]]
+            print(shapely_holes, 'yes')
             for check_id, check_coords in geodata.items():
                 if check_id in already_checked_holes:
                     continue
@@ -151,15 +152,21 @@ def combine_holypolygons(geodata, pop_data, election_data):
                 new_check_coords = geojson_to_shapely(check_coords)
                 
                 for hole in shapely_holes:
-                    if get_if_bordering(new_check_coords, hole):
+                    if get_if_bordering(new_check_coords, hole, inside=True):
                         holes.append(check_id)
                         total_pop += pop_data[check_id]
                         new_election_data = []
                         for party_num, party_dict in enumerate(total_election):
-                            party = list(party_dict.keys())[0]
-                            result = list(party_dict.values())[0]
-                            result += list(election_data[check_id][party_num].values())[0]
+                            # print(party_dict, 'boom')
+                            party = str(list(party_dict.keys())[0])
+                            result = float(list(party_dict.values())[0])
+                            try:
+                                to_add = list(election_data[check_id][party_num].values())[0]
+                                result += float(list(election_data[check_id][party_num].values())[0])
+                            except ValueError:
+                                pass
                             new_election_data.append({party : result})
+                        print(new_election_data, 'YEEES')
                         total_election = new_election_data
 
             # Assign new data for precinct with holes to data dictionaries 

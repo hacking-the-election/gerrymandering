@@ -347,7 +347,6 @@ def create_graph(election_file, geo_file, pop_file, state):
 
     # Remove multipolygons from our dictionaries. (This is so our districts/communities stay contiguous)
     split_multipolygons(geodata_dict, pop, precinct_election_data)
-
     combine_holypolygons(geodata_dict, pop, precinct_election_data)
 
     # Modify geodata_dict to use 'shapely.geometry.Polygon's
@@ -378,6 +377,17 @@ def create_graph(election_file, geo_file, pop_file, state):
     completed_precincts = []
     for node in unordered_precinct_graph.nodes():
         coordinate_data = unordered_precinct_graph.node_attributes(node)[0].coords
+        min_x, min_y, max_x, max_y = coordinate_data.bounds
+        x_length = max_x - min_x
+        y_length = max_y - min_y
+        # Given a bounding box, how much it should be scaled by for precincts to consider
+        scale_factor = 0.02
+
+        min_x -= (x_length * scale_factor)
+        max_x += (x_length * scale_factor)
+        min_y -= (y_length * scale_factor)
+        max_y += (y_length * scale_factor)
+        precincts_to_check = []
         for check_node in unordered_precinct_graph.nodes():
             # If the node being checked is the node we checking to
             if check_node == node:
@@ -389,8 +399,15 @@ def create_graph(election_file, geo_file, pop_file, state):
             if unordered_precinct_graph.has_edge((node, check_node)):
                 continue
             check_coordinate_data = unordered_precinct_graph.node_attributes(check_node)[0].coords
-            if get_if_bordering(coordinate_data, check_coordinate_data):
-                unordered_precinct_graph.add_edge((node, check_node))
+            for point in check_coordinate_data.exterior.coords:
+                if min_x <= point[0] <= max_x:
+                    if min_y <= point[1] <= max_y:
+                        precincts_to_check.append(check_node)
+                        break
+        print(precincts_to_check, node)
+        for precinct10 in precincts_to_check:            
+            if get_if_bordering(coordinate_data, unordered_precinct_graph.node_attributes(precinct10)[0].coords):
+                unordered_precinct_graph.add_edge((node, precinct10))
         completed_precincts.append(node)
 
     print(time() - start_time)
