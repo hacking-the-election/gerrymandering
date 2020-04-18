@@ -138,16 +138,18 @@ def get_if_bordering(shape1, shape2, inside=False):
             # figure in the above illustration would be a closed figure.
 
             # The fill `!= (shape1 == shape2)` is an "exclusive or"
-            return isinstance(
-                LinearRing(difference.exterior.coords).difference(shape2),
-                MultiLineString) != (shape1 == shape2)
+            final_difference = LinearRing(difference.exterior.coords).difference(shape2)
+            return (isinstance(final_difference, MultiLineString)
+                 or isinstance(final_difference, LineString)) != (shape1 == shape2)
         except AttributeError:
             return False
     else:
         # Doesn't work if one shape is inside the other because it'll
         # always return false because their intersection would be a
         # Polygon, but they may still be bordering.
-        return any([isinstance(shape1.intersection(shape2), MultiLineString) or isinstance(shape1.intersection(shape2), LineString)])
+        intersection = shape1.intersection(shape2)
+        return (isinstance(intersection, MultiLineString)
+             or isinstance(intersection, LineString))
 
 
 def get_compactness(district):
