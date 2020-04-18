@@ -41,7 +41,7 @@ def _back_track(G, selected, G2, last_group_len, group_size):
         # Start a new group
         last_group_len = 0
     # Check continuity of remaining part of graph
-    if get_components(G2) > len(selected) + 2:
+    if len(get_components(G2)) > len(selected) + 2:
         return
     
     available = []  # Nodes that can be added to the current group.

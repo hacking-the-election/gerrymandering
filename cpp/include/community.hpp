@@ -25,6 +25,8 @@ namespace Geometry {
         */
 
         public:
+            // Community(std::vector<int> node_ids);
+
             void save(std::string write_path);
             void load(std::string read_path);
 

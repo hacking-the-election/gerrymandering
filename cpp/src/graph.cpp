@@ -117,10 +117,9 @@ std::vector<Edge> Graph::remove_edges_to(int id) {
 
     // 5 => {5, 1}, {5, 6}, {5, 2};
 
-    vector<Edge> edges = vertices[id].edges;
-    vertices[id].edges.clear();
+    vector<Edge> edges;
 
-    for (Edge edge : edges) {
+    for (Edge edge : vertices[id].edges) {
         Edge remove = {edge[1], edge[0]};
 
         vertices[edge[1]].edges.erase(
@@ -130,8 +129,11 @@ std::vector<Edge> Graph::remove_edges_to(int id) {
             ),
             vertices[edge[1]].edges.end()
         );
+
+        edges.push_back(edge);
     }
 
+    vertices[id].edges.clear();
     return edges;
 }
 
