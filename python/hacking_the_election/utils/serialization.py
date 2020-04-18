@@ -142,31 +142,31 @@ def combine_holypolygons(geodata, pop_data, election_data):
 
             total_pop = pop_data[precinct_id]
             total_election = election_data[precinct_id]
-            print(total_election, 'tetris')
-            shapely_holes = [Polygon(geojson_to_shapely(ring)) for ring in precinct_coords[1:]]
-            print(shapely_holes, 'yes')
-            for check_id, check_coords in geodata.items():
-                if check_id in already_checked_holes:
-                    continue
-                # Convert polygons to 'shapely.geometry.Polygon's
-                new_check_coords = geojson_to_shapely(check_coords)
-                
-                for hole in shapely_holes:
-                    if get_if_bordering(new_check_coords, hole, inside=True):
+            shapely_holes = [geojson_to_shapely(ring) for ring in precinct_coords[1:]]
+            for hole in shapely_holes:
+                hole_area = hole.area
+                found_area = 0
+                hole_point = hole.centroid
+                for check_id, check_coords in geodata.items():
+                    # No need to check further if all area in hole is already accounted for
+                    if found_area > hole_area:
+                        break
+
+                    if hole_point.within(geojson_to_shapely(check_coords)):
                         holes.append(check_id)
                         total_pop += pop_data[check_id]
                         new_election_data = []
                         for party_num, party_dict in enumerate(total_election):
-                            # print(party_dict, 'boom')
                             party = str(list(party_dict.keys())[0])
                             result = float(list(party_dict.values())[0])
+                            print(result)
                             try:
                                 to_add = list(election_data[check_id][party_num].values())[0]
                                 result += float(list(election_data[check_id][party_num].values())[0])
                             except ValueError:
                                 pass
+                            print(result)
                             new_election_data.append({party : result})
-                        print(new_election_data, 'YEEES')
                         total_election = new_election_data
 
             # Assign new data for precinct with holes to data dictionaries 
@@ -176,6 +176,8 @@ def combine_holypolygons(geodata, pop_data, election_data):
         del geodata[check_id]
         del pop_data[check_id]
         del election_data[check_id]
+    for precinct_id in already_checked_holes:
+        geodata[precinct_id] = [geodata[precinct_id][0]]
     print(f"Precincts with holes Found: {len(already_checked_holes)}")
     print(f"Precincts in holes Found {len(holes)}")
 
