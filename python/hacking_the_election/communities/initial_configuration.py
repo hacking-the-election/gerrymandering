@@ -3,6 +3,9 @@
 
 
 from copy import deepcopy
+import os
+import pickle
+import sys
 
 from pygraph.classes.graph import graph
 from pygraph.classes.exceptions import AdditionError
@@ -11,11 +14,45 @@ from hacking_the_election.utils.community import Community
 from hacking_the_election.utils.exceptions import CommunityCompleteException
 from hacking_the_election.utils.graph import (
     get_components,
-    remove_edges_to
+    remove_edges_to,
+    get_node_number
 )
+from hacking_the_election.utils.visualization import add_leading_zeroes
+from hacking_the_election.visualization.map_visualization import visualize_map
 
 
-def _back_track(G, selected, G2, last_group_len, group_size):
+animation_file_number = 0
+COLORS = [(235, 64, 52), (52, 122, 235), (255, 255, 255)]
+
+
+def _color(precinct, selected, graph, group_size):
+    """Gets the color that a precinct should be when visualizing intial configuration.
+
+    :param precinct: The precinct to determine the color of.
+    :type precinct: `hacking_the_election.utils.precinct.Precinct`
+
+    :param selected: The list of selected nodes for initial configuration.
+    :type selected: list of int
+
+    :param graph: The graph that contains `precinct` as a node attribute.
+    :type graph: `pygraph.classes.graph.graph`
+
+    :param group_size: The maximum number of precincts in each community.
+    :type group_size: int
+
+    :return: An rgb code for the color the precinct should be visualized as.
+    :rtype: 3-tuple of int
+    """
+
+    global COLORS
+
+    try:
+        return COLORS[selected.index(get_node_number(precinct, graph)) // group_size]
+    except ValueError:
+        return COLORS[-1]
+
+
+def _back_track(G, selected, G2, last_group_len, group_size, animation_dir):
     """Implementation of backtracking algorithm to create contiguous groups out of graph of precincts.
 
     :param G: The graph containing the precinct objects.
@@ -32,7 +69,12 @@ def _back_track(G, selected, G2, last_group_len, group_size):
 
     :param group_size: Maximum allowed size for a group.
     :type group_size: int
+
+    :param animation_dir: The directory in which to save animation frames. None if process is not to be animated.
+    :type animation_dir: str or NoneType
     """
+
+    global animation_file_number
 
     if len(selected) == len(G.nodes()):
         raise CommunityCompleteException
@@ -60,12 +102,19 @@ def _back_track(G, selected, G2, last_group_len, group_size):
     
     for node in sorted(available):
         selected.append(node)
+        if animation_dir is not None:
+            precincts = [G.node_attributes(node)[0] for node in G.nodes()]
+            output_path = f"{animation_dir}/{add_leading_zeroes(animation_file_number)}.png"
+            animation_file_number += 1
+            visualize_map(precincts,
+                output_path, coords=lambda x: x.coords,
+                color=lambda x: _color(x, selected, G, group_size))
         _back_track(G, selected, remove_edges_to(node, G2),
-                    last_group_len + 1, group_size)
+                    last_group_len + 1, group_size, animation_dir)
         selected.remove(node)
 
 
-def create_initial_configuration(precinct_graph, n_communities):
+def create_initial_configuration(precinct_graph, n_communities, animation_dir=None):
     """Produces a list of contiguous communities based off of a state represented by a graph of precincts.
 
     :param precinct_graph: A graph containing all the precincts in a state. Edges exist between bordering precincts.
@@ -77,6 +126,12 @@ def create_initial_configuration(precinct_graph, n_communities):
     :return: A list of communities that contain groups of bordering precincts.
     :type: list of `hacking_the_election.utils.community.Community`
     """
+
+    if animation_dir is not None:
+        try:
+            os.mkdir(animation_dir)
+        except FileExistsError:
+            pass
 
     n_precincts = len(precinct_graph.nodes())
     if n_precincts % n_communities == 0:
@@ -96,7 +151,8 @@ def create_initial_configuration(precinct_graph, n_communities):
     
     selected = []
     try:
-        _back_track(light_graph, selected, deepcopy(light_graph), 0, group_size)
+        _back_track(precinct_graph, selected, light_graph,
+                    0, group_size, animation_dir)
     except CommunityCompleteException:
         pass
 
@@ -110,3 +166,16 @@ def create_initial_configuration(precinct_graph, n_communities):
             community.take_precinct(precinct)
         communities.append(community)
     return communities
+
+
+if __name__ == "__main__":
+    
+    # with open(sys.argv[1], "rb") as f:
+    #     precinct_graph = pickle.load(f)
+
+    # communities = create_initial_configuration(precinct_graph, 2, sys.argv[2])
+
+    with open("/Users/Mukeshkhare/Desktop/GCRSEF2020/data/bin/python/vermont.pickle", "rb") as f:
+        precinct_graph = pickle.load(f)
+
+    communities = create_initial_configuration(precinct_graph, 2, "/Users/Mukeshkhare/Desktop/thing")
