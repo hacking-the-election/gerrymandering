@@ -90,10 +90,23 @@ Graph remove_edges_to(int node, Graph g) {
         );
     }
 
+    for (int i = 0; i < g2.edges.size(); i++) {
+        if (g2.edges[i][0] == node || g2.edges[i][1] == node) {
+            g2.edges.erase(g2.edges.begin() + i);
+            i--;
+        }
+    }
+
     g2.vertices[node].edges.clear();
     return g2;
 }
 
+
+Graph remove_node(int node, Graph graph) {
+    graph.remove_edges_to(node);
+    graph.vertices.erase(node);
+    return graph;
+}
 // where:
 // selected: an ordered set of nodes that can be divided to n consecutive groups
 // stop: becomes true when the solution was found
@@ -116,10 +129,12 @@ void back_track(Graph g, Graph g2, vector<int>& selected, int last_group_len, in
     }
 
 
-    if (g2.get_num_components() > selected.size() + 1) {
+    if (g2.get_num_components() > 1) {
+        cout << "gots them components" << endl;
         return;
     }
-    
+
+
     vector<int> available = {};
 
     if (last_group_len == 0) {
@@ -142,27 +157,35 @@ void back_track(Graph g, Graph g2, vector<int>& selected, int last_group_len, in
         }
     }
 
-    Community ca, cs, cd;
-    ca.node_ids = available;
-    cs.node_ids = selected;
+    // Community ca, cs, cd;
+    // ca.node_ids = available;
+    // cs.node_ids = selected;
 
     Canvas canvas(700, 700);
-    canvas.add_shape(ca.get_shape(g), false, Color(255, 0, 0), 2);
-    canvas.add_shape(cs.get_shape(g), false, Color(0,0,255), 3);
+    canvas.add_graph(g2);
+    // canvas.add_shape(ca.get_shape(g), false, Color(255, 0, 0), 2);
+    // canvas.add_shape(cs.get_shape(g), false, Color(0,0,255), 3);
     canvas.draw();
 
-    
-    if (available.size() == 0) return;
-    shuffle(available.begin(), available.end(), random_device());
+    if (available.size() == 0) {
+        cout << "no precincts available" << endl;
+        return;
+    }
+
+    sort(available.begin(), available.end());
+    // shuffle(available.begin(), available.end(), random_device());
 
     for (int node : available) {
         selected.push_back(node);
-        back_track(g, remove_edges_to(node, g2), selected,
+        cout << "add " << node << endl;
+        back_track(g, remove_node(node, g2), selected,
                     last_group_len + 1, group_size);
 
         // last_group_len--;
-        // selected.erase(remove(selected.begin(), selected.end(), node), selected.end());
-        selected.pop_back();
+        selected.erase(remove(selected.begin(), selected.end(), node), selected.end());
+        // selected.clear();
+        // last_group_len = 0;
+        // selected.pop_back();
         cout << "backtracking..." << endl;
     }
 }
@@ -209,6 +232,8 @@ Communities get_initial_configuration(Graph graph, int n_communities) {
     catch (Exceptions::CommunityComplete) {}
 
     
+    cout << "finding communities" << endl;
+
     int index = 0;
     int comm_ind = 0;
 
