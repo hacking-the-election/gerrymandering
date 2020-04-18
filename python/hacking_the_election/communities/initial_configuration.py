@@ -83,7 +83,7 @@ def _back_track(G, selected, G2, last_group_len, group_size, animation_dir):
         # Start a new group
         last_group_len = 0
     # Check continuity of remaining part of graph
-    if len(get_components(G2)) > len(selected) + 2:
+    if len(get_components(G2)) > len(selected) + 1:
         return
     
     available = []  # Nodes that can be added to the current group.
@@ -170,12 +170,7 @@ def create_initial_configuration(precinct_graph, n_communities, animation_dir=No
 
 if __name__ == "__main__":
     
-    # with open(sys.argv[1], "rb") as f:
-    #     precinct_graph = pickle.load(f)
-
-    # communities = create_initial_configuration(precinct_graph, 2, sys.argv[2])
-
-    with open("/Users/Mukeshkhare/Desktop/GCRSEF2020/data/bin/python/vermont.pickle", "rb") as f:
+    with open(sys.argv[1], "rb") as f:
         precinct_graph = pickle.load(f)
 
-    communities = create_initial_configuration(precinct_graph, 2, "/Users/Mukeshkhare/Desktop/thing")
+    communities = create_initial_configuration(precinct_graph, 2, sys.argv[2])
