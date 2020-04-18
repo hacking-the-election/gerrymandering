@@ -7,6 +7,25 @@ from pygraph.classes.graph import graph as Graph
 from pygraph.classes.exceptions import AdditionError
 
 
+def get_node_number(precinct, graph):
+    """Returns the node number of precinct that is in the node_attributes of a graph.
+
+    :param precinct: Precinct to find node number of.
+    :type precinct: `hacking_the_election.utils.precinct.Precinct`
+
+    :param graph: Graph that contains `precinct` in node_attributes.
+    :type graph: `pygraph.classes.graph.graph`
+
+    :return: The node that contains `precinct` as an attribute.
+    :rtype: int
+    """
+
+    for node in graph.nodes():
+        if precinct in graph.node_attributes(node):
+            return node
+    raise ValueError("Precinct not part of inputted graph.")
+
+
 def remove_edges_to(node, graph):
     """Returns graph with all edges removed to a given node.
 
