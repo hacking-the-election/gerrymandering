@@ -123,8 +123,8 @@ def get_if_bordering(shape1, shape2, inside=False):
         try:
             # The below code illustrated:
             # ________                       ________
-            # |____   |        ____         |____    |
-            # |____|  | minus |____| equals  ____|   |
+            # |       |        ____         |____    |
+            # |       | minus |____| equals  ____|   |
             # |_______|                     |________|
             # The border of the difference between the
             # difference and the subtrahend is this:
@@ -139,8 +139,7 @@ def get_if_bordering(shape1, shape2, inside=False):
 
             # The fill `!= (shape1 == shape2)` is an "exclusive or"
             final_difference = LinearRing(difference.exterior.coords).difference(shape2)
-            return (isinstance(final_difference, MultiLineString)
-                 or isinstance(final_difference, LineString)) != (shape1 == shape2)
+            return isinstance(final_difference, MultiLineString) != (shape1 == shape2)
         except AttributeError:
             return False
     else:

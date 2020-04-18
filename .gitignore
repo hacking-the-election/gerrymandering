@@ -15,10 +15,6 @@ hacking_the_election.egg-info
 tmp*
 python/notebooks/.ipynb_checkpoints
 
-
-# sphinx documentation
-python/docs/
-
 # vscode
 settings.json
 .vscode

@@ -41,7 +41,7 @@ def remove_edges_to(node, graph):
     return new_graph
 
 
-def dfs(graph, nodes, v):
+def _dfs(graph, nodes, v):
     """Finds all the nodes in a component of a graph containing a start node.
 
     Implementation of the depth-first search algorithm translated from wikipedia:
@@ -59,7 +59,7 @@ def dfs(graph, nodes, v):
     nodes.add(v)
     for w in graph.neighbors(v):
         if w not in nodes:
-            dfs(graph, nodes, w)
+            _dfs(graph, nodes, w)
 
 
 def get_components(graph):
@@ -81,7 +81,7 @@ def get_components(graph):
     while discovered_nodes != graph_nodes:
         component = set()
         # Search all nodes in `start_v`'s component.
-        dfs(graph, components, min(graph_nodes -  discovered_nodes))
-        components.append(component)
+        _dfs(graph, component, min(graph_nodes -  discovered_nodes))
+        components.append(list(component))
         discovered_nodes.update(component)
     return components

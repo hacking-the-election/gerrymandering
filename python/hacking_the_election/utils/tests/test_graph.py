@@ -28,18 +28,18 @@ class TestGraph(unittest.TestCase):
 
     def test_get_discontinuous_components(self):
 
-        self.assertEqual(graph.get_components(self.random_graph), 1)
+        self.assertEqual(len(graph.get_components(self.random_graph)), 1)
         start = time.time()
-        vermont_components = graph.get_components(self.vermont_graph)
-        print(f"vermont dfs: {time.time() - start}")
+        vermont_components = len(graph.get_components(self.vermont_graph))
+        print(f"vermont get_components: {time.time() - start}")
         self.assertEqual(vermont_components, 1)
-        self.assertEqual(graph.get_components(self.vermont_graph_2), 2)
+        self.assertEqual(len(graph.get_components(self.vermont_graph_2)), 2)
 
     def test_remove_edges_to(self):
         
         start = time.time()
         vermont_removed_edges = graph.remove_edges_to('27', self.vermont_graph)
-        print(f"vermont removing edges: {time.time() - start}")
+        print(f"vermont remove_edges_to: {time.time() - start}")
         self.assertEqual(vermont_removed_edges, self.vermont_graph_2)
 
 
