@@ -61,11 +61,14 @@ def geojson_to_shapely(geojson, int_coords=False):
         raise ValueError("invalid geojson")
 
 
-def shapely_to_geojson(shape):
+def shapely_to_geojson(shape, json_format=False):
     """Converts a shapely object into a list of coords using geojson protocol.
 
     :param shape: A shape that will be converted to geojson.
     :type shape: `shapely.geometry.Polygon` or `shapely.geometry.MultiPolygon`
+
+    :param json_format: Whether or not to have the list of coords enclosed in proper geojson dicts.
+    :type json_format: bool
 
     :return: `shape` represented as geojson.
     :rtype: list of list of list of float or list of list of list of list of float.
@@ -75,19 +78,29 @@ def shapely_to_geojson(shape):
     if isinstance(shape, MultiPolygon):
         for polygon in shape.geoms:
             geojson.append(shapely_to_geojson(polygon))
+
     elif isinstance(shape, Polygon):
         exterior_coords = []
         for coord in list(shape.exterior.coords):
             exterior_coords.append(list(coord))
         geojson.append(exterior_coords)
         for interior in list(shape.interiors):
-            geojson[-1].append([])
-            for coord in interior:
-                geojson[-1][-1].append(list(coord))
+            interior_coords = []
+            for coord in list(interior.coords):
+                interior_coords.append(list(coord))
+            geojson.append(interior_coords)
     else:
         raise TypeError("shapely_to_geojson only accepts arguments of type "
                         "shapely.geometry.Polygon or shapely.geometry.MultiPolygon")
-    return geojson
+    if json_format:
+        return {"type": "FeatureCollection", "features": [
+            {"type": "Feature", "geometry":{
+                "type": ("Polygon" if isinstance(shape, Polygon) else "MultiPolygon"),
+                "coordinates": geojson
+            }}
+        ]}
+    else:
+        return geojson
 
 
 def get_if_bordering(shape1, shape2, inside=False):
