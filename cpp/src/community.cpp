@@ -133,15 +133,10 @@ void back_track(Graph g, Graph g2, vector<int>& selected, int last_group_len, in
     else {
         // Find all nodes bordering current group.
         for (int i = selected.size() - last_group_len; i < selected.size(); i++) { // @warn -1
-            // cout << "getting neighbors of " << i << endl;
             for (int neighbor : g.get_neighbors(selected[i])) {
                 if (find(available.begin(), available.end(), neighbor) == available.end() && 
                     find(selected.begin(), selected.end(), neighbor) == selected.end()) {
                     available.push_back(neighbor);
-
-                    // if (neighbor == 24) {
-                    //     cout << "hmm " << i << endl;
-                    // }
                 }
             }
         }
@@ -158,14 +153,16 @@ void back_track(Graph g, Graph g2, vector<int>& selected, int last_group_len, in
 
     
     if (available.size() == 0) return;
-    sort(available.begin(), available.end());
+    shuffle(available.begin(), available.end(), random_device());
 
     for (int node : available) {
         selected.push_back(node);
         back_track(g, remove_edges_to(node, g2), selected,
                     last_group_len + 1, group_size);
 
-        selected.erase(remove(selected.begin(), selected.end(), node), selected.end());
+        // last_group_len--;
+        // selected.erase(remove(selected.begin(), selected.end(), node), selected.end());
+        selected.pop_back();
         cout << "backtracking..." << endl;
     }
 }
@@ -182,48 +179,6 @@ Communities get_initial_configuration(Graph graph, int n_communities) {
 
         @return: `Communities` init config
     */
-
-
-    // Graph init = graph;
-    // Communities communities(n_communities);
-
-    // for (int i = 0; i < graph.vertices.size(); i++) {
-    //     (graph.vertices.begin() + i).value().in_group = false;
-    // }
-
-
-    // int base = floor((double)graph.vertices.size() / (double)n_communities); // the base num
-    // int rem = graph.vertices.size() % n_communities; // how many need to be increased by 1
-    // vector<int> sizes(n_communities, base);
-    // for (int i = sizes.size() - 1; i > sizes.size() - rem - 1; i--) sizes[i]++;
-    
-    // int index = 0;
-    // int comm_ind = 0;
-
-    // Graph tmp_graph = graph;
-    // vector<int> list = back_track(graph, tmp_graph, {}, 0, base);
-
-    // cout << sizes[0] << endl;
-    // cout << list.size() << endl;
-    
-
-    // cout << endl;
-
-    // cout << communities[0].node_ids.size() << endl;
-    // cout << communities[1].node_ids.size() << endl;
-
-    // for (int i = 0; i < n_communities; i++)
-    //     writef(communities[i].get_shape(init).to_json(), "t" + to_string(i) + ".json");
-
-
-    // // Canvas canvas(200,200);
-    // // canvas.add_shape(communities[0].get_shape(init), true, Color(255,0,0), 1);
-    // // canvas.add_shape(communities[1].get_shape(init), true, Color(0,255,0), 1);
-
-    // // cout << "drawing" << endl;
-    // // canvas.draw();
-
-
 
     Communities communities(n_communities);
 
