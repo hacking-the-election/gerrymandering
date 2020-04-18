@@ -5,6 +5,7 @@ Various useful geometric functions.
 
 import math
 
+import miniball
 from shapely.geometry import (
     LinearRing,
     MultiPolygon,
@@ -17,10 +18,6 @@ def _float_to_int(float_arg):
     """
     Converts float integer for geojson_to_shapely, if int_coords is True.
     """
-    # converted = float_arg
-    # while int(converted) != converted:
-    #     converted *= 10
-    # return converted
     return int(float_arg * (2 ** 18))
 
 
@@ -48,8 +45,9 @@ def geojson_to_shapely(geojson, int_coords=False):
             polygons = [[[(_float_to_int(coord[0]), _float_to_int(coord[1])) for coord in linear_ring]
                         for linear_ring in polygon] for polygon in geojson]
         else:
-            polygons = [[[tuple(coord) for coord in linear_ring]
-                        for linear_ring in polygon] for polygon in geojson]
+            polygon_coords = [([[tuple(coord) for coord in linear_ring]
+                        for linear_ring in polygon]) for polygon in geojson]
+            polygons = [Polygon(polygon[0], polygon[1:]) for polygon in polygon_coords]
         return MultiPolygon(polygons)
     elif isinstance(geojson[0][0][0], float):
         if int_coords:
@@ -63,11 +61,14 @@ def geojson_to_shapely(geojson, int_coords=False):
         raise ValueError("invalid geojson")
 
 
-def shapely_to_geojson(shape):
+def shapely_to_geojson(shape, json_format=False):
     """Converts a shapely object into a list of coords using geojson protocol.
 
     :param shape: A shape that will be converted to geojson.
     :type shape: `shapely.geometry.Polygon` or `shapely.geometry.MultiPolygon`
+
+    :param json_format: Whether or not to have the list of coords enclosed in proper geojson dicts.
+    :type json_format: bool
 
     :return: `shape` represented as geojson.
     :rtype: list of list of list of float or list of list of list of list of float.
@@ -77,18 +78,29 @@ def shapely_to_geojson(shape):
     if isinstance(shape, MultiPolygon):
         for polygon in shape.geoms:
             geojson.append(shapely_to_geojson(polygon))
+
     elif isinstance(shape, Polygon):
         exterior_coords = []
-        for coord in list(polygon.exterior.coords):
+        for coord in list(shape.exterior.coords):
             exterior_coords.append(list(coord))
-        geojson.append([exterior_coords])
-        for interior in list(polygon.interiors):
-            geojson[-1].append([])
-            for coord in interior:
-                geojson[-1][-1].append(list(coord))
+        geojson.append(exterior_coords)
+        for interior in list(shape.interiors):
+            interior_coords = []
+            for coord in list(interior.coords):
+                interior_coords.append(list(coord))
+            geojson.append(interior_coords)
     else:
         raise TypeError("shapely_to_geojson only accepts arguments of type "
                         "shapely.geometry.Polygon or shapely.geometry.MultiPolygon")
+    if json_format:
+        return {"type": "FeatureCollection", "features": [
+            {"type": "Feature", "geometry":{
+                "type": ("Polygon" if isinstance(shape, Polygon) else "MultiPolygon"),
+                "coordinates": geojson
+            }}
+        ]}
+    else:
+        return geojson
 
 
 def get_if_bordering(shape1, shape2, inside=False):
@@ -111,8 +123,8 @@ def get_if_bordering(shape1, shape2, inside=False):
         try:
             # The below code illustrated:
             # ________                       ________
-            # |____   |        ____         |____    |
-            # |____|  | minus |____| equals  ____|   |
+            # |       |        ____         |____    |
+            # |       | minus |____| equals  ____|   |
             # |_______|                     |________|
             # The border of the difference between the
             # difference and the subtrahend is this:
@@ -126,34 +138,56 @@ def get_if_bordering(shape1, shape2, inside=False):
             # figure in the above illustration would be a closed figure.
 
             # The fill `!= (shape1 == shape2)` is an "exclusive or"
-            return isinstance(
-                LinearRing(difference.exterior.coords).difference(shape2),
-                MultiLineString) != (shape1 == shape2)
+            final_difference = LinearRing(difference.exterior.coords).difference(shape2)
+            return isinstance(final_difference, MultiLineString) != (shape1 == shape2)
         except AttributeError:
             return False
     else:
         # Doesn't work if one shape is inside the other because it'll
         # always return false because their intersection would be a
         # Polygon, but they may still be bordering.
-        return any([isinstance(shape1.intersection(shape2), MultiLineString) or isinstance(shape1.intersection(shape2), LineString)])
+        intersection = shape1.intersection(shape2)
+        return (isinstance(intersection, MultiLineString)
+             or isinstance(intersection, LineString))
 
 
-def get_compactness(polygon):
-    """Calculates the Schwartzberg compactness score for a polygon
+def get_compactness(district):
+    """Calculates the Reock compactness score for a district
 
     Formula obtained from here: https://fisherzachary.github.io/public/r-output.html
 
-    :param polygon: Polygon to find compactness of.
-    :type polygon: `shapely.geometry.Polygon`
+    :param district: District to find compactness of.
+    :type district: `shapely.geometry.Polygon` or `shapely.geometry.MultiPolygon`
 
-    :return: Schwartzberg compactness of `polygon`.
+    :return: Schwartzberg compactness of `district`.
     :rtype: float
     """
 
-    area = polygon.area
-    circumeference = 2 * math.pi * math.sqrt(area / math.pi)
-    perimeter = polygon.coords.length
-    return circumeference / perimeter
+    district_coords = shapely_to_geojson(district)
+    P = []
+    if isinstance(district, Polygon):
+        for linear_ring in district_coords:
+            for point in linear_ring:
+                P.append(point)
+    elif isinstance(district, MultiPolygon):
+        for polygon in district_coords:
+            for linear_ring in polygon:
+                for point in linear_ring:
+                    P.append(point)
+
+    # Move points towards origin for better precision.
+    minx = min(P, key=lambda p: p[0])[0]
+    miny = min(P, key=lambda p: p[1])[1]
+
+    P = [(p[0] - minx, p[1] - miny) for p in P]
+
+    # Get minimum bounding circle of district.
+    mb = miniball.Miniball(P)
+    center = mb.center()
+    squared_radius = mb.squared_radius()
+    circle_area = math.pi * squared_radius
+    return district.area / circle_area
+
 
 def area(ring):
     """
