@@ -9,6 +9,7 @@ from shapely.geometry import (
     LinearRing,
     MultiPolygon,
     MultiLineString,
+    LineString,
     Polygon
 )
 
@@ -134,7 +135,7 @@ def get_if_bordering(shape1, shape2, inside=False):
         # Doesn't work if one shape is inside the other because it'll
         # always return false because their intersection would be a
         # Polygon, but they may still be bordering.
-        return isinstance(shape1.intersection(shape2), MultiLineString)
+        return any([isinstance(shape1.intersection(shape2), MultiLineString) or isinstance(shape1.intersection(shape2), LineString)])
 
 
 def get_compactness(polygon):

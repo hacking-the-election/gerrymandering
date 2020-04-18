@@ -15,6 +15,7 @@ from os.path import dirname
 import pickle
 import sys
 from time import time
+from itertools import combinations
 
 from pygraph.classes.graph import graph
 from pygraph.readwrite.markup import write
@@ -23,6 +24,7 @@ from shapely.geometry import Polygon, MultiPolygon
 from hacking_the_election.utils.precinct import Precinct
 from hacking_the_election.utils.serialization import compare_ids, split_multipolygons, combine_holypolygons
 from hacking_the_election.utils.geometry import geojson_to_shapely, get_if_bordering
+from hacking_the_election.utils.graph import get_components
 from hacking_the_election.visualization.graph_visualization import visualize_graph
 
 def convert_to_int(string):
@@ -349,13 +351,13 @@ def create_graph(election_file, geo_file, pop_file, state):
     split_multipolygons(geodata_dict, pop, precinct_election_data)
 
     combine_holypolygons(geodata_dict, pop, precinct_election_data)
-
     # Modify geodata_dict to use 'shapely.geometry.Polygon's
     geodata_dict = {
         precinct :
         geojson_to_shapely(coords)
         for precinct, coords in geodata_dict.items()
     }
+    print(get_if_bordering(geodata_dict['50021VD1731'], geodata_dict['50021VD1721']), 'YO')
     # Create list of Precinct objects
     precinct_list = []
     for precinct_id, coordinate_data in geodata_dict.items():
@@ -372,12 +374,24 @@ def create_graph(election_file, geo_file, pop_file, state):
     # Add nodes to our unordered graph
     for i, precinct in enumerate(precinct_list):
         unordered_precinct_graph.add_node(i, attrs=[precinct])
+    print('Nodes: ', len(unordered_precinct_graph.nodes()))
     print(time() - start_time)
 
     # Add edges to our graph
     completed_precincts = []
     for node in unordered_precinct_graph.nodes():
         coordinate_data = unordered_precinct_graph.node_attributes(node)[0].coords
+        min_x, min_y, max_x, max_y = coordinate_data.bounds
+        x_length = max_x - min_x
+        y_length = max_y - min_y
+        # Given a bounding box, how much it should be scaled by for precincts to consider
+        scale_factor = 0.02
+
+        min_x -= (x_length * scale_factor)
+        max_x += (x_length * scale_factor)
+        min_y -= (y_length * scale_factor)
+        max_y += (y_length * scale_factor)
+        precincts_to_check = []
         for check_node in unordered_precinct_graph.nodes():
             # If the node being checked is the node we checking to
             if check_node == node:
@@ -389,19 +403,59 @@ def create_graph(election_file, geo_file, pop_file, state):
             if unordered_precinct_graph.has_edge((node, check_node)):
                 continue
             check_coordinate_data = unordered_precinct_graph.node_attributes(check_node)[0].coords
-            if get_if_bordering(coordinate_data, check_coordinate_data):
-                unordered_precinct_graph.add_edge((node, check_node))
+            for point in check_coordinate_data.exterior.coords:
+                if min_x <= point[0] <= max_x:
+                    if min_y <= point[1] <= max_y:
+                        precincts_to_check.append(check_node)
+                        break
+        print(precincts_to_check, node)
+        for precinct10 in precincts_to_check:            
+            if get_if_bordering(coordinate_data, unordered_precinct_graph.node_attributes(precinct10)[0].coords):
+                unordered_precinct_graph.add_edge((node, precinct10))
         completed_precincts.append(node)
 
     print(time() - start_time)
     # The graph will have multiple representations, i.e. an "edge" going both ways, 
     # but it's only considered one edge in has_edge(), add_edge(), delete_edge(), etc.
     print('Edges: ', len(unordered_precinct_graph.edges())/2)
-    print('Nodes: ', len(unordered_precinct_graph.nodes()))
     # Create list of nodes in ascending order by degree
     ordered_nodes = sorted(unordered_precinct_graph.nodes(), key=lambda  n: len(unordered_precinct_graph.neighbors(n))) 
 
-    # Create graph
+
+    # Repeat until entire graph is contiguous
+    # Get components of graph (islands of precincts)
+    graph_components = get_components(unordered_precinct_graph)
+    if not len(graph_components) == 1:
+        # Keys are minimum distances to and from different islands, 
+        # values are tuples of nodes to add edges between
+        min_distances = {}
+        # For nonrepeating combinations of components, add to list of edges
+        for combo in combination([range(0, (len(graph_components) - 1))]):
+            # Create list of centroids to compare
+            centroids_1 = {unordered_precinct_graph.node_attributes(precinct).centroid :
+                precinct
+                for precinct in graph_components[int(str(combo)[0])]}
+            centroids_2 = {unordered_precinct_graph.node_attributes(precinct).centroid :
+                precinct
+                for precinct in graph_components[int(str(combo)[1])]}
+            min_distance = 0
+            for centroid_1 in centroids_1.keys():
+                for centroid_2 in centroids_2.keys():
+                    # No need to sqrt unnecessarily
+                    distance = ((centroid_1[0] - centroid_2[0]) ** 2 +
+                                (centroid_1[0] - centroid_2[1]) ** 2)
+                    if min_distance == 0:
+                        min_distance = distance
+                        min_tuple = (centroids_1[centroid_1], centroids_2[centroid_2])
+                    elif distance < min_distance:
+                        min_distance = distance
+                        min_tuple = (centroids_1[centroid_1], centroids_2[centroid_2])
+            min_distances[min_distance] = min_tuple
+        while len(get_components(unordered_precinct_graph)) != 1:
+            # Find edge to add
+            edge_to_add = min_distances[min(min_distances)]
+            unordered_precinct_graph.add_edge(edge_to_add)
+    # Create ordered graph
     ordered_precinct_graph = graph()
     # Add nodes from unordered graph to ordered
     for i, node in enumerate(ordered_nodes):
@@ -424,12 +478,13 @@ if __name__ == "__main__":
     # Save graph as pickle
     with open(sys.argv[5], "wb+") as f:
         pickle.dump(ordered_precinct_graph, f)
-
+    with open('./vermont_debug.txt', "w") as f:
+        f.write(str(ordered_precinct_graph))
     # Visualize graph
     visualize_graph(
         ordered_precinct_graph,
         './graph.jpg',
         lambda n : ordered_precinct_graph.node_attributes(n)[0].centroid,
-        sizes=(lambda n : ordered_precinct_graph.node_attributes(n)[0].pop/500),
+        # sizes=(lambda n : ordered_precinct_graph.node_attributes(n)[0].pop/500),
         show=True
     )

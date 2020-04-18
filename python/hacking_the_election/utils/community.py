@@ -21,7 +21,7 @@ class Community:
 
         self.id = community_id
 
-        self.precincts = {}  # Dict maps precinct ids to precinct objects.
+        self.precincts = {}  # Dict maps node ids (in graph) to precinct objects.
         self.coords = Polygon()  # Geometric shape of the community.
         self.partisanship = 0
         self.partisanship_stdev = 0

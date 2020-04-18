@@ -72,15 +72,16 @@ def get_components(graph):
     :rtype: int
     """
 
-    n_components = 0
+    components = []
 
     discovered_nodes = set()
     graph_nodes = set(graph.nodes())
 
     # While not all nodes have been discovered.
     while discovered_nodes != graph_nodes:
+        component = set()
         # Search all nodes in `start_v`'s component.
-        dfs(graph, discovered_nodes, min(graph_nodes -  discovered_nodes))
-        n_components += 1
-
-    return n_components
+        dfs(graph, components, min(graph_nodes -  discovered_nodes))
+        components.append(component)
+        discovered_nodes.update(component)
+    return components
