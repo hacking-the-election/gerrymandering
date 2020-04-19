@@ -27,11 +27,11 @@ cpdef int get_node_number(precinct, graph):
     raise ValueError("Precinct not part of inputted graph.")
 
 
-cpdef remove_edges_to(str node, graph):
+cpdef remove_edges_to(int node, graph):
     """Returns graph with all edges removed to a given node.
 
     :param node: The node to remove the edges from.
-    :type node: str
+    :type node: int
 
     :param graph: The graph that contains `node`
     :type graph: `pygraph.classes.graph.graph`
@@ -41,13 +41,12 @@ cpdef remove_edges_to(str node, graph):
     """
 
     new_graph = Graph()
-    cdef str vertex
     for vertex in graph.nodes():
-        new_graph.add_node(vertex)
+        new_graph.add_node(int(vertex))
     cdef tuple edge
     for edge in graph.edges():
         try:
-            new_graph.add_edge(edge)
+            new_graph.add_edge(tuple([int(i) for i in edge]))
         except AdditionError:
             pass
 
@@ -63,7 +62,7 @@ cpdef remove_edges_to(str node, graph):
     return new_graph
 
 
-cpdef void _dfs(graph, set nodes, str v):
+cpdef void _dfs(graph, set nodes, int v):
     """Finds all the nodes in a component of a graph containing a start node.
 
     Implementation of the depth-first search algorithm translated from wikipedia:
@@ -79,10 +78,12 @@ cpdef void _dfs(graph, set nodes, str v):
     :type v: int
     """
     nodes.add(v)
-    cdef str w
-    for w in graph.neighbors(v):
+    cdef int w
+    cdef list neighbors
+    neighbors = graph.neighbors(v)
+    for w in neighbors:
         if w not in nodes:
-            _dfs(graph, nodes, w)
+            _dfs(graph, nodes, int(w))
 
 
 cpdef list get_components(graph):
@@ -104,7 +105,7 @@ cpdef list get_components(graph):
     while discovered_nodes != graph_nodes:
         component = set()
         # Search all nodes in `start_v`'s component.
-        _dfs(graph, component, str(min(graph_nodes -  discovered_nodes)))
+        _dfs(graph, component, int(min(graph_nodes -  discovered_nodes)))
         components.append(list(component))
         discovered_nodes.update(component)
     return components
