@@ -49,7 +49,10 @@ make all
 git clone "https://github.com/hacking-the-election/gerrymandering"
 cd gerrymandering/python
 pip install -e .
+python3 setup.py build_ext --inplace  # Compile the Cython.
 ```
+
+There is, however, one dependency which is not on PyPI, and must be installed by cloning [its repo](https://github.com/weddige/miniball).
 
 If you would like to install without pip, you know what you're doing, or you really, _really_ don't know what you're doing.
 All dependencies are listed in `python/requirements.txt`
