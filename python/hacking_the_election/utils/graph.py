@@ -81,7 +81,7 @@ def get_components(graph):
     while discovered_nodes != graph_nodes:
         component = set()
         # Search all nodes in `start_v`'s component.
-        dfs(graph, components, min(graph_nodes -  discovered_nodes))
+        dfs(graph, component, min(graph_nodes -  discovered_nodes))
         components.append(component)
         discovered_nodes.update(component)
     return components

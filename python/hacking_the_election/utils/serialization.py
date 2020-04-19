@@ -25,8 +25,8 @@ def compare_ids(non_geodata_ids, geodata_ids):
                                     if precinct_id not in geodata_ids]
     missing_geodata_precincts = [precinct_id for precinct_id in geodata_ids
                                     if precinct_id not in non_geodata_ids]
-    print("Missing Election Precincts: ", len(missing_election_precincts))
-    print("Missing Geodata Precincts: ", len(missing_geodata_precincts))
+    print("Missing from Geodata: ", len(missing_election_precincts))
+    print("Missing from Non-geodata: ", len(missing_geodata_precincts))
 
     # Create dictionary to convert election data ids to geodata ids.
     # {election_data_id : geodata_id}
@@ -142,42 +142,47 @@ def combine_holypolygons(geodata, pop_data, election_data):
 
             total_pop = pop_data[precinct_id]
             total_election = election_data[precinct_id]
-            shapely_holes = [geojson_to_shapely(ring) for ring in precinct_coords[1:]]
-            for hole in shapely_holes:
-                hole_area = hole.area
-                found_area = 0
-                hole_point = hole.centroid
-                for check_id, check_coords in geodata.items():
-                    # No need to check further if all area in hole is already accounted for
-                    if found_area > hole_area:
-                        break
+            shapely_holes = [Polygon(geojson_to_shapely(ring)) for ring in precinct_coords[1:]]
+            hole_area = sum([area(hole) for hole in precinct_coords[1:]])
+            found_area = 0
+            # hole_point = hole.centroid
 
-                    if hole_point.within(geojson_to_shapely(check_coords)):
+            for check_id, check_coords in geodata.items():
+                # No need to check further if all area in hole is already found
+                if found_area > hole_area:
+                    break
+                # If the check_id is already in the holes list, it will already have been
+                # accounted for, so this prevents double counting
+                if check_id in holes:
+                    continue
+                if check_id == precinct_id:
+                    continue
+                check_centroid = geojson_to_shapely(check_coords).centroid
+                for hole in shapely_holes:
+                    if check_centroid.within(hole):
                         holes.append(check_id)
                         total_pop += pop_data[check_id]
                         new_election_data = []
                         for party_num, party_dict in enumerate(total_election):
                             party = str(list(party_dict.keys())[0])
                             result = float(list(party_dict.values())[0])
-                            print(result)
                             try:
                                 to_add = list(election_data[check_id][party_num].values())[0]
                                 result += float(list(election_data[check_id][party_num].values())[0])
                             except ValueError:
                                 pass
-                            print(result)
                             new_election_data.append({party : result})
                         total_election = new_election_data
 
             # Assign new data for precinct with holes to data dictionaries 
             pop_data[precinct_id] = total_pop
             election_data[precinct_id] = total_election
+    for precinct_id in already_checked_holes:
+        geodata[precinct_id] = [geodata[precinct_id][0]]
     for check_id in holes:
         del geodata[check_id]
         del pop_data[check_id]
         del election_data[check_id]
-    for precinct_id in already_checked_holes:
-        geodata[precinct_id] = [geodata[precinct_id][0]]
     print(f"Precincts with holes Found: {len(already_checked_holes)}")
     print(f"Precincts in holes Found {len(holes)}")
 
