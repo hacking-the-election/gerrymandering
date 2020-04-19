@@ -4,6 +4,7 @@
 
 import pickle
 import sys
+import types
 
 from PIL import Image, ImageDraw
 
@@ -99,11 +100,10 @@ def visualize_map(shapes, output_path, coords=lambda x: x, color=None, show=Fals
                 polygons.append(rings)
             modified_coords.append(polygons)
 
-
     if color is not None:
-        if isinstance(color, list):
+        if isinstance(color, types.FunctionType):
             colors = [color(shape) for shape in shapes]
-        elif isinstance(color, function):
+        elif isinstance(color, list):
             colors = color
         else:
             raise TypeError(f"`color` argument should be NoneType, function, or list, not {type(color)}")
