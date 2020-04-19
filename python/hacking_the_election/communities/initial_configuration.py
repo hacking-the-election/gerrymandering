@@ -1,4 +1,7 @@
 """Randomly groups precincts in a state to communities of equal (or as close as possible) size.
+
+Usage:
+python3 initial_configuration.py <serialized_state> <output_file> (<animation_dir> | "none") [-v]
 """
 
 
@@ -22,6 +25,7 @@ from hacking_the_election.visualization.map_visualization import visualize_map
 
 
 animation_file_number = 0
+calls = 0
 COLORS = [(235, 64, 52), (52, 122, 235), (255, 255, 255)]
 
 
@@ -52,7 +56,7 @@ def _color(precinct, selected, graph, group_size):
         return COLORS[-1]
 
 
-def _back_track(G, selected, G2, last_group_len, group_size, animation_dir):
+def _back_track(G, selected, G2, last_group_len, group_size, animation_dir, verbose):
     """Implementation of backtracking algorithm to create contiguous groups out of graph of precincts.
 
     :param G: The graph containing the precinct objects.
@@ -72,9 +76,20 @@ def _back_track(G, selected, G2, last_group_len, group_size, animation_dir):
 
     :param animation_dir: The directory in which to save animation frames. None if process is not to be animated.
     :type animation_dir: str or NoneType
+
+    :param verbose: Prints various information as the algorithm runs if set to True, defaults to False.
+    :type verbose: bool
     """
 
     global animation_file_number
+    global calls
+
+    if verbose:
+        calls += 1
+        if calls > 1:
+            sys.stdout.write("\r")
+        sys.stdout.write(f"calls: {calls}")
+        sys.stdout.flush()
 
     if len(selected) == len(G.nodes()):
         raise CommunityCompleteException
@@ -110,11 +125,11 @@ def _back_track(G, selected, G2, last_group_len, group_size, animation_dir):
                 output_path, coords=lambda x: x.coords,
                 color=lambda x: _color(x, selected, G, group_size))
         _back_track(G, selected, remove_edges_to(node, G2),
-                    last_group_len + 1, group_size, animation_dir)
+                    last_group_len + 1, group_size, animation_dir, verbose)
         selected.remove(node)
 
 
-def create_initial_configuration(precinct_graph, n_communities, animation_dir=None):
+def create_initial_configuration(precinct_graph, n_communities, animation_dir=None, verbose=False):
     """Produces a list of contiguous communities based off of a state represented by a graph of precincts.
 
     :param precinct_graph: A graph containing all the precincts in a state. Edges exist between bordering precincts.
@@ -122,6 +137,12 @@ def create_initial_configuration(precinct_graph, n_communities, animation_dir=No
 
     :param n_communities: The number of communities to group the precincts into.
     :type n_communities: int
+
+    :param animation_dir: Path to the directory in which frames for an animation of the algorithm will be saved, defaults to None.
+    :type animation_dir: str or NoneType
+
+    :param verbose: Prints various information as the algorithm runs if set to True, defaults to False.
+    :type verbose: bool
 
     :return: A list of communities that contain groups of bordering precincts.
     :type: list of `hacking_the_election.utils.community.Community`
@@ -152,7 +173,7 @@ def create_initial_configuration(precinct_graph, n_communities, animation_dir=No
     selected = []
     try:
         _back_track(precinct_graph, selected, light_graph,
-                    0, group_size, animation_dir)
+                    0, group_size, animation_dir, verbose)
     except CommunityCompleteException:
         pass
 
@@ -173,4 +194,6 @@ if __name__ == "__main__":
     with open(sys.argv[1], "rb") as f:
         precinct_graph = pickle.load(f)
 
-    communities = create_initial_configuration(precinct_graph, 2, sys.argv[2])
+    communities = create_initial_configuration(precinct_graph, 2, None if sys.argv[3] == "none" else sys.argv[3], "-v" in sys.argv[1:])
+    with open(sys.argv[2], "wb+") as f:
+        pickle.dump(communities, f)
