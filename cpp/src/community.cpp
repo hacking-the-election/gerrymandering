@@ -43,6 +43,23 @@ using namespace Graphics;
 bool stop_init_config;
 
 
+
+class NodePtr {
+    public:
+
+        NodePtr(int id, Graph* graph) : id(id), graph(graph) {}
+        int id;
+        Graph* graph;
+
+        friend bool operator< (const NodePtr& l1, const NodePtr& l2);
+};
+
+
+bool operator< (const NodePtr& l1, const NodePtr& l2) {
+    return (l1.graph->vertices[l1.id] < l2.graph->vertices[l2.id]);
+}
+
+
 Precinct_Group Community::get_shape(Graph& graph) {
     vector<Precinct> precincts;
     for (int id : node_ids) {
@@ -107,6 +124,7 @@ Graph remove_node(int node, Graph graph) {
     graph.vertices.erase(node);
     return graph;
 }
+
 // where:
 // selected: an ordered set of nodes that can be divided to n consecutive groups
 // stop: becomes true when the solution was found
@@ -116,6 +134,22 @@ Graph remove_node(int node, Graph graph) {
 // groupSize: maximum allowable size of each group
 // discomp(): returns number of discontinuous components of the graph
 // removeEdgesTo(): removes all edges connected to a node
+void sort_by_degree(vector<int>& ints, Graph* graph) {
+    vector<NodePtr> nodes;
+
+    for (int i = 0; i < ints.size(); i++) {
+        nodes.push_back(NodePtr(ints[i], graph));
+    }
+
+    sort(nodes.begin(), nodes.end());
+    vector<int> sorted;
+    for (NodePtr node : nodes) {
+        sorted.push_back(node.id);
+    }
+
+    ints = sorted;
+}
+
 
 void back_track(Graph g, Graph g2, vector<int>& selected, int last_group_len, int group_size) {
     
@@ -123,17 +157,17 @@ void back_track(Graph g, Graph g2, vector<int>& selected, int last_group_len, in
         throw Exceptions::CommunityComplete();
     }
 
+
     if (last_group_len == group_size) {
         cout << endl << "starting new community" << endl;
         last_group_len = 0;
     }
 
 
-    if (g2.get_num_components() > 1) {
+    if (g2.get_num_components() > selected.size() + 1) {
         cout << "gots them components" << endl;
         return;
     }
-
 
     vector<int> available = {};
 
@@ -143,7 +177,6 @@ void back_track(Graph g, Graph g2, vector<int>& selected, int last_group_len, in
                 available.push_back(i);
             }
         }
-        // available = [node for node in G.nodes() if node not in selected]
     }
     else {
         // Find all nodes bordering current group.
@@ -157,37 +190,37 @@ void back_track(Graph g, Graph g2, vector<int>& selected, int last_group_len, in
         }
     }
 
-    // Community ca, cs, cd;
-    // ca.node_ids = available;
-    // cs.node_ids = selected;
-
-    Canvas canvas(700, 700);
-    canvas.add_graph(g2);
-    // canvas.add_shape(ca.get_shape(g), false, Color(255, 0, 0), 2);
-    // canvas.add_shape(cs.get_shape(g), false, Color(0,0,255), 3);
-    canvas.draw();
 
     if (available.size() == 0) {
         cout << "no precincts available" << endl;
         return;
     }
 
-    sort(available.begin(), available.end());
+
+    sort_by_degree(available, &g2);
+    // sort(available.begin(), available.end());
     // shuffle(available.begin(), available.end(), random_device());
 
-    for (int node : available) {
-        selected.push_back(node);
+    for (int i = 0; i < available.size(); i++) {
+        int node = available[i];
         cout << "add " << node << endl;
-        back_track(g, remove_node(node, g2), selected,
-                    last_group_len + 1, group_size);
 
-        // last_group_len--;
-        selected.erase(remove(selected.begin(), selected.end(), node), selected.end());
-        // selected.clear();
-        // last_group_len = 0;
-        // selected.pop_back();
+        Graph cur_graph = g2;
+        g2.remove_edges_to(node);
+        selected.push_back(node);
+
+        Canvas canvas(600, 600);
+        canvas.add_graph(g2, available);
+        canvas.draw();
+        
+        back_track(g, g2, selected, last_group_len + 1, group_size);
+
         cout << "backtracking..." << endl;
+        g2 = cur_graph;
+        selected.erase(remove(selected.begin(), selected.end(), node), selected.end());
     }
+
+    cout << "finished with everything" << endl;
 }
 
 
