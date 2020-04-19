@@ -216,7 +216,7 @@ void Graphics::Canvas::add_shape(Geometry::Precinct_Group s, bool f, Color c, in
 // }
 
 
-void Graphics::Canvas::add_graph(Geometry::Graph g) {
+void Graphics::Canvas::add_graph(Geometry::Graph g, std::vector<int> cn) {
 
     // for (std::array<int, 2> edge : g.edges) {
     //     Geometry::coordinate c1 = g.vertices[edge[0]].precinct->get_center();
@@ -233,7 +233,12 @@ void Graphics::Canvas::add_graph(Geometry::Graph g) {
             this->add_shape(lr, false, Color(0, 0, 0), 2);
         }
 
-        this->add_shape(generate_gon((g.vertices.begin() + i).value().precinct->get_center(), 2400, 30));
+        if (std::find(cn.begin(), cn.end(), (g.vertices.begin() + i).key()) != cn.end()) {
+            this->add_shape(generate_gon((g.vertices.begin() + i).value().precinct->get_center(), 6800, 30), true , Color(255, 0, 0), 1);
+        }
+        else {
+            this->add_shape(generate_gon((g.vertices.begin() + i).value().precinct->get_center(), 4800, 30), true, Color(0,0,0), 1);
+        }
     }
 
     // for (int i = 0; i < g.vertices.size(); i++) {
@@ -548,11 +553,13 @@ void Graphics::Canvas::draw() {
     //     translate(0, t, false);
     // }
 
+
     for (int i = 0; i < outlines.size(); i++) {
         // cout << "Rasterizing " << i << endl;
         outlines[i].rasterize(*this);
     }
 
+    cout << "A" << endl;
 
     for (std::vector<Pixel> pr : this->pixels) {
         for (Pixel p : pr) {
@@ -566,6 +573,8 @@ void Graphics::Canvas::draw() {
         }
     }
 
+    cout << "A" << endl;
+
     SDL_Init(SDL_INIT_VIDEO);
 
     // initialize window
@@ -577,6 +586,7 @@ void Graphics::Canvas::draw() {
     SDL_SetWindowResizable(window, SDL_TRUE);
     SDL_UpdateTexture(texture, NULL, background, x * sizeof(Uint32));
 
+    cout << "A" << endl;
 
     bool quit = false;
 
