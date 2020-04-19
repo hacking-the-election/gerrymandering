@@ -61,8 +61,6 @@ void Community::add_node(Node& node) {
 vector<int> Graph::get_neighbors(int node) {
     vector<int> t;
 
-    if (vertices[node].edges.size() == 0) cout << "BALLS" << endl;
-
     for (int i = 0; i < vertices[node].edges.size(); i++) {
         t.push_back(vertices[node].edges[i][1]);
     }
@@ -76,6 +74,39 @@ vector<int> _union(vector<int> x, int t) {
     return x;
 }
 
+
+Graph remove_edges_to(int node, Graph g) {
+    Graph g2 = g;
+
+    for (Edge edge : g2.vertices[node].edges) {
+        Edge remove = {edge[1], edge[0]};
+
+        g2.vertices[edge[1]].edges.erase(
+            std::remove(g2.vertices[edge[1]].edges.begin(),
+                g2.vertices[edge[1]].edges.end(),
+                remove
+            ),
+            g2.vertices[edge[1]].edges.end()
+        );
+    }
+
+    for (int i = 0; i < g2.edges.size(); i++) {
+        if (g2.edges[i][0] == node || g2.edges[i][1] == node) {
+            g2.edges.erase(g2.edges.begin() + i);
+            i--;
+        }
+    }
+
+    g2.vertices[node].edges.clear();
+    return g2;
+}
+
+
+Graph remove_node(int node, Graph graph) {
+    graph.remove_edges_to(node);
+    graph.vertices.erase(node);
+    return graph;
+}
 // where:
 // selected: an ordered set of nodes that can be divided to n consecutive groups
 // stop: becomes true when the solution was found
@@ -86,173 +117,79 @@ vector<int> _union(vector<int> x, int t) {
 // discomp(): returns number of discontinuous components of the graph
 // removeEdgesTo(): removes all edges connected to a node
 
-void back_track(Graph& g, Graph& g2, vector<int>& selected, int last_group_len, int group_size) {
-
-    cout << "on a community of size " << last_group_len << endl;
-
+void back_track(Graph g, Graph g2, vector<int>& selected, int last_group_len, int group_size) {
+    
     if (selected.size() == g.vertices.size()) {
-        stop_init_config = true;
-        cout << "finished all communities" << endl;
-        return;
+        throw Exceptions::CommunityComplete();
     }
 
-    stop_init_config = false;
     if (last_group_len == group_size) {
-        // start a new group
-        cout << endl << "starting a new community" << endl;
+        cout << endl << "starting new community" << endl;
         last_group_len = 0;
     }
 
-    // check continuity of remaining part of graph
-    if (g2.get_num_components() > selected.size() + 1) {
-        cout << "more components than pres" << endl;
+
+    if (g2.get_num_components() > 1) {
+        cout << "gots them components" << endl;
         return;
     }
 
-    vector<int> available;
+
+    vector<int> available = {};
 
     if (last_group_len == 0) {
-        available.resize(g.vertices.size(), 0);
-        std::iota(available.begin(), available.end(), 0);
-        vector<int> tmp = selected;
-        sort(tmp.begin(), tmp.end());
-        
-        vector<int> diff;
-        std::set_difference(available.begin(), available.end(), tmp.begin(), tmp.end(),
-            std::inserter(diff, diff.begin()));
-
-        available = diff;
+        for (int i = 0; i < g.vertices.size(); i++) {
+            if (!(find(selected.begin(), selected.end(), i) != selected.end())) {
+                available.push_back(i);
+            }
+        }
+        // available = [node for node in G.nodes() if node not in selected]
     }
     else {
-        // find all nodes connected to current group
-        for (int i = selected.size() - last_group_len; i < selected.size(); i++) {
-            for (int t : g.get_neighbors(selected[i])) {
-                if (!(std::find(available.begin(), available.end(), t) != available.end()))
-                   available.push_back(t);
+        // Find all nodes bordering current group.
+        for (int i = selected.size() - last_group_len; i < selected.size(); i++) { // @warn -1
+            for (int neighbor : g.get_neighbors(selected[i])) {
+                if (find(available.begin(), available.end(), neighbor) == available.end() && 
+                    find(selected.begin(), selected.end(), neighbor) == selected.end()) {
+                    available.push_back(neighbor);
+                }
             }
-            // available = union(available, neighbors(G, node));
         }
-
-        vector<int> tmp = selected;
-        sort(tmp.begin(), tmp.end());
-        sort(available.begin(), available.end()); //@warn ahhhhh
-
-        vector<int> diff;
-        std::set_difference(available.begin(), available.end(), tmp.begin(), tmp.end(),
-            std::inserter(diff, diff.begin()));
-
-        available = diff;
-        // available = available-selected;
     }
 
+    // Community ca, cs, cd;
+    // ca.node_ids = available;
+    // cs.node_ids = selected;
 
-    cout << available.size() << " available" << endl;
-    for (int a : available) cout << a << ", ";
-    cout << endl;
+    Canvas canvas(700, 700);
+    canvas.add_graph(g2);
+    // canvas.add_shape(ca.get_shape(g), false, Color(255, 0, 0), 2);
+    // canvas.add_shape(cs.get_shape(g), false, Color(0,0,255), 3);
+    canvas.draw();
 
-    if (available.size() == 0) return;
-        
-    std::shuffle(available.begin(), available.end(), std::random_device());
+    if (available.size() == 0) {
+        cout << "no precincts available" << endl;
+        return;
+    }
 
-    // vector<int> last_selected = selected;
-    for (int n : available) {
-        
-        g2.remove_edges_to(n);
-        selected.push_back(n);
-        cout << "adding " << n << endl;
-        back_track(g, g2, selected, last_group_len + 1, group_size);
-        cout << "removing " << n << endl;
+    sort(available.begin(), available.end());
+    // shuffle(available.begin(), available.end(), random_device());
 
-        if (last_group_len != 0) {
-            selected.pop_back();
-            last_group_len--;
-        }
+    for (int node : available) {
+        selected.push_back(node);
+        cout << "add " << node << endl;
+        back_track(g, remove_node(node, g2), selected,
+                    last_group_len + 1, group_size);
 
-        if (stop_init_config) {
-            break;
-        }
+        // last_group_len--;
+        selected.erase(remove(selected.begin(), selected.end(), node), selected.end());
+        // selected.clear();
+        // last_group_len = 0;
+        // selected.pop_back();
+        cout << "backtracking..." << endl;
     }
 }
 
-
-// vector<Node> get_eligible_precincts(Graph graph, Community& group) {
-//     vector<Node> nodes = {};
-//     Graph init = graph;
-
-//     for (int i = 0; i < graph.vertices.size(); i++) {
-//         Node node = (graph.vertices.begin() + i).value();
-//         if (!node.in_group) {
-//             graph.remove_edges_to(node.id);
-
-//             if (graph.get_num_components() > group.node_ids.size() + 2) {
-//                 nodes.push_back(init.vertices[node.id]);
-//             }
-
-//             graph = init;
-//         }
-//     }
-
-//     return nodes;
-// }
-
-
-// void create_community(Graph& graph, int group_size, Community& group) {
-//     vector<Node> eligible_precincts = get_eligible_precincts(graph, group); // all the precincts in the graph that are not already in group and if added will not create an island
-//     // How to calculate the latter condition for an eligible precinct:
-//     // Remove all the edges connected to that precinct. Check if the number of components of the
-//     // graph is more than the number of precincts in the group + 2.
-
-//     vector<Node> tried_precincts = {};
-
-//     while (true) {
-//         // This is the islands problem. There are no precincts you can add at this level of 
-//         // recursion that don’t eventually lead to the islands problem in higher levels of
-//         // recursion, so you have to change a decision you made in lower levels of recursion.
-        
-//         if (eligible_precincts == tried_precincts) return;
-
-//         vector<Node> not_tried_precincts = {};
-
-//         set_difference(eligible_precincts.begin(), 
-//             eligible_precincts.end(),
-//             tried_precincts.begin(),
-//             tried_precincts.end(),
-//             inserter(not_tried_precincts, not_tried_precincts.begin())
-//         );
-
-//         Node selected_precinct = *min_element(not_tried_precincts.begin(), not_tried_precincts.end());
-//         // this min() is of the node number (rank by degree.) I'm not sure if we’re doing greatest
-//         // degree is 1 or the last one, so this may become max() in the future.
-        
-//         group.add_node(selected_precinct);
-//         graph.vertices[selected_precinct.id].in_group = true;
-
-//         vector<array<int, 2> > removed_edges = graph.remove_edges_to(selected_precinct.id);
-
-//         if (group.node_ids.size() == group_size) {
-//             // break out of all levels of recursion
-//             throw Exceptions::CommunityComplete();
-//         }
-        
-//         // Adds one precinct every call, but recursion,
-//         // so it's actually adding all the precincts every call.
-//         create_community(graph, group_size, group); 
-
-//         // The above call didn’t raise a CommunityCompleteException, so it has returned from 
-//         // all higher levels of recursion back to this call (see red), meaning we have to change 
-//         // our decision at this level.
-
-//         // undo edge removal
-//         for (Edge edge : removed_edges)
-//             graph.add_edge(edge);
-
-//         graph.vertices[selected_precinct.id].in_group = false;
-//         group.node_ids.erase(std::remove(group.node_ids.begin(), group.node_ids.end(), selected_precinct.id), group.node_ids.end());
-//         tried_precincts.push_back(selected_precinct);
-//     }
-
-//     return;
-// }
 
 
 Communities get_initial_configuration(Graph graph, int n_communities) {
@@ -266,35 +203,44 @@ Communities get_initial_configuration(Graph graph, int n_communities) {
         @return: `Communities` init config
     */
 
-
-    Graph init = graph;
     Communities communities(n_communities);
 
-    for (int i = 0; i < graph.vertices.size(); i++) {
-        (graph.vertices.begin() + i).value().in_group = false;
-    }
+    int group_size;
+    int n_precincts = graph.vertices.size();
+    
+    if (n_precincts % n_communities == 0) group_size = n_precincts / n_communities;
+    else group_size = floor((double)n_precincts / (double)n_communities) + 1;
 
 
     int base = floor((double)graph.vertices.size() / (double)n_communities); // the base num
     int rem = graph.vertices.size() % n_communities; // how many need to be increased by 1
-    vector<int> sizes(n_communities, base);
-    for (int i = sizes.size() - 1; i > sizes.size() - rem - 1; i--) sizes[i]++;
+    vector<int> sizes(n_communities, group_size);
+
+    if (n_communities * group_size > n_precincts) {
+        int overflow = (n_communities * group_size) - n_precincts;
+        sizes[sizes.size() - 1] -= overflow;
+    }
+
+
+    Graph light_graph = graph;
+    vector<int> selected = {};
+
+
+    try {
+        back_track(light_graph, light_graph, selected, 0, group_size);
+    }
+    catch (Exceptions::CommunityComplete) {}
+
     
+    cout << "finding communities" << endl;
+
     int index = 0;
     int comm_ind = 0;
 
-
-    vector<int> list;
-    Graph tmp_graph = graph;
-
-    back_track(graph, tmp_graph, list, 0, base);
-
-    cout << sizes[0] << endl;
-    cout << list.size() << endl;
     for (int size : sizes) {
         for (int x = index; x < index + size; x++) {
-            cout << list[x] << ", ";
-            communities[comm_ind].node_ids.push_back(list[x]);
+            cout << selected[x] << ", ";
+            communities[comm_ind].node_ids.push_back(selected[x]);
         }
 
         cout << endl;
@@ -302,21 +248,10 @@ Communities get_initial_configuration(Graph graph, int n_communities) {
         comm_ind++;
     }
 
-    cout << endl;
 
-    cout << communities[0].node_ids.size() << endl;
-    cout << communities[1].node_ids.size() << endl;
-
-    for (int i = 0; i < n_communities; i++)
-        writef(communities[i].get_shape(init).to_json(), "t" + to_string(i) + ".json");
-
-
-    // // Canvas canvas(200,200);
-    // // canvas.add_shape(communities[0].get_shape(init), true, Color(255,0,0), 1);
-    // // canvas.add_shape(communities[1].get_shape(init), true, Color(0,255,0), 1);
-
-    // // cout << "drawing" << endl;
-    // // canvas.draw();
+    for (int i = 0; i < communities.size(); i++) {
+        writef(communities[i].get_shape(graph).to_json(), "x" + to_string(i) + ".json");
+    }
 
     return communities;
 }

@@ -355,6 +355,7 @@ class Graph {
         void add_edge(Edge edge);
         std::vector<Edge> remove_edges_to(int id);
         void remove_edge(Edge edge);
+        void remove_node(int id);
 
         std::vector<int> get_neighbors(int node);
         

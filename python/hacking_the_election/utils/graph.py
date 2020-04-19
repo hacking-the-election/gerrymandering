@@ -7,6 +7,25 @@ from pygraph.classes.graph import graph as Graph
 from pygraph.classes.exceptions import AdditionError
 
 
+def get_node_number(precinct, graph):
+    """Returns the node number of precinct that is in the node_attributes of a graph.
+
+    :param precinct: Precinct to find node number of.
+    :type precinct: `hacking_the_election.utils.precinct.Precinct`
+
+    :param graph: Graph that contains `precinct` in node_attributes.
+    :type graph: `pygraph.classes.graph.graph`
+
+    :return: The node that contains `precinct` as an attribute.
+    :rtype: int
+    """
+
+    for node in graph.nodes():
+        if precinct in graph.node_attributes(node):
+            return node
+    raise ValueError("Precinct not part of inputted graph.")
+
+
 def remove_edges_to(node, graph):
     """Returns graph with all edges removed to a given node.
 
@@ -41,7 +60,7 @@ def remove_edges_to(node, graph):
     return new_graph
 
 
-def dfs(graph, nodes, v):
+def _dfs(graph, nodes, v):
     """Finds all the nodes in a component of a graph containing a start node.
 
     Implementation of the depth-first search algorithm translated from wikipedia:
@@ -59,7 +78,7 @@ def dfs(graph, nodes, v):
     nodes.add(v)
     for w in graph.neighbors(v):
         if w not in nodes:
-            dfs(graph, nodes, w)
+            _dfs(graph, nodes, w)
 
 
 def get_components(graph):
@@ -81,7 +100,7 @@ def get_components(graph):
     while discovered_nodes != graph_nodes:
         component = set()
         # Search all nodes in `start_v`'s component.
-        dfs(graph, component, min(graph_nodes -  discovered_nodes))
-        components.append(component)
+        _dfs(graph, component, min(graph_nodes -  discovered_nodes))
+        components.append(list(component))
         discovered_nodes.update(component)
     return components

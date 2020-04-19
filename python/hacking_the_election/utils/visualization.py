@@ -60,3 +60,19 @@ def modify_coords(coords, bounds):
         point[1] -= min_y / 2
 
     return coords
+
+
+def add_leading_zeroes(n):
+    """Adds leading zeroes to an int until it is 3 chars long.
+    
+    :param n: Number to add zeroes to.
+    :type n: int
+
+    :return: String with added leading zeroes.
+    :rtype: str
+    """
+
+    chars = list(str(int(n)))
+    while len(chars) < 3:
+        chars.insert(0, "0")
+    return "".join(chars)

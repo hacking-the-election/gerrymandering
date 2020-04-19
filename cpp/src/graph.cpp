@@ -11,8 +11,10 @@
 #include <algorithm>
 // #include "../include/graph.hpp"
 #include "../include/shape.hpp"
+#include "../include/canvas.hpp"
 
 using namespace Geometry;
+using namespace Graphics;
 using namespace std;
 
 
@@ -23,11 +25,18 @@ int Graph::get_num_components() {
         @return: `int` number of components
     */
 
+
+    // cout << vertices.size() << endl;
+    // Canvas canvas(700, 700);
+    // canvas.add_graph(*this);
+    // canvas.draw();
+    
     vector<bool> visited(vertices.size(), false);
     int x = 0;
 
+
     for (int i = 0; i < vertices.size(); i++) {
-        if (visited[i] == false) {
+        if (!visited[(vertices.begin() + i).key()]) {
             dfs_recursor((vertices.begin() + i).key(), visited); 
             x++;
         }
@@ -52,9 +61,9 @@ void Graph::dfs_recursor(int v, std::vector<bool>& visited) {
     visited[v] = true; 
     Node node = vertices[v];
 
+
     for (int i = 0; i < node.edges.size(); i++) {
         int t_id = node.edges[i][1];
-
         if (!visited[t_id]) { 
             dfs_recursor(t_id, visited);
         }
@@ -108,6 +117,12 @@ void Graph::add_edge(Edge edge) {
 }
 
 
+void Graph::remove_node(int id) {
+    this->remove_edges_to(id);
+    this->vertices.erase(id);
+}
+
+
 std::vector<Edge> Graph::remove_edges_to(int id) {
     /*
         @desc: removes edges to a node id
@@ -117,10 +132,9 @@ std::vector<Edge> Graph::remove_edges_to(int id) {
 
     // 5 => {5, 1}, {5, 6}, {5, 2};
 
-    vector<Edge> edges = vertices[id].edges;
-    vertices[id].edges.clear();
+    vector<Edge> edges;
 
-    for (Edge edge : edges) {
+    for (Edge edge : vertices[id].edges) {
         Edge remove = {edge[1], edge[0]};
 
         vertices[edge[1]].edges.erase(
@@ -130,8 +144,11 @@ std::vector<Edge> Graph::remove_edges_to(int id) {
             ),
             vertices[edge[1]].edges.end()
         );
+
+        edges.push_back(edge);
     }
 
+    vertices[id].edges = {};
     return edges;
 }
 

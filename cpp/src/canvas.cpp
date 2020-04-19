@@ -218,17 +218,27 @@ void Graphics::Canvas::add_shape(Geometry::Precinct_Group s, bool f, Color c, in
 
 void Graphics::Canvas::add_graph(Geometry::Graph g) {
 
-    for (std::array<int, 2> edge : g.edges) {
-        Geometry::coordinate c1 = g.vertices[edge[0]].precinct->get_center();
-        Geometry::coordinate c2 = g.vertices[edge[1]].precinct->get_center();
-        Geometry::LinearRing lr({c1, c2});
-        this->add_shape(lr, false, Color(255, 0, 0), 2);
-    }
-
+    // for (std::array<int, 2> edge : g.edges) {
+    //     Geometry::coordinate c1 = g.vertices[edge[0]].precinct->get_center();
+    //     Geometry::coordinate c2 = g.vertices[edge[1]].precinct->get_center();
+    //     Geometry::LinearRing lr({c1, c2});
+    //     this->add_shape(lr, false, Color(0, 0, 0), 2);
+    // }
 
     for (int i = 0; i < g.vertices.size(); i++) {
-        this->add_shape(*(g.vertices.begin() + i).value().precinct);
+        for (int j = 0; j < (g.vertices.begin() + i).value().edges.size(); j++) {
+            Geometry::coordinate c1 = (g.vertices.begin() + i).value().precinct->get_center();
+            Geometry::coordinate c2 = g.vertices[(g.vertices.begin() + i).value().edges[j][1]].precinct->get_center();
+            Geometry::LinearRing lr({c1, c2});
+            this->add_shape(lr, false, Color(0, 0, 0), 2);
+        }
+
+        this->add_shape(generate_gon((g.vertices.begin() + i).value().precinct->get_center(), 2400, 30));
     }
+
+    // for (int i = 0; i < g.vertices.size(); i++) {
+    //     this->add_shape(*(g.vertices.begin() + i).value().precinct);
+    // }
     
     // for (int i = 0; i < g.vertices.size(); i++) {
     //     Geometry::Node node = (g.vertices.begin() + i).value();
@@ -236,10 +246,9 @@ void Graphics::Canvas::add_graph(Geometry::Graph g) {
     //     Color color(80, 80, 80);
     //     // if (node.precinct->get_ratio() == -1) color = Color(0,0,0);
         
-    //     // int factor = 3;
+    //     int factor = 3;
     //     int t = 6000;
-    //     t = (int) ((double) t * ((double) node.edges.size() / (double) (g.vertices.begin() + g.vertices.size() - 1).value().edges.size()));
-    //     // if (node.precinct->pop * factor > 4500) t = node.precinct->pop * factor;
+    //     if (node.precinct->pop * factor > 4500) t = node.precinct->pop * factor;
 
     //     this->add_shape(generate_gon(node.precinct->get_center(), t, 40), true, color, 2);
     // }
@@ -369,7 +378,7 @@ void Graphics::Canvas::scale(double scale_factor) {
 
 void Graphics::Outline::flood_fill_util(Geometry::coordinate coord, Color c1, Color c2, Canvas& canvas) {
     RECURSION_STATE++;
-    if (RECURSION_STATE > 9000) return;
+    if (RECURSION_STATE > 18000) return;
 
     if (coord[0] < 0 || coord[0] > pixels.size() || coord[1] < 0 || coord[1] > pixels[0].size()) return;
     if (this->get_pixel({coord[0], coord[1]}).color != c1) return;
