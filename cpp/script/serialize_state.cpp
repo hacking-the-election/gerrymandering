@@ -35,7 +35,7 @@ int main(int argc, char* argv[]) {
 
     string KEY = "--keys=";  // prefix to find specified options
 
-    if (argc < 4) {
+    if (argc < 5) {
         // did not provide infiles and keys
         cerr << "serialize_state: usage: " <<
             "<geodata> <election> <district> --keys=[keys] outfile" << endl;
@@ -55,7 +55,7 @@ int main(int argc, char* argv[]) {
             int argsize;
 
             if (argc == 6) argsize = 5;
-            else argsize = 3;
+            else argsize = 4;
 
             for (int i = 0; i < argsize; i++) {
                 string csv;

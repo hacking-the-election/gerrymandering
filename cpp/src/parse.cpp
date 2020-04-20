@@ -262,13 +262,13 @@ std::vector<Geometry::Precinct> parse_precinct_data(std::string geoJSON) {
         int pop = 0;
 
         // see if the geoJSON contains the shape id
-        // if (shapes["features"][i]["properties"].HasMember(geodata_id.c_str())) {
-        //     id = shapes["features"][i]["properties"][geodata_id.c_str()].GetString();
-        // }
-        // else {
-        //     std::cout << "\e[31merror: \e[0mYou have no precinct id." << std::endl;
-        //     std::cout << "If future k-vernooy runs into this error, it means that GEOID10 in your geoJSON in your voter data is missing. To fix... maybe try a loose comparison of the names?" << std::endl;
-        // }
+        if (shapes["features"][i]["properties"].HasMember(geodata_id.c_str())) {
+            id = shapes["features"][i]["properties"][geodata_id.c_str()].GetString();
+        }
+        else {
+            std::cout << "\e[31merror: \e[0mYou have no precinct id." << std::endl;
+            std::cout << "If future k-vernooy runs into this error, it means that GEOID10 in your geoJSON in your voter data is missing. To fix... maybe try a loose comparison of the names?" << std::endl;
+        }
 
         // get voter data from geodata
         int demv = 0;
@@ -317,6 +317,7 @@ std::vector<Geometry::Precinct> parse_precinct_data(std::string geoJSON) {
             // vector parsed from coordinate string
             Geometry::Polygon geo = string_to_vector(coords);
             Geometry::Precinct precinct(geo.hull, demv, repv, pop, id);
+            precinct.shape_id = id;
 
             for (int i = 0; i < geo.holes.size(); i++)
                 precinct.holes.push_back(geo.holes[i]);
@@ -325,7 +326,7 @@ std::vector<Geometry::Precinct> parse_precinct_data(std::string geoJSON) {
         }
         else {
             Geometry::Multi_Polygon geo = multi_string_to_vector(coords);
-
+            geo.shape_id = id;
             // calculate area of multipolygon
             double total_area = geo.get_area();
             int append = 0;
@@ -411,6 +412,7 @@ std::vector<Geometry::Polygon> parse_precinct_coordinates(std::string geoJSON) {
 
             Geometry::Polygon shape(border, id);
             shape.pop = pop;
+            shape.shape_id = id;
 
             for (int i = 0; i < geo.holes.size(); i++)
                 shape.holes.push_back(geo.holes[i]);
@@ -419,7 +421,7 @@ std::vector<Geometry::Polygon> parse_precinct_coordinates(std::string geoJSON) {
         }
         else {
             Geometry::Multi_Polygon geo = multi_string_to_vector(coords);
-
+            geo.shape_id = id;
             // calculate area of multipolygon
             double total_area = geo.get_area();
 
@@ -578,10 +580,10 @@ Geometry::Precinct_Group combine_holes(Geometry::Precinct_Group pg) {
                     // precinct j is inside precinct x,
                     // add the appropriate data from j to x
 
-                    Graphics::Canvas canvas(600,600);
-                    canvas.add_shape(p_c, false, Graphics::Color(255, 0, 0), 2);
-                    canvas.add_shape(p, false, Graphics::Color(0, 255, 0), 2);
-                    canvas.draw();
+                    // Graphics::Canvas canvas(600,600);
+                    // canvas.add_shape(p_c, false, Graphics::Color(255, 0, 0), 2);
+                    // canvas.add_shape(p, false, Graphics::Color(0, 255, 0), 2);
+                    // canvas.draw();
 
                     demv += pg.precincts[j].dem;
                     repv += pg.precincts[j].rep;
@@ -762,6 +764,19 @@ Geometry::State Geometry::State::generate_from_file(std::string precinct_geoJSON
     // create a vector of precinct objects from border and voter data
     if (VERBOSE) std::cout << "merging geodata with voter data into precincts..." << std::endl;
     std::vector<Precinct> precincts = merge_data(precinct_shapes, precinct_voter_data);
+
+
+    for (int i = 0; i < precinct_shapes.size(); i++) {
+        std::string id = precinct_shapes[i].shape_id;
+        if (id.size() >= 6) {
+            if (id.find("ZZZZZ") != std::string::npos) {
+                std::cout << "removing precinct!" << std::endl;
+                precinct_shapes.erase(precinct_shapes.begin() + i);
+                i--;
+            }
+        }
+    }
+    
     Geometry::Precinct_Group pre_group(precincts);
 
     // remove holes from precinct data
@@ -798,9 +813,10 @@ Geometry::State Geometry::State::generate_from_file(std::string precinct_geoJSON
         @return: `State` parsed state object
     */
 
-    d_head = opts[0];
-    r_head = opts[1];
-    population_id = opts[2][0];
+    geodata_id = opts[0][0];
+    d_head = opts[1];
+    r_head = opts[2];
+    population_id = opts[3][0];
 
     // generate shapes from coordinates
     if (VERBOSE) std::cout << "generating coordinate array from precinct file..." << std::endl;
@@ -808,15 +824,23 @@ Geometry::State Geometry::State::generate_from_file(std::string precinct_geoJSON
     if (VERBOSE) std::cout << "generating coordinate array from district file..." << std::endl;
     std::vector<Multi_Polygon> district_shapes = parse_district_coordinates(district_geoJSON);
 
+    for (int i = 0; i < precinct_shapes.size(); i++) {
+        std::string id = precinct_shapes[i].shape_id;
+        if (id.size() >= 6) {
+            if (id.find("ZZZZZ") != std::string::npos) {
+                std::cout << "removing precinct!" << std::endl;
+                precinct_shapes.erase(precinct_shapes.begin() + i);
+                i--;
+            }
+        }
+    }
+
     // create a vector of precinct objects from border and voter data
     Precinct_Group pre_group(precinct_shapes);
 
     // remove holes from precinct data
-    int before = pre_group.precincts.size();
     if (VERBOSE) std::cout << "combining holes in precinct geodata..." << std::endl;
     pre_group = combine_holes(pre_group);
-    int removed = before - pre_group.precincts.size();
-    if (VERBOSE) std::cout << "removed " << removed << " hole precincts from precinct geodata" << std::endl;
 
     std::vector<Polygon> state_shape_v;  // dummy exterior border
 
