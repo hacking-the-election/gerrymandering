@@ -26,14 +26,8 @@ int Graph::get_num_components() {
     */
 
 
-    // cout << vertices.size() << endl;
-    // Canvas canvas(700, 700);
-    // canvas.add_graph(*this);
-    // canvas.draw();
-    
     vector<bool> visited(vertices.size(), false);
     int x = 0;
-
 
     for (int i = 0; i < vertices.size(); i++) {
         if (!visited[(vertices.begin() + i).key()]) {

@@ -62,20 +62,14 @@ class TestInitialConfiguration(unittest.TestCase):
             print(f"COMMUNITY {community.id}")
             print("\t".join(list(community.precincts.keys())))
 
-        visualize_graph(G2, None, lambda n: G2.node_attributes(n)[0].centroid,
-                        colors=lambda n: COLORS[G2.node_attributes(n)[0].community],
-                        sizes=lambda n: 10, show=True)
-
     def test_vermont(self):
+        """Tests random community generation with the state of vermont.
+        """
         
         with open(vermont_path, "rb") as f:
             vermont_graph = pickle.load(f)
         
         communities = create_initial_configuration(vermont_graph, 2)
-        visualize_graph(vermont_graph, None,
-                        lambda n: vermont_graph.node_attributes(n)[0].centroid,
-                        colors=lambda n: COLORS[vermont_graph.node_attributes(n)[0].community],
-                        sizes=lambda n: 10, show=True)
 
 
 if __name__ == "__main__":

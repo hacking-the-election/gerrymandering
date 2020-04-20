@@ -7,7 +7,7 @@ from pygraph.classes.graph import graph as Graph
 from pygraph.classes.exceptions import AdditionError
 
 
-def get_node_number(precinct, graph):
+cpdef int get_node_number(precinct, graph):
     """Returns the node number of precinct that is in the node_attributes of a graph.
 
     :param precinct: Precinct to find node number of.
@@ -20,13 +20,14 @@ def get_node_number(precinct, graph):
     :rtype: int
     """
 
+    cdef int node
     for node in graph.nodes():
         if precinct in graph.node_attributes(node):
             return node
     raise ValueError("Precinct not part of inputted graph.")
 
 
-def remove_edges_to(node, graph):
+cpdef remove_edges_to(int node, graph):
     """Returns graph with all edges removed to a given node.
 
     :param node: The node to remove the edges from.
@@ -41,10 +42,11 @@ def remove_edges_to(node, graph):
 
     new_graph = Graph()
     for vertex in graph.nodes():
-        new_graph.add_node(vertex)
+        new_graph.add_node(int(vertex))
+    cdef tuple edge
     for edge in graph.edges():
         try:
-            new_graph.add_edge(edge)
+            new_graph.add_edge(tuple([int(i) for i in edge]))
         except AdditionError:
             pass
 
@@ -60,7 +62,7 @@ def remove_edges_to(node, graph):
     return new_graph
 
 
-def _dfs(graph, nodes, v):
+cpdef void _dfs(graph, set nodes, int v):
     """Finds all the nodes in a component of a graph containing a start node.
 
     Implementation of the depth-first search algorithm translated from wikipedia:
@@ -76,12 +78,15 @@ def _dfs(graph, nodes, v):
     :type v: int
     """
     nodes.add(v)
-    for w in graph.neighbors(v):
+    cdef int w
+    cdef list neighbors
+    neighbors = graph.neighbors(v)
+    for w in neighbors:
         if w not in nodes:
-            _dfs(graph, nodes, w)
+            _dfs(graph, nodes, int(w))
 
 
-def get_components(graph):
+cpdef list get_components(graph):
     """Finds number of discontinuous components of a graph.
 
     :param graph: The graph that contains `node`
@@ -91,16 +96,16 @@ def get_components(graph):
     :rtype: int
     """
 
-    components = []
+    cpdef list components = []
 
-    discovered_nodes = set()
-    graph_nodes = set(graph.nodes())
+    cdef set discovered_nodes = set()
+    cdef set graph_nodes = set(graph.nodes())
 
     # While not all nodes have been discovered.
     while discovered_nodes != graph_nodes:
         component = set()
         # Search all nodes in `start_v`'s component.
-        _dfs(graph, component, min(graph_nodes -  discovered_nodes))
+        _dfs(graph, component, int(min(graph_nodes -  discovered_nodes)))
         components.append(list(component))
         discovered_nodes.update(component)
     return components
