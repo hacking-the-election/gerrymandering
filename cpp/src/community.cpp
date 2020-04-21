@@ -40,8 +40,9 @@ using namespace Graphics;
 #define VERBOSE 1
 #define DEBUG 0
 
-bool stop_init_config;
 
+vector<int> refs;
+vector<array<int, 3> > c_colors;
 
 
 class NodePtr {
@@ -125,15 +126,7 @@ Graph remove_node(int node, Graph graph) {
     return graph;
 }
 
-// where:
-// selected: an ordered set of nodes that can be divided to n consecutive groups
-// stop: becomes true when the solution was found
-// G: the initial graph
-// G2: what remains of the graph after removing all edges to last selected node
-// lastGroupLen: number of nodes selected for last group
-// groupSize: maximum allowable size of each group
-// discomp(): returns number of discontinuous components of the graph
-// removeEdgesTo(): removes all edges connected to a node
+
 void sort_by_degree(vector<int>& ints, Graph* graph) {
     vector<NodePtr> nodes;
 
@@ -152,20 +145,30 @@ void sort_by_degree(vector<int>& ints, Graph* graph) {
 
 
 void back_track(Graph g, Graph g2, vector<int>& selected, int last_group_len, int group_size) {
-    
+
+    // where:
+    // selected: an ordered set of nodes that can be divided to n consecutive groups
+    // stop: becomes true when the solution was found
+    // G: the initial graph
+    // G2: what remains of the graph after removing all edges to last selected node
+    // lastGroupLen: number of nodes selected for last group
+    // groupSize: maximum allowable size of each group
+    // discomp(): returns number of discontinuous components of the graph
+    // removeEdgesTo(): removes all edges connected to a node
+
     if (selected.size() == g.vertices.size()) {
         throw Exceptions::CommunityComplete();
     }
 
 
     if (last_group_len == group_size) {
-        cout << endl << "starting new community" << endl;
+        // cout << endl << "starting new community" << endl;
         last_group_len = 0;
     }
 
 
     if (g2.get_num_components() > selected.size() + 1) {
-        cout << "gots them components" << endl;
+        // cout << "gots them components" << endl;
         return;
     }
 
@@ -192,7 +195,7 @@ void back_track(Graph g, Graph g2, vector<int>& selected, int last_group_len, in
 
 
     if (available.size() == 0) {
-        cout << "no precincts available" << endl;
+        // cout << "no precincts available" << endl;
         return;
     }
 
@@ -203,24 +206,15 @@ void back_track(Graph g, Graph g2, vector<int>& selected, int last_group_len, in
 
     for (int i = 0; i < available.size(); i++) {
         int node = available[i];
-        cout << "add " << node << endl;
-
-        Graph cur_graph = g2;
-        g2.remove_edges_to(node);
-        selected.push_back(node);
-
-        Canvas canvas(600, 600);
-        canvas.add_graph(g2, available);
-        canvas.draw();
         
-        back_track(g, g2, selected, last_group_len + 1, group_size);
-
+        cout << "add " << node << endl;
+        selected.push_back(node);
+        back_track(g, remove_edges_to(node, g2), selected, last_group_len + 1, group_size);
         cout << "backtracking..." << endl;
-        g2 = cur_graph;
         selected.erase(remove(selected.begin(), selected.end(), node), selected.end());
     }
 
-    cout << "finished with everything" << endl;
+    // cout << "finished with everything" << endl;
 }
 
 
@@ -255,6 +249,33 @@ Communities get_initial_configuration(Graph graph, int n_communities) {
     }
 
 
+    refs = sizes;
+    for (int i = 0; i < n_communities; i++) {
+        int rand = rand_num(1,3);
+        int rand_y = rand_num(1,2);
+        int rand_x = rand_num(0,255);
+
+        if (rand == 1) {
+            if (rand_y == 1)
+                c_colors.push_back({255, rand_x, 0});
+            else
+                c_colors.push_back({255, 0, rand_x});
+        }
+        else if (rand == 2) {
+            if (rand_y == 1)
+                c_colors.push_back({0, 255, rand_x});
+            else
+                c_colors.push_back({rand_x, 255, 0});
+        }
+        else {
+            if (rand_y == 1)
+                c_colors.push_back({0, rand_x, 255});
+            else
+                c_colors.push_back({rand_x, 0, 255});
+        }
+    }
+
+
     Graph light_graph = graph;
     vector<int> selected = {};
 
@@ -262,9 +283,10 @@ Communities get_initial_configuration(Graph graph, int n_communities) {
     try {
         back_track(light_graph, light_graph, selected, 0, group_size);
     }
-    catch (Exceptions::CommunityComplete) {}
+    catch (Exceptions::CommunityComplete) {
+        cout << "finding communities" << endl;
+    }
 
-    
     cout << "finding communities" << endl;
 
     int index = 0;
