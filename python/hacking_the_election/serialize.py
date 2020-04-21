@@ -23,7 +23,7 @@ from shapely.geometry import Polygon, MultiPolygon
 
 from hacking_the_election.utils.precinct import Precinct
 from hacking_the_election.utils.serialization import compare_ids, split_multipolygons, combine_holypolygons
-from hacking_the_election.utils.geometry import geojson_to_shapely, get_if_bordering, shapely_to_geojson, get_distance
+from hacking_the_election.utils.geometry import geojson_to_shapely, get_if_bordering
 from hacking_the_election.utils.graph import get_components
 from hacking_the_election.visualization.graph_visualization import visualize_graph
 
@@ -518,21 +518,8 @@ def create_graph(election_file, geo_file, pop_file, state):
             unordered_precinct_graph.add_edge(edge_to_add)
     print('Edges after island linking: ', len(unordered_precinct_graph.edges())/2)
 
-    precinct_list_coords = [
-        shapely_to_geojson(unordered_precinct_graph.node_attributes(node)[0].coords)
-        for node in unordered_precinct_graph.nodes()
-    ]
-    flattened_precinct_list_coords = [point for polygon in precinct_list_coords
-        for ring in polygon for point in ring]
-    max_x = max([p[0] for p in flattened_precinct_list_coords])
-    max_y = max([p[1] for p in flattened_precinct_list_coords])
-    # Create list of nodes in ascending order by distance from upper-right corner of bounding box of state.
-    ordered_nodes = sorted(
-        unordered_precinct_graph.nodes(),
-        key=lambda x: get_distance(
-            unordered_precinct_graph.node_attributes(x)[0].centroid,
-            [max_x, max_y])
-    )
+    # Create list of nodes in ascending order by degree
+    ordered_nodes = sorted(unordered_precinct_graph.nodes(), key=lambda  n: len(unordered_precinct_graph.neighbors(n))) 
     print(time() - start_time)
     # Create ordered graph
     ordered_precinct_graph = graph()

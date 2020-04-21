@@ -131,7 +131,7 @@ def _back_track(G, selected, G2, last_group_len, group_size, animation_dir, verb
     if len(available) == 0:
         return
     
-    for node in sorted(available):
+    for node in sorted(available, key=lambda v: len(G2.neighbors(v))):
         selected.append(node)
         global_selected.append(node)
 
@@ -227,7 +227,7 @@ if __name__ == "__main__":
     with open(sys.argv[1], "rb") as f:
         precinct_graph = pickle.load(f)
 
-    communities = create_initial_configuration(precinct_graph, 2,
+    communities = create_initial_configuration(precinct_graph, 5,
         animation_dir=None if sys.argv[3] == "none" else sys.argv[3],
         verbose="-v" in sys.argv[1:])
     with open(output_file, "wb+") as f:

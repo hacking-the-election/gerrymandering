@@ -8,6 +8,7 @@ precincts.log
 test*.json
 test*.pickle
 test*.txt
+test*.png
 hacking_the_election.egg-info
 **/*compactness.pickle
 **/*partisanship.pickle
