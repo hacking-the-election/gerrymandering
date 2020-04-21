@@ -27,6 +27,10 @@ from hacking_the_election.utils.geometry import geojson_to_shapely, get_if_borde
 from hacking_the_election.utils.graph import get_components
 from hacking_the_election.visualization.graph_visualization import visualize_graph
 
+
+SOURCE_DIR = dirname(__file__)
+
+
 def convert_to_int(string):
     """
     Wrapped error handling for int().
@@ -62,7 +66,7 @@ def create_graph(election_file, geo_file, pop_file, state):
     and list of Precinct objects.
     """
     start_time = time()
-    with open("./state_metadata.json", "r") as f:
+    with open(f"{SOURCE_DIR}/state_metadata.json", "r") as f:
         state_metadata = json.load(f)
 
     # This should be a race for president
@@ -428,57 +432,95 @@ def create_graph(election_file, geo_file, pop_file, state):
         completed_precincts.append(node)
 
     print(time() - start_time)
+
     # The graph will have multiple representations, i.e. an "edge" going both ways, 
     # but it's only considered one edge in has_edge(), add_edge(), delete_edge(), etc.
     print('Edges: ', len(unordered_precinct_graph.edges())/2)
-    # Create list of nodes in ascending order by degree
-    ordered_nodes = sorted(unordered_precinct_graph.nodes(), key=lambda  n: len(unordered_precinct_graph.neighbors(n))) 
-    # Visualize graph
-    visualize_graph(
-        unordered_precinct_graph,
-        f'./{state}_graph.jpg',
-        lambda n : unordered_precinct_graph.node_attributes(n)[0].centroid,
-        # sizes=(lambda n : ordered_precinct_graph.node_attributes(n)[0].pop/500),
-        show=True
-    )
-    with open('./massachusetts_debug.pickle', 'wb+') as f:
-        pickle.dumps(unordered_precinct_graph)
-    print('yay it saved')
+
+    print(time() - start_time)
     # Repeat until entire graph is contiguous
     # Get components of graph (islands of precincts)
-    graph_components = get_components(unordered_precinct_graph)
-    print(len(graph_components))
-    if not len(graph_components) == 1:
+    if not len(get_components(unordered_precinct_graph)) == 1:
         while len(get_components(unordered_precinct_graph)) != 1:
+            print(len(get_components(unordered_precinct_graph)))
+            graph_components = get_components(unordered_precinct_graph)
+            # print(graph_components, '# of graph components')
+            # Create list with dictionary containing keys as precincts, 
+            # values as centroids for each component
+            centroid_list = []
+            for component in graph_components:
+                component_list = {}
+                for precinct in component:
+                    component_list[precinct] = unordered_precinct_graph.node_attributes(precinct)[0].centroid
+                centroid_list.append(component_list)
+                
             # Keys are minimum distances to and from different islands, 
             # values are tuples of nodes to add edges between
             min_distances = {}
+            # print(len(list(combinations([num for num in range(0, len(graph_components))], 2))), 'list of stuffs')
             # For nonrepeating combinations of components, add to list of edges
-            for combo in combinations([range(0, (len(graph_components) - 1))], 2):
+            for combo in list(combinations([num for num in range(0, (len(graph_components) - 1))], 2)):
                 # Create list of centroids to compare
-                centroids_1 = {unordered_precinct_graph.node_attributes(precinct).centroid :
-                    precinct
-                    for precinct in graph_components[int(str(combo)[0])]}
-                centroids_2 = {unordered_precinct_graph.node_attributes(precinct).centroid :
-                    precinct
-                    for precinct in graph_components[int(str(combo)[1])]}
+                centroids_1 = centroid_list[combo[0]]
+                centroids_2 = centroid_list[combo[1]]
                 min_distance = 0
-                for centroid_1 in centroids_1.keys():
-                    for centroid_2 in centroids_2.keys():
+                min_tuple = None
+                for precinct_1, centroid_1 in centroids_1.items():
+                    for precinct_2, centroid_2 in centroids_2.items():
+                        # if precinct_1 == 2264:
+                        #     # print(unordered_precinct_graph.node_attributes(2268)[0].centroid)
+                        #     if precinct_2 == 2268:
+                        #         x_distance = centroid_1[0] - centroid_2[0]
+                        #         y_distance = centroid_1[1] - centroid_2[1]
+                        #         print((x_distance ** 2) + (y_distance ** 2))
+                                
+                        # if precinct_1 == 2268:
+                        #     if precinct_2 == 2264:
+                        x_distance = centroid_1[0] - centroid_2[0]
+                        y_distance = centroid_1[1] - centroid_2[1]
                         # No need to sqrt unnecessarily
-                        distance = ((centroid_1[0] - centroid_2[0]) ** 2 +
-                                    (centroid_1[0] - centroid_2[1]) ** 2)
+                        distance = (x_distance ** 2) + (y_distance ** 2)
                         if min_distance == 0:
                             min_distance = distance
-                            min_tuple = (centroids_1[centroid_1], centroids_2[centroid_2])
+                            min_tuple = (precinct_1, precinct_2)
                         elif distance < min_distance:
+                            # print(precinct_1, precinct_2)
                             min_distance = distance
-                            min_tuple = (centroids_1[centroid_1], centroids_2[centroid_2])
+                            min_tuple = (precinct_1, precinct_2)
                 min_distances[min_distance] = min_tuple
+            # combinations() fails once the graph is one edge away from completion, so this is manual
+            if len(graph_components) == 2:
+                min_distance = 0
+                for precinct_1 in graph_components[0]:
+                    centroid_1 = unordered_precinct_graph.node_attributes(precinct_1)[0].centroid
+                    for precinct_2 in graph_components[1]:
+                        centroid_2 = unordered_precinct_graph.node_attributes(precinct_2)[0].centroid
+                        x_distance = centroid_1[0] - centroid_2[0]
+                        y_distance = centroid_1[1] - centroid_2[1]
+                        # No need to sqrt unnecessarily
+                        distance = (x_distance ** 2) + (y_distance ** 2)
+                        if min_distance == 0:
+                            min_distance = distance
+                            min_tuple = (precinct_1, precinct_2)
+                        elif distance < min_distance:
+                            # print(precinct_1, precinct_2)
+                            min_distance = distance
+                            min_tuple = (precinct_1, precinct_2)
+                min_distances[min_distance] = min_tuple
+
+            # print(min_distances, 'yo dicts')
             # Find edge to add
-            edge_to_add = min_distances[min(min_distances)]
+            try:
+                edge_to_add = min_distances[min(min_distances)]
+            except ValueError:
+                break
+            # print(edge_to_add)
             unordered_precinct_graph.add_edge(edge_to_add)
-        # while len(get_components(unordered_precinct_graph)) != 1:
+    print('Edges after island linking: ', len(unordered_precinct_graph.edges())/2)
+
+    # Create list of nodes in ascending order by degree
+    ordered_nodes = sorted(unordered_precinct_graph.nodes(), key=lambda  n: len(unordered_precinct_graph.neighbors(n))) 
+    print(time() - start_time)
     # Create ordered graph
     ordered_precinct_graph = graph()
     # Add nodes from unordered graph to ordered

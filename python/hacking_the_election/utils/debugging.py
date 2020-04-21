@@ -1,6 +1,5 @@
 # Functions to help with the debugging of programs
 
-import pickle
 from pygraph.classes.graph import graph
 
 def graph_from_file(file_path, precinct_list):
@@ -16,9 +15,9 @@ def graph_from_file(file_path, precinct_list):
     """
     return_graph = graph()
     with open(file_path, "rb") as f:
-        pickle_graph = f.read()
-    nodes = eval((pickle_graph.split(']')[0] + ']').strip)
-    edges = eval((pickle_graph.split(']')[1] + ']').strip)
+        file_graph = f.read()
+    nodes = eval((file_graph.split(']')[0] + ']').strip)
+    edges = eval((file_graph.split(']')[1] + ']').strip)
     for node in nodes:
         return_graph.add_node(node, attrs=[precinct_list[node]])
     for edge in edges:

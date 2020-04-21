@@ -1,5 +1,7 @@
 from setuptools import setup, find_packages
 
+from Cython.Build import cythonize
+
 setup(
     name='hacking_the_election',
     packages=find_packages(),
@@ -11,5 +13,6 @@ setup(
         "colormap",
         "easydev",
         "python-graph-core",
-        "miniball"
-    ])
+        "cython"
+    ],
+    ext_modules=cythonize("hacking_the_election/utils/graph.pyx"))

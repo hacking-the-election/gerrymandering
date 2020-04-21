@@ -8,12 +8,17 @@ precincts.log
 test*.json
 test*.pickle
 test*.txt
+test*.png
 hacking_the_election.egg-info
 **/*compactness.pickle
 **/*partisanship.pickle
 **/*population.pickle
 tmp*
 python/notebooks/.ipynb_checkpoints
+
+# cython
+python/**/*.c
+python/**/*.cpython-38-darwin.so
 
 # vscode
 settings.json
