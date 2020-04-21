@@ -765,7 +765,6 @@ Geometry::State Geometry::State::generate_from_file(std::string precinct_geoJSON
     if (VERBOSE) std::cout << "merging geodata with voter data into precincts..." << std::endl;
     std::vector<Precinct> precincts = merge_data(precinct_shapes, precinct_voter_data);
 
-
     for (int i = 0; i < precinct_shapes.size(); i++) {
         std::string id = precinct_shapes[i].shape_id;
         if (id.size() >= 6) {
@@ -776,7 +775,7 @@ Geometry::State Geometry::State::generate_from_file(std::string precinct_geoJSON
             }
         }
     }
-    
+
     Geometry::Precinct_Group pre_group(precincts);
 
     // remove holes from precinct data
