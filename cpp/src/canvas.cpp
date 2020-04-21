@@ -12,13 +12,13 @@
 #include "../include/community.hpp"
 #include "../include/canvas.hpp"
 #include "../include/geometry.hpp"
+#include <boost/filesystem.hpp>
 
 using std::cout;
 using std::endl;
 
 int RECURSION_STATE = 0;
-double PADDING = (11.0/16.0);
-
+double PADDING = (14.0/16.0);
 
 
 Graphics::Pixel::Pixel() {
@@ -28,13 +28,13 @@ Graphics::Pixel::Pixel() {
 
 std::array<int, 3> Graphics::interpolate_rgb(std::array<int, 3> rgb1, std::array<int, 3> rgb2, double interpolator) {
 
-    return hsl_to_rgb(interpolate_hsl(rgb_to_hsl(rgb1), rgb_to_hsl(rgb2), interpolator));
+    // return hsl_to_rgb(interpolate_hsl(rgb_to_hsl(rgb1), rgb_to_hsl(rgb2), interpolator));
     // return hsl_to_rgb(rgb_to_hsl(rgb1));
-    // int r = round(rgb1[0] + (double)(rgb2[0] - rgb1[0]) * interpolator);
-    // int g = round(rgb1[1] + (double)(rgb2[1] - rgb1[1]) * interpolator);
-    // int b = round(rgb1[2] + (double)(rgb2[2] - rgb1[2]) * interpolator);
+    int r = round(rgb1[0] + (double)(rgb2[0] - rgb1[0]) * interpolator);
+    int g = round(rgb1[1] + (double)(rgb2[1] - rgb1[1]) * interpolator);
+    int b = round(rgb1[2] + (double)(rgb2[2] - rgb1[2]) * interpolator);
 
-    // return {r, g, b};
+    return {r, g, b};
 }
 
 
@@ -216,47 +216,27 @@ void Graphics::Canvas::add_shape(Geometry::Precinct_Group s, bool f, Color c, in
 // }
 
 
-void Graphics::Canvas::add_graph(Geometry::Graph g, std::vector<int> cn) {
+void Graphics::Canvas::add_graph(Geometry::Graph g) {
 
-    // for (std::array<int, 2> edge : g.edges) {
-    //     Geometry::coordinate c1 = g.vertices[edge[0]].precinct->get_center();
-    //     Geometry::coordinate c2 = g.vertices[edge[1]].precinct->get_center();
-    //     Geometry::LinearRing lr({c1, c2});
-    //     this->add_shape(lr, false, Color(0, 0, 0), 2);
-    // }
-
-    for (int i = 0; i < g.vertices.size(); i++) {
-        for (int j = 0; j < (g.vertices.begin() + i).value().edges.size(); j++) {
-            Geometry::coordinate c1 = (g.vertices.begin() + i).value().precinct->get_center();
-            Geometry::coordinate c2 = g.vertices[(g.vertices.begin() + i).value().edges[j][1]].precinct->get_center();
-            Geometry::LinearRing lr({c1, c2});
-            this->add_shape(lr, false, Color(0, 0, 0), 2);
-        }
-
-        if (std::find(cn.begin(), cn.end(), (g.vertices.begin() + i).key()) != cn.end()) {
-            this->add_shape(generate_gon((g.vertices.begin() + i).value().precinct->get_center(), 6800, 30), true , Color(255, 0, 0), 1);
-        }
-        else {
-            this->add_shape(generate_gon((g.vertices.begin() + i).value().precinct->get_center(), 4800, 30), true, Color(0,0,0), 1);
-        }
+    for (std::array<int, 2> edge : g.edges) {
+        Geometry::coordinate c1 = g.vertices[edge[0]].precinct->get_center();
+        Geometry::coordinate c2 = g.vertices[edge[1]].precinct->get_center();
+        Geometry::LinearRing lr({c1, c2});
+        this->add_shape(lr, false, Color(0, 0, 0), 1);
     }
-
-    // for (int i = 0; i < g.vertices.size(); i++) {
-    //     this->add_shape(*(g.vertices.begin() + i).value().precinct);
-    // }
     
-    // for (int i = 0; i < g.vertices.size(); i++) {
-    //     Geometry::Node node = (g.vertices.begin() + i).value();
-    //     // std::array<int, 3> rgb = interpolate_rgb({0, 255, 0}, {255, 0, 0}, ((double) node.edges.size() / (double) (g.vertices.begin() + g.vertices.size() - 1).value().edges.size()));
-    //     Color color(80, 80, 80);
-    //     // if (node.precinct->get_ratio() == -1) color = Color(0,0,0);
+    for (int i = 0; i < g.vertices.size(); i++) {
+        Geometry::Node node = (g.vertices.begin() + i).value();
+        // std::array<int, 3> rgb = interpolate_rgb({0, 0, 255}, {255, 0, 0}, node.precinct->get_ratio());
+        Color color(0, 0, 0);
+        // if (node.precinct->get_ratio() == -1) color = Color(0,0,0);
         
-    //     int factor = 3;
-    //     int t = 6000;
-    //     if (node.precinct->pop * factor > 4500) t = node.precinct->pop * factor;
+        int factor = 3;
+        int t = 2200;
+        // if (node.precinct->pop * factor > 4500) t = node.precinct->pop * factor;
 
-    //     this->add_shape(generate_gon(node.precinct->get_center(), t, 40), true, color, 2);
-    // }
+        this->add_shape(generate_gon(node.precinct->get_center(), t, 20), false, color, 1);
+    }
 }
 
 
@@ -576,7 +556,6 @@ void Graphics::Canvas::draw() {
     cout << "A" << endl;
 
     SDL_Init(SDL_INIT_VIDEO);
-
     // initialize window
     SDL_Event event;
     SDL_Window* window = SDL_CreateWindow("Drawing", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, x, y, 0);
@@ -586,21 +565,58 @@ void Graphics::Canvas::draw() {
     SDL_SetWindowResizable(window, SDL_TRUE);
     SDL_UpdateTexture(texture, NULL, background, x * sizeof(Uint32));
 
-    cout << "A" << endl;
+    SDL_PollEvent(&event);
+    SDL_RenderClear(renderer);
+    SDL_RenderCopy(renderer, texture, NULL, NULL);
+    // SDL_RenderPresent(renderer);
 
-    bool quit = false;
+    // Create an empty RGB surface that will be used to create the screenshot bmp file
+    SDL_Surface* pScreenShot = SDL_CreateRGBSurface(0, x, y, 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000);
 
-    while (!quit) {
-        SDL_UpdateTexture(texture, NULL, background, x * sizeof(Uint32));
-        SDL_WaitEvent(&event);
-        if (event.type == SDL_QUIT) quit = true;
+    if (pScreenShot) {
+        // Read the pixels from the current render target and save them onto the surface
+        SDL_RenderReadPixels(renderer, NULL, SDL_GetWindowPixelFormat(window), pScreenShot->pixels, pScreenShot->pitch); 
 
-        SDL_RenderClear(renderer);
-        SDL_RenderCopy(renderer, texture, NULL, NULL);
-        SDL_RenderPresent(renderer);
+        std::string filename = "anim-out/test";
+        int x = 0;
+        std::string app = filename + std::to_string(x);
+
+
+        do {
+            x++;
+
+            app = filename;
+            if (x < 10)
+                app += "0";
+            if (x < 100)
+                app += "0";
+
+            app += std::to_string(x);
+            
+        } while (boost::filesystem::exists(app + ".bmp"));
+    
+        // Create the bmp screenshot file
+        SDL_SaveBMP(pScreenShot, (app + ".bmp").c_str());
+
+        // Destroy the screenshot surface
+        SDL_FreeSurface(pScreenShot);
     }
 
-    // destroy arrays and SDL objects
+
+    // bool quit = false;
+
+    // while (!quit) {
+    //     SDL_UpdateTexture(texture, NULL, background, x * sizeof(Uint32));
+
+    //     SDL_WaitEvent(&event);
+    //     if (event.type == SDL_QUIT) quit = true;
+
+    //     SDL_RenderClear(renderer);
+    //     SDL_RenderCopy(renderer, texture, NULL, NULL);
+    //     SDL_RenderPresent(renderer);
+    // }
+
+    // // destroy arrays and SDL objects1
     SDL_DestroyTexture(texture);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow( window );
@@ -622,67 +638,88 @@ void Graphics::Anim::playback() {
         Play back an animation object
     */
    
-    return;
-    // std::vector<Uint32*> backgrounds;
-    // for (Canvas c : frames) {
-    //     memset(c.background, 255, c.x * c.y * sizeof(Uint32));
-    //     Geometry::bounding_box b = c.get_bounding_box();
-    //     c.translate(-b[2], -b[1], true);
+    // return;
+    std::vector<Uint32*> backgrounds;
+    for (Canvas c : frames) {
+        Uint32 background[c.x * c.y];
 
-    //     double ratio_top = ceil((double) c.box[0]) / (double) (c.x);   // the rounded ratio of top:top
-    //     double ratio_right = ceil((double) c.box[3]) / (double) (c.y); // the rounded ratio of side:side
-    //     double scale_factor = 1 / ((ratio_top > ratio_right) ? ratio_top : ratio_right); 
-    //     c.scale(scale_factor * PADDING);
+        c.pixels = std::vector<std::vector<Pixel> > (c.x, std::vector<Pixel>(c.y));
+        memset(background, 255, c.x * c.y * sizeof(Uint32));
+        c.get_bounding_box();
+        c.translate(-c.box[2], -c.box[1], true);
 
-    //     int px = (int)((double)c.x * (1.0-PADDING) / 2.0), py = (int)((double)c.y * (1.0-PADDING) / 2.0);
-    //     c.translate(px, py, false);
-    //     c.rasterize_shapes();
-    //     backgrounds.push_back(c.background);
+        double ratio_top = ceil((double) c.box[0]) / (double) (c.x);   // the rounded ratio of top:top
+        double ratio_right = ceil((double) c.box[3]) / (double) (c.y); // the rounded ratio of side:side
+        double scale_factor = 1 / ((ratio_top > ratio_right) ? ratio_top : ratio_right); 
+        c.scale(scale_factor * PADDING);
 
-    // }
+        int px = (int)((double)c.x * (1.0-PADDING) / 2.0), py = (int)((double)c.y * (1.0-PADDING) / 2.0);
+        c.translate(px, py, false);
 
-    // Uint32* background = new Uint32[frames[0].x * frames[0].y];
-    // memset(background, 255, frames[0].x * frames[0].y * sizeof(Uint32));
 
-    // SDL_Init(SDL_INIT_VIDEO);
+        for (int i = 0; i < c.outlines.size(); i++) {
+            c.outlines[i].rasterize(c);
+        }
 
-    // // initialize window
-    // SDL_Event event;
-    // SDL_Window* window = SDL_CreateWindow("Drawing", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, frames[0].x, frames[0].y, 0);
-    // SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 0);
-    // SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, frames[0].x, frames[0].y);
+        for (std::vector<Pixel> pr : c.pixels) {
+            for (Pixel p : pr) {
+                if (p.color.r != -1) {
+                    int total = (c.x * c.y) - 1;
+                    int start = p.y * c.x - p.x;
 
-    // SDL_SetWindowResizable(window, SDL_TRUE);
-    // SDL_UpdateTexture(texture, NULL, background, frames[0].x * sizeof(Uint32));
-    // SDL_RenderPresent(renderer);
+                    if (total - start < c.x * c.y && total - start >= 0) 
+                        background[total - start] = p.get_uint();
+                }
+            }
+        }
+
+        backgrounds.push_back(background);
+    }
+
+    cout << "playing back" << endl;
+
+    Uint32* background = new Uint32[frames[0].x * frames[0].y];
+    memset(background, 255, frames[0].x * frames[0].y * sizeof(Uint32));
+
+    SDL_Init(SDL_INIT_VIDEO);
+
+    // initialize window
+    SDL_Event event;
+    SDL_Window* window = SDL_CreateWindow("Drawing", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, frames[0].x, frames[0].y, 0);
+    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 0);
+    SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, frames[0].x, frames[0].y);
+
+    SDL_SetWindowResizable(window, SDL_TRUE);
+    SDL_UpdateTexture(texture, NULL, background, frames[0].x * sizeof(Uint32));
+    
+    SDL_RenderPresent(renderer);
     // SDL_PollEvent(&event);
     // SDL_Delay(200);
 
-    // for (int i = 0; i < backgrounds.size() - 1; i++) {
-    //     Uint32* bg = backgrounds[i];
-    //     SDL_UpdateTexture(texture, NULL, bg, frames[0].x * sizeof(Uint32));
-    //     SDL_PollEvent(&event);
-    //     SDL_Delay(delay);
-    //     SDL_RenderClear(renderer);
-    //     SDL_RenderCopy(renderer, texture, NULL, NULL);
-    //     SDL_RenderPresent(renderer);
-    // }
+    for (int i = 0; i < backgrounds.size() - 1; i++) {
+        SDL_UpdateTexture(texture, NULL, backgrounds[i], frames[0].x * sizeof(Uint32));
+        // SDL_PollEvent(&event);
+        SDL_Delay(delay);
+        SDL_RenderClear(renderer);
+        SDL_RenderCopy(renderer, texture, NULL, NULL);
+        SDL_RenderPresent(renderer);
+    }
 
-    // bool quit = false;
+    bool quit = false;
 
-    // while (!quit) {
-    //     SDL_UpdateTexture(texture, NULL, backgrounds[backgrounds.size() - 1], frames[0].x * sizeof(Uint32));
-    //     SDL_WaitEvent(&event);
-    //     if (event.type == SDL_QUIT) quit = true;
+    while (!quit) {
+        SDL_UpdateTexture(texture, NULL, backgrounds[backgrounds.size() - 1], frames[0].x * sizeof(Uint32));
+        SDL_WaitEvent(&event);
+        if (event.type == SDL_QUIT) quit = true;
 
-    //     SDL_RenderClear(renderer);
-    //     SDL_RenderCopy(renderer, texture, NULL, NULL);
-    //     SDL_RenderPresent(renderer);
-    // }
+        SDL_RenderClear(renderer);
+        SDL_RenderCopy(renderer, texture, NULL, NULL);
+        SDL_RenderPresent(renderer);
+    }
 
-    // // destroy arrays and SDL objects
-    // SDL_DestroyTexture(texture);
-    // SDL_DestroyRenderer(renderer);
-    // SDL_DestroyWindow( window );
-    // SDL_Quit();
+    // destroy arrays and SDL objects
+    SDL_DestroyTexture(texture);
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow( window );
+    SDL_Quit();
 }
