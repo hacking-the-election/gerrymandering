@@ -114,7 +114,7 @@ def _back_track(G, selected, G2, last_group_len, group_size, animation_dir, verb
         # Start a new group
         last_group_len = 0
     # Check continuity of remaining part of graph
-    if len(get_components(G2)) > len(selected):
+    if len(get_components(G2)) > len(selected) + 1:
         return
     
     available = []  # Nodes that can be added to the current group.
@@ -148,6 +148,14 @@ def _back_track(G, selected, G2, last_group_len, group_size, animation_dir, verb
 
         selected.remove(node)
         global_selected.remove(node)
+
+        if animation_dir is not None:
+            precincts = [G.node_attributes(node)[0] for node in G.nodes()]
+            output_path = f"{animation_dir}/{add_leading_zeroes(animation_file_number)}.png"
+            animation_file_number += 1
+            visualize_map(precincts,
+                output_path, coords=lambda x: x.coords,
+                color=lambda x: _color(x, selected, G, group_size))
 
 
 def create_initial_configuration(precinct_graph, n_communities, animation_dir=None, verbose=False):

@@ -41,8 +41,9 @@ cpdef remove_edges_to(int node, graph):
     """
 
     new_graph = Graph()
-    for vertex in graph.nodes():
-        new_graph.add_node(int(vertex))
+    cdef int v
+    for v in graph.nodes():
+        new_graph.add_node(int(v))
     cdef tuple edge
     for edge in graph.edges():
         try:
