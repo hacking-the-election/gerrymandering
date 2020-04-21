@@ -1,7 +1,7 @@
 """Randomly groups precincts in a state to communities of equal (or as close as possible) size.
 
 Usage:
-python3 initial_configuration.py <serialized_state> <output_file> (<animation_dir> | "none") [-v]
+python3 initial_configuration.py <serialized_state> <output_file> (<animation_dir> | "none") <number_of_communities> [-v]
 """
 
 
@@ -10,6 +10,7 @@ import os
 import pickle
 import signal
 import sys
+import time
 
 from pygraph.classes.graph import graph
 from pygraph.classes.exceptions import AdditionError
@@ -27,7 +28,14 @@ from hacking_the_election.visualization.map_visualization import visualize_map
 
 animation_file_number = 0
 calls = 0
-COLORS = [(235, 64, 52), (52, 122, 235), (255, 255, 255)]
+COLORS = [
+    (235, 64, 52),
+    (52, 122, 235),
+    (194, 66, 245),
+    (8, 163, 0),
+    (255, 145, 0),
+    (255, 255, 255)
+]
 global_selected = []
 output_file = 0
 
@@ -96,6 +104,8 @@ def _back_track(G, selected, G2, last_group_len, group_size, animation_dir, verb
     :type verbose: bool
     """
 
+    sys.setrecursionlimit(10000)
+
     global animation_file_number
     global calls
     global global_selected
@@ -131,7 +141,9 @@ def _back_track(G, selected, G2, last_group_len, group_size, animation_dir, verb
     if len(available) == 0:
         return
     
-    for node in sorted(available, key=lambda v: len(G2.neighbors(v))):
+    # key=lambda v: len(G2.neighbors(v))
+
+    for node in sorted(available):
         selected.append(node)
         global_selected.append(node)
 
@@ -177,6 +189,8 @@ def create_initial_configuration(precinct_graph, n_communities, animation_dir=No
     :type: list of `hacking_the_election.utils.community.Community`
     """
 
+    start_time = time.time()
+
     if animation_dir is not None:
         try:
             os.mkdir(animation_dir)
@@ -215,6 +229,11 @@ def create_initial_configuration(precinct_graph, n_communities, animation_dir=No
         for precinct in group:
             community.take_precinct(precinct)
         communities.append(community)
+
+    if verbose:
+        print()
+        print(f"time: {time.time() - start_time}")
+
     return communities
 
 
@@ -227,7 +246,9 @@ if __name__ == "__main__":
     with open(sys.argv[1], "rb") as f:
         precinct_graph = pickle.load(f)
 
-    communities = create_initial_configuration(precinct_graph, 5,
+    communities = create_initial_configuration(
+        precinct_graph,
+        int(sys.argv[4]),
         animation_dir=None if sys.argv[3] == "none" else sys.argv[3],
         verbose="-v" in sys.argv[1:])
     with open(output_file, "wb+") as f:
