@@ -8,6 +8,7 @@ python3 initial_configuration.py <serialized_state> <output_file> (<animation_di
 from copy import deepcopy
 import os
 import pickle
+import signal
 import sys
 
 from pygraph.classes.graph import graph
@@ -27,6 +28,20 @@ from hacking_the_election.visualization.map_visualization import visualize_map
 animation_file_number = 0
 calls = 0
 COLORS = [(235, 64, 52), (52, 122, 235), (255, 255, 255)]
+global_selected = []
+output_file = 0
+
+
+def _handle_signal(sig, frame):
+    """Save communities and exit program after ctrl + c is pressed.
+    """
+    global output_file
+    global global_selected
+
+    print("exiting...")
+    with open(output_file, "wb+") as f:
+        pickle.dump(global_selected, f)
+    sys.exit(0)
 
 
 def _color(precinct, selected, graph, group_size):
@@ -83,6 +98,7 @@ def _back_track(G, selected, G2, last_group_len, group_size, animation_dir, verb
 
     global animation_file_number
     global calls
+    global global_selected
 
     if verbose:
         calls += 1
@@ -98,7 +114,7 @@ def _back_track(G, selected, G2, last_group_len, group_size, animation_dir, verb
         # Start a new group
         last_group_len = 0
     # Check continuity of remaining part of graph
-    if len(get_components(G2)) > len(selected) + 1:
+    if len(get_components(G2)) > len(selected):
         return
     
     available = []  # Nodes that can be added to the current group.
@@ -117,6 +133,8 @@ def _back_track(G, selected, G2, last_group_len, group_size, animation_dir, verb
     
     for node in sorted(available):
         selected.append(node)
+        global_selected.append(node)
+
         if animation_dir is not None:
             precincts = [G.node_attributes(node)[0] for node in G.nodes()]
             output_path = f"{animation_dir}/{add_leading_zeroes(animation_file_number)}.png"
@@ -124,9 +142,12 @@ def _back_track(G, selected, G2, last_group_len, group_size, animation_dir, verb
             visualize_map(precincts,
                 output_path, coords=lambda x: x.coords,
                 color=lambda x: _color(x, selected, G, group_size))
+
         _back_track(G, selected, remove_edges_to(node, G2),
                     last_group_len + 1, group_size, animation_dir, verbose)
+
         selected.remove(node)
+        global_selected.remove(node)
 
 
 def create_initial_configuration(precinct_graph, n_communities, animation_dir=None, verbose=False):
@@ -190,10 +211,16 @@ def create_initial_configuration(precinct_graph, n_communities, animation_dir=No
 
 
 if __name__ == "__main__":
-    
+
+    output_file = sys.argv[2]
+
+    signal.signal(signal.SIGINT, _handle_signal)
+
     with open(sys.argv[1], "rb") as f:
         precinct_graph = pickle.load(f)
 
-    communities = create_initial_configuration(precinct_graph, 2, None if sys.argv[3] == "none" else sys.argv[3], "-v" in sys.argv[1:])
-    with open(sys.argv[2], "wb+") as f:
+    communities = create_initial_configuration(precinct_graph, 2,
+        animation_dir=None if sys.argv[3] == "none" else sys.argv[3],
+        verbose="-v" in sys.argv[1:])
+    with open(output_file, "wb+") as f:
         pickle.dump(communities, f)
