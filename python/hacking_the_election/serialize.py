@@ -9,7 +9,7 @@ python3 serialize.py [election_file] [geo_file] [pop_file] [state] [output.pickl
 
 
 import json
-from os.path import dirname
+from os.path import dirname, abspath
 import pickle
 import sys
 from time import time
@@ -26,7 +26,7 @@ from hacking_the_election.utils.graph import get_components
 from hacking_the_election.visualization.graph_visualization import visualize_graph
 
 
-SOURCE_DIR = dirname(__file__)
+SOURCE_DIR = abspath(dirname(__file__))
 
 
 def convert_to_int(string):
@@ -284,7 +284,7 @@ def create_graph(election_file, geo_file, pop_file, state):
         for precinct in geodata["features"]:
             properties = precinct["properties"]
             precinct_id = tostring("".join(properties[json_id] for json_id in json_ids))
-            precinct_election_data[precinct_id] = [
+            party_data = [
                 {'dem': convert_to_int(properties[dem_key])},
                 {'rep': convert_to_int(properties[rep_key])}
             ]
@@ -307,6 +307,7 @@ def create_graph(election_file, geo_file, pop_file, state):
                 party_data.append({'ind': convert_to_int(properties[ind_key])})
             if const_key:
                 party_data.append({'const': convert_to_int(properties[const_key])})
+            precinct_election_data[precinct_id] = party_data
 
 
     # Then find population. pop should have keys that use geodata ids
@@ -389,7 +390,8 @@ def create_graph(election_file, geo_file, pop_file, state):
     # Add nodes to our unordered graph
     for i, precinct in enumerate(precinct_list):
         unordered_precinct_graph.add_node(i, attrs=[precinct])
-    print('Nodes: ', len(unordered_precinct_graph.nodes()))
+    node_num = len(unordered_precinct_graph.nodes())
+    print('Nodes: ', node_num)
     print(time() - start_time)
 
     # Add edges to our graph
@@ -423,7 +425,7 @@ def create_graph(election_file, geo_file, pop_file, state):
                     if min_y <= point[1] <= max_y:
                         precincts_to_check.append(check_node)
                         break
-        print(node, precincts_to_check)
+        print(f"Adding edges progress: {round(100 * node/node_num, 2)}%")
         for precinct10 in precincts_to_check:            
             if get_if_bordering(coordinate_data, unordered_precinct_graph.node_attributes(precinct10)[0].coords):
                 unordered_precinct_graph.add_edge((node, precinct10))
@@ -435,12 +437,13 @@ def create_graph(election_file, geo_file, pop_file, state):
     # but it's only considered one edge in has_edge(), add_edge(), delete_edge(), etc.
     print('Edges: ', len(unordered_precinct_graph.edges())/2)
 
+    edges_list = []
     print(time() - start_time)
+    original_graph_components_num = len(get_components(unordered_precinct_graph))
     # Repeat until entire graph is contiguous
     # Get components of graph (islands of precincts)
     if not len(get_components(unordered_precinct_graph)) == 1:
         while len(get_components(unordered_precinct_graph)) != 1:
-            print(len(get_components(unordered_precinct_graph)))
             graph_components = get_components(unordered_precinct_graph)
             # print(graph_components, '# of graph components')
             # Create list with dictionary containing keys as precincts, 
@@ -510,12 +513,14 @@ def create_graph(election_file, geo_file, pop_file, state):
             # Find edge to add
             try:
                 edge_to_add = min_distances[min(min_distances)]
+                edges_list.append((unordered_precinct_graph.node_attributes(edge_to_add[0])[0].id, unordered_precinct_graph.node_attributes(edge_to_add[1])[0].id))
             except ValueError:
                 break
-            # print(edge_to_add)
+            print(f"\rConnecting islands progress: {100 - round(100 * len(graph_components)/original_graph_components_num, 2)}%")
             unordered_precinct_graph.add_edge(edge_to_add)
-    print('Edges after island linking: ', len(unordered_precinct_graph.edges())/2)
-
+    print('Edges after island linking: ', round(len(unordered_precinct_graph.edges())/2))
+    with open('./edges_list.txt', 'w') as f:
+        f.write(str(edges_list))
     # Create list of nodes in ascending order by degree
     ordered_nodes = sorted(
         unordered_precinct_graph.nodes(),

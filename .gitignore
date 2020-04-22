@@ -18,7 +18,7 @@ python/notebooks/.ipynb_checkpoints
 
 # cython
 python/**/*.c
-python/**/*.cpython-38-darwin.so
+python/**/*.so
 
 # vscode
 settings.json
