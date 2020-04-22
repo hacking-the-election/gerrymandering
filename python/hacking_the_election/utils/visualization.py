@@ -1,9 +1,7 @@
 """Functions necessary for creating visuals.
 """
 
-
-from copy import deepcopy
-
+import numpy as np
 from shapely.geometry import Point
 
 
@@ -11,7 +9,7 @@ def modify_coords(coords, bounds):
     """Squishes coords into a bounding box.
 
     :param coords: The points to squish.
-    :type coords: list of (2-list of float or shapely.geometry.Point)
+    :type coords: list of list of float (coordinate pairs)
 
     :param bounds: The box in which the inputted coords must be squished into. In format `[max_x, max_y]` (mins are 0).
     :type bounds: list of float
@@ -20,46 +18,48 @@ def modify_coords(coords, bounds):
     :rtype: list of float
     """
 
-    coords = deepcopy(coords)
+    coords = np.array(coords)
+    n_points = len(coords)
 
-    # Convert to float list if necessary
-    if isinstance(coords[0], Point):
-        for p, point in enumerate(coords):
-            coords[p] = list(point.coords)[0]
+    X = np.zeros(n_points)
+    Y = np.zeros(n_points)
+    for i, p in enumerate(coords):
+        X[i] = p[0]
+        Y[i] = p[1]
 
     # Move to first quadrant.
-    min_x = min([point[0] for point in coords])
-    min_y = min([point[1] for point in coords])
+    min_x = min(X)
+    min_y = min(Y)
 
-    for p in range(len(coords)):
-        coords[p][0] += -(min_x)
-        coords[p][1] += -(min_y)
+    for p in range(n_points):
+        X[p] += -(min_x)
+        Y[p] += -(min_y)
 
     # Get the bounding box dimensions
-    X = [point[0] for point in coords]
-    Y = [point[1] for point in coords]
-
     bounding_box_width = max(X) - min(X)
     bounding_box_length = max(Y) - min(Y)
 
     # Dilate to fit within canvas
     dilation_factor = max([bounding_box_width / bounds[0], bounding_box_length / bounds[1]])
-    for p in range(len(coords)):
-        for c in range(2):
-            coords[p][c] *= (1 / dilation_factor) * 0.95
+    dilation_factor = (1 / dilation_factor) * 0.95
+    for i in range(n_points):
+        X[i] *= dilation_factor
+        Y[i] *= dilation_factor
 
     # Reflect because y is flipped in Pillow
-    for point in coords:
-        point[1] = bounds[1] - point[1]
+    for i in range(n_points):
+        Y[i] = bounds[1] - Y[i]
 
     # Center
-    max_x = max([point[0] for point in coords])
-    min_y = min([point[1] for point in coords])
-    for point in coords:
-        point[0] += (bounds[0] - max_x) / 2
-        point[1] -= min_y / 2
+    max_x = max(X)
+    min_y = min(Y)
+    for i in range(n_points):
+        X[i] += (bounds[0] - max_x) / 2
+        Y[i] -= min_y / 2
+    
+    new_coords = [[X[i], Y[i]] for i in range(n_points)]
 
-    return coords
+    return new_coords
 
 
 def add_leading_zeroes(n):
