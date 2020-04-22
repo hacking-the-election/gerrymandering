@@ -1,10 +1,8 @@
 """
 Script for serializing precinct-level election, geo, and population
 data.
-
 Data is serialized into:
  - .pickle file containing graph with nodes containing Precinct objects
-
 Usage:
 python3 serialize.py [election_file] [geo_file] [pop_file] [state] [output.pickle]
 """
@@ -519,7 +517,9 @@ def create_graph(election_file, geo_file, pop_file, state):
     print('Edges after island linking: ', len(unordered_precinct_graph.edges())/2)
 
     # Create list of nodes in ascending order by degree
-    ordered_nodes = sorted(unordered_precinct_graph.nodes(), key=lambda  n: len(unordered_precinct_graph.neighbors(n))) 
+    ordered_nodes = sorted(
+        unordered_precinct_graph.nodes(),
+        key=lambda n: unordered_precinct_graph.node_attributes(n)[0].centroid[0]) 
     print(time() - start_time)
     # Create ordered graph
     ordered_precinct_graph = graph()
