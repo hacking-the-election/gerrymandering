@@ -93,13 +93,13 @@ namespace Graphics {
             A class for storing information about a screen
             of pixels and shapes to be written to an SDL display
         */
+       
+        public:
 
-        private:
         // contents of the canvas
         std::vector<Outline> outlines;               // shapes to be drawn individually
         std::vector<Outline> holes;                  // shapes to be drawn individually
 
-        public:
 
         // meta information
         std::vector<std::vector<Pixel> > pixels;        // the pixel array to write to screen
@@ -126,7 +126,7 @@ namespace Graphics {
         void add_shape(Geometry::Precinct_Group s, bool = false, Color = Color(0,0,0), int = 1);
         // void add_shape(Geometry::Communities s, bool = false, Color = Color(0,0,0), int = 1);
 
-        void add_graph(Geometry::Graph s, std::vector<int> cn);
+        void add_graph(Geometry::Graph s);
 
         void clear();
         void resize_window(int x, int y);
