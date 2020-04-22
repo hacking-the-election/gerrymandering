@@ -22,7 +22,7 @@ bin/serialize_state ../../data/raw/iowa/geodata.json ../../data/raw/iowa/electio
 bin/serialize_state ../../data/raw/kansas/geodata.json ../../data/raw/kansas/election_data.tab ../../data/raw/kansas/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 ../../data/bin/cpp/kansas.dat
 bin/serialize_state ../../data/raw/louisiana/geodata.json ../../data/raw/louisiana/election_data.tab ../../data/raw/louisiana/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 ../../data/bin/cpp/louisiana.dat
 
-bin/serialize_state ../../data/raw/massachusetts/geodata.json ../../data/raw/massachusetts/election_data.tab ../../data/raw/massachusetts/district.json --keys=geoid10,GEOID10,democrat,republican,POP100 ../../data/bin/cpp/massachusetts.dat
+bin/serialize_state ../../data/raw/massachusetts/geodata.json ../../data/raw/massachusetts/district.json --keys=DEMOCRAT,REPUBLICAN,POP100 ../../data/bin/cpp/massachusetts.dat
 bin/serialize_state ../../data/raw/michigan/geodata.json ../../data/raw/michigan/election_data.tab ../../data/raw/michigan/district.json --keys=GEOID10,GEOID10,{PRS08DEM,GOV06DEM,AG06DEM,SOS06DEM},{PRS08REP,GOV06REP,AG06REP,SOS06REP},TOTPOP ../../data/bin/cpp/michigan.dat
 
 bin/serialize_state ../../data/raw/mississippi/geodata.json ../../data/raw/mississippi/election_data.tab ../../data/raw/mississippi/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 ../../data/bin/cpp/mississippi.dat

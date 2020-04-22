@@ -41,8 +41,9 @@ using namespace Graphics;
 #define DEBUG 0
 
 
-vector<int> refs;
-vector<array<int, 3> > c_colors;
+// vector<int> refs;
+// vector<array<int, 3> > c_colors;
+int fill_size;
 
 
 class NodePtr {
@@ -156,7 +157,9 @@ void back_track(Graph g, Graph g2, vector<int>& selected, int last_group_len, in
     // discomp(): returns number of discontinuous components of the graph
     // removeEdgesTo(): removes all edges connected to a node
 
-    if (selected.size() == g.vertices.size()) {
+    // cout << g.vertices.size() << ", " << fill_size << endl;
+    int ncomp = g2.get_num_components();
+    if (selected.size() == fill_size && ncomp <= selected.size() + 1) {
         throw Exceptions::CommunityComplete();
     }
 
@@ -167,7 +170,7 @@ void back_track(Graph g, Graph g2, vector<int>& selected, int last_group_len, in
     }
 
 
-    if (g2.get_num_components() > selected.size() + 1) {
+    if ( ncomp > selected.size() + 1) {
         // cout << "gots them components" << endl;
         return;
     }
@@ -200,21 +203,61 @@ void back_track(Graph g, Graph g2, vector<int>& selected, int last_group_len, in
     }
 
 
+    // cout << "a" << endl;
+
+    // Communities communities(refs.size());
+    // int index = 0;
+    // int comm_ind = 0;
+
+    // for (int size : refs) {
+    //     bool _break = false;
+    //     for (int x = index; x < index + size; x++) {
+    //         if (x == selected.size()) {
+    //             _break = true;
+    //             break;
+    //         }
+
+    //         communities[comm_ind].node_ids.push_back(selected[x]);
+    //     }
+
+    //     if (_break) {
+    //         break;
+    //     }
+
+    //     index += size;
+    //     comm_ind++;
+    // }
+
+
+    // // cout << "a" << endl;
+    // Community state;
+    // state.node_ids.resize(g.vertices.size());
+    // iota(state.node_ids.begin(), state.node_ids.end(), 0);
+    // writef(state.get_shape(g).to_json(), "state.json");
+    
     sort_by_degree(available, &g2);
     // sort(available.begin(), available.end());
     // shuffle(available.begin(), available.end(), random_device());
 
+    // for (int i = 0; i < communities.size(); i++) {
+    //     writef(communities[i].get_shape(g).to_json(), "x" + to_string(i) + ".json");
+    // }
+
+    // cout << "a" << endl;
+
     for (int i = 0; i < available.size(); i++) {
         int node = available[i];
-        
-        cout << "add " << node << endl;
         selected.push_back(node);
+        cout << "add " << node << endl;
+
         back_track(g, remove_edges_to(node, g2), selected, last_group_len + 1, group_size);
+
         cout << "backtracking..." << endl;
         selected.erase(remove(selected.begin(), selected.end(), node), selected.end());
     }
 
-    // cout << "finished with everything" << endl;
+    return;
+    // cout << "finished with everything hmm" << endl;
 }
 
 
@@ -248,33 +291,10 @@ Communities get_initial_configuration(Graph graph, int n_communities) {
         sizes[sizes.size() - 1] -= overflow;
     }
 
-
-    refs = sizes;
-    for (int i = 0; i < n_communities; i++) {
-        int rand = rand_num(1,3);
-        int rand_y = rand_num(1,2);
-        int rand_x = rand_num(0,255);
-
-        if (rand == 1) {
-            if (rand_y == 1)
-                c_colors.push_back({255, rand_x, 0});
-            else
-                c_colors.push_back({255, 0, rand_x});
-        }
-        else if (rand == 2) {
-            if (rand_y == 1)
-                c_colors.push_back({0, 255, rand_x});
-            else
-                c_colors.push_back({rand_x, 255, 0});
-        }
-        else {
-            if (rand_y == 1)
-                c_colors.push_back({0, rand_x, 255});
-            else
-                c_colors.push_back({rand_x, 0, 255});
-        }
+    fill_size = 0;
+    for (int i = 0; i < sizes.size() - 1; i++) {
+        fill_size += sizes[i];
     }
-
 
     Graph light_graph = graph;
     vector<int> selected = {};
@@ -287,7 +307,13 @@ Communities get_initial_configuration(Graph graph, int n_communities) {
         cout << "finding communities" << endl;
     }
 
-    cout << "finding communities" << endl;
+
+    for (int i = 0; i < n_precincts; i++) {
+        if (std::find(selected.begin(), selected.end(), i) == selected.end()) {
+            selected.push_back(i);
+        }
+    }
+
 
     int index = 0;
     int comm_ind = 0;

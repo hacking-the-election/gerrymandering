@@ -13,6 +13,10 @@ All of our code is ran from raw data collected from the following sources:
 - [California Election Database](https://statewidedatabase.org/)
 - [mgg-states](https://github.com/mggg-states)
 - [Open Precincts](https://openprecincts.org)
+- wherever kai found the district data
+
+Our data is split into folders by state, each containing a .zip with some combination of 
+precinct geodata, election data, district geodata, and population data.
 
 To install *only* our selection of data, and not our code along with it, the individual data repository can be cloned:
 ```

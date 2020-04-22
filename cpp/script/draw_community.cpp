@@ -57,7 +57,10 @@ Graph link_islands(Graph graph) {
         }
 
         array<int, 2> me = min_element(dists.begin(), dists.end())->node_ids;
+        Canvas canvas(500, 500);
         graph.add_edge({me[0], me[1]});
+        canvas.add_graph(graph);
+        canvas.draw();
         
         // cout << *min_element(distances.begin(), distances.end()) << endl;
         // get closest two islands

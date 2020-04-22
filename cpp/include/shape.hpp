@@ -328,7 +328,7 @@ class Node {
         Precinct* precinct;
 
         Node() {};
-        Node(Precinct* precinct) : precinct(precinct), in_group(false) {};
+        Node(Precinct* precinct) : in_group(false), precinct(precinct) {};
         
         friend bool operator< (const Node& l1, const Node& l2);
         friend bool operator== (const Node& l1, const Node& l2);
@@ -349,8 +349,11 @@ class Graph {
         std::vector<Edge> edges;
 
         void sort_by_degree();
+
         int get_num_components();
+        std::vector<Graph> get_components();
         void dfs_recursor(int v, std::vector<bool>& visited);
+        void dfs_recursor(int v, std::vector<bool>& visited, std::vector<int>* nodes);
 
         void add_edge(Edge edge);
         std::vector<Edge> remove_edges_to(int id);

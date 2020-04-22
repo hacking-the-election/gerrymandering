@@ -287,8 +287,9 @@ bool Geometry::operator!= (Geometry::Multi_Polygon& s1, Geometry::Multi_Polygon&
 
 bool Geometry::operator< (const Node& l1, const Node& l2) {
     // coordinate comperator = {(long int)(0), (long int)(0)};
+    return (l1.precinct->get_center()[0] < l1.precinct->get_center()[0]);
     // return (get_distance(l1.precinct->get_center(), comperator) < get_distance(l2.precinct->get_center(), comperator));
-    return (l1.edges.size() < l2.edges.size());
+    // return (l1.edges.size() < l2.edges.size());
 }
 
 
