@@ -3,9 +3,15 @@
 
 import numpy as np
 from shapely.geometry import Point
+cimport numpy as np
 
 
-def modify_coords(coords, bounds):
+DTYPE = np.float64
+
+ctypedef np.float64_t DTYPE_t
+
+
+cpdef np.ndarray modify_coords(list coords, list bounds):
     """Squishes coords into a bounding box.
 
     :param coords: The points to squish.
@@ -18,29 +24,31 @@ def modify_coords(coords, bounds):
     :rtype: list of float
     """
 
-    coords = np.array(coords)
-    n_points = len(coords)
+    cdef int n_points = len(coords)
 
-    X = np.zeros(n_points)
-    Y = np.zeros(n_points)
-    for i, p in enumerate(coords):
-        X[i] = p[0]
-        Y[i] = p[1]
+    cdef np.ndarray X = np.zeros(n_points)
+    cdef np.ndarray Y = np.zeros(n_points)
+    cdef int i
+    cdef list point
+    for i, point in enumerate(coords):
+        X[i] = point[0]
+        Y[i] = point[1]
 
     # Move to first quadrant.
-    min_x = min(X)
-    min_y = min(Y)
+    cdef DTYPE_t min_x = min(X)
+    cdef int min_y = min(Y)
 
+    cdef int p
     for p in range(n_points):
         X[p] += -(min_x)
         Y[p] += -(min_y)
 
     # Get the bounding box dimensions
-    bounding_box_width = max(X) - min(X)
-    bounding_box_length = max(Y) - min(Y)
+    cdef DTYPE_t bounding_box_width = max(X) - min(X)
+    cdef DTYPE_t bounding_box_length = max(Y) - min(Y)
 
     # Dilate to fit within canvas
-    dilation_factor = max([bounding_box_width / bounds[0], bounding_box_length / bounds[1]])
+    cdef DTYPE_t dilation_factor = max([bounding_box_width / bounds[0], bounding_box_length / bounds[1]])
     dilation_factor = (1 / dilation_factor) * 0.95
     for i in range(n_points):
         X[i] *= dilation_factor
@@ -51,13 +59,14 @@ def modify_coords(coords, bounds):
         Y[i] = bounds[1] - Y[i]
 
     # Center
-    max_x = max(X)
+    cdef DTYPE_t max_x = max(X)
     min_y = min(Y)
     for i in range(n_points):
         X[i] += (bounds[0] - max_x) / 2
         Y[i] -= min_y / 2
     
-    new_coords = [[X[i], Y[i]] for i in range(n_points)]
+    cpdef np.ndarray new_coords = np.ndarray(
+        [[float(X[i]), float(Y[i])] for i in range(n_points)])
 
     return new_coords
 
