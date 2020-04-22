@@ -11,7 +11,7 @@ DTYPE = np.float64
 ctypedef np.float64_t DTYPE_t
 
 
-cpdef np.ndarray modify_coords(list coords, list bounds):
+cpdef list modify_coords(list coords, list bounds):
     """Squishes coords into a bounding box.
 
     :param coords: The points to squish.
@@ -21,7 +21,7 @@ cpdef np.ndarray modify_coords(list coords, list bounds):
     :type bounds: list of float
 
     :return: A list of coords that are squished into the bounds.
-    :rtype: list of float
+    :rtype: list of list of float
     """
 
     cdef int n_points = len(coords)
@@ -64,9 +64,14 @@ cpdef np.ndarray modify_coords(list coords, list bounds):
     for i in range(n_points):
         X[i] += (bounds[0] - max_x) / 2
         Y[i] -= min_y / 2
+
+    # Translate down a bit (quick fix)
+    # TODO: Actually solve the problem of coords being too high up.
+    while min(Y) < 0:
+        for i in range(n_points):
+            Y[i] += 10
     
-    cpdef np.ndarray new_coords = np.ndarray(
-        [[float(X[i]), float(Y[i])] for i in range(n_points)])
+    new_coords = [[float(X[i]), float(Y[i])] for i in range(n_points)]
 
     return new_coords
 
