@@ -117,7 +117,7 @@ def _back_track(G, selected, G2, last_group_len, group_size, animation_dir, verb
         sys.stdout.write(f"calls: {calls}")
         sys.stdout.flush()
 
-    if len(selected) == len(G.nodes()):
+    if len(G2.nodes()) - len(selected) <= group_size:
         raise CommunityCompleteException
 
     if last_group_len == group_size:
@@ -140,8 +140,6 @@ def _back_track(G, selected, G2, last_group_len, group_size, animation_dir, verb
 
     if len(available) == 0:
         return
-    
-    # key=lambda v: len(G2.neighbors(v))
 
     for node in sorted(available):
         selected.append(node)
@@ -219,6 +217,10 @@ def create_initial_configuration(precinct_graph, n_communities, animation_dir=No
                     0, group_size, animation_dir, verbose)
     except CommunityCompleteException:
         pass
+
+    for node in light_graph.nodes():
+        if node not in selected:
+            selected.append(node)
 
     node_groups = [selected[i:i + group_size] for i in range(0, len(selected), group_size)]
     precinct_groups = [[precinct_graph.node_attributes(node)[0] for node in group]
