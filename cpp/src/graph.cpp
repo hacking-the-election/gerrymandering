@@ -32,8 +32,8 @@ std::vector<Graph> Graph::get_components() {
         if (!visited[(vertices.begin() + i).key()]) {
             Graph component;
             vector<int> graph(0);
-            // cout << "a" << endl
             dfs_recursor((vertices.begin() + i).key(), visited, &graph);
+
             for (int i = 0; i < graph.size(); i++) {
                 component.vertices.insert({graph[i], this->vertices[graph[i]]});
             }
@@ -57,7 +57,7 @@ void Graph::dfs_recursor(int v, std::vector<bool>& visited, std::vector<int>* no
 
         @return: void
     */
-
+ 
     visited[v] = true; 
     Node node = vertices[v];
     nodes->push_back(v);
@@ -65,7 +65,7 @@ void Graph::dfs_recursor(int v, std::vector<bool>& visited, std::vector<int>* no
     for (int i = 0; i < node.edges.size(); i++) {
         int t_id = node.edges[i][1];
         if (!visited[t_id]) { 
-            dfs_recursor(t_id, visited);
+            dfs_recursor(t_id, visited, nodes);
         }
     }
 }
@@ -77,7 +77,6 @@ int Graph::get_num_components() {
         @params: none
         @return: `int` number of components
     */
-
 
     vector<bool> visited(vertices.size(), false);
     int x = 0;

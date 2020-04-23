@@ -334,6 +334,7 @@ class Node {
         friend bool operator== (const Node& l1, const Node& l2);
 
         std::vector<std::array<int, 2> > edges;
+        std::vector<int> collapsed;
         
         // for boost serialization
         friend class boost::serialization::access;

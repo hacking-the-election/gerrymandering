@@ -565,56 +565,56 @@ void Graphics::Canvas::draw() {
     SDL_SetWindowResizable(window, SDL_TRUE);
     SDL_UpdateTexture(texture, NULL, background, x * sizeof(Uint32));
 
-    SDL_PollEvent(&event);
+    SDL_WaitEvent(&event);
     SDL_RenderClear(renderer);
     SDL_RenderCopy(renderer, texture, NULL, NULL);
-    // SDL_RenderPresent(renderer);
+    SDL_RenderPresent(renderer);
 
-    // Create an empty RGB surface that will be used to create the screenshot bmp file
-    SDL_Surface* pScreenShot = SDL_CreateRGBSurface(0, x, y, 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000);
+    // // Create an empty RGB surface that will be used to create the screenshot bmp file
+    // SDL_Surface* pScreenShot = SDL_CreateRGBSurface(0, x, y, 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000);
 
-    if (pScreenShot) {
-        // Read the pixels from the current render target and save them onto the surface
-        SDL_RenderReadPixels(renderer, NULL, SDL_GetWindowPixelFormat(window), pScreenShot->pixels, pScreenShot->pitch); 
+    // if (pScreenShot) {
+    //     // Read the pixels from the current render target and save them onto the surface
+    //     SDL_RenderReadPixels(renderer, NULL, SDL_GetWindowPixelFormat(window), pScreenShot->pixels, pScreenShot->pitch); 
 
-        std::string filename = "anim-out/test";
-        int x = 0;
-        std::string app = filename + std::to_string(x);
+    //     std::string filename = "anim-out/test";
+    //     int x = 0;
+    //     std::string app = filename + std::to_string(x);
 
 
-        do {
-            x++;
+    //     do {
+    //         x++;
 
-            app = filename;
-            if (x < 10)
-                app += "0";
-            if (x < 100)
-                app += "0";
+    //         app = filename;
+    //         if (x < 10)
+    //             app += "0";
+    //         if (x < 100)
+    //             app += "0";
 
-            app += std::to_string(x);
+    //         app += std::to_string(x);
             
-        } while (boost::filesystem::exists(app + ".bmp"));
+    //     } while (boost::filesystem::exists(app + ".bmp"));
     
-        // Create the bmp screenshot file
-        SDL_SaveBMP(pScreenShot, (app + ".bmp").c_str());
+    //     // Create the bmp screenshot file
+    //     SDL_SaveBMP(pScreenShot, (app + ".bmp").c_str());
 
-        // Destroy the screenshot surface
-        SDL_FreeSurface(pScreenShot);
-    }
-
-
-    // bool quit = false;
-
-    // while (!quit) {
-    //     SDL_UpdateTexture(texture, NULL, background, x * sizeof(Uint32));
-
-    //     SDL_WaitEvent(&event);
-    //     if (event.type == SDL_QUIT) quit = true;
-
-    //     SDL_RenderClear(renderer);
-    //     SDL_RenderCopy(renderer, texture, NULL, NULL);
-    //     SDL_RenderPresent(renderer);
+    //     // Destroy the screenshot surface
+    //     SDL_FreeSurface(pScreenShot);
     // }
+
+
+    bool quit = false;
+
+    while (!quit) {
+        SDL_UpdateTexture(texture, NULL, background, x * sizeof(Uint32));
+
+        SDL_WaitEvent(&event);
+        if (event.type == SDL_QUIT) quit = true;
+
+        SDL_RenderClear(renderer);
+        SDL_RenderCopy(renderer, texture, NULL, NULL);
+        SDL_RenderPresent(renderer);
+    }
 
     // // destroy arrays and SDL objects1
     SDL_DestroyTexture(texture);

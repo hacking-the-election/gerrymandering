@@ -45,6 +45,18 @@ std::vector<std::vector<std::string > > parse_sv(std::string, std::string);
 bool check_column(std::vector<std::vector<std::string> >, int);
 
 
+class NodePair {
+    public:
+        std::array<int, 2> node_ids;
+        double distance;
+        NodePair() {};
+
+        bool operator<(const NodePair& l2) const {
+            return this->distance < l2.distance;
+        }
+};
+
+
 std::vector<std::vector<std::string> > parse_sv(std::string tsv, std::string delimiter) {
     /*
         @desc: takes a tsv file as string, returns two dimensional array of cells and rows
@@ -729,6 +741,43 @@ Geometry::Graph generate_graph(Geometry::Precinct_Group pg) {
 }
 
 
+Geometry::Graph link_islands(Geometry::Graph graph) {
+
+    if (graph.get_num_components() > 1) {
+        std::map<int, Geometry::coordinate> centers;
+        for (int i = 0; i < graph.vertices.size(); i++) {
+            centers.insert({(graph.vertices.begin() + i).key(), (graph.vertices.begin() + i).value().precinct->get_center()});
+        }
+
+        while (graph.get_num_components() > 1) {
+            std::vector<Geometry::Graph> components = graph.get_components();
+            std::vector<NodePair> dists;
+
+            for (size_t i = 0; i < components.size(); i++) {
+                for (size_t j = i + 1; j < components.size(); j++) {
+                    for (size_t p = 0; p < components[i].vertices.size(); p++) {
+                        for (size_t q = 0; q < components[j].vertices.size(); q++) {
+                            int keyi = (components[i].vertices.begin() + p).key(), keyj = (components[j].vertices.begin() + q).key();
+                            double distance = get_distance(centers[keyi], centers[keyj]);
+                            NodePair np;
+                            np.distance = distance;
+                            np.node_ids = {keyi, keyj};
+                            dists.push_back(np);
+                        }
+                    }
+                }
+            }
+
+            std::array<int, 2> me = std::min_element(dists.begin(), dists.end())->node_ids;
+            std::cout << graph.vertices[me[0]].precinct->shape_id << ", " << graph.vertices[me[1]].precinct->shape_id << std::endl;
+            graph.add_edge({me[0], me[1]});
+        }
+    }
+
+    return graph;
+}
+
+
 Geometry::State Geometry::State::generate_from_file(std::string precinct_geoJSON, std::string voter_data, std::string district_geoJSON, std::vector<std::vector<std::string> > opts) {
     /*
         @desc:
@@ -794,6 +843,10 @@ Geometry::State Geometry::State::generate_from_file(std::string precinct_geoJSON
     // state.islands = sort_precincts(sborder, pre_group);
     state.network = generate_graph(pre_group);
 
+    std::cout << "linking islands" << std::endl;    
+    state.network = link_islands(state.network);
+    std::cout << "linking islands" << std::endl;
+
     return state; // return the state object
 }
 
@@ -850,6 +903,7 @@ Geometry::State Geometry::State::generate_from_file(std::string precinct_geoJSON
     state.border = sborder.border;
 
     state.network = generate_graph(pre_group);
+    state.network = link_islands(state.network);
 
     if (VERBOSE) std::cout << "state serialized!" << std::endl;
 

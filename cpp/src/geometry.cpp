@@ -13,6 +13,15 @@
 #include "../include/shape.hpp"   // class definitions
 #include "../include/util.hpp"
 
+// #include <boost/geometry.hpp>
+// #include <boost/geometry/geometries/point_xy.hpp>
+// #include <boost/geometry/geometries/polygon.hpp>
+
+// typedef boost::geometry::model::d2::point_xy<long int> boost_point;
+// typedef boost::geometry::model::polygon<boost_point> boost_polygon;
+
+// using namespace boost::geometry;
+
 #include <random>  // for std::shuffle
 #include <math.h>
 
@@ -249,26 +258,26 @@ segments Geometry::Multi_Polygon::get_segments() {
 }
 
 
-boost_polygon ring_to_boost_poly(LinearRing shape) {
-    /*
-        Converts a shape object into a boost polygon object
-        by looping over each point and manually adding it to a 
-        boost polygon using assign_points and vectors
-    */
+// boost_polygon ring_to_boost_poly(LinearRing shape) {
+//     /*
+//         Converts a shape object into a boost polygon object
+//         by looping over each point and manually adding it to a 
+//         boost polygon using assign_points and vectors
+//     */
 
-    boost_polygon poly;
+//     boost_polygon poly;
 
-    // create vector of boost points
-    std::vector<boost_point> points;
+//     // create vector of boost points
+//     std::vector<boost_point> points;
 
-    for (coordinate c : shape.border) 
-        points.push_back(boost_point(c[0],c[1])),
+//     for (coordinate c : shape.border) 
+//         points.push_back(boost_point(c[0],c[1])),
 
-    assign_points(poly, points);
-    correct(poly);
+//     assign_points(poly, points);
+//     correct(poly);
 
-    return poly;
-}
+//     return poly;
+// }
 
 
 coordinate Geometry::LinearRing::get_center() {
@@ -727,43 +736,6 @@ p_index_set get_bordering_shapes(vector<Precinct_Group> shapes, Polygon shape) {
     return vec;
 }
 
-p_index_set get_bordering_shapes(vector<Community> shapes, Community shape) {
-    /*
-        returns set of indices corresponding to the Precinct_Groups that
-        border with the Precinct_Group[index] shape.
-    */
-
-    p_index_set vec;
-    
-    for (p_index i = 0; i < shapes.size(); i++) {
-        if ((shapes[i] != shape) && get_bordering(shapes[i], shape)) vec.push_back(i);
-    }
-    
-    return vec;
-}
-
-
-p_index_set get_bordering_shapes(vector<Community> shapes, Polygon shape) {
-    /*
-        returns set of indices corresponding to the Precinct_Groups that
-        border with the Precinct_Group[index] shape.xs
-    */
-
-    p_index_set vec;
-
-    for (p_index i = 0; i < shapes.size(); i++) {
-        if (shapes[i] != shape && get_bordering(shapes[i], shape)) vec.push_back(i);
-        // else {
-            // Graphics::Canvas c(900, 900);
-            // c.add_shape(generate_exterior_border(shapes[i]));
-            // c.add_shape(shape);
-            // cout << "do not border... to debug draw here" << endl;
-            // c.draw();
-        // }
-    }
-
-    return vec;
-}
 
 p_index_set get_bordering_precincts(Precinct_Group shape, int p_index) {
     /*
@@ -832,17 +804,6 @@ double get_standard_deviation_partisanship(Precinct_Group pg) {
     return (sqrt(dev_mean));
 }
 
-double get_standard_deviation_partisanship(Communities cs) {
-    /*
-        @desc: gets average partisanship standard deviation of communities within a group
-        @params: `Communities` cs: community list to check
-        @return: `double` average standard deviation of partisanships
-    */
-
-    double d = 0;
-    for (Community c : cs) d += get_standard_deviation_partisanship(c);
-    return (d / cs.size());
-}
 
 double get_median_partisanship(Precinct_Group pg) {
     /*
