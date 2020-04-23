@@ -35,6 +35,10 @@ COLORS = [
     (194, 66, 245),
     (8, 163, 0),
     (255, 145, 0),
+    (100, 192, 196),
+    (92, 0, 0),
+    (255, 199, 199),
+    (0, 82, 22),
     (255, 255, 255)
 ]
 selected = []
@@ -131,15 +135,15 @@ def _back_track(G, G2, last_group_len, group_size, animation_dir, verbose):
         sys.stdout.write(f"calls: {calls}")
         sys.stdout.flush()
 
-    if len(G2.nodes()) - len(selected) <= group_size:
-        raise CommunityCompleteException
-
     if last_group_len == group_size:
         # Start a new group
         last_group_len = 0
     # Check continuity of remaining part of graph
     if len(get_components(G2)) > len(selected) + 1:
         return
+
+    if len(G2.nodes()) - len(selected) <= group_size:
+        raise CommunityCompleteException
     
     available = []  # Nodes that can be added to the current group.
     if last_group_len == 0:
@@ -158,7 +162,7 @@ def _back_track(G, G2, last_group_len, group_size, animation_dir, verbose):
     for node in sorted(available):
         selected.append(node)
         precinct_changes += 1
-        if animation_dir is not None and precinct_changes % 20 == 1:
+        if animation_dir is not None and precinct_changes % 100 == 1:
             _save_image(animation_dir, G, group_size)
 
         _back_track(G, remove_edges_to(node, G2), last_group_len + 1,
@@ -166,7 +170,7 @@ def _back_track(G, G2, last_group_len, group_size, animation_dir, verbose):
 
         selected.remove(node)
         precinct_changes += 1
-        if animation_dir is not None and precinct_changes % 20 == 1:
+        if animation_dir is not None and precinct_changes % 100 == 1:
             _save_image(animation_dir, G, group_size)
 
 
