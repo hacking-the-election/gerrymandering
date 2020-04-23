@@ -41,7 +41,7 @@ using namespace Graphics;
 #define DEBUG 0
 
 
-// vector<int> refs;
+vector<int> refs;
 // vector<array<int, 3> > c_colors;
 int fill_size;
 
@@ -90,6 +90,12 @@ vector<int> Graph::get_neighbors(int node) {
 
 vector<int> _union(vector<int> x, int t) {
     x.push_back(t);
+    return x;
+}
+
+
+vector<int> _union(vector<int> x, vector<int> t) {
+    for (int t_v : t) x.push_back(t_v);
     return x;
 }
 
@@ -203,33 +209,31 @@ void back_track(Graph g, Graph g2, vector<int>& selected, int last_group_len, in
     }
 
 
+    Communities communities(refs.size());
+    int index = 0;
+    int comm_ind = 0;
+
+    for (int size : refs) {
+        bool _break = false;
+        for (int x = index; x < index + size; x++) {
+            if (x == selected.size()) {
+                _break = true;
+                break;
+            }
+
+            communities[comm_ind].node_ids.push_back(selected[x]);
+        }
+
+        if (_break) {
+            break;
+        }
+
+        index += size;
+        comm_ind++;
+    }
+
+
     // cout << "a" << endl;
-
-    // Communities communities(refs.size());
-    // int index = 0;
-    // int comm_ind = 0;
-
-    // for (int size : refs) {
-    //     bool _break = false;
-    //     for (int x = index; x < index + size; x++) {
-    //         if (x == selected.size()) {
-    //             _break = true;
-    //             break;
-    //         }
-
-    //         communities[comm_ind].node_ids.push_back(selected[x]);
-    //     }
-
-    //     if (_break) {
-    //         break;
-    //     }
-
-    //     index += size;
-    //     comm_ind++;
-    // }
-
-
-    // // cout << "a" << endl;
     // Community state;
     // state.node_ids.resize(g.vertices.size());
     // iota(state.node_ids.begin(), state.node_ids.end(), 0);
@@ -239,9 +243,9 @@ void back_track(Graph g, Graph g2, vector<int>& selected, int last_group_len, in
     // sort(available.begin(), available.end());
     // shuffle(available.begin(), available.end(), random_device());
 
-    // for (int i = 0; i < communities.size(); i++) {
-    //     writef(communities[i].get_shape(g).to_json(), "x" + to_string(i) + ".json");
-    // }
+    for (int i = 0; i < communities.size(); i++) {
+        writef(communities[i].get_shape(g).to_json(), "x" + to_string(i) + ".json");
+    }
 
     // cout << "a" << endl;
 
@@ -261,6 +265,46 @@ void back_track(Graph g, Graph g2, vector<int>& selected, int last_group_len, in
 }
 
 
+Communities karger_stein(Graph graph, int n_communities) {
+    Graph combined_g = graph;
+
+
+    while (combined_g.vertices.size() > n_communities) {
+        cout << "still have " << combined_g.vertices.size() << " verts" << endl;
+        // determine random indexed node to collapse
+        int node_to_remove_i = rand_num(0, combined_g.vertices.size() - 1);
+        int node_to_remove_id = (combined_g.vertices.begin() + node_to_remove_i).key();
+        Node node_to_remove_v = (combined_g.vertices.begin() + node_to_remove_i).value();
+
+        // determine random edge on that node to donate edges to
+        int node_to_combine_i = rand_num(0, node_to_remove_v.edges.size() - 1);
+        int node_to_combine_id = node_to_remove_v.edges[node_to_combine_i][1];
+        Node node_to_combine_v = combined_g.vertices[node_to_combine_id];
+
+        for (Edge edge : node_to_remove_v.edges) {
+            if (edge[1] != node_to_combine_id) {
+                combined_g.add_edge({node_to_combine_id, edge[1]});
+            }
+        }
+
+        combined_g.vertices[node_to_combine_id].collapsed.push_back(node_to_remove_id);
+
+        for (int c : node_to_remove_v.collapsed)
+            combined_g.vertices[node_to_combine_id].collapsed.push_back(c);
+
+        //  = _union(node_to_combine_v.collapsed, ;
+        combined_g.remove_node(node_to_remove_id);
+    }
+
+    Communities communities(n_communities);
+    for (int i = 0; i < combined_g.vertices.size(); i++) {
+        communities[i].node_ids = (combined_g.vertices.begin() + i).value().collapsed;
+        communities[i].node_ids.push_back((combined_g.vertices.begin() + i).key());
+    }
+
+    return communities;
+}
+
 
 Communities get_initial_configuration(Graph graph, int n_communities) {
     /*
@@ -273,62 +317,65 @@ Communities get_initial_configuration(Graph graph, int n_communities) {
         @return: `Communities` init config
     */
 
-    Communities communities(n_communities);
+    // Communities communities(n_communities);
 
-    int group_size;
-    int n_precincts = graph.vertices.size();
+    // int group_size;
+    // int n_precincts = graph.vertices.size();
     
-    if (n_precincts % n_communities == 0) group_size = n_precincts / n_communities;
-    else group_size = floor((double)n_precincts / (double)n_communities) + 1;
+    // if (n_precincts % n_communities == 0) group_size = n_precincts / n_communities;
+    // else group_size = floor((double)n_precincts / (double)n_communities) + 1;
 
 
-    int base = floor((double)graph.vertices.size() / (double)n_communities); // the base num
-    int rem = graph.vertices.size() % n_communities; // how many need to be increased by 1
-    vector<int> sizes(n_communities, group_size);
+    // int base = floor((double)graph.vertices.size() / (double)n_communities); // the base num
+    // int rem = graph.vertices.size() % n_communities; // how many need to be increased by 1
+    // vector<int> sizes(n_communities, group_size);
 
-    if (n_communities * group_size > n_precincts) {
-        int overflow = (n_communities * group_size) - n_precincts;
-        sizes[sizes.size() - 1] -= overflow;
-    }
+    // if (n_communities * group_size > n_precincts) {
+    //     int overflow = (n_communities * group_size) - n_precincts;
+    //     sizes[sizes.size() - 1] -= overflow;
+    // }
 
-    fill_size = 0;
-    for (int i = 0; i < sizes.size() - 1; i++) {
-        fill_size += sizes[i];
-    }
+    // fill_size = 0;
+    // for (int i = 0; i < sizes.size() - 1; i++) {
+    //     fill_size += sizes[i];
+    // }
 
-    Graph light_graph = graph;
-    vector<int> selected = {};
+    // refs = sizes;
 
-
-    try {
-        back_track(light_graph, light_graph, selected, 0, group_size);
-    }
-    catch (Exceptions::CommunityComplete) {
-        cout << "finding communities" << endl;
-    }
+    // Graph light_graph = graph;
+    // vector<int> selected = {};
 
 
-    for (int i = 0; i < n_precincts; i++) {
-        if (std::find(selected.begin(), selected.end(), i) == selected.end()) {
-            selected.push_back(i);
-        }
-    }
+    // try {
+    //     back_track(light_graph, light_graph, selected, 0, group_size);
+    // }
+    // catch (Exceptions::CommunityComplete) {
+    //     cout << "finding communities" << endl;
+    // }
 
 
-    int index = 0;
-    int comm_ind = 0;
+    // for (int i = 0; i < n_precincts; i++) {
+    //     if (std::find(selected.begin(), selected.end(), i) == selected.end()) {
+    //         selected.push_back(i);
+    //     }
+    // }
 
-    for (int size : sizes) {
-        for (int x = index; x < index + size; x++) {
-            cout << selected[x] << ", ";
-            communities[comm_ind].node_ids.push_back(selected[x]);
-        }
 
-        cout << endl;
-        index += size;
-        comm_ind++;
-    }
+    // int index = 0;
+    // int comm_ind = 0;
 
+    // for (int size : sizes) {
+    //     for (int x = index; x < index + size; x++) {
+    //         cout << selected[x] << ", ";
+    //         communities[comm_ind].node_ids.push_back(selected[x]);
+    //     }
+
+    //     cout << endl;
+    //     index += size;
+    //     comm_ind++;
+    // }
+
+    Communities communities = karger_stein(graph, n_communities);
 
     for (int i = 0; i < communities.size(); i++) {
         writef(communities[i].get_shape(graph).to_json(), "x" + to_string(i) + ".json");
