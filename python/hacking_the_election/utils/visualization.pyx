@@ -11,6 +11,20 @@ DTYPE = np.float64
 ctypedef np.float64_t DTYPE_t
 
 
+COLORS = [
+    (235, 64, 52),
+    (52, 122, 235),
+    (194, 66, 245),
+    (8, 163, 0),
+    (255, 145, 0),
+    (100, 192, 196),
+    (92, 0, 0),
+    (255, 199, 199),
+    (0, 82, 22),
+    (255, 255, 255)
+]
+
+
 cpdef list modify_coords(list coords, list bounds):
     """Squishes coords into a bounding box.
 

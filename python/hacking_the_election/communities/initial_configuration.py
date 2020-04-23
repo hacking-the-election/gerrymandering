@@ -22,25 +22,13 @@ from hacking_the_election.utils.graph import (
     remove_edges_to,
     get_node_number
 )
-from hacking_the_election.utils.visualization import add_leading_zeroes
+from hacking_the_election.utils.visualization import add_leading_zeroes, COLORS
 from hacking_the_election.visualization.map_visualization import visualize_map
 
 
 animation_file_number = 0
 precinct_changes = 0
 calls = 0
-COLORS = [
-    (235, 64, 52),
-    (52, 122, 235),
-    (194, 66, 245),
-    (8, 163, 0),
-    (255, 145, 0),
-    (100, 192, 196),
-    (92, 0, 0),
-    (255, 199, 199),
-    (0, 82, 22),
-    (255, 255, 255)
-]
 selected = []
 output_file = 0
 
