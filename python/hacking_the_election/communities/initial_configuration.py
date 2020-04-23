@@ -1,253 +1,71 @@
 """Randomly groups precincts in a state to communities of equal (or as close as possible) size.
 
 Usage:
-python3 initial_configuration.py <serialized_state> <output_file> (<animation_dir> | "none") <number_of_communities> [-v]
+python3 initial_configuration.py <serialized_state> <number_of_communities> <pickle_output> (<image_output> | "none")
 """
 
-
-from copy import deepcopy
-import os
 import pickle
-import signal
+import random
 import sys
-import time
 
-from pygraph.classes.graph import graph
-from pygraph.classes.exceptions import AdditionError
+from pygraph.classes.graph import graph as Graph
 
 from hacking_the_election.utils.community import Community
-from hacking_the_election.utils.exceptions import CommunityCompleteException
 from hacking_the_election.utils.graph import (
-    get_components,
-    remove_edges_to,
-    get_node_number
+    contract,
+    get_node_number,
+    light_copy
 )
-from hacking_the_election.utils.visualization import add_leading_zeroes, COLORS
+from hacking_the_election.utils.visualization import COLORS
 from hacking_the_election.visualization.map_visualization import visualize_map
 
 
-animation_file_number = 0
-precinct_changes = 0
-calls = 0
-selected = []
-output_file = 0
+def create_initial_configuration(precinct_graph, n_communities):
+    """Creates a list of communities based off of a state precinct-map represented by a graph.
 
-
-def _handle_signal(sig, frame):
-    """Save communities and exit program after ctrl + c is pressed.
-    """
-    global output_file
-    global selected
-
-    print("exiting...")
-    with open(output_file, "wb+") as f:
-        pickle.dump(selected, f)
-    sys.exit(0)
-
-
-def _color(precinct, graph, group_size):
-    """Gets the color that a precinct should be when visualizing intial configuration.
-
-    :param precinct: The precinct to determine the color of.
-    :type precinct: `hacking_the_election.utils.precinct.Precinct`
-
-    :param graph: The graph that contains `precinct` as a node attribute.
-    :type graph: `pygraph.classes.graph.graph`
-
-    :param group_size: The maximum number of precincts in each community.
-    :type group_size: int
-
-    :return: An rgb code for the color the precinct should be visualized as.
-    :rtype: 3-tuple of int
+    Implementation of modified Karger-Stein algorithm.
     """
 
-    global COLORS
-    global selected
+    # Create copy of `precinct_graph` without precinct data.
+    G = light_copy(precinct_graph)
 
-    try:
-        color_index = \
-            (selected.index(get_node_number(precinct, graph))
-          // group_size)
-        return COLORS[color_index]
-    except ValueError:
-        return COLORS[-1]
+    while (nodes := len(G.nodes())) > n_communities:
+        attr_lengths = {}  # Links edges to the number of nodes they contain.
+        edges = G.edges()
+        for i in range(min(100, nodes)):
+            e = random.choice(edges)
+            attr_lengths[e] = (len(G.node_attributes(e[0]))
+                             + len(G.node_attributes(e[1])))
+        contract(G, min(attr_lengths))
 
-
-def _save_image(animation_dir, G, group_size):
-
-    global animation_file_number
-    global selected
-
-    precincts = [G.node_attributes(node)[0] for node in G.nodes()]
-    output_path = \
-        f"{animation_dir}/{add_leading_zeroes(animation_file_number)}.png"
-    visualize_map(precincts,
-        output_path, coords=lambda x: x.coords,
-        color=lambda x: _color(x, G, group_size))
-
-    animation_file_number += 1
-
-
-def _back_track(G, G2, last_group_len, group_size, animation_dir, verbose):
-    """Implementation of backtracking algorithm to create contiguous groups out of graph of precincts.
-
-    :param G: The graph containing the precinct objects.
-    :type G: `pygraph.classes.graph.graph`
-
-    :param G2: The graph after removing the last selected node.
-    :type G2: `pygraph.classes.graph.graph`
-
-    :param last_group_len: The number of nodes selected for the last group.
-    :type last_group_len: int
-
-    :param group_size: Maximum allowed size for a group.
-    :type group_size: int
-
-    :param animation_dir: The directory in which to save animation frames. None if process is not to be animated.
-    :type animation_dir: str or NoneType
-
-    :param verbose: Prints various information as the algorithm runs if set to True, defaults to False.
-    :type verbose: bool
-    """
-
-    sys.setrecursionlimit(10000)
-
-    global calls
-    global selected
-    global precinct_changes
-
-    if verbose:
-        calls += 1
-        if calls > 1:
-            sys.stdout.write("\r")
-        sys.stdout.write(f"calls: {calls}")
-        sys.stdout.flush()
-
-    if last_group_len == group_size:
-        # Start a new group
-        last_group_len = 0
-    # Check continuity of remaining part of graph
-    if len(get_components(G2)) > len(selected) + 1:
-        return
-
-    if len(G2.nodes()) - len(selected) <= group_size:
-        raise CommunityCompleteException
+    communities = [Community(i) for i in range(n_communities)]
+    for i, node in enumerate(G.nodes()):
+        for precinct_node in G.node_attributes(node):
+            communities[i].take_precinct(
+                precinct_graph.node_attributes(precinct_node)[0])
     
-    available = []  # Nodes that can be added to the current group.
-    if last_group_len == 0:
-        # Can choose any node that is not already selected.
-        available = [node for node in G.nodes() if node not in selected]
-    else:
-        # Find all nodes bordering current group.
-        for node in selected[-last_group_len:]:
-            for neighbor in G.neighbors(node):
-                if neighbor not in available and neighbor not in selected:
-                    available.append(neighbor)
-
-    if len(available) == 0:
-        return
-
-    for node in sorted(available):
-        selected.append(node)
-        precinct_changes += 1
-        if animation_dir is not None and precinct_changes % 100 == 1:
-            _save_image(animation_dir, G, group_size)
-
-        _back_track(G, remove_edges_to(node, G2), last_group_len + 1,
-                    group_size, animation_dir, verbose)
-
-        selected.remove(node)
-        precinct_changes += 1
-        if animation_dir is not None and precinct_changes % 100 == 1:
-            _save_image(animation_dir, G, group_size)
-
-
-def create_initial_configuration(precinct_graph, n_communities, animation_dir=None, verbose=False):
-    """Produces a list of contiguous communities based off of a state represented by a graph of precincts.
-
-    :param precinct_graph: A graph containing all the precincts in a state. Edges exist between bordering precincts.
-    :type precinct_graph: `pygraph.classes.graph.graph`
-
-    :param n_communities: The number of communities to group the precincts into.
-    :type n_communities: int
-
-    :param animation_dir: Path to the directory in which frames for an animation of the algorithm will be saved, defaults to None.
-    :type animation_dir: str or NoneType
-
-    :param verbose: Prints various information as the algorithm runs if set to True, defaults to False.
-    :type verbose: bool
-
-    :return: A list of communities that contain groups of bordering precincts.
-    :type: list of `hacking_the_election.utils.community.Community`
-    """
-
-    start_time = time.time()
-
-    if animation_dir is not None:
-        try:
-            os.mkdir(animation_dir)
-        except FileExistsError:
-            pass
-
-    n_precincts = len(precinct_graph.nodes())
-    if n_precincts % n_communities == 0:
-        group_size = n_precincts / n_communities
-    else:
-        group_size = (n_precincts // n_communities) + 1
-    group_size = int(group_size)
-    
-    light_graph = graph()  # A graph without the node attributes of heavy precinct objects.
-    for node in precinct_graph.nodes():
-        light_graph.add_node(node)
-    for edge in precinct_graph.edges():
-        try:
-            light_graph.add_edge(edge)
-        except AdditionError:
-            pass
-
-    try:
-        _back_track(precinct_graph, light_graph,
-                    0, group_size, animation_dir, verbose)
-    except CommunityCompleteException:
-        pass
-
-    for node in light_graph.nodes():
-        if node not in selected:
-            selected.append(node)
-
-    if animation_dir is not None:
-        _save_image(animation_dir, precinct_graph, group_size)
-
-    node_groups = [selected[i:i + group_size] for i in range(0, len(selected), group_size)]
-    precinct_groups = [[precinct_graph.node_attributes(node)[0] for node in group]
-                       for group in node_groups]
-    communities = []
-    for i, group in enumerate(precinct_groups):
-        community = Community(i)
-        for precinct in group:
-            community.take_precinct(precinct)
-        communities.append(community)
-
-    if verbose:
-        print()
-        print(f"time: {time.time() - start_time}")
-
     return communities
 
 
 if __name__ == "__main__":
-
-    output_file = sys.argv[2]
-
-    signal.signal(signal.SIGINT, _handle_signal)
-
+    
+    # Load input file and calculate initial configuration.
     with open(sys.argv[1], "rb") as f:
         precinct_graph = pickle.load(f)
+    communities = create_initial_configuration(precinct_graph, int(sys.argv[2]))
 
-    communities = create_initial_configuration(
-        precinct_graph,
-        int(sys.argv[4]),
-        animation_dir=None if sys.argv[3] == "none" else sys.argv[3],
-        verbose="-v" in sys.argv[1:])
-    with open(output_file, "wb+") as f:
+    # Write to file.
+    with open(sys.argv[3], "wb+") as f:
         pickle.dump(communities, f)
+
+    # Display and/or save image.
+    precinct_colors = {}
+    for c, community in enumerate(communities):
+        for precinct in community.precincts.values():
+            precinct_colors[precinct] = COLORS[c]
+
+    precincts = [precinct_graph.node_attributes(p)[0]
+                 for p in precinct_graph.nodes()]
+    image_output = None if sys.argv[4] == "none" else sys.argv[4]
+    visualize_map(precincts, image_output, coords=lambda x: x.coords,
+                  color=lambda x: precinct_colors[x], show=True)
