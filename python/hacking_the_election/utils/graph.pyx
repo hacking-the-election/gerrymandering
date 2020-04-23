@@ -2,9 +2,66 @@
 Graph theory related functions and classes.
 """
 
+import copy
 
 from pygraph.classes.graph import graph as Graph
 from pygraph.classes.exceptions import AdditionError
+
+
+cpdef light_copy(G):
+    """Returns a graph without node attributes.
+
+    :param G: A graph containing node and edge data.
+    :type G: `pygraph.classes.graph.graph`
+
+    :return: A graph with equivalent node and edge data to `graph`, but without any node attributes.
+    :rtype: `pygraph.classes.graph.graph`
+    """
+
+    G2 = Graph()
+
+    cdef int v
+    for v in G.nodes():
+        G2.add_node(v)
+    cdef (int, int) e
+    for e in G.edges():
+        if not G2.has_edge(e):
+            G2.add_edge(e)
+    return G2
+
+
+cpdef void contract(G, tuple t):
+    """Contracts an edge in a graph.
+
+    :param G: Graph containing edge `t`
+    :type G: `pygraph.classes.graph.graph`
+
+    :param t: Edge within `G`.
+    :type t: (int, int)
+    """
+    
+    cdef list new_node_attributes = []
+    cdef int v
+    cdef list v_attributes
+    for v in t:
+        v_attributes = G.node_attributes(v)
+        if len(v_attributes) != 0:
+            new_node_attributes += v_attributes
+        else:
+            new_node_attributes.append(v)
+    
+    cdef list new_node_neighbors = list(set(G.neighbors(t[0]))
+                                      | set(G.neighbors(t[1])))
+    new_node_neighbors.remove(t[0]); new_node_neighbors.remove(t[1])
+    
+    G.del_edge(t)
+    G.del_node(t[0]); G.del_node(t[1])
+
+    cdef int new_node = max(G.nodes()) + 1
+    G.add_node(new_node, attrs=new_node_attributes)
+    cdef int neighbor
+    for neighbor in new_node_neighbors:
+        G.add_edge((new_node, neighbor))
 
 
 cpdef int get_node_number(precinct, graph):
