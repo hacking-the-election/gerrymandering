@@ -113,15 +113,11 @@ def visualize_map(shapes, output_path, coords=lambda x: x, color=None, show=Fals
     for shape, color in zip(modified_coords, colors):
         if isinstance(shape[0][0][0], float):
             # Shape is polygon.
-            tuple_coords = [[tuple(point) for point in ring] for ring in shape]
-            _draw_polygon(draw, tuple_coords, color)
+            _draw_polygon(draw, shape, color)
         elif isinstance(shape[0][0][0], list):
             # Shape is multipolygon.
-            tuple_coords = [[[tuple(point) for point in ring]
-                            for ring in polygon]
-                           for polygon in shape]
-            for polygon in tuple_coords:
-                _draw_polygon(draw, polygon, color)
+            for polygon in shape:
+                _draw_polygon(draw, shape, color)
 
     if output_path is not None:
         map_image.save(output_path)
