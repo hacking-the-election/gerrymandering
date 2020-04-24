@@ -17,7 +17,7 @@
     "pennsylvania": {"party_data":{"dem_keys":["ndv"],"rep_keys":["nrv"]},"ele_id":["geoid10"],"geo_id":["GEOID10"],"pop_key":["POP100"]},
     "south dakota": {"party_data":{"dem_keys":["ndv"],"rep_keys":["nrv"]},"ele_id":["geoid10"],"geo_id":["GEOID10"],"pop_key":["TOTPOP"]},
     "tennessee": {"party_data":{"dem_keys":["ndv"],"rep_keys":["nrv"]},"ele_id":["geoid10"],"geo_id":["GEOID10"],"pop_key":["POP100"]},
-    "vermont": {"party_data":{"dem_keys":["ndv"],"rep_keys":["nrv"]},"ele_id":["geoid10"],"geo_id":["GEOID10"],"pop_key":["POP100"]},
+    "vermont": {"party_data":{"dem_keys":["usp_d_08"],"rep_keys":["usp_r_08"]},"ele_id":["geoid10"],"geo_id":["GEOID10"],"pop_key":["POP100"], "total_keys":["usp_tot_08"]},
     "connecticut": {"party_data":{"dem_keys":["democrat"],"rep_keys":["republican"]},"ele_id":["geoid10"],"geo_id":["GEOID10"],"pop_key":["POP100"]},
     "idaho": {"party_data":{"dem_keys":["t_nv_d"],"rep_keys":["t_nv_r"]},"ele_id":["geoid10"],"geo_id":["GEOID10"],"pop_key":["POP100"]},
     "illinois": {"party_data":{"dem_keys":["Obama"],"rep_keys":["McCain"]},"ele_id":["GeoID2"],"geo_id":["GEOID10"],"pop_key":["TOTAL_POPU"]},
