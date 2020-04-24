@@ -29,10 +29,10 @@ def create_initial_configuration(precinct_graph, n_communities):
     # Create copy of `precinct_graph` without precinct data.
     G = light_copy(precinct_graph)
 
-    while (nodes := len(G.nodes())) > n_communities:
+    while len(G.nodes()) > n_communities:
         attr_lengths = {}  # Links edges to the number of nodes they contain.
         edges = G.edges()
-        for i in range(min(100, nodes)):
+        for i in range(min(100, len(edges))):
             e = random.choice(edges)
             attr_lengths[e] = (len(G.node_attributes(e[0]))
                              + len(G.node_attributes(e[1])))
