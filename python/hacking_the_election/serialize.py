@@ -437,7 +437,6 @@ def create_graph(election_file, geo_file, pop_file, state):
     # but it's only considered one edge in has_edge(), add_edge(), delete_edge(), etc.
     print('Edges: ', len(unordered_precinct_graph.edges())/2)
 
-    edges_list = []
     print(time() - start_time)
     original_graph_components_num = len(get_components(unordered_precinct_graph))
     # Repeat until entire graph is contiguous
@@ -519,8 +518,7 @@ def create_graph(election_file, geo_file, pop_file, state):
             print(f"\rConnecting islands progress: {100 - round(100 * len(graph_components)/original_graph_components_num, 2)}%")
             unordered_precinct_graph.add_edge(edge_to_add)
     print('Edges after island linking: ', round(len(unordered_precinct_graph.edges())/2))
-    with open('./edges_list.txt', 'w') as f:
-        f.write(str(edges_list))
+
     # Create list of nodes in ascending order by degree
     ordered_nodes = sorted(
         unordered_precinct_graph.nodes(),
@@ -539,7 +537,7 @@ def create_graph(election_file, geo_file, pop_file, state):
                 continue
             else:
                 ordered_precinct_graph.add_edge((ordered_nodes.index(node), ordered_nodes.index(neighbor)))
-    print(time() - start_time)
+    print("Total time taken:", time() - start_time)
     return ordered_precinct_graph
 
 
@@ -549,12 +547,11 @@ if __name__ == "__main__":
     # Save graph as pickle
     with open(sys.argv[5], "wb+") as f:
         pickle.dump(ordered_precinct_graph, f)
-    with open(f'./{sys.argv[4]}_debug.txt', "w") as f:
-        f.write(str(ordered_precinct_graph))
+
     # Visualize graph
     visualize_graph(
         ordered_precinct_graph,
-        './massachusetts_graph.jpg',
+        f'./{sys.argv[4]}_graph.jpg',
         lambda n : ordered_precinct_graph.node_attributes(n)[0].centroid,
         # sizes=(lambda n : ordered_precinct_graph.node_attributes(n)[0].pop/500),
         show=True
