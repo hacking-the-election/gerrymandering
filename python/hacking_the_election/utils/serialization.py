@@ -81,11 +81,16 @@ def split_multipolygons(geodata, pop_data, election_data):
                 factor = precinct_area / total_area
                 split_id = precinct_id + "_s" + str(i)
                 split_pop = factor * total_pop
-                split_election = [
-                    {list(party_dict.keys())[0] : 
-                    (factor * float(list(party_dict.values())[0]))} 
-                    for party_dict in total_election
-                ]
+                try:
+                    split_election = [
+                        {list(party_dict.keys())[0] : 
+                        (factor * float(list(party_dict.values())[0]))} 
+                        for party_dict in total_election
+                    ]
+                except ValueError:
+                    split_election = {list(party_dict.keys())[0] :
+                        0
+                        for party_dict in total_election}
                 # Add split multipolygons to dictionary
                 newpolygon_ids[split_id] = [
                     precinct_coords[i],

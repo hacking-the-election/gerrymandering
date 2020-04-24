@@ -104,6 +104,10 @@ def create_graph(election_file, geo_file, pop_file, state):
     json_pops = state_metadata[state]["pop_key"]
     ele_ids   = state_metadata[state]["ele_id"]
 
+    # Water precincts in geodata that should be excluded have this id 
+    # for whatever json_id should normally be there.
+    non_precinct_id = state_metadata[state]["non_precinct_id"]
+
     # Read election and geo data files.
     with open(geo_file, "r") as f:
         geodata = json.load(f)
@@ -355,8 +359,8 @@ def create_graph(election_file, geo_file, pop_file, state):
         tostring("".join(precinct["properties"][json_id] for json_id in json_ids)) :
         precinct["geometry"]["coordinates"]
         for precinct in geodata["features"]
-        if tostring("".join(precinct["properties"][json_id] for json_id in json_ids))[-6:] != "ZZZZZZ"
-    }
+        if tostring("".join(precinct["properties"][json_id] for json_id in json_ids))[-6:] != non_precinct_id
+        }
 
 
     # Remove multipolygons from our dictionaries. (This is so our districts/communities stay contiguous)
