@@ -106,7 +106,7 @@ def create_graph(election_file, geo_file, pop_file, state):
 
     # Water precincts in geodata that should be excluded have this id 
     # for whatever json_id should normally be there.
-    non_precinct_id = state_metadata[state]["non_precinct_id"]
+    non_precinct_ids = state_metadata[state]["non_precinct_ids"]
 
     # Read election and geo data files.
     with open(geo_file, "r") as f:
@@ -359,7 +359,9 @@ def create_graph(election_file, geo_file, pop_file, state):
         tostring("".join(precinct["properties"][json_id] for json_id in json_ids)) :
         precinct["geometry"]["coordinates"]
         for precinct in geodata["features"]
-        if tostring("".join(precinct["properties"][json_id] for json_id in json_ids))[-6:] != non_precinct_id
+        if not any([non_precinct_id in 
+        tostring("".join(precinct["properties"][json_id] for json_id in json_ids))
+        for non_precinct_id in non_precinct_ids])
         }
 
     # Remove multipolygons from our dictionaries. (This is so our districts/communities stay contiguous)
@@ -473,15 +475,6 @@ def create_graph(election_file, geo_file, pop_file, state):
                 min_tuple = None
                 for precinct_1, centroid_1 in centroids_1.items():
                     for precinct_2, centroid_2 in centroids_2.items():
-                        # if precinct_1 == 2264:
-                        #     # print(unordered_precinct_graph.node_attributes(2268)[0].centroid)
-                        #     if precinct_2 == 2268:
-                        #         x_distance = centroid_1[0] - centroid_2[0]
-                        #         y_distance = centroid_1[1] - centroid_2[1]
-                        #         print((x_distance ** 2) + (y_distance ** 2))
-                                
-                        # if precinct_1 == 2268:
-                        #     if precinct_2 == 2264:
                         x_distance = centroid_1[0] - centroid_2[0]
                         y_distance = centroid_1[1] - centroid_2[1]
                         # No need to sqrt unnecessarily
@@ -514,11 +507,9 @@ def create_graph(election_file, geo_file, pop_file, state):
                             min_tuple = (precinct_1, precinct_2)
                 min_distances[min_distance] = min_tuple
 
-            # print(min_distances, 'yo dicts')
             # Find edge to add
             try:
                 edge_to_add = min_distances[min(min_distances)]
-                edges_list.append((unordered_precinct_graph.node_attributes(edge_to_add[0])[0].id, unordered_precinct_graph.node_attributes(edge_to_add[1])[0].id))
             except ValueError:
                 break
             print(f"\rConnecting islands progress: {100 - round(100 * len(graph_components)/original_graph_components_num, 2)}%")
