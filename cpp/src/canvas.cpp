@@ -8,8 +8,10 @@
 ========================================*/
 
 #include <iostream>
+#include <random>
 
 #include "../include/community.hpp"
+#include "../include/util.hpp"
 #include "../include/canvas.hpp"
 #include "../include/geometry.hpp"
 #include <boost/filesystem.hpp>
@@ -18,7 +20,7 @@ using std::cout;
 using std::endl;
 
 int RECURSION_STATE = 0;
-double PADDING = (14.0/16.0);
+double PADDING = (11.0/16.0);
 
 
 Graphics::Pixel::Pixel() {
@@ -201,19 +203,41 @@ void Graphics::Canvas::add_shape(Geometry::Precinct_Group s, bool f, Color c, in
 }
 
 
-// void Graphics::Canvas::add_shape(Geometry::Communities s, bool f, Graphics::Color c, int t) {
-//     for (Geometry::Community community : s) {
-//         for (Geometry::Polygon shape : community.get_shape().border) {
-//             Outline outline(shape.hull, c, t, f);
-//             outlines.push_back(outline);
+std::vector<Graphics::Color> generate_n_colors(int n) {
+    
+    std::vector<Graphics::Color> colors;
+    for (int i = 0; i < 360; i += 360 / n) {
+        std::array<int, 3> color = Graphics::hsl_to_rgb({(double)i / 360.0, (double)(80 + rand_num(0, 20)) / 100.0, (double)(50 + rand_num(0, 10)) / 100.0});
+        Graphics::Color c(color[0], color[1], color[2]);
+        colors.push_back(c);
+    }
 
-//             for (Geometry::LinearRing l : shape.holes) {
-//                 Outline hole(l, c, t, f);
-//                 holes.push_back(hole);
-//             }
-//         }
-//     }
-// }
+    std::shuffle(colors.begin(), colors.end(), std::random_device());
+    return colors;
+}
+
+
+void Graphics::Canvas::add_shape(Geometry::Communities s, Geometry::Graph g, bool f, Graphics::Color c, int t) {
+    std::vector<Graphics::Color> colors = generate_n_colors(s.size());
+
+    for (int i = 0; i < s.size(); i++) {
+        Geometry::Community community = s[i];
+        for (Geometry::Polygon shape : community.get_shape(g).border) {
+            Outline outline(shape.hull, colors[i], t, true);
+            outlines.push_back(outline);
+
+
+            for (Geometry::LinearRing l : shape.holes) {
+                Outline hole(l, colors[i], t, true);
+                holes.push_back(hole);
+            }
+        }
+
+        Outline outline2(generate_exterior_border(community.get_shape(g)).border[0].hull, Color(0,0,0), t, false);
+        outlines.push_back(outline2);
+    }
+
+}
 
 
 void Graphics::Canvas::add_graph(Geometry::Graph g) {
@@ -363,7 +387,7 @@ void Graphics::Canvas::scale(double scale_factor) {
 
 void Graphics::Outline::flood_fill_util(Geometry::coordinate coord, Color c1, Color c2, Canvas& canvas) {
     RECURSION_STATE++;
-    if (RECURSION_STATE > 18000) return;
+    if (RECURSION_STATE > 10000) return;
 
     if (coord[0] < 0 || coord[0] > pixels.size() || coord[1] < 0 || coord[1] > pixels[0].size()) return;
     if (this->get_pixel({coord[0], coord[1]}).color != c1) return;
@@ -532,7 +556,6 @@ void Graphics::Canvas::draw() {
     //     std::cout << t << std::endl;
     //     translate(0, t, false);
     // }
-
 
     for (int i = 0; i < outlines.size(); i++) {
         // cout << "Rasterizing " << i << endl;
