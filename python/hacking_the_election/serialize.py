@@ -104,6 +104,10 @@ def create_graph(election_file, geo_file, pop_file, state):
     json_pops = state_metadata[state]["pop_key"]
     ele_ids   = state_metadata[state]["ele_id"]
 
+    # Water precincts in geodata that should be excluded have this id 
+    # for whatever json_id should normally be there.
+    non_precinct_ids = state_metadata[state]["non_precinct_ids"]
+
     # Read election and geo data files.
     with open(geo_file, "r") as f:
         geodata = json.load(f)
@@ -355,9 +359,10 @@ def create_graph(election_file, geo_file, pop_file, state):
         tostring("".join(precinct["properties"][json_id] for json_id in json_ids)) :
         precinct["geometry"]["coordinates"]
         for precinct in geodata["features"]
-        if tostring("".join(precinct["properties"][json_id] for json_id in json_ids))[-6:] != "ZZZZZZ"
-    }
-
+        if not any([non_precinct_id in 
+        tostring("".join(precinct["properties"][json_id] for json_id in json_ids))
+        for non_precinct_id in non_precinct_ids])
+        }
 
     # Remove multipolygons from our dictionaries. (This is so our districts/communities stay contiguous)
     split_multipolygons(geodata_dict, pop, precinct_election_data)
@@ -425,19 +430,21 @@ def create_graph(election_file, geo_file, pop_file, state):
                     if min_y <= point[1] <= max_y:
                         precincts_to_check.append(check_node)
                         break
-        print(f"Adding edges progress: {round(100 * node/node_num, 2)}%")
+        sys.stdout.write("\r                                ")
+        sys.stdout.write(f"\rAdding edges progress: {round(100 * node/node_num, 2)}%")
+        sys.stdout.flush()
         for precinct10 in precincts_to_check:            
             if get_if_bordering(coordinate_data, unordered_precinct_graph.node_attributes(precinct10)[0].coords):
                 unordered_precinct_graph.add_edge((node, precinct10))
         completed_precincts.append(node)
 
+    print()
     print(time() - start_time)
 
     # The graph will have multiple representations, i.e. an "edge" going both ways, 
     # but it's only considered one edge in has_edge(), add_edge(), delete_edge(), etc.
     print('Edges: ', len(unordered_precinct_graph.edges())/2)
 
-    edges_list = []
     print(time() - start_time)
     original_graph_components_num = len(get_components(unordered_precinct_graph))
     # Repeat until entire graph is contiguous
@@ -468,15 +475,6 @@ def create_graph(election_file, geo_file, pop_file, state):
                 min_tuple = None
                 for precinct_1, centroid_1 in centroids_1.items():
                     for precinct_2, centroid_2 in centroids_2.items():
-                        # if precinct_1 == 2264:
-                        #     # print(unordered_precinct_graph.node_attributes(2268)[0].centroid)
-                        #     if precinct_2 == 2268:
-                        #         x_distance = centroid_1[0] - centroid_2[0]
-                        #         y_distance = centroid_1[1] - centroid_2[1]
-                        #         print((x_distance ** 2) + (y_distance ** 2))
-                                
-                        # if precinct_1 == 2268:
-                        #     if precinct_2 == 2264:
                         x_distance = centroid_1[0] - centroid_2[0]
                         y_distance = centroid_1[1] - centroid_2[1]
                         # No need to sqrt unnecessarily
@@ -509,18 +507,15 @@ def create_graph(election_file, geo_file, pop_file, state):
                             min_tuple = (precinct_1, precinct_2)
                 min_distances[min_distance] = min_tuple
 
-            # print(min_distances, 'yo dicts')
             # Find edge to add
             try:
                 edge_to_add = min_distances[min(min_distances)]
-                edges_list.append((unordered_precinct_graph.node_attributes(edge_to_add[0])[0].id, unordered_precinct_graph.node_attributes(edge_to_add[1])[0].id))
             except ValueError:
                 break
             print(f"\rConnecting islands progress: {100 - round(100 * len(graph_components)/original_graph_components_num, 2)}%")
             unordered_precinct_graph.add_edge(edge_to_add)
     print('Edges after island linking: ', round(len(unordered_precinct_graph.edges())/2))
-    with open('./edges_list.txt', 'w') as f:
-        f.write(str(edges_list))
+
     # Create list of nodes in ascending order by degree
     ordered_nodes = sorted(
         unordered_precinct_graph.nodes(),
@@ -539,7 +534,7 @@ def create_graph(election_file, geo_file, pop_file, state):
                 continue
             else:
                 ordered_precinct_graph.add_edge((ordered_nodes.index(node), ordered_nodes.index(neighbor)))
-    print(time() - start_time)
+    print("Total time taken:", time() - start_time)
     return ordered_precinct_graph
 
 
@@ -549,12 +544,11 @@ if __name__ == "__main__":
     # Save graph as pickle
     with open(sys.argv[5], "wb+") as f:
         pickle.dump(ordered_precinct_graph, f)
-    with open(f'./{sys.argv[4]}_debug.txt', "w") as f:
-        f.write(str(ordered_precinct_graph))
+
     # Visualize graph
     visualize_graph(
         ordered_precinct_graph,
-        './massachusetts_graph.jpg',
+        f'./{sys.argv[4]}_graph.jpg',
         lambda n : ordered_precinct_graph.node_attributes(n)[0].centroid,
         # sizes=(lambda n : ordered_precinct_graph.node_attributes(n)[0].pop/500),
         show=True

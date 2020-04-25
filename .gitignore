@@ -14,6 +14,7 @@ python/notebooks/.ipynb_checkpoints
 # cython
 python/**/*.c
 python/**/*.so
+python/build
 
 # vscode
 settings.json
