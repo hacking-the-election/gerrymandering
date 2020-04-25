@@ -443,6 +443,48 @@ double Geometry::Polygon::get_perimeter() {
 }
 
 
+Geometry::bounding_box Geometry::Polygon::get_bounding_box() {
+    // set dummy extremes
+    int top = hull.border[0][1], 
+        bottom = hull.border[0][1], 
+        left = hull.border[0][0], 
+        right = hull.border[0][0];
+
+    // loop through and find actual corner using ternary assignment
+    for (Geometry::coordinate coord : hull.border) {
+        if (coord[1] > top) top = coord[1];
+        if (coord[1] < bottom) bottom = coord[1];
+        if (coord[0] < left) left = coord[0];
+        if (coord[0] > right) right = coord[0];
+    }
+
+    return {top, bottom, left, right}; // return bounding box
+}
+
+
+bool bound_overlap(Geometry::bounding_box b1, Geometry::bounding_box b2) {
+    coordinate l1 = {b1[2], b1[1]};
+    coordinate r1 = {b1[4], b1[0]};
+    coordinate l2 = {b2[2], b2[1]};
+    coordinate r2 = {b2[4], b2[0]};
+        
+    // 11673255, 11644587, -19220772, -19186022
+    // 11656755, 11640603, -19192143, -19171898
+
+     // If one rectangle is on left side of other 
+    if (l1[0] > r2[0] || l2[0] > r1[0]) 
+        return false; 
+  
+    // If one rectangle is above other 
+    if (l1[1] > r2[1] || l2[1] > r1[1]) return false;
+
+
+    // if (b1[2] >= b2[3] || b2[2] >= b1[3]) return false;
+    // if (b1[1] <= b2[0] || b2[1] <= b1[0]) return false;
+    return true;
+}
+
+
 double Multi_Polygon::get_area() {
     /*
         @desc: gets sum area of all Polygon objects in border

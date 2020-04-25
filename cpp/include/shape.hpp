@@ -198,6 +198,7 @@ class Polygon {
         virtual coordinate get_center();      // average centers of holes + hull
         virtual segments get_segments();      // return a segment list with shape's segments
         virtual double get_compactness();
+        virtual bounding_box get_bounding_box();
 
         // add operator overloading for object equality
         friend bool operator== (Polygon p1, Polygon p2);
@@ -357,7 +358,7 @@ class Graph {
         void dfs_recursor(int v, std::vector<bool>& visited, std::vector<int>* nodes);
 
         void add_edge(Edge edge);
-        std::vector<Edge> remove_edges_to(int id);
+        void remove_edges_to(int id);
         void remove_edge(Edge edge);
         void remove_node(int id);
 
