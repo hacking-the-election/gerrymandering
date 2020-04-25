@@ -51,3 +51,5 @@ bool get_inside(Geometry::LinearRing s0, Geometry::LinearRing s1);
 bool get_inside_first(Geometry::LinearRing s0, Geometry::LinearRing s1);
 
 Geometry::Polygon generate_gon(Geometry::coordinate c, double radius, int n);
+
+bool bound_overlap(Geometry::bounding_box b1, Geometry::bounding_box b2);
