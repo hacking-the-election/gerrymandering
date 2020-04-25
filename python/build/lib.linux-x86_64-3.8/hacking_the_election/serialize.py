@@ -104,10 +104,6 @@ def create_graph(election_file, geo_file, pop_file, state):
     json_pops = state_metadata[state]["pop_key"]
     ele_ids   = state_metadata[state]["ele_id"]
 
-    # Water precincts in geodata that should be excluded have this id 
-    # for whatever json_id should normally be there.
-    non_precinct_id = state_metadata[state]["non_precinct_id"]
-
     # Read election and geo data files.
     with open(geo_file, "r") as f:
         geodata = json.load(f)
@@ -359,8 +355,9 @@ def create_graph(election_file, geo_file, pop_file, state):
         tostring("".join(precinct["properties"][json_id] for json_id in json_ids)) :
         precinct["geometry"]["coordinates"]
         for precinct in geodata["features"]
-        if tostring("".join(precinct["properties"][json_id] for json_id in json_ids))[-6:] != non_precinct_id
-        }
+        if tostring("".join(precinct["properties"][json_id] for json_id in json_ids))[-6:] != "ZZZZZZ"
+    }
+
 
     # Remove multipolygons from our dictionaries. (This is so our districts/communities stay contiguous)
     split_multipolygons(geodata_dict, pop, precinct_election_data)
@@ -428,15 +425,12 @@ def create_graph(election_file, geo_file, pop_file, state):
                     if min_y <= point[1] <= max_y:
                         precincts_to_check.append(check_node)
                         break
-        sys.stdout.write("\r                                ")
-        sys.stdout.write(f"\rAdding edges progress: {round(100 * node/node_num, 2)}%")
-        sys.stdout.flush()
+        print(f"Adding edges progress: {round(100 * node/node_num, 2)}%")
         for precinct10 in precincts_to_check:            
             if get_if_bordering(coordinate_data, unordered_precinct_graph.node_attributes(precinct10)[0].coords):
                 unordered_precinct_graph.add_edge((node, precinct10))
         completed_precincts.append(node)
 
-    print()
     print(time() - start_time)
 
     # The graph will have multiple representations, i.e. an "edge" going both ways, 
