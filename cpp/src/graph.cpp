@@ -141,9 +141,9 @@ void Graph::add_edge(Edge edge) {
     }
 
 
-    // if (!(std::find(edges.begin(), edges.end(), hl) != edges.end())) {
-    //     edges.push_back(hl);
-    // }
+    if (!(std::find(edges.begin(), edges.end(), hl) != edges.end())) {
+        edges.push_back(hl);
+    }
 
     if (!(std::find(vertices[hl[0]].edges.begin(),
             vertices[hl[0]].edges.end(), hl)
