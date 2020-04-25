@@ -34,6 +34,7 @@ def create_initial_configuration(precinct_graph, n_communities):
         edges = G.edges()
         for i in range(min(100, len(edges))):
             e = random.choice(edges)
+            edges.remove(e)
             attr_lengths[e] = (len(G.node_attributes(e[0]))
                              + len(G.node_attributes(e[1])))
         contract(G, min(attr_lengths))
