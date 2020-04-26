@@ -31,11 +31,16 @@ int main(int argc, char* argv[]) {
     */
 
     // draw communities
+    cout << argc << endl;
     Canvas canvas(900, 900);
 
     // read binary file from path
-    State state = State::read_binary(argv[1]);
-    canvas.add_graph(state.network);
+    vector<string> states = {"../../data/bin/cpp/new_hampshire.dat","../../data/bin/cpp/new_york.dat", "../../data/bin/cpp/vermont.dat", "../../data/bin/cpp/massachusetts.dat", "../../data/bin/cpp/connecticut.dat", "../../data/bin/cpp/pennsylvania.dat", "../../data/bin/cpp/new_jersey.dat"};
+    for (string st : states) {
+        State state = State::read_binary(st);
+        canvas.add_graph(state.network);
+    }
+
     canvas.draw();
 
     return 0;

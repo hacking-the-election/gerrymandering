@@ -292,7 +292,12 @@ vector<Geometry::Precinct> parse_precinct_data(string geoJSON) {
 
         // see if the geoJSON contains the shape id
         if (shapes["features"][i]["properties"].HasMember(geodata_id.c_str())) {
-            id = shapes["features"][i]["properties"][geodata_id.c_str()].GetString();
+            if (shapes["features"][i]["properties"][geodata_id.c_str()].IsInt()) {
+                id = std::to_string(shapes["features"][i]["properties"][geodata_id.c_str()].GetInt());
+            }
+            else if (shapes["features"][i]["properties"][geodata_id.c_str()].IsString()) {
+                id = shapes["features"][i]["properties"][geodata_id.c_str()].GetString();
+            }
         }
         else {
             cout << "\e[31merror: \e[0mYou have no precinct id." << endl;
@@ -403,7 +408,12 @@ vector<Geometry::Polygon> parse_precinct_coordinates(string geoJSON) {
 
         // see if the geoJSON contains the shape id
         if (shapes["features"][i]["properties"].HasMember(geodata_id.c_str())) {
-            id = shapes["features"][i]["properties"][geodata_id.c_str()].GetString();
+            if (shapes["features"][i]["properties"][geodata_id.c_str()].IsInt()) {
+                id = std::to_string(shapes["features"][i]["properties"][geodata_id.c_str()].GetInt());
+            }
+            else if (shapes["features"][i]["properties"][geodata_id.c_str()].IsString()) {
+                id = shapes["features"][i]["properties"][geodata_id.c_str()].GetString();
+            }
         }
         else {
             cout << "\e[31merror: \e[0mYou have no precinct id." << endl;
