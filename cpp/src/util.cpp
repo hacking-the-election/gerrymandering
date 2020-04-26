@@ -9,6 +9,7 @@
 #include "../include/util.hpp"
 #include <regex> // for is_number()
 #include <random>
+#include <iostream>
 
 using namespace std;
 
@@ -98,8 +99,11 @@ int rand_num(int start, int end) {
         @return: `int` random number
     */
 
-    std::random_device rd; 
-    std::mt19937 eng(rd()); 
-    uniform_int_distribution<int> distr(start, end);
-    return distr(eng);
+    // std::cout << end << ", " << start << std::endl;
+    if (end == 0) return 0;
+    return (rand() % end + start);
+    // std::random_device rd; 
+    // std::mt19937 eng(rd()); 
+    // uniform_int_distribution<int> distr(start, end);
+    // return distr(eng);
 }
