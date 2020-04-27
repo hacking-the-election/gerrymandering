@@ -43,6 +43,7 @@ using namespace chrono;
 
 #define VERBOSE 1
 #define DEBUG 0
+#define ITERATION_LIMIT 100
 
 
 vector<int> refs;
@@ -80,6 +81,40 @@ Precinct_Group Community::get_shape(Graph& graph) {
     }
 
     return Precinct_Group(precincts);
+}
+
+
+double average(Communities& communities, double (*measure)(Community&)) {
+    double sum = 0;
+    for (Community& c : communities) sum += measure(c);
+    return (sum / (double) communities.size());
+}
+
+
+void minimize(Communities& communities, Graph& graph, double (*measure)(Community&)) {
+    
+    int iterations_since_best = 0;
+    Communities best = communities;
+
+    while (iterations_since_best < ITERATION_LIMIT) {
+        // choose worst community to modify
+        int min_community = 0;
+        double min_measure = measure(communities[0]);
+
+        for (int i = 1; i < communities.size(); i++) {
+            if (measure(communities[i]) < min_measure) {
+                min_measure = measure(communities[i]);
+                min_community = 0;
+            }
+        }
+
+        if (average(communities, measure) > average(best, measure)) {
+            best = communities;
+            iterations_since_best = 0;
+        }
+    }
+
+    cout << "did not improve after " << ITERATION_LIMIT << " iterations, returning..." << endl;
 }
 
 
@@ -143,7 +178,7 @@ Communities karger_stein(Graph g, int n_communities) {
     }
 
     cout << "done" << endl;
-    
+
     return communities;
 }
 
@@ -164,9 +199,9 @@ Communities get_initial_configuration(Graph graph, int n_communities) {
     // Canvas canvas(500, 500);
     // canvas.add_shape(communities, graph);
     // canvas.draw();
-    // for (int i = 0; i < communities.size(); i++) {
-    //     writef(communities[i].get_shape(graph).to_json(), "x" + to_string(i) + ".json");
-    // }
+    for (int i = 0; i < communities.size(); i++) {
+        writef(communities[i].get_shape(graph).to_json(), "x" + to_string(i) + ".json");
+    }
 
     return communities;
 }

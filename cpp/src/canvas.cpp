@@ -241,28 +241,28 @@ void Graphics::Canvas::add_shape(Geometry::Communities s, Geometry::Graph g, boo
 
 
 void Graphics::Canvas::add_graph(Geometry::Graph g) {
-    // for (int i = 0; i < g.vertices.size(); i++) {
-    //     for (Geometry::Edge edge : g.vertices[i].edges) {
-    //         Geometry::coordinate c1 = g.vertices[edge[0]].precinct->get_center();
-    //         Geometry::coordinate c2 = g.vertices[edge[1]].precinct->get_center();
-    //         Geometry::LinearRing lr({c1, c2});
-    //         this->add_shape(lr, false, Color(0, 0, 0), 1);
-    //     }
-    // }
-
     for (int i = 0; i < g.vertices.size(); i++) {
-        Geometry::Node node = g.vertices[i];
-
-        std::array<int, 3> rgb = interpolate_rgb({0, 0, 255}, {255, 0, 0}, node.precinct->get_ratio());
-        Color color(rgb[0], rgb[1], rgb[2]);
-        if (node.precinct->get_ratio() == -1) color = Color(0,255,0);
-        // int factor = 30000;
-        int t = 8;
-        // if (sqrt(node.precinct->pop * factor) > t) t = sqrt(node.precinct->pop * factor);
-        Geometry::coordinate c = {(long int)round(node.precinct->get_center()[0] / 1000), (long int)round(node.precinct->get_center()[1] / 1000)};
-        this->add_shape(generate_gon(c, t, 20), true, color, 1);
-        // this->add_shape(generate_gon(node.precinct->get_center(), t, 20), false, Color(0, 0, 0), 1);
+        for (Geometry::Edge edge : g.vertices[i].edges) {
+            Geometry::coordinate c1 = g.vertices[edge[0]].precinct->get_center();
+            Geometry::coordinate c2 = g.vertices[edge[1]].precinct->get_center();
+            Geometry::LinearRing lr({c1, c2});
+            this->add_shape(lr, false, Color(0, 0, 0), 1);
+        }
     }
+
+    // for (int i = 0; i < g.vertices.size(); i++) {
+    //     Geometry::Node node = g.vertices[i];
+
+    //     std::array<int, 3> rgb = interpolate_rgb({0, 0, 255}, {255, 0, 0}, node.precinct->get_ratio());
+    //     Color color(rgb[0], rgb[1], rgb[2]);
+    //     if (node.precinct->get_ratio() == -1) color = Color(0,255,0);
+    //     // int factor = 30000;
+    //     int t = 8;
+    //     // if (sqrt(node.precinct->pop * factor) > t) t = sqrt(node.precinct->pop * factor);
+    //     Geometry::coordinate c = {(long int)round(node.precinct->get_center()[0] / 1000), (long int)round(node.precinct->get_center()[1] / 1000)};
+    //     this->add_shape(generate_gon(c, t, 20), false, color, 1);
+    //     // this->add_shape(generate_gon(node.precinct->get_center(), t, 20), false, Color(0, 0, 0), 1);
+    // }
 
     cout << "added graph to canvas" << endl;
 }
