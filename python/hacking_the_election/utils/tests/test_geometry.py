@@ -112,7 +112,7 @@ class TestGeometry(unittest.TestCase):
         self.assertEqual(original_reock_score, 0.32)
 
         vermont_reock_score = round(geometry.get_compactness(self.vermont), 3)
-        self.assertEqual(f"{vermont_reock_score=}", 0.423)
+        self.assertEqual(vermont_reock_score, 0.423)
 
     def test_area(self):
         """Tests `hacking_the_election.utils.geometry.area`

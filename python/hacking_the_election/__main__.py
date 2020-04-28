@@ -1,0 +1,76 @@
+"""Runs all unit tests for the `hacking_the_election` package.
+
+Usage:
+`python3 -m hacking_the_election test`
+"""
+
+import sys
+
+from hacking_the_election.communities.tests import test_initial_configuration
+from hacking_the_election.utils.tests import (
+    test_geometry,
+    test_graph
+)
+
+
+FAILURES = {}
+
+
+def runtests(test_case_class):
+    """Runs all unit tests in a test case.
+
+    :param test_case_class: A group of methods that test a module.
+    :type test_case_class: `unittest.TestCase`
+    """
+
+    global FAILURES
+
+    test_case_name = test_case_class.__name__[4:]
+    print(test_case_name)
+    print("--------------------")
+    FAILURES[test_case_name] = []
+
+    for method in dir(test_case_class):
+        if method[:4] == "test":
+            
+            # Run Test.
+            test_case = test_case_class(method)
+            test_case.setUp()
+            test_result = test_case()
+            successful = test_result.wasSuccessful()
+
+            # Print output.
+            result_string = "\033[32mpassed" if successful else "\033[31mfailed"
+            print(f"{method[5:]:<30}\t{result_string}\033[0m")
+
+            # Save failures.
+            if not successful:
+                for failure in test_result.failures:
+                    FAILURES[test_case_name].append(failure[1])
+    
+    print()
+
+
+if __name__ == "__main__":
+    
+    if sys.argv[1] == "test":
+
+        # Test utils package.
+        runtests(test_geometry.TestGeometry)
+        runtests(test_graph.TestGraph)
+
+        # Test communities package.
+        runtests(test_initial_configuration.TestInitialConfiguration)
+
+        # Print failures.
+        print("==================")
+        print("FAILURES")
+        print("==================")
+
+        for test_case, failures in FAILURES.items():
+            if failures != []:
+                print()
+                print(test_case)
+            for failure in failures:
+                print("---------------------")
+                print(failure)
