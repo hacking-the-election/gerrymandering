@@ -29,14 +29,16 @@ namespace Geometry {
 
             void save(std::string write_path);
             void load(std::string read_path);
+            void add_node(Node& node);
 
             std::vector<int> node_ids;
+            Precinct_Group shape;
 
-            void add_node(Node& node);
-            Precinct_Group get_shape(Graph& graph);
+            Community(std::vector<int>& node_ids, Graph& graph);
+            Community() {}
     };
-
 }
+
 
 
 Geometry::Communities get_initial_configuration(Geometry::Graph graph, int n_communities);

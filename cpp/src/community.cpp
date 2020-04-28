@@ -28,6 +28,7 @@
 #include <random>
 #include <chrono>
 
+#include "../lib/Miniball.hpp"
 
 #include "../include/shape.hpp"       // class definitions
 #include "../include/community.hpp"   // class definitions
@@ -46,11 +47,6 @@ using namespace chrono;
 #define ITERATION_LIMIT 100
 
 
-vector<int> refs;
-// vector<array<int, 3> > c_colors;
-int fill_size;
-
-
 class EdgeWrapper {
     public:
         int ntr_id;
@@ -59,7 +55,6 @@ class EdgeWrapper {
         
         friend bool operator< (const EdgeWrapper& l1, const EdgeWrapper& l2);
         inline EdgeWrapper(int id, int cid, int attrs) : ntr_id(id), ntc_id(cid), attrs(attrs) {}
-
 };
 
 
@@ -68,20 +63,18 @@ bool operator< (const EdgeWrapper& l1, const EdgeWrapper& l2) {
 }
 
 
-Precinct_Group Community::get_shape(Graph& graph) {
-    /*
-        @desc: derives the shape of a community's node list from a graph
-        @params: `Graph&` graph: precinct information graph
-        @return: `Precinct_Group` Community shape
-    */
-
-    vector<Precinct> precincts;
-    for (int id : node_ids) {
-        precincts.push_back(*graph.vertices[id].precinct);
+double get_compactness(Community& community) {
+    coordinate_set points;
+    
+    for (Precinct p : community.shape.precincts) {
+        for (Geometry::coordinate coord : p.hull.border) {
+            points.push_back(coord);
+        }
     }
 
-    return Precinct_Group(precincts);
-}
+    MB mb(2, points.begin(), points.end());
+    // mb.center();
+} 
 
 
 double average(Communities& communities, double (*measure)(Community&)) {
@@ -133,7 +126,7 @@ Communities karger_stein(Graph g, int n_communities) {
     while (g.vertices.size() > n_communities) {
 
         EdgeWrapper min(-1, -1, 1000000);
-        cout << g.vertices.size() << endl;
+        // cout << g.vertices.size() << endl;
 
         for (int i = 0; i < g.vertices.size(); i++) {
             int node_to_remove_id = (g.vertices.begin() + rand_num(0, g.vertices.size() - 1)).key();
@@ -177,7 +170,7 @@ Communities karger_stein(Graph g, int n_communities) {
         communities[i].node_ids.push_back((g.vertices.begin() + i).key());
     }
 
-    cout << "done" << endl;
+    // cout << "done" << endl;
 
     return communities;
 }
