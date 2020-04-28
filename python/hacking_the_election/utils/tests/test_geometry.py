@@ -1,3 +1,7 @@
+"""Unit tests for `hacking_the_election.utils.geometry`
+"""
+
+
 import json
 import os
 import sys
@@ -104,10 +108,11 @@ class TestGeometry(unittest.TestCase):
         original_gerrymander_polygon = \
             geometry.geojson_to_shapely(self.original_gerrymander)
 
-        start_time = time.time()
-        reock_score = round(geometry.get_compactness(original_gerrymander_polygon), 3)
-        print(f"Reock compactness time: {time.time() - start_time}")
-        self.assertEqual(reock_score, 0.32)
+        original_reock_score = round(geometry.get_compactness(original_gerrymander_polygon), 3)
+        self.assertEqual(original_reock_score, 0.32)
+
+        vermont_reock_score = round(geometry.get_compactness(self.vermont), 3)
+        self.assertEqual(f"{vermont_reock_score=}", 0.423)
 
     def test_area(self):
         """Tests `hacking_the_election.utils.geometry.area`
