@@ -57,7 +57,12 @@ cpdef void contract(G, tuple t):
     G.del_edge(t)
     G.del_node(t[0]); G.del_node(t[1])
 
-    cdef int new_node = max(G.nodes()) + 1
+    cdef list nodes = G.nodes()
+    cdef int new_node
+    if len(nodes) != 0:
+        new_node = max(nodes) + 1
+    else:
+        new_node = 0
     G.add_node(new_node, attrs=new_node_attributes)
     cdef int neighbor
     for neighbor in new_node_neighbors:
