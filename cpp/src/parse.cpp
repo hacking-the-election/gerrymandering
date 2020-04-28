@@ -292,7 +292,12 @@ vector<Geometry::Precinct> parse_precinct_data(string geoJSON) {
 
         // see if the geoJSON contains the shape id
         if (shapes["features"][i]["properties"].HasMember(geodata_id.c_str())) {
-            id = shapes["features"][i]["properties"][geodata_id.c_str()].GetString();
+            if (shapes["features"][i]["properties"][geodata_id.c_str()].IsInt()) {
+                id = std::to_string(shapes["features"][i]["properties"][geodata_id.c_str()].GetInt());
+            }
+            else if (shapes["features"][i]["properties"][geodata_id.c_str()].IsString()) {
+                id = shapes["features"][i]["properties"][geodata_id.c_str()].GetString();
+            }
         }
         else {
             cout << "\e[31merror: \e[0mYou have no precinct id." << endl;
@@ -403,7 +408,12 @@ vector<Geometry::Polygon> parse_precinct_coordinates(string geoJSON) {
 
         // see if the geoJSON contains the shape id
         if (shapes["features"][i]["properties"].HasMember(geodata_id.c_str())) {
-            id = shapes["features"][i]["properties"][geodata_id.c_str()].GetString();
+            if (shapes["features"][i]["properties"][geodata_id.c_str()].IsInt()) {
+                id = std::to_string(shapes["features"][i]["properties"][geodata_id.c_str()].GetInt());
+            }
+            else if (shapes["features"][i]["properties"][geodata_id.c_str()].IsString()) {
+                id = shapes["features"][i]["properties"][geodata_id.c_str()].GetString();
+            }
         }
         else {
             cout << "\e[31merror: \e[0mYou have no precinct id." << endl;
@@ -608,12 +618,6 @@ Geometry::Precinct_Group combine_holes(Geometry::Precinct_Group pg) {
                 if (j != x && get_inside(p_c.hull, p.hull)) {
                     // precinct j is inside precinct x,
                     // add the appropriate data from j to x
-
-                    // Graphics::Canvas canvas(600,600);
-                    // canvas.add_shape(p_c, false, Graphics::Color(255, 0, 0), 2);
-                    // canvas.add_shape(p, false, Graphics::Color(0, 255, 0), 2);
-                    // canvas.draw();
-
                     demv += pg.precincts[j].dem;
                     repv += pg.precincts[j].rep;
                     pop += pg.precincts[j].pop;
@@ -626,9 +630,7 @@ Geometry::Precinct_Group combine_holes(Geometry::Precinct_Group pg) {
         }
 
         // create object from updated data
-        Geometry::Precinct np = 
-            Geometry::Precinct(precinct_border, demv, repv, pop, id);
-        
+        Geometry::Precinct np = Geometry::Precinct(precinct_border, demv, repv, pop, id);
         precincts.push_back(np);
     }
 
@@ -645,57 +647,6 @@ Geometry::Precinct_Group combine_holes(Geometry::Precinct_Group pg) {
 }
 
 
-vector<Geometry::p_index_set> sort_precincts(Geometry::Multi_Polygon shape, Geometry::Precinct_Group pg) {
-    /*
-        @desc:
-            Takes an array of precincts and an exterior border array (islands), and
-            determines which precincts go in which island. Returns array of precinct_index_list
-            that correspond to precinct indices in the pg.precincts array
-
-        @params:
-            `Multi_Polygon` shape: The island shapes that will contain sorted precincts
-            `Precinct_Group` pg: The precincts to be sorted
-
-        @return: `p_index_set` array of precinct index sets that correspond to individual islands
-    */
-
-    vector<Geometry::p_index_set> islands;
-
-    if (shape.border.size() > 1) {
-        // has islands, need actually to sort
-        vector<Geometry::Precinct> tmp_precincts = pg.precincts;
-        Geometry::p_index_set ignore; // precincts that have already been sorted
-
-        for (int i = 0; i < shape.border.size(); i++) {
-            // for each island
-            Geometry::p_index_set island;
-            for (int j = 0; j < tmp_precincts.size(); j++) {
-                // check whether each precinct is within the island
-                if (!(std::find(ignore.begin(), ignore.end(), j) != ignore.end())) {
-                    // not in the ignore list, must check;
-                    if (get_inside_first(tmp_precincts[j].hull, shape.border[i].hull)) {
-                        // the precinct is inside the island, add to the array
-                        island.push_back(j);
-                        ignore.push_back(j);
-                    }
-                }
-            }
-            
-            // island is completely sorted
-            islands.push_back(island);
-        }
-    }
-    else {
-        // only has one island, fill array with range(0, size_of_precincts)
-        Geometry::p_index_set p(pg.precincts.size());
-        std::iota(p.begin(), p.end(), 0);
-        islands.push_back(p);
-    }
-
-    return islands;
-}
-
-
 Geometry::Graph generate_graph(Geometry::Precinct_Group pg) {
     /*
         @desc: Determines the network graph of a given precinct group
@@ -707,50 +658,42 @@ Geometry::Graph generate_graph(Geometry::Precinct_Group pg) {
     Geometry::Graph graph;
 
     for (int i = 0; i < pg.precincts.size(); i++) {
+        // create all vertices with no edges
         Geometry::Node n(&pg.precincts[i]);
         n.id = i;
+        // assign precinct to node
         n.precinct = &pg.precincts[i];
         graph.vertices.insert({n.id, n});
     }
 
+
+    // get bounding boxes for border-checks
     cout << "determining bounding boxes..." << endl;
     vector<Geometry::bounding_box> bounding_boxes;
     for (Geometry::Precinct p : pg.precincts) {
         bounding_boxes.push_back(p.get_bounding_box());
     }
 
+    // add bordering precincts as edges to the graph
     cout << "determining edges..." << endl;
-    int edge = 0;
     for (int i = 0; i < pg.precincts.size(); i++) {
-        Geometry::p_index_set precincts = {};
-        cout << "on precinct " << i << endl;
-        // check all unique combinations of
-        // precincts with get_bordering
-
+        // check all unique combinations of precincts with get_bordering
         for (int j = i + 1; j < pg.precincts.size(); j++) {
+            // check bounding box overlapping
             if (bound_overlap(bounding_boxes[i], bounding_boxes[j])) {
                 // check clip because bounding boxes overlap
                 if (get_bordering(pg.precincts[i], pg.precincts[j])) {
                     graph.add_edge({j, i});
-                    edge++;
                 }
             }
         }
-
-    //     for (Geometry::p_index border : precincts) {
-    //         graph.add_edge({border, i});
-    //     }
     }
-    
-    cout << "edge: " << edge << endl;
-    cout << graph.edges.size() << ", " << graph.vertices.size() << endl;
 
-
+    // link components with closest precincts
     if (graph.get_num_components() > 1) {
-        // the graph needs to be linked
-
-        std::map<int, Geometry::coordinate> centers;        
         // determine all centers of precincts
+        std::map<int, Geometry::coordinate> centers;
+
         for (int i = 0; i < graph.vertices.size(); i++) {
             // add center of precinct to the map
             int key = (graph.vertices.begin() + i).key();
@@ -789,15 +732,12 @@ Geometry::Graph generate_graph(Geometry::Precinct_Group pg) {
 
             // find the shortest link between any two precincts on any two islands islands
             array<int, 2> me = std::min_element(dists.begin(), dists.end())->node_ids;
-            cout << graph.vertices[me[0]].precinct->shape_id << ", " << graph.vertices[me[1]].precinct->shape_id << endl;
-            // add link as edge to the graph
             graph.add_edge({me[0], me[1]});
         }
     } // else the graph is linked already
 
     return graph;
 }
-
 
 
 Geometry::State Geometry::State::generate_from_file(string precinct_geoJSON, string voter_data, string district_geoJSON, vector<vector<string> > opts) {
@@ -813,9 +753,6 @@ Geometry::State Geometry::State::generate_from_file(string precinct_geoJSON, str
 
         @return: `State` parsed state object
     */
-
-    //! Should probably allocate memory with malloc
-    //! Will be some outrageously large vectors here
 
     election_id_header = opts[0][0];
     geodata_id = opts[1][0];
@@ -836,26 +773,27 @@ Geometry::State Geometry::State::generate_from_file(string precinct_geoJSON, str
     if (VERBOSE) cout << "merging geodata with voter data into precincts..." << endl;
     vector<Precinct> precincts = merge_data(precinct_shapes, precinct_voter_data);
     
-    // vector<
     // remove water precincts from data
-    cout << "removing water precincts" << endl;
+    cout << "removing water precincts... ";
+
+    int n_removed = 0;
     for (int i = 0; i < precincts.size(); i++) {
         string id = precincts[i].shape_id;
         if (id.size() >= 6) {
             if (id.find("ZZZZZ") != string::npos) {
-                cout << "removing precinct!" << endl;
-                cout << id << endl;
                 precincts.erase(precincts.begin() + i);
                 i--;
+                n_removed++;
             }
         }
     }
 
+    cout << n_removed << endl;
     Geometry::Precinct_Group pre_group(precincts);
 
+    if (VERBOSE) cout << "removing holes..." << endl;
     // remove holes from precinct data
     pre_group = combine_holes(pre_group);
-    if (VERBOSE) cout << "removed hole precincts from precinct geodata" << endl;
     vector<Polygon> state_shape_v; // dummy exterior border
 
     // generate state data from files
@@ -864,9 +802,6 @@ Geometry::State Geometry::State::generate_from_file(string precinct_geoJSON, str
     Multi_Polygon sborder = generate_exterior_border(state);
     state.border = sborder.border;
 
-    // sort files into
-    if (VERBOSE) cout << "sorting precincts into islands..." << endl << endl;
-    // state.islands = sort_precincts(sborder, pre_group);
     state.network = generate_graph(pre_group);
     return state; // return the state object
 }
@@ -897,16 +832,23 @@ Geometry::State Geometry::State::generate_from_file(string precinct_geoJSON, str
     if (VERBOSE) cout << "generating coordinate array from district file..." << endl;
     vector<Multi_Polygon> district_shapes = parse_district_coordinates(district_geoJSON);
 
+
+    if (VERBOSE) cout << "removing water precincts... ";
+    int n_removed = 0;
+
     for (int i = 0; i < precinct_shapes.size(); i++) {
         string id = precinct_shapes[i].shape_id;
         if (id.size() >= 6) {
             if (id.find("ZZZZZ") != string::npos) {
-                cout << "removing precinct!" << endl;
                 precinct_shapes.erase(precinct_shapes.begin() + i);
+                n_removed++;
                 i--;
             }
         }
     }
+
+    cout << n_removed << endl;
+
 
     // create a vector of precinct objects from border and voter data
     Precinct_Group pre_group(precinct_shapes);

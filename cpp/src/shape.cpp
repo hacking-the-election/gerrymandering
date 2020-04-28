@@ -29,10 +29,13 @@ using std::endl;
 
 double Geometry::Precinct::get_ratio() {
     // retrieve ratio from precinct
-    if (rep == 0 && dem == 0)
+    // cout << "rep: " << rep << ", " << "dem: " << dem << endl;
+
+    if (rep == -1 && dem == -1)
         return -1;
 
     #ifdef REP
+        if (rep == 0 && dem == 0) return 0.5;
         return (double) rep / ((double) dem + (double) rep);
     #endif
     #ifndef REP

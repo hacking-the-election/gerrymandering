@@ -43,6 +43,7 @@ using namespace chrono;
 
 #define VERBOSE 1
 #define DEBUG 0
+#define ITERATION_LIMIT 100
 
 
 vector<int> refs;
@@ -52,16 +53,12 @@ int fill_size;
 
 class EdgeWrapper {
     public:
-        Node node_to_remove;
-        Node node_to_collapse;
-
         int ntr_id;
         int ntc_id;
-
         int attrs;
         
         friend bool operator< (const EdgeWrapper& l1, const EdgeWrapper& l2);
-        EdgeWrapper(Node n, Node c, int id, int cid, int attrs) : node_to_remove(n), node_to_collapse(c), ntr_id(id), ntc_id(cid), attrs(attrs) {}
+        inline EdgeWrapper(int id, int cid, int attrs) : ntr_id(id), ntc_id(cid), attrs(attrs) {}
 
 };
 
@@ -87,6 +84,40 @@ Precinct_Group Community::get_shape(Graph& graph) {
 }
 
 
+double average(Communities& communities, double (*measure)(Community&)) {
+    double sum = 0;
+    for (Community& c : communities) sum += measure(c);
+    return (sum / (double) communities.size());
+}
+
+
+void minimize(Communities& communities, Graph& graph, double (*measure)(Community&)) {
+    
+    int iterations_since_best = 0;
+    Communities best = communities;
+
+    while (iterations_since_best < ITERATION_LIMIT) {
+        // choose worst community to modify
+        int min_community = 0;
+        double min_measure = measure(communities[0]);
+
+        for (int i = 1; i < communities.size(); i++) {
+            if (measure(communities[i]) < min_measure) {
+                min_measure = measure(communities[i]);
+                min_community = 0;
+            }
+        }
+
+        if (average(communities, measure) > average(best, measure)) {
+            best = communities;
+            iterations_since_best = 0;
+        }
+    }
+
+    cout << "did not improve after " << ITERATION_LIMIT << " iterations, returning..." << endl;
+}
+
+
 Communities karger_stein(Graph g, int n_communities) {
     /*
         @desc: Partitions a graph according to the Karger-Stein algorithm
@@ -100,42 +131,28 @@ Communities karger_stein(Graph g, int n_communities) {
 
 
     while (g.vertices.size() > n_communities) {
+
+        EdgeWrapper min(-1, -1, 1000000);
         cout << g.vertices.size() << endl;
-        vector<EdgeWrapper> attr_lengths;
 
-        cout << "a ";
-        auto start = high_resolution_clock::now(); 
-
-        for (int i = 0; i < g.vertices.size() && i < 100; i++) {
+        for (int i = 0; i < g.vertices.size(); i++) {
             int node_to_remove_id = (g.vertices.begin() + rand_num(0, g.vertices.size() - 1)).key();
-            Node node_to_remove_val = g.vertices[node_to_remove_id];
-            int node_to_collapse_id = node_to_remove_val.edges[rand_num(0, node_to_remove_val.edges.size() - 1)][1];
-            Node node_to_collapse_val = g.vertices[node_to_collapse_id];
+            int node_to_collapse_id = g.vertices[node_to_remove_id].edges[rand_num(0, g.vertices[node_to_remove_id].edges.size() - 1)][1];
+            int t = g.vertices[node_to_remove_id].collapsed.size() + g.vertices[node_to_collapse_id].collapsed.size();
 
-
-            // node_to_remove(n), node_to_collapse(c), ntr_id(id), ntc_id(cid), attrs(attrs)
-
-            EdgeWrapper er(
-                node_to_remove_val,
-                node_to_collapse_val,
-                node_to_remove_id,
-                node_to_collapse_id,
-                node_to_remove_val.collapsed.size() + node_to_collapse_val.collapsed.size()
-            );
+            if (t < min.attrs) {
+                min = EdgeWrapper(
+                    node_to_remove_id,
+                    node_to_collapse_id,
+                    t
+                );
+            }
             
-            attr_lengths.push_back(er);
+            if (i == 100) break;
         }
 
 
-        auto stop = high_resolution_clock::now(); 
-        auto duration = duration_cast<microseconds>(stop - start); 
-        cout << duration.count() << endl;
-        cout << "b ";
-
-        start = high_resolution_clock::now(); 
-
-        EdgeWrapper min = *min_element(attr_lengths.begin(), attr_lengths.end());
-        for (Edge edge : min.node_to_remove.edges) {
+        for (Edge edge : g.vertices[min.ntr_id].edges) {
             if (edge[1] != min.ntc_id) {
                 g.add_edge({edge[1], min.ntc_id});
             }
@@ -147,16 +164,10 @@ Communities karger_stein(Graph g, int n_communities) {
         for (int c : g.vertices[min.ntr_id].collapsed) {
             if (find(g.vertices[min.ntc_id].collapsed.begin(), g.vertices[min.ntc_id].collapsed.end(), c) == g.vertices[min.ntc_id].collapsed.end()) {
                 g.vertices[min.ntc_id].collapsed.push_back(c);
-                // cout << "adding to c" << endl;
             }
         }
 
-
         g.remove_node(min.ntr_id);
-        
-        stop = high_resolution_clock::now(); 
-        duration = duration_cast<microseconds>(stop - start); 
-        cout << duration.count() << endl;
     }
 
     Communities communities(n_communities);
@@ -167,6 +178,7 @@ Communities karger_stein(Graph g, int n_communities) {
     }
 
     cout << "done" << endl;
+
     return communities;
 }
 
@@ -187,9 +199,9 @@ Communities get_initial_configuration(Graph graph, int n_communities) {
     // Canvas canvas(500, 500);
     // canvas.add_shape(communities, graph);
     // canvas.draw();
-    // for (int i = 0; i < communities.size(); i++) {
-    //     writef(communities[i].get_shape(graph).to_json(), "x" + to_string(i) + ".json");
-    // }
+    for (int i = 0; i < communities.size(); i++) {
+        writef(communities[i].get_shape(graph).to_json(), "x" + to_string(i) + ".json");
+    }
 
     return communities;
 }
