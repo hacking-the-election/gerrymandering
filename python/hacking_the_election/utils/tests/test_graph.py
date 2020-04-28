@@ -28,7 +28,7 @@ class TestGraph(unittest.TestCase):
         with open(f"{SOURCE_DIR}/data/vermont_graph_2.pickle", "rb") as f:
             self.vermont_graph_2 = pickle.load(f)  # Has all edges removed from node 27
 
-    def test_get_discontinuous_components(self):
+    def test_get_components(self):
 
         self.assertEqual(len(graph.get_components(self.random_graph)), 1)
         start = time.time()
@@ -36,13 +36,6 @@ class TestGraph(unittest.TestCase):
         print(f"vermont get_components: {time.time() - start}")
         self.assertEqual(vermont_components, 1)
         self.assertEqual(len(graph.get_components(self.vermont_graph_2)), 2)
-
-    def test_remove_edges_to(self):
-        
-        start = time.time()
-        vermont_removed_edges = graph.remove_edges_to(27, self.vermont_graph)
-        print(f"vermont remove_edges_to: {time.time() - start}")
-        self.assertEqual(vermont_removed_edges, self.vermont_graph_2)
 
     def test_get_node_number(self):
 

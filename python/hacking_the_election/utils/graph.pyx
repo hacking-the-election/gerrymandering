@@ -84,42 +84,6 @@ cpdef int get_node_number(precinct, graph):
     raise ValueError("Precinct not part of inputted graph.")
 
 
-cpdef remove_edges_to(int node, graph):
-    """Returns graph with all edges removed to a given node.
-
-    :param node: The node to remove the edges from.
-    :type node: int
-
-    :param graph: The graph that contains `node`
-    :type graph: `pygraph.classes.graph.graph`
-
-    :return: A graph that is equivalent to `graph`, except all the edges connected to `node`.
-    :rtype: `pygraph.classes.graph.graph`
-    """
-
-    new_graph = Graph()
-    cdef int v
-    for v in graph.nodes():
-        new_graph.add_node(int(v))
-    cdef tuple edge
-    for edge in graph.edges():
-        try:
-            new_graph.add_edge(tuple([int(i) for i in edge]))
-        except AdditionError:
-            pass
-
-    for edge in new_graph.edges()[:]:
-        if node in edge:
-            try:
-                new_graph.del_edge(edge)
-            except ValueError:
-                # Edge was already deleted because it is a duplicate
-                # for the sake of undirected edges.
-                pass
-
-    return new_graph
-
-
 cpdef void _dfs(graph, set nodes, int v):
     """Finds all the nodes in a component of a graph containing a start node.
 
