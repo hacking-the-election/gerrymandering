@@ -63,17 +63,34 @@ bool operator< (const EdgeWrapper& l1, const EdgeWrapper& l2) {
 }
 
 
+void Community::update_shape(Graph& graph) {
+    for (int x : this->node_ids) {
+        this->shape.add_precinct_n(*graph.vertices[x].precinct);
+    }
+}
+
+
 double get_compactness(Community& community) {
-    coordinate_set points;
-    
+
+    std::vector<std::vector<double> > lp;
     for (Precinct p : community.shape.precincts) {
-        for (Geometry::coordinate coord : p.hull.border) {
-            points.push_back(coord);
+        for (coordinate c : p.hull.border) {
+            vector<double> t;
+            t.push_back(c[0]);
+            t.push_back(c[1]);
+            lp.push_back(t);
         }
     }
 
-    MB mb(2, points.begin(), points.end());
-    // mb.center();
+    typedef std::vector<std::vector<double> >::const_iterator PointIterator; 
+    typedef std::vector<double>::const_iterator CoordIterator;
+
+    typedef Miniball::Miniball <Miniball::CoordAccessor<PointIterator, CoordIterator> > MB;
+    MB mb (2, lp.begin(), lp.end());
+    cout << community.shape.get_area() << endl;
+    cout << mb.squared_radius() << endl;
+
+    return ((double)community.shape.get_area() / (mb.squared_radius() * PI));
 } 
 
 
@@ -187,14 +204,19 @@ Communities get_initial_configuration(Graph graph, int n_communities) {
         @return: `Communities` init config
     */
 
-    Communities communities = karger_stein(graph, n_communities);
-
+    // Communities communities = karger_stein(graph, n_communities);
+    Community state;
+    state.node_ids.resize(graph.vertices.size());
+    iota(state.node_ids.begin(), state.node_ids.end(), 0);
+    state.update_shape(graph);
+    cout << "getting compactness" << endl;
+    cout << get_compactness(state) << endl;
     // Canvas canvas(500, 500);
     // canvas.add_shape(communities, graph);
     // canvas.draw();
-    for (int i = 0; i < communities.size(); i++) {
-        writef(communities[i].get_shape(graph).to_json(), "x" + to_string(i) + ".json");
-    }
+    // for (int i = 0; i < communities.size(); i++) {
+    //     writef(communities[i].get_shape(graph).to_json(), "x" + to_string(i) + ".json");
+    // }
 
-    return communities;
+    // return communities;
 }
