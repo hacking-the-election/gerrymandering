@@ -13,7 +13,6 @@ from pygraph.classes.graph import graph as Graph
 from hacking_the_election.utils.community import Community
 from hacking_the_election.utils.graph import (
     contract,
-    get_node_number,
     light_copy
 )
 from hacking_the_election.utils.visualization import COLORS

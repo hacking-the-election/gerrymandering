@@ -39,35 +39,41 @@ def visualize_graph(graph, output_path, coords, colors=None, sizes=None, show=Fa
     draw = ImageDraw.Draw(graph_image, "RGB")
 
     graph_nodes = graph.nodes()
+    graph_edges = graph.edges()
+
     modified_coords = modify_coords(
         [coords(node) for node in graph_nodes], [1000, 1000]
     )
-    node_coords = {node: point for node, point
-                   in zip(graph_nodes, modified_coords)}
+    
     if colors is not None:
         node_colors = [colors(node) for node in graph_nodes]
     else:
-        node_colors = [(0, 0, 0) for _ in graph_nodes]
+        node_colors = [(235, 64, 52) for _ in graph_nodes]
 
     if sizes is not None:
         node_sizes = [sizes(node) for node in graph_nodes]
     else:
         node_sizes = [1 for _ in graph_nodes]
+
+    for edge in graph_edges:
+
+        indices = [graph_nodes.index(v) for v in edge]
+        centers = [tuple(modified_coords[i]) for i in indices]
+
+        draw.line(
+            centers,
+            fill=(0, 0, 0),
+            width=1
+    )
+
     for center, node, color, r in zip(modified_coords, graph_nodes,
-                                         node_colors, node_sizes):
+                                      node_colors, node_sizes):
         draw.ellipse(
             [(center[0] - r, center[1] - r),
              (center[0] + r, center[1] + r)],
             fill=color
         )
 
-        for neighbor in graph.neighbors(node):
-            draw.line(
-                [tuple(center),
-                 tuple(node_coords[neighbor])],
-                fill=(0, 0, 0),
-                width=1
-        )
     if output_path is not None:
         graph_image.save(output_path)
     if show:
