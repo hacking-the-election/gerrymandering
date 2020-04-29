@@ -221,38 +221,24 @@ class Precinct : public Polygon {
 
         Precinct(){} // default constructor
 
-        Precinct(LinearRing ext, int demV, int repV) : Polygon(ext) {
-            // assigning vote data
-            dem = demV;
-            rep = repV;
+        Precinct(LinearRing ext, int dem, int rep)
+            : dem(dem), rep(rep), Polygon(ext) {}
+
+        Precinct(LinearRing ext, std::vector<LinearRing> interior, int dem, int rep)
+            : dem(dem), rep(rep), Polygon(ext, interior) {}
+
+
+        Precinct(LinearRing ext, int dem, int rep, std::string id)
+            : dem(dem), rep(rep), Polygon(ext, id) {}
+
+
+        Precinct(LinearRing ext, int dem, int rep, int popu, std::string id)
+            : dem(dem), rep(rep), Polygon(ext, id) {
+                this->pop = popu;
         }
 
-        Precinct(LinearRing ext, std::vector<LinearRing> interior, int demV, int repV) : Polygon(ext, interior) {
-            // assigning vote data
-            dem = demV;
-            rep = repV;
-        }
-
-
-        Precinct(LinearRing ext, int demV, int repV, std::string id) : Polygon(ext, id) {
-            // overloaded constructor for adding shape id
-            dem = demV;
-            rep = repV;
-        }
-
-
-        Precinct(LinearRing ext, int demV, int repV, int popu, std::string id) : Polygon(ext, id) {
-            // overloaded constructor for adding shape id
-            dem = demV;
-            rep = repV;
-            pop = popu;
-        }
-
-        Precinct(LinearRing ext, std::vector<LinearRing> interior, int demV, int repV, std::string id) : Polygon(ext, interior, id) {
-            // overloaded constructor for adding shape id
-            dem = demV;
-            rep = repV;
-        }
+        Precinct(LinearRing ext, std::vector<LinearRing> interior, int dem, int rep, std::string id)
+            : dem(dem), rep(rep), Polygon(ext, interior, id) {}
 
         virtual double get_ratio();                 // returns dem/total ratio
         std::vector<int> get_voter_data();  // get data in {dem, rep} format
@@ -400,6 +386,7 @@ class Precinct_Group : public Multi_Polygon {
         double get_ratio();
         std::string to_json();
         int get_population();
+        double get_area();
 
         // for boost serialization
         friend class boost::serialization::access;
