@@ -425,6 +425,14 @@ double Geometry::Polygon::get_area() {
 }
 
 
+double Geometry::Precinct_Group::get_area() {
+    double sum = 0;
+    for (Precinct p : precincts)
+        sum += abs(p.get_area());
+    return sum;
+}
+
+
 double Geometry::Polygon::get_perimeter() {
     /*
         @desc:

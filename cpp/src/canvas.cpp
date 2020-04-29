@@ -222,7 +222,7 @@ void Graphics::Canvas::add_shape(Geometry::Communities s, Geometry::Graph g, boo
 
     for (int i = 0; i < s.size(); i++) {
         Geometry::Community community = s[i];
-        for (Geometry::Polygon shape : community.get_shape(g).border) {
+        for (Geometry::Polygon shape : community.shape.border) {
             Outline outline(shape.hull, colors[i], t, true);
             outlines.push_back(outline);
 
@@ -233,7 +233,7 @@ void Graphics::Canvas::add_shape(Geometry::Communities s, Geometry::Graph g, boo
             }
         }
 
-        Outline outline2(generate_exterior_border(community.get_shape(g)).border[0].hull, Color(0,0,0), t, false);
+        Outline outline2(generate_exterior_border(community.shape).border[0].hull, Color(0,0,0), t, false);
         outlines.push_back(outline2);
     }
 

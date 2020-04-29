@@ -25,14 +25,15 @@ namespace Geometry {
         */
 
         public:
-            // Community(std::vector<int> node_ids);
-
             void save(std::string write_path);
             void load(std::string read_path);
             void add_node(Node& node);
-
+            void remove_node(int node_id);
+            
             std::vector<int> node_ids;
             Precinct_Group shape;
+
+            void update_shape(Graph& graph);
 
             Community(std::vector<int>& node_ids, Graph& graph);
             Community() {}
@@ -40,6 +41,4 @@ namespace Geometry {
 }
 
 
-
 Geometry::Communities get_initial_configuration(Geometry::Graph graph, int n_communities);
-void create_community(Geometry::Graph& graph, int group_size, Geometry::Community& group);

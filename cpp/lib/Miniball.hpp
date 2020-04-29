@@ -23,6 +23,7 @@
 //    CH-8092 Zuerich, Switzerland
 //    http://www.inf.ethz.ch/personal/gaertner
 
+#pragma once
 #include <cassert>
 #include <algorithm>
 #include <list>

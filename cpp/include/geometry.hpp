@@ -7,12 +7,12 @@
 ========================================*/
 
 #pragma once
+#define PI 3.14159265358979323846264338327950288
 
 #include "shape.hpp"
 #include "community.hpp"
 #include "../lib/clipper/clipper.hpp"
-
-#define PI 3.14159265358979323846264338327950288
+#include "../lib/Miniball.hpp"
 
 
 // segment and coordiante manipulation
