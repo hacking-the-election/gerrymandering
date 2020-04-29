@@ -202,11 +202,11 @@ def area(ring):
     left_area = 0
     right_area = 0
     for i, point in enumerate(ring):
+        if i == (len(ring) - 1):
+            break
         if i == 0:
             left_area += float(point[0]) * float(ring[len(ring) - 1][1])
             right_area += float(point[1]) * float(ring[len(ring) - 1][0])
-        elif i == (len(ring) - 1):
-            break
         else:
             left_area += float(point[0]) * float(ring[i + 1][1])
             right_area += float(point[1]) * float(ring[i + 1][0])
