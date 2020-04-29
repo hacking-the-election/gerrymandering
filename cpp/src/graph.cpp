@@ -22,7 +22,7 @@ std::vector<Graph> Graph::get_components() {
     /*
         @desc: get the subgraphs that make up the components
         @params: none
-        @return: `vector<
+        @return: `vector<Geometry::Graph>` components subgraphs
     */
 
     vector<bool> visited(vertices.size(), false);
@@ -141,9 +141,9 @@ void Graph::add_edge(Edge edge) {
     }
 
 
-    if (!(std::find(edges.begin(), edges.end(), hl) != edges.end())) {
-        edges.push_back(hl);
-    }
+    // if (!(std::find(edges.begin(), edges.end(), hl) != edges.end())) {
+    //     edges.push_back(hl);
+    // }
 
     if (!(std::find(vertices[hl[0]].edges.begin(),
             vertices[hl[0]].edges.end(), hl)
@@ -168,7 +168,7 @@ void Graph::remove_node(int id) {
 }
 
 
-std::vector<Edge> Graph::remove_edges_to(int id) {
+void Graph::remove_edges_to(int id) {
     /*
         @desc: removes edges to a node id
         @params: `int` id: id to remove edges of
@@ -176,8 +176,6 @@ std::vector<Edge> Graph::remove_edges_to(int id) {
     */
 
     // 5 => {5, 1}, {5, 6}, {5, 2};
-
-    vector<Edge> edges;
 
     for (Edge edge : vertices[id].edges) {
         Edge remove = {edge[1], edge[0]};
@@ -189,13 +187,11 @@ std::vector<Edge> Graph::remove_edges_to(int id) {
             ),
             vertices[edge[1]].edges.end()
         );
-
-        edges.push_back(edge);
     }
 
-    vertices[id].edges = {};
-    return edges;
+    vertices[id].edges.clear();
 }
 
-
-// void remove_edge(Edge edge);
+// void Graph::remove_edge(Edge edge) {
+    
+// }

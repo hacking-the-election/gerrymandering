@@ -1,3 +1,12 @@
+"""Unit test for initial configuration.
+
+Usage:
+python3 test_initial_configuration.py [state <serialized_state_path>] [-s]
+
+-s -- Show the initial configurations once generated.
+"""
+
+
 import pickle
 import sys
 import unittest
@@ -11,14 +20,13 @@ from hacking_the_election.communities.initial_configuration import \
 from hacking_the_election.utils.precinct import Precinct
 from hacking_the_election.visualization.graph_visualization import \
     visualize_graph
+from hacking_the_election.visualization.map_visualization import \
+    visualize_map
+from hacking_the_election.utils.visualization import COLORS
 
 
-vermont_path = "../data/bin/python/vermont.pickle"
-
-COLORS = {
-    0: (105, 17, 0),
-    1: (34, 0, 105)
-}
+STATE_PATH = "../data/bin/python/vermont.pickle"
+SHOW = False  # Whether or not to show the communities generated when the algorithm is run.
 
 
 class TestInitialConfiguration(unittest.TestCase):
@@ -58,23 +66,43 @@ class TestInitialConfiguration(unittest.TestCase):
                     pass
 
         communities = create_initial_configuration(G2, 2)
-        for community in communities:
-            print(f"COMMUNITY {community.id}")
-            print("\t".join(list(community.precincts.keys())))
 
-    def test_vermont(self):
-        """Tests random community generation with the state of vermont.
+        def get_color(node):
+            precinct = G2.node_attributes(node)[0]
+            for c, community in enumerate(communities):
+                if precinct in community.precincts.values():
+                    return COLORS[c]
+
+        if SHOW:
+            visualize_graph(G2, None, lambda v: G2.node_attributes(v)[0].centroid,
+                colors=get_color, sizes=lambda x: 20, show=True)
+
+
+    def test_state(self):
+        """Tests random community generation with an inputted state.
         """
+
+        global STATE_PATH
+
+        with open(STATE_PATH, "rb") as f:
+            state_graph = pickle.load(f)
         
-        with open(vermont_path, "rb") as f:
-            vermont_graph = pickle.load(f)
-        
-        communities = create_initial_configuration(vermont_graph, 2)
+        communities = create_initial_configuration(state_graph, 2)
+        for community in communities:
+            community.update_coords()
+
+        if SHOW:
+            visualize_map(communities, None, lambda c: c.coords,
+                color=lambda c: COLORS[communities.index(c)], show=True)
 
 
 if __name__ == "__main__":
+
+    SHOW = "-s" in sys.argv[1:]
+
     TestInitialConfiguration("test_grid_graph")()
-    if len(sys.argv) > 1 and sys.argv[1] == "vermont":
+
+    if len(sys.argv) > 1 and sys.argv[1] == "state":
         if len(sys.argv) > 2:
-            vermont_path = sys.argv[2]
-        TestInitialConfiguration("test_vermont")()
+            STATE_PATH = sys.argv[2]
+        TestInitialConfiguration("test_state")()

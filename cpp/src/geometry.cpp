@@ -443,6 +443,38 @@ double Geometry::Polygon::get_perimeter() {
 }
 
 
+Geometry::bounding_box Geometry::Polygon::get_bounding_box() {
+    // set dummy extremes
+    int top = hull.border[0][1], 
+        bottom = hull.border[0][1], 
+        left = hull.border[0][0], 
+        right = hull.border[0][0];
+
+    // loop through and find actual corner using ternary assignment
+    for (Geometry::coordinate coord : hull.border) {
+        if (coord[1] > top) top = coord[1];
+        if (coord[1] < bottom) bottom = coord[1];
+        if (coord[0] < left) left = coord[0];
+        if (coord[0] > right) right = coord[0];
+    }
+
+    return {top, bottom, left, right}; // return bounding box
+}
+
+
+bool bound_overlap(Geometry::bounding_box b1, Geometry::bounding_box b2) {
+    /*
+        @desc: Determines whether or not two rects overlap
+        @params: `Geometry::bounding_box` b1, b2: bounding boxes to check overlap
+        @return: `bool` do rects overlap
+    */
+
+    if (b1[2] > b2[3] || b2[2] > b1[3]) return false;
+    if (b1[1] > b2[0] || b2[1] > b1[0]) return false;
+    return true;
+}
+
+
 double Multi_Polygon::get_area() {
     /*
         @desc: gets sum area of all Polygon objects in border

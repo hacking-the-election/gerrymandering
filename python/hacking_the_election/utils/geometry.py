@@ -212,18 +212,3 @@ def area(ring):
             right_area += float(point[1]) * float(ring[i + 1][0])
 
     return abs(left_area - right_area) / 2
-        
-
-def get_distance(p1, p2):
-    """Finds the distance between two points.
-
-    :param p1: A point in format [x, y]
-    :type p1: list of int
-
-    :param p2: A point in format [x, y]
-    :type p2: list of int
-
-    :return: The euclidean distance between p1 and p2.
-    :rtype: float
-    """
-    return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
