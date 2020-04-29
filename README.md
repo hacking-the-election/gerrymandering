@@ -63,5 +63,13 @@ All dependencies are listed in `python/requirements.txt`
 
 This package will be availalbe on PyPI sometime in the future.
 
+### Testing
+
+To run all unit tests, run the command:
+
+```
+python3 -m hacking_the_election test
+```
+
 ### OS Compatability
-- Any software written in Python will be Windows and macOS compatible.
+- Any software written in Python will be Windows, macOS, and Linux compatible.
