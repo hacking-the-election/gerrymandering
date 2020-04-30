@@ -26,7 +26,7 @@ namespace Geometry {
 
         public:
             void save(std::string);
-            void load(std::string);
+            void load(std::string, Graph&);
 
             void add_node(Node&);
             void remove_node(Node&);
@@ -38,7 +38,7 @@ namespace Geometry {
             Precinct_Group shape;
 
             // hard reset the `shape` object
-            void update_shape(Graph& graph);
+            void update_shape(Graph&);
 
             Community(std::vector<int>& node_ids, Graph& graph);
             Community() {}
