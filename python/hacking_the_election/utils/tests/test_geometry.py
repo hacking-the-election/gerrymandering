@@ -3,9 +3,9 @@
 
 
 import json
+import math
 import os
 import sys
-import time
 import unittest
 
 from shapely.geometry import MultiPolygon, Point
@@ -122,6 +122,14 @@ class TestGeometry(unittest.TestCase):
                 geometry.shapely_to_geojson(self.vermont_precincts["50009VD85"])[0]
             ),
             self.vermont_precincts["50009VD85"].area
+        )
+
+    def test_get_distance(self):
+        """Tests `hacking_the_election.utils.geometry.get_distance`
+        """
+        self.assertEqual(
+            geometry.get_distance([0, 0], [4, 4]),
+            4 * math.sqrt(2)
         )
 
 
