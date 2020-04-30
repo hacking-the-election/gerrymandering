@@ -29,16 +29,16 @@ from hacking_the_election.visualization.graph_visualization import visualize_gra
 SOURCE_DIR = abspath(dirname(__file__))
 
 
-def convert_to_int(string):
+def convert_to_float(string):
     """
     Wrapped error handling for int().
     """
     try:
-        return int(string)
+        return float(string)
     except ValueError:
         if "." in string:
             try:
-                return int(string[:string.index(".")])
+                return float(string[:string.index(".")])
             except ValueError:
                 return 0
         else:
@@ -187,28 +187,28 @@ def create_graph(election_file, geo_file, pop_file, state):
                 except KeyError:
                     continue
                 party_data = [
-                    {'dem': convert_to_int(properties1[dem_key])},
-                    {'rep': convert_to_int(properties1[rep_key])}
+                    {'dem': convert_to_float(properties1[dem_key])},
+                    {'rep': convert_to_float(properties1[rep_key])}
                 ]
                 if total_key:
-                    party_data.append({'other': convert_to_int(properties1[total_key]) - sum(
+                    party_data.append({'other': convert_to_float(properties1[total_key]) - sum(
                         [properties1[key] for key in [green_key, lib_key, reform_key, ind_key, const_key] if key != None]
                     )})
                 # If there is already a total_key, the other_key id is not needed.
                 elif other_key:
-                    party_data.append({'other': convert_to_int(properties1[other_key])})
+                    party_data.append({'other': convert_to_float(properties1[other_key])})
 
 
                 if green_key:
-                    party_data.append({'green': convert_to_int(properties1[green_key])})
+                    party_data.append({'green': convert_to_float(properties1[green_key])})
                 if lib_key:
-                    party_data.append({'lib': convert_to_int(properties1[lib_key])})
+                    party_data.append({'lib': convert_to_float(properties1[lib_key])})
                 if reform_key:
-                    party_data.append({'reform': convert_to_int(properties1[reform_key])})
+                    party_data.append({'reform': convert_to_float(properties1[reform_key])})
                 if ind_key:
-                    party_data.append({'ind': convert_to_int(properties1[ind_key])})
+                    party_data.append({'ind': convert_to_float(properties1[ind_key])})
                 if const_key:
-                    party_data.append({'const': convert_to_int(properties1[const_key])})
+                    party_data.append({'const': convert_to_float(properties1[const_key])})
 
                 precinct_election_data[precinct_id1] = party_data
         # If the election data file is a .tab file
@@ -249,7 +249,7 @@ def create_graph(election_file, geo_file, pop_file, state):
                     total_key_col_index = \
                         [i for i, col in enumerate(election_column_names)
                         if col == total_key][0]
-                    party_data.append({'other': convert_to_int(election_column_names[total_key_col_index]) 
+                    party_data.append({'other': convert_to_float(election_column_names[total_key_col_index]) 
                         - sum([election_column_names[[i for i, col in enumerate(election_column_names) if col == key][0]] 
                         for key in [green_key, lib_key, reform_key, ind_key, const_key] if key != None]
                     )})
@@ -258,29 +258,29 @@ def create_graph(election_file, geo_file, pop_file, state):
                     other_key_col_index = \
                         [i for i, col in enumerate(election_column_names)
                         if col == other_key][0]
-                    party_data.append({'other': convert_to_int(election_column_names[other_key_col_index])})
+                    party_data.append({'other': convert_to_float(election_column_names[other_key_col_index])})
 
 
                 if green_key:
                     key_index = [i for i, col in enumerate(election_column_names)
                         if col == green_key][0]
-                    party_data.append({'green': convert_to_int(election_column_names[key_index])})
+                    party_data.append({'green': convert_to_float(election_column_names[key_index])})
                 if lib_key:
                     key_index = [i for i, col in enumerate(election_column_names)
                         if col == lib_key][0]
-                    party_data.append({'lib': convert_to_int(election_column_names[key_index])})
+                    party_data.append({'lib': convert_to_float(election_column_names[key_index])})
                 if reform_key:
                     key_index = [i for i, col in enumerate(election_column_names)
                         if col == reform_key][0]
-                    party_data.append({'reform': convert_to_int(election_column_names[key_index])})
+                    party_data.append({'reform': convert_to_float(election_column_names[key_index])})
                 if ind_key:
                     key_index = [i for i, col in enumerate(election_column_names)
                         if col == ind_key][0]
-                    party_data.append({'ind': convert_to_int(election_column_names[key_index])})
+                    party_data.append({'ind': convert_to_float(election_column_names[key_index])})
                 if const_key:
                     key_index = [i for i, col in enumerate(election_column_names)
                         if col == const_key][0]
-                    party_data.append({'const': convert_to_int(election_column_names[key_index])})
+                    party_data.append({'const': convert_to_float(election_column_names[key_index])})
 
                 precinct_election_data[election_data_id] = party_data
     else:
@@ -289,28 +289,28 @@ def create_graph(election_file, geo_file, pop_file, state):
             properties = precinct["properties"]
             precinct_id = tostring("".join(properties[json_id] for json_id in json_ids))
             party_data = [
-                {'dem': convert_to_int(properties[dem_key])},
-                {'rep': convert_to_int(properties[rep_key])}
+                {'dem': convert_to_float(properties[dem_key])},
+                {'rep': convert_to_float(properties[rep_key])}
             ]
             if total_key:
-                party_data.append({'other': convert_to_int(properties[total_key]) - sum(
+                party_data.append({'other': convert_to_float(properties[total_key]) - sum(
                         [properties[key] for key in [green_key, lib_key, reform_key, ind_key, const_key] if key != None]
                     )})
             # If there is already a total_key, the other_key id is not needed.
             elif other_key:
-                party_data.append({'other': convert_to_int(properties[other_key])})
+                party_data.append({'other': convert_to_float(properties[other_key])})
 
 
             if green_key:
-                party_data.append({'green': convert_to_int(properties[green_key])})
+                party_data.append({'green': convert_to_float(properties[green_key])})
             if lib_key:
-                party_data.append({'lib': convert_to_int(properties[lib_key])})
+                party_data.append({'lib': convert_to_float(properties[lib_key])})
             if reform_key:
-                party_data.append({'reform': convert_to_int(properties[reform_key])})
+                party_data.append({'reform': convert_to_float(properties[reform_key])})
             if ind_key:
-                party_data.append({'ind': convert_to_int(properties[ind_key])})
+                party_data.append({'ind': convert_to_float(properties[ind_key])})
             if const_key:
-                party_data.append({'const': convert_to_int(properties[const_key])})
+                party_data.append({'const': convert_to_float(properties[const_key])})
             precinct_election_data[precinct_id] = party_data
 
 
@@ -328,7 +328,16 @@ def create_graph(election_file, geo_file, pop_file, state):
         elif pop_data_type == "tab":
             # In these condtionals, pop should have keys that match geodata. this is done here. 
             # compare_ids() from the serialization file in utils can be used for population
-            pass
+            if state == "south carolina":
+                for precinct in geodata["features"]:
+                    precinct_id = tostring("".join(precinct["properties"][json_id] for json_id in json_ids)) 
+                    pop_dict = {row.split("\t")[0] :
+                        row.split("\t")[1]
+                        for row in popdata.split("\n")}
+                    try:
+                        pop[precinct_id] = pop_dict[precinct_id]
+                    except KeyError:
+                        print(f"Failed to find value of {precinct_id}")
         else:
             raise AttributeError
     else:
@@ -344,14 +353,14 @@ def create_graph(election_file, geo_file, pop_file, state):
                 pop_precinct_id = election_data_to_geodata[
                     tostring("".join([row[ele_id_col_index] for ele_id_col_index in ele_id_col_indices]))
                 ]
-                precinct_populations = [row[i] for i in pop_col_indices]
+                precinct_populations = [convert_to_float(row[i]) for i in pop_col_indices]
                 pop[pop_precinct_id] = sum(precinct_populations)
         else:
             # population is in geodata
             for geodata_pop_precinct in geodata["features"]:
                 geodata_pop_properties = geodata_pop_precinct["properties"]
                 geodata_pop_precinct_id = tostring("".join(geodata_pop_properties[json_id] for json_id in json_ids))
-                precinct_populations = [geodata_pop_properties[key] for key in json_pops]
+                precinct_populations = [convert_to_float(geodata_pop_properties[key]) for key in json_pops]
                 pop[geodata_pop_precinct_id] = sum(precinct_populations)
 
     # Create a geodata dictionary
@@ -362,7 +371,7 @@ def create_graph(election_file, geo_file, pop_file, state):
         if not any([non_precinct_id in 
         tostring("".join(precinct["properties"][json_id] for json_id in json_ids))
         for non_precinct_id in non_precinct_ids])
-        }
+    }
 
     # Remove multipolygons from our dictionaries. (This is so our districts/communities stay contiguous)
     split_multipolygons(geodata_dict, pop, precinct_election_data)
