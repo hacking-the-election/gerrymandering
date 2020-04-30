@@ -8,22 +8,15 @@
  algorithmic specific methods.
 ========================================*/
 
+#include <iostream>
+#include <chrono>
+#include <random>
+#include <math.h>
+
 #include "../include/geometry.hpp"
 #include "../include/canvas.hpp"
 #include "../include/shape.hpp"   // class definitions
 #include "../include/util.hpp"
-
-// #include <boost/geometry.hpp>
-// #include <boost/geometry/geometries/point_xy.hpp>
-// #include <boost/geometry/geometries/polygon.hpp>
-
-// typedef boost::geometry::model::d2::point_xy<long int> boost_point;
-// typedef boost::geometry::model::polygon<boost_point> boost_polygon;
-
-// using namespace boost::geometry;
-
-#include <random>  // for std::shuffle
-#include <math.h>
 
 // define geometric constants
 const long int c = pow(10, 18);
@@ -32,8 +25,6 @@ const long int l = pow(2, 6);
 
 using namespace Geometry;
 using namespace std;
-
-#include <chrono>
 
 /*
     Following methods utilize the segment of segments typedefs.
@@ -407,6 +398,28 @@ coordinate Geometry::Multi_Polygon::get_center() {
 }
 
 
+coordinate Geometry::Precinct_Group::get_center() {
+    /*
+        @desc:
+            returns average centroid from list of `holes`
+            and `hull` by calling `LinearRing::get_center`
+
+        @params: none
+        @return: `coordinate` average centroid of shape
+    */
+
+    coordinate average = {0,0};
+
+    for (Precinct s : precincts) {
+        coordinate center = s.hull.get_center();
+        average[0] += center[0];
+        average[1] += center[1];
+    }
+
+    return {((long int)average[0] / (long int)precincts.size()), ((long int)average[1] / (long int)precincts.size())};
+}
+
+
 double Geometry::Polygon::get_area() {
     /*
         @desc:
@@ -688,17 +701,17 @@ bool get_inside_first(Geometry::LinearRing s0, Geometry::LinearRing s1) {
     return (point_in_ring(s0.border[0], s1));
 }
 
-p_index_set get_inner_boundary_precincts(Precinct_Group shape) {
+std::vector<int> get_inner_boundary_precincts(Precinct_Group shape) {
     /*
         @desc:
             gets an array of indices that correspond
             to precincts on the inner edge of a Precinct Group
         
         @params: `Precinct_Group` shape: the precinct group to get inner precincts of
-        @return: `p_index_set` indices of inner border precincts
+        @return: `std::vector<int>` indices of inner border precincts
     */
 
-    p_index_set boundary_precincts;
+    std::vector<int> boundary_precincts;
     Multi_Polygon exterior_border;
     exterior_border.border = shape.border;
 
@@ -715,22 +728,22 @@ p_index_set get_inner_boundary_precincts(Precinct_Group shape) {
 }
 
 
-Geometry::p_index_set get_inner_boundary_precincts(p_index_set precincts, State state) {
+Geometry::std::vector<int> get_inner_boundary_precincts(std::vector<int> precincts, State state) {
     /*
         @desc:
             gets an array of indices that correspond
             to precincts on the inner edge of a precinct_index_set
         
         @params: 
-            `p_index_set` precincts: the precinct index set to get inner precincts of
+            `std::vector<int>` precincts: the precinct index set to get inner precincts of
             `State` state: The precincts that correspond to the indices
 
-        @return: `p_index_set` indices of inner border precincts
+        @return: `std::vector<int>` indices of inner border precincts
     */
-    p_index_set boundary_precincts;
+    std::vector<int> boundary_precincts;
 
     Precinct_Group pg;
-    for (p_index p : precincts)
+    for (int p : precincts)
         pg.add_precinct(state.precincts[p]);
 
     Multi_Polygon border = generate_exterior_border(pg);
@@ -747,48 +760,48 @@ Geometry::p_index_set get_inner_boundary_precincts(p_index_set precincts, State 
 }
 
 
-p_index_set get_bordering_shapes(vector<Polygon> shapes, Polygon shape) {
+std::vector<int> get_bordering_shapes(vector<Polygon> shapes, Polygon shape) {
     /*
         @desc:
             returns set of indices corresponding to the Precinct_Groups that
             border with the Precinct_Group[index] shape.
     */
 
-    p_index_set vec;
+    std::vector<int> vec;
     
-    for (p_index i = 0; i < shapes.size(); i++)
+    for (int i = 0; i < shapes.size(); i++)
         if (( shapes[i] != shape ) && get_bordering(shapes[i], shape)) vec.push_back(i);
     
     return vec;
 }
 
-p_index_set get_bordering_shapes(vector<Precinct_Group> shapes, Polygon shape) {
+std::vector<int> get_bordering_shapes(vector<Precinct_Group> shapes, Polygon shape) {
     /*
         returns set of indices corresponding to the Precinct_Groups that
         border with the Precinct_Group[index] shape.
     */
 
-    p_index_set vec;
+    std::vector<int> vec;
     
-    for (p_index i = 0; i < shapes.size(); i++)
+    for (int i = 0; i < shapes.size(); i++)
         if (( shapes[i] != shape ) && get_bordering(shapes[i], shape)) vec.push_back(i);
 
     return vec;
 }
 
 
-p_index_set get_bordering_precincts(Precinct_Group shape, int p_index) {
+std::vector<int> get_bordering_precincts(Precinct_Group shape, int int) {
     /*
         Returns precincts in a Precinct_Group that border
         a specified precinct index in that group
     */
 
-    p_index_set precincts;
+    std::vector<int> precincts;
 
     for (int i = 0; i < shape.precincts.size(); i++) {
-        if ( i != p_index ) {
+        if ( i != int ) {
             // don't check the same precinct
-            if (get_bordering(shape.precincts[p_index], shape.precincts[i]))
+            if (get_bordering(shape.precincts[int], shape.precincts[i]))
                 precincts.push_back(i);
         }
     }
@@ -1008,7 +1021,7 @@ Multi_Polygon poly_tree_to_shape(ClipperLib::PolyTree tree) {
 }
 
 
-p_index_set get_ext_bordering_precincts(Precinct_Group precincts, State state) {
+std::vector<int> get_ext_bordering_precincts(Precinct_Group precincts, State state) {
     /*
         @desc: a method for getting the precincts in a state that
                border a precinct group. This is used in the communities
@@ -1018,10 +1031,10 @@ p_index_set get_ext_bordering_precincts(Precinct_Group precincts, State state) {
             `precincts`: The precinct group to find borders of
             `state`: A state object with lists of precincts to look through
 
-        @return: `p_index_set` a set of precinct indices that border `precincts`
+        @return: `std::vector<int>` a set of precinct indices that border `precincts`
     */
 
-    p_index_set bordering_pre;
+    std::vector<int> bordering_pre;
     Multi_Polygon border = generate_exterior_border(precincts);
 
     for (int i = 0; i < state.precincts.size(); i++) {
@@ -1033,7 +1046,7 @@ p_index_set get_ext_bordering_precincts(Precinct_Group precincts, State state) {
     return bordering_pre;
 }
 
-Geometry::p_index_set get_ext_bordering_precincts(Geometry::Precinct_Group precincts, Geometry::p_index_set available_pre, Geometry::State state) {
+Geometry::std::vector<int> get_ext_bordering_precincts(Geometry::Precinct_Group precincts, Geometry::std::vector<int> available_pre, Geometry::State state) {
     /*
         @desc: a method for getting the precincts in a state that
                border a precinct group. This is used in the communities
@@ -1043,10 +1056,10 @@ Geometry::p_index_set get_ext_bordering_precincts(Geometry::Precinct_Group preci
             `precincts`: The precinct group to find borders of
             `state`: A state object with lists of precincts to look through
 
-        @return: `p_index_set` a set of precinct indices that border `precincts`
+        @return: `std::vector<int>` a set of precinct indices that border `precincts`
     */
 
-    p_index_set bordering_pre;
+    std::vector<int> bordering_pre;
     Multi_Polygon border = generate_exterior_border(precincts);
 
     for (int i = 0; i < state.precincts.size(); i++) {
@@ -1061,7 +1074,7 @@ Geometry::p_index_set get_ext_bordering_precincts(Geometry::Precinct_Group preci
 }
 
 
-bool creates_island(Geometry::Precinct_Group set, Geometry::p_index remove) {
+bool creates_island(Geometry::Precinct_Group set, Geometry::int remove) {
     /*
         @desc: determines whether removing a precinct index from a set of
                precincts will create an island or not
@@ -1080,7 +1093,7 @@ bool creates_island(Geometry::Precinct_Group set, Geometry::p_index remove) {
 }
 
 
-bool creates_island(Geometry::p_index_set set, Geometry::p_index remove, Geometry::State precincts) {
+bool creates_island(Geometry::std::vector<int> set, Geometry::int remove, Geometry::State precincts) {
     /*
         @desc: determines whether removing a precinct index from a set of
                precincts will create an island or not
@@ -1096,7 +1109,7 @@ bool creates_island(Geometry::p_index_set set, Geometry::p_index remove, Geometr
 
     // calculate initial number of islands in set
     // Precinct_Group pg_before;
-    // for (p_index p : set)
+    // for (int p : set)
     //     pg_before.add_precinct(precincts.precincts[p]);
 
     // int islands_before = generate_exterior_border(pg_before).border.size();
@@ -1106,7 +1119,7 @@ bool creates_island(Geometry::p_index_set set, Geometry::p_index remove, Geometr
 
     // calculate new number of islands
     Precinct_Group pg_after;
-    for (p_index p : set)
+    for (int p : set)
         pg_after.add_precinct_n(precincts.precincts[p]);
 
     int islands_after = generate_exterior_border(pg_after).border.size();
@@ -1142,4 +1155,22 @@ Polygon generate_gon(coordinate c, double radius, int n) {
 
     LinearRing lr(coords);
     return Polygon(lr);
+}
+
+
+bool point_in_circle(Geometry::coordinate center, double radius, Geometry::coordinate point) {
+    /*
+        @desc:
+            Determines whetehr or not a point is inside a
+            circle by checking distance to the center
+
+        @params:
+            `Geometry::coordinate` center: x/y coords of the circle center
+            `double` radius: radius of the circle
+            `Geometry::coordinate` point: point to check
+    
+        @return: `bool` point is inside
+    */
+
+    return (get_distance(center, point) <= radius);
 }
