@@ -162,12 +162,6 @@ void Graph::add_edge(Edge edge) {
 }
 
 
-void Graph::remove_node(int id) {
-    this->remove_edges_to(id);
-    this->vertices.erase(id);
-}
-
-
 void Graph::remove_edges_to(int id) {
     /*
         @desc: removes edges to a node id

@@ -728,7 +728,7 @@ std::vector<int> get_inner_boundary_precincts(Precinct_Group shape) {
 }
 
 
-Geometry::std::vector<int> get_inner_boundary_precincts(std::vector<int> precincts, State state) {
+std::vector<int> get_inner_boundary_precincts(std::vector<int> precincts, State state) {
     /*
         @desc:
             gets an array of indices that correspond
@@ -1046,7 +1046,7 @@ std::vector<int> get_ext_bordering_precincts(Precinct_Group precincts, State sta
     return bordering_pre;
 }
 
-Geometry::std::vector<int> get_ext_bordering_precincts(Geometry::Precinct_Group precincts, Geometry::std::vector<int> available_pre, Geometry::State state) {
+std::vector<int> get_ext_bordering_precincts(Geometry::Precinct_Group precincts, std::vector<int> available_pre, Geometry::State state) {
     /*
         @desc: a method for getting the precincts in a state that
                border a precinct group. This is used in the communities
@@ -1074,7 +1074,7 @@ Geometry::std::vector<int> get_ext_bordering_precincts(Geometry::Precinct_Group 
 }
 
 
-bool creates_island(Geometry::Precinct_Group set, Geometry::int remove) {
+bool creates_island(Geometry::Precinct_Group set, int remove) {
     /*
         @desc: determines whether removing a precinct index from a set of
                precincts will create an island or not
@@ -1093,7 +1093,7 @@ bool creates_island(Geometry::Precinct_Group set, Geometry::int remove) {
 }
 
 
-bool creates_island(Geometry::std::vector<int> set, Geometry::int remove, Geometry::State precincts) {
+bool creates_island(std::vector<int> set, int remove, Geometry::State precincts) {
     /*
         @desc: determines whether removing a precinct index from a set of
                precincts will create an island or not

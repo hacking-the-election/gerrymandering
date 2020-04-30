@@ -99,7 +99,7 @@ void Geometry::Precinct_Group::remove_precinct_n(Geometry::Precinct pre) {
 }
 
 
-void Geometry::Precinct_Group::remove_precinct_n(Geometry::int pre) {
+void Geometry::Precinct_Group::remove_precinct_n(int pre) {
     if (pre < 0 || pre >= precincts.size()) {
         throw Geometry::Exceptions::PrecinctNotInGroup();
         return;
@@ -110,7 +110,7 @@ void Geometry::Precinct_Group::remove_precinct_n(Geometry::int pre) {
 }
 
 
-void Geometry::Precinct_Group::remove_precinct(Geometry::int pre) {
+void Geometry::Precinct_Group::remove_precinct(int pre) {
 
     if (pre < 0 || pre >= precincts.size()) {
         throw Geometry::Exceptions::PrecinctNotInGroup();

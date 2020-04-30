@@ -78,13 +78,13 @@ void State::generate_initial_communities(int num_communities) {
     for (int i = 0; i < num_communities - rem; i++) base_sizes.push_back(base);
     for (int i = 0; i < rem; i++) large_sizes.push_back(base + 1);
     
-    vector<p_index_set> available_precincts = islands;      // precincts that have yet to be used up
-    p_index_set fractional_islands;                         // indices of islands that can't be made of base and large
+    vector<std::vector<int>> available_precincts = islands;      // precincts that have yet to be used up
+    std::vector<int> fractional_islands;                         // indices of islands that can't be made of base and large
     Communities c;                                          // Set of communities
 
     int island_index = 0;
 
-    for (p_index_set island : islands) {
+    for (std::vector<int> island : islands) {
         /*
             Determine the amount of whole communities can
             be fit on each island. If an island contains fractional
@@ -144,9 +144,9 @@ void State::generate_initial_communities(int num_communities) {
         island_index++;
     }
 
-    vector<p_index> ignore_fractionals; // fractional islands to be ignored, not removed
+    vector<int> ignore_fractionals; // fractional islands to be ignored, not removed
 
-    for (p_index fractional_island_i = 0; fractional_island_i < fractional_islands.size(); fractional_island_i++) {
+    for (int fractional_island_i = 0; fractional_island_i < fractional_islands.size(); fractional_island_i++) {
         /*
             Loop through all ƒractional islands - those that need precincts
             from other islands to create communities - and create community
@@ -161,13 +161,13 @@ void State::generate_initial_communities(int num_communities) {
             // create community with location information
             Community community;
             community.location.push_back(fractional_islands[fractional_island_i]);
-            p_index island_i = fractional_islands[fractional_island_i];
-            p_index_set island = islands[island_i];
+            int island_i = fractional_islands[fractional_island_i];
+            std::vector<int> island = islands[island_i];
 
             // get average center of island from precinct centers
             array<long long int, 2> island_center = {0,0};
 
-            for (p_index p : island) {
+            for (int p : island) {
                 coordinate p_center = precincts[p].get_center();
                 island_center[0] += p_center[0];
                 island_center[1] += p_center[1];
@@ -208,7 +208,7 @@ void State::generate_initial_communities(int num_communities) {
                 if (DEBUG_COMMUNITIES) cout << "need community to link with " << n_fractional_island_i << endl;
                 // find the closest fractional island that can be linked
                 double min_distance = pow(10, 80); // arbitrarily high number (easy min)
-                p_index min_index = -1;
+                int min_index = -1;
                 array<long long int, 2> min_island_center = {0,0};
 
                 for (int compare_island = 0; compare_island < fractional_islands.size(); compare_island++) {
@@ -216,10 +216,10 @@ void State::generate_initial_communities(int num_communities) {
                     if (compare_island != n_fractional_island_i && 
                         !(std::find(ignore_fractionals.begin(), ignore_fractionals.end(), fractional_islands[compare_island]) != ignore_fractionals.end())) {
                         // get average center of island from precinct centers
-                        p_index_set island_c = islands[fractional_islands[compare_island]];
+                        std::vector<int> island_c = islands[fractional_islands[compare_island]];
                         array<long long int, 2> island_center_c = {0,0};  
 
-                        for (p_index p : island_c) {
+                        for (int p : island_c) {
                             coordinate p_center = precincts[p].get_center();
                             island_center_c[0] += p_center[0];
                             island_center_c[1] += p_center[1];
@@ -249,17 +249,17 @@ void State::generate_initial_communities(int num_communities) {
 
                 // island_leftover_c contains amount of available precincts on linking island
                 if (DEBUG_COMMUNITIES) cout << "closeset community to link to is " << min_index << endl;
-                p_index link, min_link;
+                int link, min_link;
                 double min_p_distance = pow(10, 80); // arbitrarily high number (easy min)
                 int i = 0;
 
                 // find the precinct closest to the center of the island
                 if (fractional_island_i == n_fractional_island_i) {
-                    p_index_set ignore_p;
+                    std::vector<int> ignore_p;
                     cout << "generating first link" << endl;
                     do {
-                        for (p_index p : get_inner_boundary_precincts(islands[fractional_islands[min_index]], *this)) {
-                        // for (p_index p : islands[fractional_islands[min_index]]) {
+                        for (int p : get_inner_boundary_precincts(islands[fractional_islands[min_index]], *this)) {
+                        // for (int p : islands[fractional_islands[min_index]]) {
                             array<long long int, 2> p_center = {(long long int) precincts[p].get_center()[0], (long long int) precincts[p].get_center()[1]};
                             double dist = get_distance(p_center, island_center);
 
@@ -278,12 +278,12 @@ void State::generate_initial_communities(int num_communities) {
                     link = community.link_position[community.link_position.size() - 1][1][1];
                 }
 
-                p_index_set ignore_p = {};
+                std::vector<int> ignore_p = {};
                 min_p_distance = pow(10, 80);
                 i = 0;
 
                 do {
-                    for (p_index p : get_inner_boundary_precincts(islands[fractional_islands[n_fractional_island_i]], *this)) {
+                    for (int p : get_inner_boundary_precincts(islands[fractional_islands[n_fractional_island_i]], *this)) {
                         array<long long int, 2> p_center = {(long long int) precincts[p].get_center()[0], (long long int) precincts[p].get_center()[1]};
                         double distc = get_distance(p_center, min_island_center);
 
@@ -355,11 +355,11 @@ void State::generate_initial_communities(int num_communities) {
             // get information about the current community
             int size  = community.size[i];
             int island_i = community.location[i];
-            p_index_set island_available_precincts = available_precincts[i]; 
+            std::vector<int> island_available_precincts = available_precincts[i]; 
             cout << "getting available precincts..." << flush;
             
             Precinct_Group island_available_shape;
-            for (p_index pre : island_available_precincts) {
+            for (int pre : island_available_precincts) {
                 Precinct pr = precincts[pre];
                 pr.shape_id = to_string(pre);
                 island_available_shape.add_precinct_n(pr);
@@ -370,9 +370,9 @@ void State::generate_initial_communities(int num_communities) {
             cout << "got" << endl;
 
             cout << "calculating start precinct..." << flush;
-            p_index_set inner_precincts = get_inner_boundary_precincts(island_available_shape);
+            std::vector<int> inner_precincts = get_inner_boundary_precincts(island_available_shape);
 
-            p_index start_precinct = stoi(island_available_shape.precincts[inner_precincts[0]].shape_id);
+            int start_precinct = stoi(island_available_shape.precincts[inner_precincts[0]].shape_id);
 
             Canvas canvas(900,900);
             canvas.add_shape(*this);
@@ -396,14 +396,14 @@ void State::generate_initial_communities(int num_communities) {
 
             while (precincts_added < precincts_to_add) {
                 int precinct = -1;
-                p_index_set tried_precincts; // precincts that will create islands
-                p_index start; // random precinct in border thats not linked
+                std::vector<int> tried_precincts; // precincts that will create islands
+                int start; // random precinct in border thats not linked
 
                 // calculate border, avoid multipoly
-                p_index_set bordering_precincts = get_ext_bordering_precincts(community, island_available_precincts, *this);
+                std::vector<int> bordering_precincts = get_ext_bordering_precincts(community, island_available_precincts, *this);
                 bool can_do_one = false;
 
-                for (p_index pre : bordering_precincts) {
+                for (int pre : bordering_precincts) {
                     if (precincts_added < precincts_to_add && !creates_island(island_available_shape, precincts[pre])) {
                         can_do_one = true;
                         cout << "adding precinct " << pre << endl;
@@ -434,8 +434,8 @@ void State::generate_initial_communities(int num_communities) {
         c[c_index] = community;
     }
 
-    for (p_index_set p : available_precincts) {
-        for (p_index pi : p ) {
+    for (std::vector<int> p : available_precincts) {
+        for (int pi : p ) {
             c[c.size() - 1].add_precinct_n(precincts[pi]);
         }
     }
@@ -450,7 +450,7 @@ void State::generate_initial_communities(int num_communities) {
 }
 
 
-p_index State::get_next_community(double tolerance, int process) {
+int State::get_next_community(double tolerance, int process) {
     /*
         @desc:
             gets next candidate community depending on which process
@@ -461,10 +461,10 @@ p_index State::get_next_community(double tolerance, int process) {
             `double` tolerance: the tolerance for any process
             `int` process: the id of the current running process. These are
                            defined in the top of this file as constants
-        @return: `p_index` community to modify next
+        @return: `int` community to modify next
     */
 
-    p_index i = -1;
+    int i = -1;
 
     if (process == PARTISANSHIP) {
         /*
@@ -473,7 +473,7 @@ p_index State::get_next_community(double tolerance, int process) {
         */
 
         // double max = 0;
-        // p_index x = 0;
+        // int x = 0;
 
         // for (Community c : state_communities) {
         //     double stdev = get_standard_deviation_partisanship(c);
@@ -484,7 +484,7 @@ p_index State::get_next_community(double tolerance, int process) {
         //     x++;
         // }
 
-        p_index x = rand_num(0, state_communities.size() - 1);
+        int x = rand_num(0, state_communities.size() - 1);
         // int itermax = state_communities.size() * 2;
         // int iter = 0;
 
@@ -496,7 +496,7 @@ p_index State::get_next_community(double tolerance, int process) {
     }
     else if (process == COMPACTNESS) {
         unit_interval min = 1;
-        p_index x = 0;
+        int x = 0;
         // int iter = 1;
         // while (state_communities[x].get_compactness() > tolerance) {
         //     x = rand_num(0, state_communities.size() - 1);
@@ -529,7 +529,7 @@ p_index State::get_next_community(double tolerance, int process) {
         vector<int> range = {aim - (int)(tolerance * aim), aim + (int)(tolerance * aim)};
         int max = 0; // largest difference
         int maxpop = 0;
-        p_index x = 0; // keep track of iteration
+        int x = 0; // keep track of iteration
         
         for (Community c : state_communities) {
             if (c.get_population() > maxpop && c.get_population() > range[1]) {
@@ -545,15 +545,15 @@ p_index State::get_next_community(double tolerance, int process) {
 }
 
 
-bool State::give_precinct(p_index precinct, p_index community, int t_type, bool animate) {
+bool State::give_precinct(int precinct, int community, int t_type, bool animate) {
     /*
         @desc: 
             performs a precinct transaction by giving `precinct` from `community` to
             a possible other community (dependent on which function it's being used for).
             This is the only way community borders can change.
         @params:
-            `p_index` precinct: The position of the precinct to give in the community
-            `p_index` community: The position of the community in the state array
+            `int` precinct: The position of the precinct to give in the community
+            `int` community: The position of the community in the state array
             `int` t_type: the currently running process (consts defined in community.cpp)
         @return: void
     */
@@ -567,15 +567,15 @@ bool State::give_precinct(p_index precinct, p_index community, int t_type, bool 
     // canvas.draw();
     
     // get communities that border the current community
-    p_index_set bordering_communities_i = get_bordering_shapes(this->state_communities, this->state_communities[community]);
+    std::vector<int> bordering_communities_i = get_bordering_shapes(this->state_communities, this->state_communities[community]);
 
     // convert to actual shape array
     Communities bordering_communities;
-    for (p_index i : bordering_communities_i)
+    for (int i : bordering_communities_i)
         bordering_communities.push_back(this->state_communities[i]);
 
     // of those communities, get the ones that also border the precinct
-    p_index_set exchangeable_communities_i = get_bordering_shapes(bordering_communities, precinct_shape);
+    std::vector<int> exchangeable_communities_i = get_bordering_shapes(bordering_communities, precinct_shape);
     Communities exchangeable_communities;
     if (exchangeable_communities_i.size() == 0) return false;
 
@@ -584,13 +584,13 @@ bool State::give_precinct(p_index precinct, p_index community, int t_type, bool 
         exchangeable_communities.push_back(this->state_communities[exchangeable_communities_i[i]]);
     }
     
-    p_index exchange_choice;
+    int exchange_choice;
 
     if (t_type == PARTISANSHIP) {
         // get closest average to precinct
         double min = abs(get_median_partisanship(exchangeable_communities[0]) - precinct_shape.get_ratio());
-        p_index choice = 0;
-        p_index index = 0;
+        int choice = 0;
+        int index = 0;
 
         for (int i = 1; i < exchangeable_communities.size(); i++) {
             index++;
@@ -606,7 +606,7 @@ bool State::give_precinct(p_index precinct, p_index community, int t_type, bool 
     else if (t_type == COMPACTNESS) {
         // get highest compactness score
         double min = exchangeable_communities[0].get_compactness();
-        p_index choice = 0;
+        int choice = 0;
 
         for (int i = 1; i < exchangeable_communities.size(); i++) {
             Community c = exchangeable_communities[i];
@@ -621,7 +621,7 @@ bool State::give_precinct(p_index precinct, p_index community, int t_type, bool 
     }
     else if (t_type == POPULATION) {
         int min = exchangeable_communities[0].get_population();
-        p_index choice = 0;
+        int choice = 0;
          
         for (int i = 1; i < exchangeable_communities.size(); i++) {
             Community c = exchangeable_communities[i];
@@ -655,16 +655,16 @@ bool State::give_precinct(p_index precinct, p_index community, int t_type, bool 
 }
 
 
-bool State::give_precinct(p_index precinct, p_index community, p_index community_give, bool p, bool animate) {
+bool State::give_precinct(int precinct, int community, int community_give, bool p, bool animate) {
     /*
         @desc: 
             performs a precinct transaction by giving `precinct` from `community` to
             a possible other community specified in the parameters.
             This is the only way community borders can change.
         @params:
-            `p_index` precinct: The position of the precinct to give in the community
-            `p_index` community: The position of the community in the state array
-            `p_index` community_give: The community to give to
+            `int` precinct: The position of the precinct to give in the community
+            `int` community: The position of the community in the state array
+            `int` community_give: The community to give to
         @return: void
     */
 
@@ -697,7 +697,7 @@ void State::refine_compactness(double compactness_tolerance) {
         @return: void
     */
 
-    p_index worst_community = get_next_community(compactness_tolerance, COMPACTNESS);
+    int worst_community = get_next_community(compactness_tolerance, COMPACTNESS);
 
     bool is_worst = false;
     for (int i = 0; i < state_communities.size(); i++) {
@@ -724,7 +724,7 @@ void State::refine_compactness(double compactness_tolerance) {
         Polygon circle;
         coordinate center = state_communities[worst_community].get_center();
         circle = generate_gon(center, sqrt(state_communities[worst_community].get_area() / PI), 30);
-        p_index_set giveable = get_inner_boundary_precincts(state_communities[worst_community]);
+        std::vector<int> giveable = get_inner_boundary_precincts(state_communities[worst_community]);
 
         for (Community c : this->state_communities)
             cout << c.get_compactness() << ", ";
@@ -740,7 +740,7 @@ void State::refine_compactness(double compactness_tolerance) {
             }
         }
 
-        p_index old_c = worst_community;
+        int old_c = worst_community;
 
         // update worst_community, check stop condition
         int old_worst = worst_community;
@@ -796,19 +796,19 @@ void State::refine_partisan(double partisanship_tolerance) {
         @return: void
     */
 
-    p_index worst_community = get_next_community(partisanship_tolerance, PARTISANSHIP);
+    int worst_community = get_next_community(partisanship_tolerance, PARTISANSHIP);
     bool is_done = (get_standard_deviation_partisanship(this->state_communities) < partisanship_tolerance);
     int iter = 0;
 
     cout << "refining for partisanship" << endl;
 
     while (!is_done) {
-        p_index_set border_precincts = get_inner_boundary_precincts(state_communities[worst_community]);
+        std::vector<int> border_precincts = get_inner_boundary_precincts(state_communities[worst_community]);
         for (Community c : this->state_communities)
             cout << get_standard_deviation_partisanship(c) << ", ";
         cout << endl;
 
-        for (p_index p : border_precincts) {
+        for (int p : border_precincts) {
             if (!creates_island(state_communities[worst_community], p)) {
                 Communities before = this->state_communities;
                 give_precinct(p, worst_community, PARTISANSHIP, false);
@@ -846,7 +846,7 @@ void State::refine_population(double population_tolerance) {
     population_tolerance /= 2;  // so the +- value can be passed normally
 
     // find the first community to be optimized
-    p_index worst_community = get_next_community(population_tolerance, POPULATION);
+    int worst_community = get_next_community(population_tolerance, POPULATION);
     bool is_done = (worst_community == -1); // initialize stop condition
 
     // calculate the range each community's population should be within
@@ -859,7 +859,7 @@ void State::refine_population(double population_tolerance) {
     // begin main iterative loop
     while (!is_done) {
         Community c = state_communities[worst_community];
-        p_index_set border_precincts = get_inner_boundary_precincts(state_communities[worst_community]);
+        std::vector<int> border_precincts = get_inner_boundary_precincts(state_communities[worst_community]);
         int index = 0;
 
         for (Community c : this->state_communities)

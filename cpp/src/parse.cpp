@@ -425,7 +425,6 @@ vector<Geometry::Polygon> parse_precinct_coordinates(string geoJSON) {
             if (shapes["features"][i]["properties"][population_id.c_str()].IsInt())
                 pop = shapes["features"][i]["properties"][population_id.c_str()].GetInt();
             else if (shapes["features"][i]["properties"][population_id.c_str()].IsString()){
-                // cout << shapes["features"][i]["properties"][population_id.c_str()].GetString() << endl;
                 string tmp = shapes["features"][i]["properties"][population_id.c_str()].GetString();
                 if (tmp != "" && tmp != "NA") pop = stoi(tmp);
             }
@@ -595,7 +594,7 @@ Geometry::Precinct_Group combine_holes(Geometry::Precinct_Group pg) {
     */
 
     vector<Geometry::Precinct> precincts;
-    vector<Geometry::p_index> precincts_to_ignore;
+    vector<int> precincts_to_ignore;
 
     for (int x = 0; x < pg.precincts.size(); x++) {
         // for each precinct in the pg array

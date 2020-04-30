@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
     vector<string> states = {"connecticut", "indiana", "iowa", "mass_connected", "new_hampshire", "new_jersey", "new_york", "north_carolina", "pennsylvania", "vermont"};
 
     for (string st : states) {
-        State state = State::read_binary("../../data/bin/cpp/" + st + ".dat");
+        State state = State::from_binary("../../data/bin/cpp/" + st + ".dat");
         cout << state.precincts.size() << ": ";
 
         for (int i = 0; i < 30; i++) {
