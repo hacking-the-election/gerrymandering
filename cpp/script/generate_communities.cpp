@@ -36,19 +36,11 @@ int main(int argc, char* argv[]) {
 
     // read binary file from path
     string read_path = string(argv[1]);
-    State state = State::read_binary(read_path);
+    State state = State::from_binary(read_path);
     int n_communities = stoi(string(argv[2]));
-
-    using namespace std::chrono; 
-    auto start = high_resolution_clock::now(); 
     Communities s = get_initial_configuration(state.network, n_communities);
 
-    auto stop = high_resolution_clock::now(); 
-    auto duration = duration_cast<microseconds>(stop - start); 
-    
-    cout << duration.count() << endl; 
-
-    Canvas canvas(300, 300);
+    Canvas canvas(500, 500);
     canvas.add_shape(s, state.network);
     canvas.draw();
     

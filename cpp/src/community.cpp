@@ -79,16 +79,11 @@ double get_compactness(Community& community) {
         @ref: https://fisherzachary.github.io/public/r-output.html
     */
 
-    auto start = high_resolution_clock::now();
-
     coordinate_set lp;
     vector<vector<double> > p;
 
     for (Precinct pre : community.shape.precincts) {
-        // for (coordinate c : pre.hull.border) {
-            // p.push_back(vector<double>(c.begin(), c.end()));
         lp.insert(lp.end(), pre.hull.border.begin(), pre.hull.border.end());
-        // }
     }
 
     p.reserve(lp.size());
@@ -96,15 +91,10 @@ double get_compactness(Community& community) {
     for (int i = 0; i < lp.size(); i++)
         p.emplace_back(lp[i].begin(), lp[i].end());
 
-    auto stop = high_resolution_clock::now();
-    cout << "a " << duration_cast<microseconds> (stop - start).count() << endl;
+    lp.clear();
 
-    start = high_resolution_clock::now();
     MB mb (2, p.begin(), p.end());
     int t = (double)community.shape.get_area() / (mb.squared_radius() * PI);
-    stop = high_resolution_clock::now();
-    cout << "b " << duration_cast<microseconds> (stop - start).count() << endl;
-
     return t;
 } 
 
@@ -137,23 +127,60 @@ void maximize(Communities& communities, Graph& graph, double (*measure)(Communit
         // choose worst community to modify
         // vector<double> measures;
         // measures.reserve(n_communities);
-        // int smallest_index = 0;
-        // double smallest_measure = measure(communities[0]);
+        int smallest_index = 0;
+        double smallest_measure = measure(communities[0]);
         
         for (int i = 1; i < communities.size(); i++) {
             double x = measure(communities[i]);
-            // if (x < smallest_measure) {
-                // smallest_measure = x;
-                // smallest_index = i;
-            // }
+            if (x < smallest_measure) {
+                smallest_measure = x;
+                smallest_index = i;
+            }
         }
 
-        // cout << "the worst community is " << *min_element(measures.begin(), measures.end()) << endl;
+        cout << "the worst community is " << smallest_index << endl;
 
-        // if (average(communities, measure) > average(best, measure)) {
-        //     best = communities;
-        //     iterations_since_best = 0;
-        // }
+        vector<int> takeable;
+        for (int i = 0; i < graph.vertices.size(); i++) {
+            if (find(communities[smallest_index].node_ids.begin(), communities[smallest_index].node_ids.end(), i) == communities[smallest_index].node_ids.end()) {
+                bool has_neighbor = false;
+                for (Edge e : graph.vertices[i].edges) {
+                    if (find(communities[smallest_index].node_ids.begin(), communities[smallest_index].node_ids.end(), e[1]) != communities[smallest_index].node_ids.end()) {
+                        has_neighbor = true;
+                        break;
+                    }
+                }
+
+                if (has_neighbor) {
+                    takeable.push_back(i);
+                }
+            }
+        }
+
+        coordinate center = communities[smallest_index].shape.get_center();
+        double radius = sqrt(communities[smallest_index].shape.get_area() / PI);
+
+        for (int i = 0; i < takeable.size(); i++) {
+            if (point_in_circle(center, radius, graph.vertices[takeable[i]].precinct->get_center())) {
+                cout << "adding takeable precinct " << i << endl;
+                communities[graph.vertices[takeable[i]].community].remove_node(graph.vertices[takeable[i]]);
+            }
+            else {
+                cout << "not adding takeable precinct " << i << endl;
+            }
+        }
+
+
+        cout << takeable.size() << endl;
+
+        if (average(communities, measure) > average(best, measure)) {
+            cout << "found a better solution" << endl;
+            best = communities;
+            iterations_since_best = 0;
+        }
+        else {
+            cout << "not currently a better solution" << endl;
+        }
     }
 
     cout << "did not improve after " << ITERATION_LIMIT << " iterations, returning..." << endl;
@@ -250,26 +277,26 @@ Communities get_initial_configuration(Graph graph, int n_communities) {
         cs[i].update_shape(graph);
     }
 
-    Community state;
-    state.node_ids.resize(graph.vertices.size());
-    iota(state.node_ids.begin(), state.node_ids.end(), 0);
-    state.update_shape(graph);
-    double total = 0;
+    // Community state;
+    // state.node_ids.resize(graph.vertices.size());
+    // iota(state.node_ids.begin(), state.node_ids.end(), 0);
+    // state.update_shape(graph);
+    // double total = 0;
     
-    for (int i = 0; i < 500; i++) {
-        // for (int x = 0; x < cs.size(); x++) {
-        auto start = high_resolution_clock::now();
-        get_compactness(state);
-        auto stop = high_resolution_clock::now();
-        total += duration_cast<microseconds> (stop - start).count();
+    // for (int i = 0; i < 500; i++) {
+    //     // for (int x = 0; x < cs.size(); x++) {
+    //     auto start = high_resolution_clock::now();
+    //     get_compactness(state);
+    //     auto stop = high_resolution_clock::now();
+    //     total += duration_cast<microseconds> (stop - start).count();
 
-        // }
-    }
+    //     // }
+    // }
 
-    total /= 500.0;
-    cout << total << endl;
+    // total /= 500.0;
+    // cout << total << endl;
 
-    // maximize(cs, graph, get_compactness);
+    maximize(cs, graph, get_compactness);
 
     return cs;
 }
