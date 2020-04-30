@@ -62,9 +62,11 @@ namespace Geometry {
     typedef double unit_interval;                       // for values between [0, 1]
 
 
-    enum POLITICAL_PARTIES {
-        // define all policial parties for 
-        // voter_data map in precinct class
+    enum class POLITICAL_PARTY {
+        /*
+            define all policial parties for 
+            voter_data map in precinct class
+        */
 
         DEMOCRAT,
         REPUBLICAN,
@@ -76,21 +78,18 @@ namespace Geometry {
 
 
     class Exceptions {
-        /*
-            For throwing custom errors when bad inputs are
-            passed to some of these functions/constructors
-        */
 
     public:
-        struct CreatesIsland : public std::exception {
-            const char* what() const throw() {
-                return "Precinct exchange creates an island";
-            }
-        };
 
         struct PrecinctNotInGroup : public std::exception {
             const char* what() const throw() {
                 return "No precinct in this precinct group matches the provided argument";
+            }
+        };
+
+        struct LinearRingOpen : public std::exception {
+            const char* what() const throw() {
+                return "Points LinearRing do not form closed ring";
             }
         };
     };
@@ -99,10 +98,14 @@ namespace Geometry {
     class LinearRing {
         /*
             Contains a mandatory `border` property that contains
-            a simple coordiante_set - a sequence of lines.
+            a simple coordinate_set - a sequence of lines.
             
             Basically a wrapper for the coordinate_set typedef
-            with extended method functionality
+            with extended method functionality.
+
+            @warn:
+                **Must** be passed a closed coordinate set in the
+                constructor or will throw Exceptions::LinearRingOpen
         */
 
     public: 
@@ -110,17 +113,19 @@ namespace Geometry {
         LinearRing() {};
 
         LinearRing(coordinate_set b) {
+            if (b[0] != b[b.size() - 1])
+                throw Exceptions::LinearRingOpen();
+
             border = b;
         }
+
+        coordinate_set border;
 
         virtual double get_area();            // area of shape using shoelace theorem
         virtual double get_perimeter();       // sum distance of segments
         virtual coordinate get_center();      // average of all points in shape
         virtual segments get_segments();      // return a segment list with shape's segments
-
         virtual std::string to_json();
-
-        coordinate_set border;
 
         // add operator overloading for object equality
         friend bool operator== (LinearRing l1, LinearRing l2);
@@ -209,41 +214,35 @@ namespace Geometry {
 
             Precinct(){} // default constructor
 
-            Precinct(LinearRing ext, int dem, int rep)
-                : dem(dem), rep(rep), Polygon(ext) {}
+            Precinct(LinearRing ext) : Polygon(ext) {}
 
-            Precinct(LinearRing ext, std::vector<LinearRing> interior, int dem, int rep)
-                : dem(dem), rep(rep), Polygon(ext, interior) {}
+            Precinct(LinearRing ext, std::string id) : Polygon(ext, id) {}
 
+            Precinct(LinearRing ext, std::vector<LinearRing> interior)
+                : Polygon(ext, interior) {}
 
-            Precinct(LinearRing ext, int dem, int rep, std::string id)
-                : dem(dem), rep(rep), Polygon(ext, id) {}
+            Precinct(LinearRing ext, std::vector<LinearRing> interior, std::string id)
+                : Polygon(ext, interior, id) {}
 
-
-            Precinct(LinearRing ext, int dem, int rep, int popu, std::string id)
-                : dem(dem), rep(rep), Polygon(ext, id) {
-                    this->pop = popu;
+            Precinct(LinearRing ext, int popu, std::string id) : Polygon(ext, id) {
+                this->pop = popu;
             }
-
-            Precinct(LinearRing ext, std::vector<LinearRing> interior, int dem, int rep, std::string id)
-                : dem(dem), rep(rep), Polygon(ext, interior, id) {}
-
-
-            std::vector<int> get_voter_data();  // get data in {dem, rep} format
 
             // add operator overloading for object equality
             friend bool operator== (const Precinct& p1, const Precinct& p2);
             friend bool operator!= (const Precinct& p1, const Precinct& p2);
 
-            int dem; // democratic vote total
-            int rep; // republican vote total
+            std::map<POLITICAL_PARTY, int> voter_data;
     };
 
 
     class Multi_Polygon : public Polygon {
         /*
-            
+            A polygon object with multiple polygons. Used for defining
+            geographical objects similar to the conterminous US and Alaska within
+            a single object.
         */
+
     public: 
 
         Multi_Polygon(){}; // default constructor
@@ -268,9 +267,10 @@ namespace Geometry {
         }
 
         double get_perimeter();               // total perimeter of border array
-        coordinate get_center();              // total perimeter of border array
         double get_compactness();             // average compactenss of each shape
         double get_area();                    // total area of the border shape array
+
+        coordinate get_center();              // total perimeter of border array
         virtual segments get_segments();      // return a segment list with shape's segments
         virtual std::string to_json();       
 
@@ -282,59 +282,6 @@ namespace Geometry {
     };
 
 
-    typedef std::array<int, 2> Edge;
-
-
-    class Node {
-        /*
-            A vertex on the `Graph` class, containing
-            precinct information and edge information
-        */
-        
-        public:
-
-            int id;
-            int community;
-            Precinct* precinct;
-
-            Node() {};
-            Node(Precinct* precinct) : precinct(precinct) {};
-            
-            friend bool operator< (const Node& l1, const Node& l2);
-            friend bool operator== (const Node& l1, const Node& l2);
-
-            std::vector<Edge > edges;
-            std::vector<int> collapsed;
-            
-            // for boost serialization
-            friend class boost::serialization::access;
-            template<class Archive> void serialize(Archive & ar, const unsigned int version);
-    };
-
-
-    class Graph {
-        public:
-            std::map<int, Node> vertices;
-            std::vector<Edge> edges;
-
-            // drivers for component algorithm
-            int get_num_components();
-            std::vector<Graph> get_components();
-
-            // recursors for getting different data
-            void dfs_recursor(int v, std::vector<bool>& visited);
-            void dfs_recursor(int v, std::vector<bool>& visited, std::vector<int>* nodes);
-
-            void add_edge(Edge);
-            void remove_edge(Edge);
-            void remove_edges_to(int id);
-            
-            // for boost serialization
-            friend class boost::serialization::access;
-            template<class Archive> void serialize(Archive & ar, const unsigned int version);
-    };
-
-
     class Precinct_Group : public Multi_Polygon {
 
         /* 
@@ -343,31 +290,29 @@ namespace Geometry {
         */
 
         public:
-            std::vector<Precinct> precincts;  // array of precinct objects
-
-            virtual void remove_precinct(Precinct pre);
-            virtual void remove_precinct_n(Precinct pre);
-            virtual void remove_precinct(int pre);
-            virtual void remove_precinct_n(int pre);
-
-            virtual void add_precinct(Precinct pre);
-            virtual void add_precinct_n(Precinct pre);
-            
-
             Precinct_Group(){};
+
             Precinct_Group(std::vector<Polygon> shapes)
-                : Multi_Polygon(shapes) {}; // call the superclass constructor
+                : Multi_Polygon(shapes) {};
             
-            Precinct_Group(std::vector<Precinct> shapes) : Multi_Polygon(shapes) {
-                precincts = shapes;
-            };
+            Precinct_Group(std::vector<Precinct> precincts)
+                : Multi_Polygon(precincts), precincts(precincts) {}
+
+
+            // array of precinct objects
+            std::vector<Precinct> precincts;
+
+            virtual void remove_precinct(Precinct);
+            virtual void remove_precinct(int precint_index);
+            virtual void add_precinct(Precinct);
+            Precinct get_precinct_from_id(string);
 
             double get_area();
+            coordinate get_center();
+
             int get_population();
             std::string to_json();
-            coordinate get_center();
     };
-
 
 
     class State : public Precinct_Group {
