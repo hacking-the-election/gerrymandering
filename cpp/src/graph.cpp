@@ -9,9 +9,10 @@
 
 #include <iostream>
 #include <algorithm>
-// #include "../include/graph.hpp"
+
 #include "../include/shape.hpp"
 #include "../include/canvas.hpp"
+#include "../include/graph.hpp"
 
 using namespace Geometry;
 using namespace Graphics;
@@ -169,6 +170,7 @@ void Graph::remove_edges_to(int id) {
         @return: `std::vector<Geometry::Edge>` edges that have been removed
     */
 
+
     for (Edge edge : vertices[id].edges) {
         Edge remove = {edge[1], edge[0]};
 
@@ -183,3 +185,7 @@ void Graph::remove_edges_to(int id) {
 
     vertices[id].edges.clear();
 }
+
+// void Graph::remove_edge(Edge edge) {
+    
+// }

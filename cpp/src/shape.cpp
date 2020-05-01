@@ -366,7 +366,7 @@ namespace boost {
             and state nested objects. They now call base
             classes for more efficient serialization
         */
-
+       
         template<class Archive>
         void serialize(Archive & ar, Geometry::State& s, const unsigned int version) {
             ar & boost::serialization::base_object<Geometry::Precinct_Group>(s);
@@ -409,6 +409,7 @@ namespace boost {
         template<class Archive>
         void serialize(Archive & ar, Geometry::Graph& s, const unsigned int version) {
             ar & s.edges;
+
             ar & s.vertices;
         }
 
@@ -417,6 +418,24 @@ namespace boost {
         void serialize(Archive & ar, Geometry::Node& s, const unsigned int version) {
             ar & s.edges;
             ar & s.id;
+        }
+
+
+        template<class Archive, class Key, class T>
+        void serialize(Archive & ar, tsl::ordered_map<Key, T>& map, const unsigned int version) {
+            split_free(ar, map, version); 
+        }
+
+        template<class Archive, class Key, class T>
+        void save(Archive & ar, const tsl::ordered_map<Key, T>& map, const unsigned int /*version*/) {
+            auto serializer = [&ar](const auto& v) { ar & v; };
+            map.serialize(serializer);
+        }
+
+        template<class Archive, class Key, class T>
+        void load(Archive & ar, tsl::ordered_map<Key, T>& map, const unsigned int /*version*/) {
+            deserializer<Archive> des = deserializer<Archive>(ar);
+            map = tsl::ordered_map<Key, T>::deserialize(des);
         }
 
 

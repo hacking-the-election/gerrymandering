@@ -8,7 +8,9 @@
 
 
 #pragma once
-#include "shape.hpp"
+
+#include "../include/shape.hpp"
+#include "../lib/ordered-map/include/tsl/ordered_map.h"
 
 
 namespace Geometry {
@@ -50,7 +52,7 @@ namespace Geometry {
     class Graph {
 
     public:
-        std::map<int, Node> vertices;
+        tsl::ordered_map<int, Node> vertices;
         std::vector<Edge> edges;
 
         // drivers for component algorithm
