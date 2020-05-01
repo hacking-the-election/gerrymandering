@@ -10,8 +10,8 @@
 
 #include "../include/shape.hpp"     // class definitions
 #include "../include/geometry.hpp"  // class definitions
+#include "../include/graph.hpp"     // class definitions
 #include "../include/util.hpp"      // split and join
-
 
 #include <boost/serialization/split_free.hpp>
 #include <boost/serialization/utility.hpp>
@@ -23,11 +23,9 @@
 
 using std::cout;
 using std::endl;
+using std::string;
 
-#define REP  // use rep / (dem + rep) as ratio
-
-std::string geojson_header = "{\"type\": \"FeatureCollection\", \"features\":[";
-
+const string geojson_header = "{\"type\": \"FeatureCollection\", \"features\":[";
 
 /*
     This file is in need of some maintenence. The
@@ -40,38 +38,6 @@ std::string geojson_header = "{\"type\": \"FeatureCollection\", \"features\":[";
 */
 
 
-double Geometry::Precinct::get_ratio() {
-    // retrieve ratio from precinct
-
-    if (rep == -1 && dem == -1)
-        return -1;
-
-    #ifdef REP
-        if (rep == 0 && dem == 0) return 0.5;
-        return (double) rep / ((double) dem + (double) rep);
-    #endif
-    #ifndef REP
-        return dem / (dem + rep);
-    #endif
-}
-
-
-double Geometry::Precinct_Group::get_ratio() {
-    double average = 0;
-    for (Precinct p : precincts)
-        average += p.get_ratio();
-    average /= precincts.size();
-
-    return average;
-}
-
-
-std::vector<int> Geometry::Precinct::get_voter_data() {
-    // get vector of voting data
-    return {dem, rep};
-}
-
-
 int Geometry::Precinct_Group::get_population() {
     // Returns total population in a Precinct_Group
 
@@ -80,33 +46,6 @@ int Geometry::Precinct_Group::get_population() {
         total += p.pop;
 
     return total;
-}
-
-
-void Geometry::Precinct_Group::add_precinct_n(Precinct pre) {
-    precincts.push_back(pre);
-}
-
-
-void Geometry::Precinct_Group::remove_precinct_n(Geometry::Precinct pre) {
-
-    if (std::find(precincts.begin(), precincts.end(), pre) != precincts.end()) {
-        precincts.erase(std::remove(precincts.begin(), precincts.end(), pre), precincts.end());
-    }
-    else {
-        throw Geometry::Exceptions::PrecinctNotInGroup();   
-    }
-}
-
-
-void Geometry::Precinct_Group::remove_precinct_n(int pre) {
-    if (pre < 0 || pre >= precincts.size()) {
-        throw Geometry::Exceptions::PrecinctNotInGroup();
-        return;
-    }
-    else {
-        precincts.erase(precincts.begin() + pre);
-    }
 }
 
 
@@ -144,6 +83,11 @@ void Geometry::Precinct_Group::remove_precinct(Geometry::Precinct pre) {
         @desc: Removes a precinct from a Precinct Group and updates the border with a difference
         @params: `Precinct` pre: Precinct to be removed
         @return: `void`
+
+        @warn:
+            a potentially expensive and dangerous std::find
+            as the first operation is pretty bad so there's
+            probably a better way with id's or ptrs or something
     */
 
     if (std::find(precincts.begin(), precincts.end(), pre) != precincts.end()) {
@@ -203,42 +147,42 @@ void Geometry::Precinct_Group::add_precinct(Geometry::Precinct pre) {
 }
 
 
-bool Geometry::operator== (Geometry::LinearRing l1, Geometry::LinearRing l2) {
+bool Geometry::operator== (const Geometry::LinearRing& l1, const Geometry::LinearRing& l2) {
     return (l1.border == l2.border);
 }
 
 
-bool Geometry::operator!= (Geometry::LinearRing l1, Geometry::LinearRing l2) {
+bool Geometry::operator!= (const Geometry::LinearRing& l1, const Geometry::LinearRing& l2) {
     return (l1.border != l2.border);
 }
 
 
-bool Geometry::operator== (Geometry::Polygon p1, Geometry::Polygon p2) {
+bool Geometry::operator== (const Geometry::Polygon& p1, const Geometry::Polygon& p2) {
     return (p1.hull == p2.hull && p1.holes == p2.holes);
 }
 
 
-bool Geometry::operator!= (Geometry::Polygon p1, Geometry::Polygon p2) {
+bool Geometry::operator!= (const Geometry::Polygon& p1, const Geometry::Polygon& p2) {
     return (p1.hull != p2.hull || p1.holes != p2.holes);
 }
 
 
-bool Geometry::operator== (Geometry::Precinct p1, Geometry::Precinct p2) {
-    return (p1.hull == p2.hull && p1.holes == p2.holes && p1.dem == p2.dem && p1.rep == p2.rep && p1.pop == p2.pop);
+bool Geometry::operator== (const Geometry::Precinct& p1, const Geometry::Precinct& p2) {
+    return (p1.hull == p2.hull && p1.holes == p2.holes && p1.voter_data == p2.voter_data && p1.pop == p2.pop);
 }
 
 
-bool Geometry::operator!= (Geometry::Precinct p1, Geometry::Precinct p2) {
-    return (p1.hull != p2.hull || p1.holes != p2.holes || p1.dem != p2.dem || p1.rep != p2.rep || p1.pop != p2.pop);
+bool Geometry::operator!= (const Geometry::Precinct& p1, const Geometry::Precinct& p2) {
+    return (p1.hull != p2.hull || p1.holes != p2.holes || p1.voter_data != p2.voter_data || p1.pop != p2.pop);
 }
 
 
-bool Geometry::operator== (Geometry::Multi_Polygon& s1, Geometry::Multi_Polygon& s2) {
+bool Geometry::operator== (const Geometry::Multi_Polygon& s1, const Geometry::Multi_Polygon& s2) {
     return (s1.border == s2.border);
 }
 
 
-bool Geometry::operator!= (Geometry::Multi_Polygon& s1, Geometry::Multi_Polygon& s2) {
+bool Geometry::operator!= (const Geometry::Multi_Polygon& s1, const Geometry::Multi_Polygon& s2) {
     return (s1.border != s2.border);
 }
 
@@ -253,14 +197,14 @@ bool Geometry::operator== (const Node& l1, const Node& l2) {
 }
 
 
-std::string Geometry::LinearRing::to_json() {
+string Geometry::LinearRing::to_json() {
     /*
         @desc: converts a linear ring into a json array of coords
         @params: none
         @return: `string` json array
     */
 
-    std::string str = "[";
+    string str = "[";
     for (Geometry::coordinate c : border)
         str += "[" + std::to_string(c[0]) + ", " + std::to_string(c[1]) + "],";
 
@@ -271,7 +215,7 @@ std::string Geometry::LinearRing::to_json() {
 }
 
 
-std::string Geometry::Precinct_Group::to_json() {
+string Geometry::Precinct_Group::to_json() {
     /*
         @desc:
             converts a Precinct_Group object into a geojson document
@@ -281,7 +225,7 @@ std::string Geometry::Precinct_Group::to_json() {
         @return: `string` json array
     */
 
-    std::string str = geojson_header;
+    string str = geojson_header;
     
     for (Geometry::Precinct p : precincts) {
         str += "{\"type\":\"Feature\",\"geometry\":{\"type\":\"Polygon\",\"coordinates\":[";
@@ -297,14 +241,14 @@ std::string Geometry::Precinct_Group::to_json() {
 }
 
 
-std::string Geometry::Polygon::to_json() {
+string Geometry::Polygon::to_json() {
     /*
         @desc: Converts a normal shape object into geojson
         @params: none
         @return: `string` geojson object
     */
 
-    std::string str = geojson_header;
+    string str = geojson_header;
     str += hull.to_json();
     str += "]}}";
 
@@ -312,14 +256,14 @@ std::string Geometry::Polygon::to_json() {
 }
 
 
-std::string Geometry::Multi_Polygon::to_json() {
+string Geometry::Multi_Polygon::to_json() {
     /*
         @desc: Converts a multiple shape object into geojson
         @params: none
         @return: `string` geojson object
     */
 
-    std::string str = geojson_header + "{\"type\":\"Feature\",\"geometry\":{\"type\":\"MultiPolygon\",\"coordinates\":[";
+    string str = geojson_header + "{\"type\":\"Feature\",\"geometry\":{\"type\":\"MultiPolygon\",\"coordinates\":[";
     for (Polygon s : border) {
         str += "[";
         str += s.hull.to_json();
@@ -336,7 +280,7 @@ std::string Geometry::Multi_Polygon::to_json() {
 }
 
 
-void Geometry::State::to_binary(std::string path) {
+void Geometry::State::to_binary(string path) {
     cout << "writing binary" << endl;
     std::ofstream ofs(path);
     boost::archive::binary_oarchive oa(ofs);
@@ -345,7 +289,7 @@ void Geometry::State::to_binary(std::string path) {
 }
 
 
-Geometry::State Geometry::State::from_binary(std::string path) {
+Geometry::State Geometry::State::from_binary(string path) {
     State state;
     std::ifstream ifs(path);
     boost::archive::binary_iarchive ia(ifs);
@@ -366,7 +310,7 @@ namespace boost {
             and state nested objects. They now call base
             classes for more efficient serialization
         */
-       
+
         template<class Archive>
         void serialize(Archive & ar, Geometry::State& s, const unsigned int version) {
             ar & boost::serialization::base_object<Geometry::Precinct_Group>(s);

@@ -128,8 +128,8 @@ namespace Geometry {
         virtual std::string to_json();
 
         // add operator overloading for object equality
-        friend bool operator== (LinearRing l1, LinearRing l2);
-        friend bool operator!= (LinearRing l1, LinearRing l2);
+        friend bool operator== (const LinearRing& l1, const LinearRing& l2);
+        friend bool operator!= (const LinearRing& l1, const LinearRing& l2);
     };
 
 
@@ -185,8 +185,8 @@ namespace Geometry {
         virtual bounding_box get_bounding_box();
 
         // add operator overloading for object equality
-        friend bool operator== (Polygon p1, Polygon p2);
-        friend bool operator!= (Polygon p1, Polygon p2);
+        friend bool operator== (const Polygon& p1, const Polygon& p2);
+        friend bool operator!= (const Polygon& p1, const Polygon& p2);
         
         int pop = 0; // total population
         int is_part_of_multi_polygon = -1; // for parsing rules
@@ -277,8 +277,8 @@ namespace Geometry {
         std::vector<Polygon> border;
 
         // add operator overloading for object equality
-        friend bool operator== (Multi_Polygon& s1, Multi_Polygon& s2);
-        friend bool operator!= (Multi_Polygon& s1, Multi_Polygon& s2);
+        friend bool operator== (const Multi_Polygon& s1, const Multi_Polygon& s2);
+        friend bool operator!= (const Multi_Polygon& s1, const Multi_Polygon& s2);
     };
 
 
