@@ -79,4 +79,5 @@ setup:
 	mkdir -p $(BIN) $(BUILD)
 
 clean:
-	rm -rf $(BIN)/ $(BUILD)/
+	rm $(BUILD)/*.o
+	rm -rf $(BIN)

@@ -5,8 +5,7 @@ The list of everything C++ related that needs to get done.
 ## Long Term
 - Serialize all files (wait for better data)
     - ~~Automate with build_data~~
-- Real time visualization with multithreading
-    - See `test/spike/thread`
+        - *do a better job of this with a serialize.sh file and structure with*
 - Fully completed canvas class
     - ~~Add overlapping fill with individual canvases for each shape~~
 - Unit tests for geometry, graphs
@@ -15,19 +14,20 @@ The list of everything C++ related that needs to get done.
 ## Serialization
 - ~~Make `Graph` by finding vertices and edges~~
     - ~~Serialize graph data~~
-- ~~Add graph sorting functions~~
-- `Community` should be a child of `Graph` where nodes have id's and pop/voter info
+- ~~Add graph sorting functions~~ no longer necessary, removed
 
-- Finish parsing files:
+- *Finish parsing files*:
     - Look into third party parsing functionality
     - Look into voter registration format, add parsing function
     - Finish `build_data.list` for automation, finish `build_data.sh`
 
 ### Graphics
+- *Refactor for speed with background setting on a different call*
 - Fun with antialiasing
 - Speed up fill algorithm and find one that doesn't require a center point
 - ~~Add graph visualization~~
 - Export as `png`, `svg`, `mp4`
+    - ~~To BMP with SDL screenshots~~
     - To ppm, use `system(convert)`
 
 ### Scripts
@@ -35,8 +35,11 @@ The list of everything C++ related that needs to get done.
 
 ### Algorithm
 - #### Communities
+
+    - Add community class
     - Better structure for execution
-    - New initial config implementation with backtracing
+    - ~~New initial config implementation with backtracing~~
+        - ~~Implement Karger-Stein~~
     - Update refinement processes
 
 - #### Quantification

@@ -15,6 +15,8 @@
 #include <vector>
 #include <map>
 
+#include "../include/graph.hpp"
+
 // for boost binary serialization
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/binary_iarchive.hpp>
@@ -23,7 +25,7 @@
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/base_object.hpp>
 
-
+namespace Gerrymandering {
 namespace Geometry {
 
     // Geometry classes. These all define groups of points
@@ -347,4 +349,5 @@ namespace Geometry {
         void to_binary(std::string path);
         static State from_binary(std::string path);
     };
+}
 }

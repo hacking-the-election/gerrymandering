@@ -15,7 +15,7 @@
 #include "shape.hpp"
 #include "community.hpp"
 
-
+namespace Gerrymandering {
 namespace Graphics {
 
     class Canvas;
@@ -142,4 +142,5 @@ namespace Graphics {
         void playback();
         Anim(int d) : delay(d) {};
     };
+}
 }
