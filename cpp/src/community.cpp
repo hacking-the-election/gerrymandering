@@ -28,6 +28,7 @@
 #include <random>
 #include <chrono>
 
+#include "../lib/Miniball.hpp"
 
 #include "../include/shape.hpp"       // class definitions
 #include "../include/community.hpp"   // class definitions
@@ -40,18 +41,14 @@ using namespace Geometry;
 using namespace Graphics;
 using namespace chrono;
 
-
 #define VERBOSE 1
 #define DEBUG 0
 #define ITERATION_LIMIT 100
 
 
-vector<int> refs;
-// vector<array<int, 3> > c_colors;
-int fill_size;
-
-
 class EdgeWrapper {
+    // a class that defines an edge and an attr, for sorting by 
+
     public:
         int ntr_id;
         int ntc_id;
@@ -59,7 +56,6 @@ class EdgeWrapper {
         
         friend bool operator< (const EdgeWrapper& l1, const EdgeWrapper& l2);
         inline EdgeWrapper(int id, int cid, int attrs) : ntr_id(id), ntc_id(cid), attrs(attrs) {}
-
 };
 
 
@@ -68,49 +64,122 @@ bool operator< (const EdgeWrapper& l1, const EdgeWrapper& l2) {
 }
 
 
-Precinct_Group Community::get_shape(Graph& graph) {
-    /*
-        @desc: derives the shape of a community's node list from a graph
-        @params: `Graph&` graph: precinct information graph
-        @return: `Precinct_Group` Community shape
-    */
-
-    vector<Precinct> precincts;
-    for (int id : node_ids) {
-        precincts.push_back(*graph.vertices[id].precinct);
+void Community::update_shape(Graph& graph) {
+    for (int x : this->node_ids) {
+        this->shape.add_precinct_n(*graph.vertices[x].precinct);
     }
-
-    return Precinct_Group(precincts);
 }
 
 
+double get_compactness(Community& community) {
+    /*
+        @desc: finds the reock compactness of a `Community`
+        @params: `Community&` community: community object to find compactness of
+        @return: `double` reock compactness
+        @ref: https://fisherzachary.github.io/public/r-output.html
+    */
+
+    coordinate_set lp;
+    vector<vector<double> > p;
+
+    for (Precinct pre : community.shape.precincts) {
+        lp.insert(lp.end(), pre.hull.border.begin(), pre.hull.border.end());
+    }
+
+    p.reserve(lp.size());
+
+    for (int i = 0; i < lp.size(); i++)
+        p.emplace_back(lp[i].begin(), lp[i].end());
+
+    lp.clear();
+
+    MB mb (2, p.begin(), p.end());
+    int t = (double)community.shape.get_area() / (mb.squared_radius() * PI);
+    return t;
+} 
+
+
 double average(Communities& communities, double (*measure)(Community&)) {
+    /*
+        @desc: find average `measure` of the `communities`
+
+        @params:
+            `Communities&` communities: list of communities measure
+            `double (*measure)(Community&)`: pointer to function of type double with param `Community&`
+        
+        @return: `double` average measure
+    */
+
     double sum = 0;
     for (Community& c : communities) sum += measure(c);
     return (sum / (double) communities.size());
 }
 
 
-void minimize(Communities& communities, Graph& graph, double (*measure)(Community&)) {
-    
+void maximize(Communities& communities, Graph& graph, double (*measure)(Community&)) {
+    int n_communities = communities.size();
+    cout << "optimizing" << endl;
+
     int iterations_since_best = 0;
     Communities best = communities;
 
-    while (iterations_since_best < ITERATION_LIMIT) {
+    while (true) {
         // choose worst community to modify
-        int min_community = 0;
-        double min_measure = measure(communities[0]);
-
+        // vector<double> measures;
+        // measures.reserve(n_communities);
+        int smallest_index = 0;
+        double smallest_measure = measure(communities[0]);
+        
         for (int i = 1; i < communities.size(); i++) {
-            if (measure(communities[i]) < min_measure) {
-                min_measure = measure(communities[i]);
-                min_community = 0;
+            double x = measure(communities[i]);
+            if (x < smallest_measure) {
+                smallest_measure = x;
+                smallest_index = i;
             }
         }
 
+        cout << "the worst community is " << smallest_index << endl;
+
+        vector<int> takeable;
+        for (int i = 0; i < graph.vertices.size(); i++) {
+            if (find(communities[smallest_index].node_ids.begin(), communities[smallest_index].node_ids.end(), i) == communities[smallest_index].node_ids.end()) {
+                bool has_neighbor = false;
+                for (Edge e : graph.vertices[i].edges) {
+                    if (find(communities[smallest_index].node_ids.begin(), communities[smallest_index].node_ids.end(), e[1]) != communities[smallest_index].node_ids.end()) {
+                        has_neighbor = true;
+                        break;
+                    }
+                }
+
+                if (has_neighbor) {
+                    takeable.push_back(i);
+                }
+            }
+        }
+
+        coordinate center = communities[smallest_index].shape.get_center();
+        double radius = sqrt(communities[smallest_index].shape.get_area() / PI);
+
+        for (int i = 0; i < takeable.size(); i++) {
+            if (point_in_circle(center, radius, graph.vertices[takeable[i]].precinct->get_center())) {
+                cout << "adding takeable precinct " << i << endl;
+                communities[graph.vertices[takeable[i]].community].remove_node(graph.vertices[takeable[i]]);
+            }
+            else {
+                cout << "not adding takeable precinct " << i << endl;
+            }
+        }
+
+
+        cout << takeable.size() << endl;
+
         if (average(communities, measure) > average(best, measure)) {
+            cout << "found a better solution" << endl;
             best = communities;
             iterations_since_best = 0;
+        }
+        else {
+            cout << "not currently a better solution" << endl;
         }
     }
 
@@ -128,18 +197,23 @@ Communities karger_stein(Graph g, int n_communities) {
 
         @return: `Communities` list of id's corresponding to the partition
     */
-
+    
+    const int MAX_SEARCH = 100;
 
     while (g.vertices.size() > n_communities) {
+        // still more verts than communities needed
 
-        EdgeWrapper min(-1, -1, 1000000);
-        cout << g.vertices.size() << endl;
+        // create edgewrapper as first beatable min
+        EdgeWrapper min(-1, -1, 10000000);
 
         for (int i = 0; i < g.vertices.size(); i++) {
+            // choose random node and edge of that node
             int node_to_remove_id = (g.vertices.begin() + rand_num(0, g.vertices.size() - 1)).key();
             int node_to_collapse_id = g.vertices[node_to_remove_id].edges[rand_num(0, g.vertices[node_to_remove_id].edges.size() - 1)][1];
             int t = g.vertices[node_to_remove_id].collapsed.size() + g.vertices[node_to_collapse_id].collapsed.size();
 
+            // if combining the `collapsed` vector of the nodes
+            // on this edge is smaller than min, add new min
             if (t < min.attrs) {
                 min = EdgeWrapper(
                     node_to_remove_id,
@@ -148,17 +222,19 @@ Communities karger_stein(Graph g, int n_communities) {
                 );
             }
             
-            if (i == 100) break;
+            // create max cap for searching for min
+            if (i == MAX_SEARCH) break;
         }
 
 
+        // add the edges from node to remove to node to collapse
         for (Edge edge : g.vertices[min.ntr_id].edges) {
             if (edge[1] != min.ntc_id) {
                 g.add_edge({edge[1], min.ntc_id});
             }
         }
 
-
+        // update collapsed of node_to_collapse
         g.vertices[min.ntc_id].collapsed.push_back(min.ntr_id);
 
         for (int c : g.vertices[min.ntr_id].collapsed) {
@@ -167,17 +243,18 @@ Communities karger_stein(Graph g, int n_communities) {
             }
         }
 
+        // remove node_to_remove
         g.remove_node(min.ntr_id);
     }
 
+    // create vector of size `n_communities`
     Communities communities(n_communities);
-
+    
     for (int i = 0; i < g.vertices.size(); i++) {
+        // update communities with precincts according to `collapsed` vectors
         communities[i].node_ids = (g.vertices.begin() + i).value().collapsed;
         communities[i].node_ids.push_back((g.vertices.begin() + i).key());
     }
-
-    cout << "done" << endl;
 
     return communities;
 }
@@ -194,14 +271,32 @@ Communities get_initial_configuration(Graph graph, int n_communities) {
         @return: `Communities` init config
     */
 
-    Communities communities = karger_stein(graph, n_communities);
-
-    // Canvas canvas(500, 500);
-    // canvas.add_shape(communities, graph);
-    // canvas.draw();
-    for (int i = 0; i < communities.size(); i++) {
-        writef(communities[i].get_shape(graph).to_json(), "x" + to_string(i) + ".json");
+    srand(time(NULL));
+    Communities cs = karger_stein(graph, n_communities);
+    for (int i = 0; i < cs.size(); i++) {
+        cs[i].update_shape(graph);
     }
 
-    return communities;
+    // Community state;
+    // state.node_ids.resize(graph.vertices.size());
+    // iota(state.node_ids.begin(), state.node_ids.end(), 0);
+    // state.update_shape(graph);
+    // double total = 0;
+    
+    // for (int i = 0; i < 500; i++) {
+    //     // for (int x = 0; x < cs.size(); x++) {
+    //     auto start = high_resolution_clock::now();
+    //     get_compactness(state);
+    //     auto stop = high_resolution_clock::now();
+    //     total += duration_cast<microseconds> (stop - start).count();
+
+    //     // }
+    // }
+
+    // total /= 500.0;
+    // cout << total << endl;
+
+    maximize(cs, graph, get_compactness);
+
+    return cs;
 }

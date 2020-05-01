@@ -111,7 +111,7 @@ int main(int argc, char* argv[]) {
         state = State::generate_from_file(precinct_geoJSON, district_geoJSON, opts);
     }
 
-    state.write_binary(write_path);  // write as binary
+    state.to_binary(write_path);  // write as binary
     
     cout << "precincts:\t" << state.precincts.size() << endl;
     cout << "districts:\t" << state.districts.size() << endl;
