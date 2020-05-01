@@ -12,11 +12,15 @@
 
 #include "../include/shape.hpp"
 #include "../include/canvas.hpp"
-#include "../include/graph.hpp"
 
-using namespace Geometry;
-using namespace Graphics;
+using namespace Gerrymandering::Graphics;
+using namespace Gerrymandering::Geometry;
 using namespace std;
+
+
+void Graph::remove_node(int id) {
+    vertices.erase(id);
+}
 
 
 std::vector<Graph> Graph::get_components() {

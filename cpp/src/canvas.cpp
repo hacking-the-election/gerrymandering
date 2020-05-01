@@ -18,6 +18,7 @@
 
 using std::cout;
 using std::endl;
+using namespace Gerrymandering;
 
 int RECURSION_STATE = 0;
 double PADDING = (14.0/16.0);
@@ -190,7 +191,7 @@ void Graphics::Canvas::add_shape(Geometry::Precinct_Group s, bool f, Color c, in
     */
 
     for (Geometry::Precinct shape : s.precincts) {
-        double r = shape.get_ratio();
+        // double r = shape.get_ratio();
 
         Outline outline(shape.hull, c, t, f);
         outlines.push_back(outline);

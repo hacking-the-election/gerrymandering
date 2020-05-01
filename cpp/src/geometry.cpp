@@ -23,6 +23,7 @@ const long int c = pow(10, 18);
 const long int d = pow(10, 9);
 const long int l = pow(2, 6);
 
+using namespace Gerrymandering;
 using namespace Geometry;
 using namespace std;
 

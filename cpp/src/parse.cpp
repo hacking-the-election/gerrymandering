@@ -19,7 +19,6 @@
 #include "../lib/rapidjson/include/rapidjson/stringbuffer.h"
 
 #include "../include/shape.hpp"       // class definitions
-#include "../include/graph.hpp"       // class definitions
 #include "../include/canvas.hpp"      // class definitions
 #include "../include/util.hpp"        // array modification functions
 #include "../include/geometry.hpp"    // exterior border generation
@@ -27,15 +26,8 @@
 #define VERBOSE 1  // print progress
 
 using namespace rapidjson;
-
-using std::string;
-using std::cout;
-using std::endl;
-using std::cerr;
-using std::vector;
-using std::array;
-using std::stringstream;
-using std::map;
+using namespace std;
+using namespace Gerrymandering;
 
 // the number to multiply floating coordinates by
 const long int c = pow(2, 18);
@@ -130,7 +122,7 @@ bool check_column(vector<vector<string> > data_list, int index) {
 }
 
 
-map<string, vector<int> > parse_voter_data(string voter_data) {
+map<string, map<Geometry::POLITICAL_PARTY, int> > parse_voter_data(string voter_data) {
     /*
         @desc:
             from a string in the specified format,
@@ -197,7 +189,9 @@ map<string, vector<int> > parse_voter_data(string voter_data) {
         // set the voter data of the precinct in the map
     }
 
-    return parsed_data; // return the filled map
+    // @WARN: I REALLY NEED TO FIX THIS FUNCTION
+    return {};
+    // return parsed_data; // return the filled map
 }
 
 
@@ -798,7 +792,7 @@ Geometry::State Geometry::State::generate_from_file(string precinct_geoJSON, str
     
     // get voter data from election data file
     if (VERBOSE) cout << "parsing voter data from tsv..." << endl;
-    map<string, vector<int> > precinct_voter_data = parse_voter_data(voter_data);
+    map<string, map<Geometry::POLITICAL_PARTY, int> > precinct_voter_data = parse_voter_data(voter_data);
 
     // create a vector of precinct objects from border and voter data
     if (VERBOSE) cout << "merging geodata with voter data into precincts..." << endl;

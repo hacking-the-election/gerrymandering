@@ -14,10 +14,9 @@
 #include "../include/shape.hpp"
 #include "../include/canvas.hpp"
 #include "../include/util.hpp"
-#include "../include/term_disp.hpp"
 
 using namespace std;
-using namespace Geometry;
+using namespace Gerrymandering::Geometry;
 
 
 int main(int argc, char* argv[]) {

@@ -37,8 +37,8 @@
 #include "../include/canvas.hpp"      // geometry modification, border functions
 
 using namespace std;
-using namespace Geometry;
-using namespace Graphics;
+using namespace Gerrymandering::Geometry;
+using namespace Gerrymandering::Graphics;
 using namespace chrono;
 
 #define VERBOSE 1
@@ -66,7 +66,7 @@ bool operator< (const EdgeWrapper& l1, const EdgeWrapper& l2) {
 
 void Community::update_shape(Graph& graph) {
     for (int x : this->node_ids) {
-        this->shape.add_precinct_n(*graph.vertices[x].precinct);
+        this->shape.add_precinct(*graph.vertices[x].precinct);
     }
 }
 
@@ -163,7 +163,7 @@ void maximize(Communities& communities, Graph& graph, double (*measure)(Communit
         for (int i = 0; i < takeable.size(); i++) {
             if (point_in_circle(center, radius, graph.vertices[takeable[i]].precinct->get_center())) {
                 cout << "adding takeable precinct " << i << endl;
-                communities[graph.vertices[takeable[i]].community].remove_node(graph.vertices[takeable[i]]);
+                // communities[graph.vertices[takeable[i]].community].remove_node(graph.vertices[takeable[i]]);
             }
             else {
                 cout << "not adding takeable precinct " << i << endl;

@@ -14,8 +14,7 @@
 #include <string>
 #include <vector>
 #include <map>
-
-#include "../include/graph.hpp"
+#include <array>
 
 // for boost binary serialization
 #include <boost/archive/binary_oarchive.hpp>
@@ -24,6 +23,9 @@
 #include <boost/serialization/array.hpp>
 #include <boost/serialization/map.hpp>
 #include <boost/serialization/base_object.hpp>
+
+#include "../lib/ordered-map/include/tsl/ordered_map.h"
+
 
 namespace Gerrymandering {
 namespace Geometry {
@@ -54,8 +56,7 @@ namespace Geometry {
 
     // for any error to be thrown
     class Exceptions;
-
-
+    
     typedef std::array<long int, 2> coordinate;         // list in the form {x1, y1};
     typedef std::vector<coordinate> coordinate_set;     // list of coordinates: {{x1, y1} ... {xn, yn}};
     typedef std::array<long int, 4> bounding_box;       // an array of 4 max/mins: {top, bottom, left, right};
@@ -183,7 +184,6 @@ namespace Geometry {
         virtual double get_perimeter();       // total perimeter of holes + hull
         virtual coordinate get_center();      // average centers of holes + hull
         virtual segments get_segments();      // return a segment list with shape's segments
-        virtual double get_compactness();
         virtual bounding_box get_bounding_box();
 
         // add operator overloading for object equality
@@ -269,7 +269,6 @@ namespace Geometry {
         }
 
         double get_perimeter();               // total perimeter of border array
-        double get_compactness();             // average compactenss of each shape
         double get_area();                    // total area of the border shape array
 
         coordinate get_center();              // total perimeter of border array
@@ -307,13 +306,59 @@ namespace Geometry {
             virtual void remove_precinct(Precinct);
             virtual void remove_precinct(int precint_index);
             virtual void add_precinct(Precinct);
-            Precinct get_precinct_from_id(string);
+            Precinct get_precinct_from_id(std::string);
 
             double get_area();
             coordinate get_center();
 
             int get_population();
             std::string to_json();
+    };
+
+
+    typedef std::array<int, 2> Edge;
+
+    class Node {
+        /*
+            A vertex on the `Graph` class, containing
+            precinct information and edge information
+        */
+    
+    public:
+
+        int id;
+        int community;
+        Gerrymandering::Geometry::Precinct* precinct;
+
+        Node() {};
+        Node(Gerrymandering::Geometry::Precinct* precinct) : precinct(precinct) {};
+
+        std::vector<Edge> edges;
+        std::vector<int> collapsed;
+        
+        friend bool operator< (const Node& l1, const Node& l2);
+        friend bool operator== (const Node& l1, const Node& l2);
+    };
+
+
+    class Graph {
+
+    public:
+        tsl::ordered_map<int, Node> vertices;
+        std::vector<Edge> edges;
+
+        // drivers for component algorithm
+        int get_num_components();
+        std::vector<Graph> get_components();
+
+        // recursors for getting different data
+        void dfs_recursor(int v, std::vector<bool>& visited);
+        void dfs_recursor(int v, std::vector<bool>& visited, std::vector<int>* nodes);
+
+        void remove_node(int id);
+        void add_edge(Edge);
+        void remove_edge(Edge);
+        void remove_edges_to(int id);
     };
 
 
@@ -349,5 +394,6 @@ namespace Geometry {
         void to_binary(std::string path);
         static State from_binary(std::string path);
     };
+
 }
 }
