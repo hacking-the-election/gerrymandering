@@ -18,18 +18,14 @@
 #include "../lib/rapidjson/include/rapidjson/writer.h"
 #include "../lib/rapidjson/include/rapidjson/stringbuffer.h"
 
-// for the filesystem manip
-#include <boost/range/iterator_range.hpp>
-#include <boost/filesystem.hpp>
-
 #include "../include/shape.hpp"       // class definitions
+#include "../include/graph.hpp"       // class definitions
 #include "../include/canvas.hpp"      // class definitions
 #include "../include/util.hpp"        // array modification functions
 #include "../include/geometry.hpp"    // exterior border generation
+
 #define VERBOSE 1  // print progress
 
-
-namespace fs = boost::filesystem;
 using namespace rapidjson;
 
 using std::string;
@@ -76,12 +72,19 @@ class NodePair {
 
 vector<vector<string> > parse_sv(string tsv, string delimiter) {
     /*
-        @desc: takes a tsv file as string, returns two dimensional array of cells and rows
+        @desc:
+            takes a tsv file as string, finds two
+            dimensional array of cells and rows
+
         @params:
             `string` tsv: A delimiter separated file
             `string` delimiter: A delimiter to split by
         
         @return: `vector<vector<string> >` parsed array of data
+
+        @warn:
+            for some reason this will glitch
+            when the id's are at the end of the line
     */
 
     stringstream file(tsv);
@@ -203,6 +206,17 @@ Geometry::Polygon string_to_vector(string str) {
         @desc: takes a json array string and returns a parsed shape object
         @params: `string` str: data to be parsed
         @return: `Geometry::Polygon` parsed shape
+
+        @warn:
+            this function is so screwed up right now
+            it takes stringified JSON as input and then 
+            CONVERTS IT RIGHT BACK TO JSON WTH
+
+            but I guess speed is really not important for
+            a one time operation so not going to change this
+
+            oohhhh yeah i forgot how to deduce types so this
+            monstrosity happened
     */
 
     Geometry::Polygon v;
@@ -308,6 +322,7 @@ vector<Geometry::Precinct> parse_precinct_data(string geoJSON) {
         int demv = 0;
         int repv = 0;
 
+        // get all democrat data from JSON, and add it to the total
         for (string dem_head : d_head) {
             if (shapes["features"][i]["properties"].HasMember(dem_head.c_str())) {
                 if (shapes["features"][i]["properties"][dem_head.c_str()].IsInt()) {
@@ -317,9 +332,10 @@ vector<Geometry::Precinct> parse_precinct_data(string geoJSON) {
                     demv += (int) shapes["features"][i]["properties"][dem_head.c_str()].GetDouble();
                 }
             }
-            else cout << "\e[31merror: \e[0mNo democratic voter data" << endl;
+            else cout << "\e[31merror: \e[0mNo democrat voter data" << endl;
         }
 
+        // get all republican data from JSON, and add it to the total
         for (string rep_head : r_head) {
             if (shapes["features"][i]["properties"].HasMember(rep_head.c_str())) {
                 if (shapes["features"][i]["properties"][rep_head.c_str()].IsInt()) {
@@ -336,7 +352,7 @@ vector<Geometry::Precinct> parse_precinct_data(string geoJSON) {
         if (shapes["features"][i]["properties"].HasMember(population_id.c_str()))
             pop = shapes["features"][i]["properties"][population_id.c_str()].GetInt();
         else cout << "\e[31merror: \e[0mNo population data" << endl;
-        
+
 
         // create empty string buffer
         StringBuffer buffer;
@@ -350,8 +366,11 @@ vector<Geometry::Precinct> parse_precinct_data(string geoJSON) {
         if (shapes["features"][i]["geometry"]["type"] == "Polygon") {
             // vector parsed from coordinate string
             Geometry::Polygon geo = string_to_vector(coords);
-            Geometry::Precinct precinct(geo.hull, demv, repv, pop, id);
+            Geometry::Precinct precinct(geo.hull, pop, id);
             precinct.shape_id = id;
+
+            precinct.voter_data[Geometry::POLITICAL_PARTY::DEMOCRAT] = demv;
+            precinct.voter_data[Geometry::POLITICAL_PARTY::REPUBLICAN] = repv;
 
             for (int i = 0; i < geo.holes.size(); i++)
                 precinct.holes.push_back(geo.holes[i]);
@@ -371,8 +390,10 @@ vector<Geometry::Precinct> parse_precinct_data(string geoJSON) {
                 demv = round((double) demv * (double) fract);
                 repv = round((double) repv * (double) fract);
 
-                Geometry::Precinct precinct(s.hull, demv, repv, pop, (id + "_s" + std::to_string(append)));
+                Geometry::Precinct precinct(s.hull, pop, (id + "_s" + std::to_string(append)));
                 precinct.holes = s.holes;
+                precinct.voter_data[Geometry::POLITICAL_PARTY::DEMOCRAT] = demv;
+                precinct.voter_data[Geometry::POLITICAL_PARTY::REPUBLICAN] = repv;
 
                 shapes_vector.push_back(precinct);
                 append++;
@@ -522,7 +543,7 @@ vector<Geometry::Multi_Polygon> parse_district_coordinates(string geoJSON) {
 }
 
 
-vector<Geometry::Precinct> merge_data( vector<Geometry::Polygon> precinct_shapes, map<string, vector<int> > voter_data) {
+vector<Geometry::Precinct> merge_data( vector<Geometry::Polygon> precinct_shapes, map<string, map<Geometry::POLITICAL_PARTY, int> > voter_data) {
     /*
         @desc:
             returns an array of precinct objects given
@@ -541,12 +562,11 @@ vector<Geometry::Precinct> merge_data( vector<Geometry::Polygon> precinct_shapes
     for (Geometry::Polygon precinct_shape : precinct_shapes) {
         // iterate over shapes array, get the id of the current shape
         string p_id = precinct_shape.shape_id;
-        vector<int> p_data = {-1, -1}; // the voter data to be filled
+        map<Geometry::POLITICAL_PARTY, int> p_data = {}; // the voter data to be filled
 
         if ( voter_data.find(p_id) == voter_data.end() ) {
             // there is no matching id in the voter data
-            cout << "error: the id in the geodata, \e[41m" << p_id << "\e[0m, has no matching key in voter_data" << endl;
-            cout << "the program will continue, but the voter_data for the precinct will be filled with 0,0." << endl;
+            cout << "error: the id \e[41m" << p_id << "\e[0m, has no matching key in voter_data, will not be filled" << endl;
         }
         else {
             // get the voter data of the precinct
@@ -563,19 +583,27 @@ vector<Geometry::Precinct> merge_data( vector<Geometry::Polygon> precinct_shapes
                 }
             }
 
-            int ratio = precinct_shape.get_area() / total_area;
+            double ratio = precinct_shape.get_area() / total_area;
             
             Geometry::Precinct precinct =
-                Geometry::Precinct(precinct_shape.hull, precinct_shape.holes, p_data[0] * ratio, p_data[1] * ratio,
-                                   p_id + "_s" + std::to_string(precinct_shape.is_part_of_multi_polygon));
+                Geometry::Precinct(
+                    precinct_shape.hull, 
+                    precinct_shape.holes, 
+                    p_id + "_s" + std::to_string(precinct_shape.is_part_of_multi_polygon)
+                );
             
+            for (auto const& x : p_data) {
+                precinct.voter_data[x.first] = (int)((double) x.second * (double) ratio);
+            }
+
             precinct.pop = precinct_shape.pop;
             precincts.push_back(precinct);
         }
         else {
             Geometry::Precinct precinct = 
-                Geometry::Precinct(precinct_shape.hull, precinct_shape.holes, p_data[0], p_data[1], p_id);
+                Geometry::Precinct(precinct_shape.hull, precinct_shape.holes, p_id);
             
+            precinct.voter_data = p_data;
             precinct.pop = precinct_shape.pop;
             precincts.push_back(precinct);
         }
@@ -603,8 +631,7 @@ Geometry::Precinct_Group combine_holes(Geometry::Precinct_Group pg) {
         // define starting precinct metadata
         Geometry::LinearRing precinct_border = p.hull;
         string id = p.shape_id;
-        int demv = p.dem;
-        int repv = p.rep;
+        map<Geometry::POLITICAL_PARTY, int> voter = p.voter_data;
         int pop = p.pop;
 
         if (p.holes.size() > 0) {
@@ -617,8 +644,12 @@ Geometry::Precinct_Group combine_holes(Geometry::Precinct_Group pg) {
                 if (j != x && get_inside(p_c.hull, p.hull)) {
                     // precinct j is inside precinct x,
                     // add the appropriate data from j to x
-                    demv += pg.precincts[j].dem;
-                    repv += pg.precincts[j].rep;
+                    for (auto const& x : pg.precincts[j].voter_data) {
+                        voter[x.first] += x.second;
+                    }
+
+                    // demv += pg.precincts[j].dem;
+                    // repv += pg.precincts[j].rep;
                     pop += pg.precincts[j].pop;
 
                     // this precinct will not be returned
@@ -629,7 +660,8 @@ Geometry::Precinct_Group combine_holes(Geometry::Precinct_Group pg) {
         }
 
         // create object from updated data
-        Geometry::Precinct np = Geometry::Precinct(precinct_border, demv, repv, pop, id);
+        Geometry::Precinct np = Geometry::Precinct(precinct_border, pop, id);
+        np.voter_data = voter;
         precincts.push_back(np);
     }
 
