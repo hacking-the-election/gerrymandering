@@ -117,11 +117,15 @@ class TestGeometry(unittest.TestCase):
     def test_area(self):
         """Tests `hacking_the_election.utils.geometry.area`
         """
+
+        precinct = self.vermont_precincts["50009VD85"]
+
+        precinct_area = round(
+            geometry.area(geometry.shapely_to_geojson(precinct)[0]), 3)
+
         self.assertEqual(
-            geometry.area(
-                geometry.shapely_to_geojson(self.vermont_precincts["50009VD85"])[0]
-            ),
-            self.vermont_precincts["50009VD85"].area
+            precinct_area,
+            round(self.vermont_precincts["50009VD85"].area, 3)
         )
 
     def test_get_distance(self):
