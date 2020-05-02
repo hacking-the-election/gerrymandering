@@ -7,12 +7,17 @@
 ========================================*/
 
 #pragma once
+#define PI 3.14159265358979323846264338327950288
 
 #include "shape.hpp"
 #include "community.hpp"
 #include "../lib/clipper/clipper.hpp"
+#include "../lib/Miniball.hpp"
 
-#define PI 3.14159265358979323846264338327950288
+
+typedef std::vector<std::vector<double> >::const_iterator PointIterator; 
+typedef std::vector<double>::const_iterator CoordIterator;
+typedef Miniball::Miniball <Miniball::CoordAccessor<PointIterator, CoordIterator> > MB;
 
 
 // segment and coordiante manipulation
@@ -32,24 +37,11 @@ Geometry::Multi_Polygon paths_to_multi_shape(ClipperLib::Paths paths);
 
 // get outside border from a group of precincts
 Geometry::Multi_Polygon generate_exterior_border(Geometry::Precinct_Group p);
+Geometry::Polygon generate_gon(Geometry::coordinate c, double radius, int n);
 
-// get precincts on the inside border of a precinct group
-Geometry::p_index_set get_inner_boundary_precincts(Geometry::Precinct_Group shape);
-Geometry::p_index_set get_inner_boundary_precincts(Geometry::p_index_set precincts, Geometry::State state);
-Geometry::p_index_set get_bordering_precincts(Geometry::Precinct_Group shape, int p_index);
-Geometry::p_index_set get_ext_bordering_precincts(Geometry::Precinct_Group precincts, Geometry::State state);
-Geometry::p_index_set get_ext_bordering_precincts(Geometry::Precinct_Group precincts, Geometry::p_index_set available_pre, Geometry::State state);
-
-// overload get_bordering_shapes for vector inheritance problem
-Geometry::p_index_set get_bordering_shapes(std::vector<Geometry::Polygon> shapes, Geometry::Polygon shape);
-Geometry::p_index_set get_bordering_shapes(std::vector<Geometry::Precinct_Group> shapes, Geometry::Polygon shape);
-Geometry::p_index_set get_bordering_shapes(std::vector<Geometry::Community> shapes, Geometry::Community shape);
-Geometry::p_index_set get_bordering_shapes(std::vector<Geometry::Community> shapes, Geometry::Polygon shape);
-
+// testing bounds and overlaps
+bool bound_overlap(Geometry::bounding_box b1, Geometry::bounding_box b2);
 bool point_in_ring(Geometry::coordinate coord, Geometry::LinearRing lr);
 bool get_inside(Geometry::LinearRing s0, Geometry::LinearRing s1);
 bool get_inside_first(Geometry::LinearRing s0, Geometry::LinearRing s1);
-
-Geometry::Polygon generate_gon(Geometry::coordinate c, double radius, int n);
-
-bool bound_overlap(Geometry::bounding_box b1, Geometry::bounding_box b2);
+bool point_in_circle(Geometry::coordinate center, double radius, Geometry::coordinate point);

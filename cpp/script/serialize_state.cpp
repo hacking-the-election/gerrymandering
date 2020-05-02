@@ -111,7 +111,7 @@ int main(int argc, char* argv[]) {
         state = State::generate_from_file(precinct_geoJSON, district_geoJSON, opts);
     }
 
-    state.write_binary(write_path);  // write as binary
+    state.to_binary(write_path);  // write as binary
     
     cout << "precincts:\t" << state.precincts.size() << endl;
     cout << "districts:\t" << state.districts.size() << endl;
@@ -119,14 +119,10 @@ int main(int argc, char* argv[]) {
     int dem = 0, rep = 0, pop = 0;
 
     for (Precinct pre : state.precincts) {
-        if (pre.dem != -1) dem += pre.dem;
-        if (pre.dem != -1) rep += pre.rep;
-        if (pre.dem != -1) pop += pre.pop;
+        pop += pre.pop;
     }
 
     cout << "population:\t" << pop << endl;
-    cout << "democrat:\t" << dem << endl;
-    cout << "republican:\t" << rep << endl << endl;
     cout << "state written to " << write_path << endl;
 
     return 0;

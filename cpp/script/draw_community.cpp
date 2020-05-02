@@ -10,6 +10,7 @@
 #include <boost/filesystem.hpp>
 #include <iomanip>
 
+#include "../include/community.hpp"
 #include "../include/shape.hpp"
 #include "../include/util.hpp"
 #include "../include/geometry.hpp"
@@ -31,17 +32,28 @@ int main(int argc, char* argv[]) {
     */
 
     // draw communities
-    cout << argc << endl;
     Canvas canvas(900, 900);
 
     // read binary file from path
-    vector<string> states = {"../../data/bin/cpp/new_hampshire.dat","../../data/bin/cpp/new_york.dat", "../../data/bin/cpp/vermont.dat", "../../data/bin/cpp/massachusetts.dat", "../../data/bin/cpp/connecticut.dat", "../../data/bin/cpp/pennsylvania.dat", "../../data/bin/cpp/new_jersey.dat"};
+    vector<string> states = {"connecticut", "indiana", "iowa", "mass_connected", "new_hampshire", "new_jersey", "new_york", "north_carolina", "pennsylvania", "vermont"};
+
     for (string st : states) {
-        State state = State::read_binary(st);
-        canvas.add_graph(state.network);
+        State state = State::from_binary("../../data/bin/cpp/" + st + ".dat");
+        cout << state.precincts.size() << ": ";
+
+        for (int i = 0; i < 30; i++) {
+            auto start = high_resolution_clock::now();
+            get_initial_configuration(state.network, 2);
+            auto stop = high_resolution_clock::now();
+            auto duration = duration_cast<microseconds>(stop - start);          
+            cout << duration.count() << ", ";
+        }
+
+        cout << endl;
+        // canvas.add_graph(state.network);
     }
 
-    canvas.draw();
+    // canvas.draw();
 
     return 0;
 }
