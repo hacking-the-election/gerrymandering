@@ -27,7 +27,7 @@
 "louisiana": louisiana/geodata.json louisiana/election_data.tab louisiana/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 louisiana.dat
 
 "massachusetts": massachusetts/geodata.json massachusetts/district.json --keys='{"DEM":"DEMOCRAT","REP":"REPUBLICAN","GEO":"GEOID10","POP":"POP100","LIB":"LIBERTARIA","GRE":"GREEN","IND":"INDEPENDEN","REF":"REFORM","OTH":"OTHER"}' massachusetts.dat
-"michigan": michigan/geodata.json michigan/election_data.tab michigan/district.json --keys=GEOID10,GEOID10,{PRS08DEM,GOV06DEM,AG06DEM,SOS06DEM},{PRS08REP,GOV06REP,AG06REP,SOS06REP},TOTPOP michigan.dat
+"michigan": michigan/geodata.json michigan/district.json --keys='{"GEO":"GEOID10","DEM":"PRS08DEM","REP":"PRS08REP","POP":"TOTPOP","OTH":"PRS08OTH"}' michigan.dat
 
 "mississippi": mississippi/geodata.json mississippi/election_data.tab mississippi/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 mississippi.dat
 "missouri": missouri/geodata.json missouri/election_data.tab missouri/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 missouri.dat

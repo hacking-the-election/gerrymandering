@@ -751,9 +751,11 @@ Graph generate_graph(Precinct_Group pg) {
         }
     }
 
+    cout << "linking components" << endl;
     // link components with closest precincts
     if (graph.get_num_components() > 1) {
         // determine all centers of precincts
+        cout << graph.get_num_components() << endl;
         std::map<int, coordinate> centers;
 
         for (int i = 0; i < graph.vertices.size(); i++) {
@@ -768,7 +770,8 @@ Graph generate_graph(Precinct_Group pg) {
         while (graph.get_num_components() > 1) {
             // add edges between two precincts on two islands
             // until `graph` is connected
-            
+            cout << "a: " << graph.get_num_components() << endl;
+
             vector<Graph> components = graph.get_components();
             vector<NodePair> dists;
 
@@ -865,6 +868,7 @@ State State::generate_from_file(string precinct_geoJSON, string voter_data, stri
     state.border = sborder.border;
 
     state.network = generate_graph(pre_group);
+    cout << "complete!" << endl;
     return state; // return the state object
 }
 
