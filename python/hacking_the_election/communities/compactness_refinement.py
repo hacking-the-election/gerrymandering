@@ -4,15 +4,18 @@ they all have Schwartzberg compactness scores above a certain threshold.
 """
 
 import math
+import os
 
 import miniball
 from shapely.geometry import MultiPolygon
 
 from hacking_the_election.utils.geometry import get_compactness, get_distance
 from hacking_the_election.utils.graph import get_node_number
+from hacking_the_election.utils.visualization import COLORS, add_leading_zeroes
+from hacking_the_election.visualization.map_visualization import visualize_map
 
 
-def optimize_compactness(communities, graph):
+def optimize_compactness(communities, graph, animation_dir=None):
     """Takes a set of communities and exchanges precincts in a way that maximizes compactness.
 
     :param communities: The current state of the communities within a state.
@@ -20,6 +23,9 @@ def optimize_compactness(communities, graph):
 
     :param graph: A graph containing precinct data within a state.
     :type graph: `pygraph.classes.graph.graph`
+
+    :param animation_dir: Path to the directory where animation files should be saved, defaults to None
+    :type animation_dir: str or NoneType
     """
 
     for community in communities:
@@ -27,18 +33,21 @@ def optimize_compactness(communities, graph):
 
     # The compactness of the least compact community after each iteration.
     compactnesses = []
+    i = 0
     while True:
         # Find least compact community.
         community = min(communities, key=lambda c: c.compactness)
 
         # Exit function if solution is worse than all of previous 5 solutions.
-        if len(compactnesses) > 5:
-            return_ = True
-            for compactness in compactnesses[-5:]:
-                if community.compactness > compactness:
-                    return_ = False
-            if return_:
-                return
+        # if len(compactnesses) > 5:
+        #     return_ = True
+        #     for compactness in compactnesses[-5:]:
+        #         if community.compactness > compactness:
+        #             return_ = False
+        #     if return_:
+        #         return
+        if i > 15:
+            return
 
         compactnesses.append(community.compactness)
 
@@ -82,8 +91,31 @@ def optimize_compactness(communities, graph):
                 if c == community:
                     continue
                 if precinct.community == c.id:
-                    c.give_precinct(community)
+                    c.give_precinct(community, precinct.id)
         
         for c in giving_communities:
             c.update_compactness()
         community.update_compactness()
+
+        if animation_dir is not None:
+            # Draw districts to image file.
+            precincts = [graph.node_attributes(node)[0] for node in graph.nodes()]
+
+            # Get next file number in `animation_dir`
+            file_numbers = []
+            for f in os.listdir(animation_dir):
+                try:
+                    file_numbers.append(int(f[:3]))
+                except ValueError:
+                    pass
+            try:
+                new_file_number = max(file_numbers) + 1
+            except ValueError:
+                # No numbered files in dir.
+                new_file_number = 0
+            file_name = f"{add_leading_zeroes(new_file_number)}.png"
+
+            visualize_map(precincts, os.path.join(animation_dir, file_name),
+                coords=lambda x: x.coords, color=lambda x: COLORS[x.community])
+            
+        i += 1
