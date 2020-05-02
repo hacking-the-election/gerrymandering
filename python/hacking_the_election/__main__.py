@@ -67,9 +67,15 @@ if __name__ == "__main__":
         runtests(test_initial_configuration.TestInitialConfiguration)
 
         # Print failures.
-        print("==================")
-        print("FAILURES")
-        print("==================")
+        failed = False
+        for test_case, failures in FAILURES.items():
+            if failures != []:
+                failed = True
+        
+        if failed:
+            print("==================")
+            print("FAILURES")
+            print("==================")
 
         for test_case, failures in FAILURES.items():
             if failures != []:

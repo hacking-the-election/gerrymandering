@@ -3,7 +3,7 @@ A class representing political communities
 """
 
 
-from shapely.geometry import Polygon
+from shapely.geometry import MultiPolygon, Polygon
 from shapely.ops import unary_union
 
 from hacking_the_election.utils.geometry import get_compactness
@@ -56,19 +56,26 @@ class Community:
 
     def update_compactness(self):
         """Update the compactness attribute for this community.
+
+        Uses individual precinct coords. Does not require `coords` attribute to be updated.
         """
-        self.compactness = get_compactness(self.coords)
+        precinct_multipolygon = \
+            MultiPolygon([p.coords for p in self.precincts.values()])
+        self.compactness = get_compactness(precinct_multipolygon)
 
     def update_population(self):
         """Update the population attribute for this community.
         """
         self.population = sum([p.population for p in self.precincts.values()])
 
-    def take_precinct(self, precinct, update=[]):
+    def take_precinct(self, precinct, update=set()):
         """Adds a precinct to this community.
         
         :param precinct: The precinct to add to this community.
         :type precinct: class:`hacking_the_election.utils.precinct.Precinct`
+
+        :param update: Set of attribute names of this class that should be updated after adding this precinct.
+        :type update: set of string
         """
 
         self.precincts[precinct.id] = precinct
@@ -92,7 +99,7 @@ class Community:
         :param precinct_id: The id of the precinct to give to the other community. (Must be in self.precincts.keys())
         :type precinct_id: str
 
-        :param update: Set of attribute names of this class that should be updated after adding this precinct.
+        :param update: Set of attribute names of this class that should be updated after losing this precinct.
         :type update: set of string
         """
 
