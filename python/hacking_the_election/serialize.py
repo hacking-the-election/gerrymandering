@@ -192,7 +192,7 @@ def create_graph(election_file, geo_file, pop_file, state):
                 ]
                 if total_key:
                     party_data.append({'other': convert_to_float(properties1[total_key]) - sum(
-                        [properties1[key] for key in [green_key, lib_key, reform_key, ind_key, const_key] if key != None]
+                        [properties1[key] for key in [dem_key, rep_key, green_key, lib_key, reform_key, ind_key, const_key] if key != None]
                     )})
                 # If there is already a total_key, the other_key id is not needed.
                 elif other_key:
@@ -213,7 +213,7 @@ def create_graph(election_file, geo_file, pop_file, state):
                 precinct_election_data[precinct_id1] = party_data
         # If the election data file is a .tab file
         elif election_data_type == "tab":
-
+            total_sum = 0
             # headers for different categories
             election_column_names = election_data[0]
 
@@ -249,38 +249,39 @@ def create_graph(election_file, geo_file, pop_file, state):
                     total_key_col_index = \
                         [i for i, col in enumerate(election_column_names)
                         if col == total_key][0]
-                    party_data.append({'other': convert_to_float(election_column_names[total_key_col_index]) 
-                        - sum([election_column_names[[i for i, col in enumerate(election_column_names) if col == key][0]] 
-                        for key in [green_key, lib_key, reform_key, ind_key, const_key] if key != None]
+                    total_sum += convert_to_float(precinct[total_key_col_index])
+                    party_data.append({'other': convert_to_float(precinct[total_key_col_index]) 
+                        - sum([convert_to_float(precinct[[i for i, col in enumerate(election_column_names) if col == key][0]]) 
+                        for key in [dem_key, rep_key, green_key, lib_key, reform_key, ind_key, const_key] if key != None]
                     )})
                 # If there is already a total_key, the other_key id is not needed.
                 elif other_key:
                     other_key_col_index = \
                         [i for i, col in enumerate(election_column_names)
                         if col == other_key][0]
-                    party_data.append({'other': convert_to_float(election_column_names[other_key_col_index])})
+                    party_data.append({'other': convert_to_float(precinct[other_key_col_index])})
 
 
                 if green_key:
                     key_index = [i for i, col in enumerate(election_column_names)
                         if col == green_key][0]
-                    party_data.append({'green': convert_to_float(election_column_names[key_index])})
+                    party_data.append({'green': convert_to_float(precinct[key_index])})
                 if lib_key:
                     key_index = [i for i, col in enumerate(election_column_names)
                         if col == lib_key][0]
-                    party_data.append({'lib': convert_to_float(election_column_names[key_index])})
+                    party_data.append({'lib': convert_to_float(precinct[key_index])})
                 if reform_key:
                     key_index = [i for i, col in enumerate(election_column_names)
                         if col == reform_key][0]
-                    party_data.append({'reform': convert_to_float(election_column_names[key_index])})
+                    party_data.append({'reform': convert_to_float(precinct[key_index])})
                 if ind_key:
                     key_index = [i for i, col in enumerate(election_column_names)
                         if col == ind_key][0]
-                    party_data.append({'ind': convert_to_float(election_column_names[key_index])})
+                    party_data.append({'ind': convert_to_float(precinct[key_index])})
                 if const_key:
                     key_index = [i for i, col in enumerate(election_column_names)
                         if col == const_key][0]
-                    party_data.append({'const': convert_to_float(election_column_names[key_index])})
+                    party_data.append({'const': convert_to_float(precinct[key_index])})
 
                 precinct_election_data[election_data_id] = party_data
     else:
@@ -294,7 +295,7 @@ def create_graph(election_file, geo_file, pop_file, state):
             ]
             if total_key:
                 party_data.append({'other': convert_to_float(properties[total_key]) - sum(
-                        [properties[key] for key in [green_key, lib_key, reform_key, ind_key, const_key] if key != None]
+                        [properties[key] for key in [dem_key, rep_key, green_key, lib_key, reform_key, ind_key, const_key] if key != None]
                     )})
             # If there is already a total_key, the other_key id is not needed.
             elif other_key:
@@ -383,6 +384,7 @@ def create_graph(election_file, geo_file, pop_file, state):
         geojson_to_shapely(coords)
         for precinct, coords in geodata_dict.items()
     }
+
     # Create list of Precinct objects
     precinct_list = []
     for precinct_id, coordinate_data in geodata_dict.items():
@@ -400,7 +402,22 @@ def create_graph(election_file, geo_file, pop_file, state):
             precinct_list.append(
                 Precinct(precinct_pop, coordinate_data, state, precinct_id, **precinct_election)
         )
-    
+    print(f"{state} dem votes: {sum([precinct.total_dem for precinct in precinct_list])}")
+    print(f"{state} rep votes: {sum([precinct.total_rep for precinct in precinct_list])}")
+    if precinct_list[0].total_green != 0:
+        print(f"{state} green votes: {sum([precinct.total_green for precinct in precinct_list])}")
+    if precinct_list[0].total_lib != 0:
+        print(f"{state} libertarian votes: {sum([precinct.total_lib for precinct in precinct_list])}")
+    if precinct_list[0].total_reform != 0:
+        print(f"{state} reform votes: {sum([precinct.total_reform for precinct in precinct_list])}")
+    if precinct_list[0].total_const != 0:
+        print(f"{state} constitution votes: {sum([precinct.total_const for precinct in precinct_list])}")
+    if precinct_list[0].total_green != 0:
+        print(f"{state} independent votes: {sum([precinct.total_ind for precinct in precinct_list])}")
+    if precinct_list[0].total_green != 0:
+        print(f"{state} other votes: {sum([precinct.total_other for precinct in precinct_list])}")
+
+
     # Add nodes to our unordered graph
     for i, precinct in enumerate(precinct_list):
         unordered_precinct_graph.add_node(i, attrs=[precinct])
