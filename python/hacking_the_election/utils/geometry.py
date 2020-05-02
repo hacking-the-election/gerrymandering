@@ -207,8 +207,7 @@ def area(ring):
         if i == 0:
             left_area += float(point[0]) * float(ring[len(ring) - 1][1])
             right_area += float(point[1]) * float(ring[len(ring) - 1][0])
-        else:
-            left_area += float(point[0]) * float(ring[i + 1][1])
-            right_area += float(point[1]) * float(ring[i + 1][0])
+        left_area += float(point[0]) * float(ring[i + 1][1])
+        right_area += float(point[1]) * float(ring[i + 1][0])
 
     return abs(left_area - right_area) / 2
