@@ -260,7 +260,7 @@ Communities karger_stein(Graph g, int n_communities) {
 }
 
 
-Communities get_initial_configuration(Graph graph, int n_communities) {
+Communities Gerrymandering::Geometry::get_initial_configuration(Graph graph, int n_communities) {
     /*
         @desc: determines a random list of community objects
 

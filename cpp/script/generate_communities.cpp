@@ -18,8 +18,8 @@
 
 using namespace boost::filesystem;
 using namespace std;
-using namespace Geometry;
-using namespace Graphics;
+using namespace Gerrymandering::Geometry;
+using namespace Gerrymandering::Graphics;
 
 
 int main(int argc, char* argv[]) {

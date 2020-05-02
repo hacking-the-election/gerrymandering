@@ -64,26 +64,13 @@ namespace Geometry {
     typedef std::vector<segment> segments;              // list of multiple segments
     typedef double unit_interval;                       // for values between [0, 1]
 
-
-    enum class POLITICAL_PARTY {
-        /*
-            define all policial parties for 
-            voter_data map in precinct class
-        */
-
-        DEMOCRAT,
-        REPUBLICAN,
-        GREEN,
-        INDEPENDENT,
-        LIBERTARIAN,
-        OTHER // refers to all non-specified parties
-    };
+    // for parsing and storing data
+    enum class POLITICAL_PARTY {DEMOCRAT, REPUBLICAN, GREEN, INDEPENDENT, LIBERTARIAN, REFORM, OTHER, TOTAL};
+    enum class ID_TYPE {GEOID, ELECTIONID, POPUID};
 
 
     class Exceptions {
-
     public:
-
         struct PrecinctNotInGroup : public std::exception {
             const char* what() const throw() {
                 return "No precinct in this precinct group matches the provided argument";
@@ -384,8 +371,8 @@ namespace Geometry {
         }
 
         // generate a file from proper raw input with and without additional voter data files
-        static State generate_from_file(std::string, std::string, std::string, std::vector<std::vector<std::string> >);
-        static State generate_from_file(std::string, std::string, std::vector<std::vector<std::string> >);
+        static State generate_from_file(std::string, std::string, std::string, std::map<POLITICAL_PARTY, std::string>, std::map<ID_TYPE, std::string>);
+        static State generate_from_file(std::string, std::string, std::map<POLITICAL_PARTY, std::string>, std::map<ID_TYPE, std::string>);
 
         Graph network; // represents the precinct network of the state
         std::vector<Multi_Polygon> districts; // the actual districts of the state
