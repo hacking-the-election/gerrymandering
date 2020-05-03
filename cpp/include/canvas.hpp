@@ -127,7 +127,7 @@ namespace Graphics {
         void add_shape(Geometry::Precinct_Group s, bool = false, Color = Color(0,0,0), int = 1);
         void add_shape(Geometry::Communities s, Geometry::Graph g, bool = false, Color = Color(0,0,0), int = 1);
 
-        void add_graph(Geometry::Graph s);
+        void add_graph(Geometry::Graph s, Color = Color(0,0,0));
 
         void clear();
         void resize_window(int x, int y);

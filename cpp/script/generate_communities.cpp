@@ -40,7 +40,7 @@ int main(int argc, char* argv[]) {
     int n_communities = stoi(string(argv[2]));
     Communities s = get_initial_configuration(state.network, n_communities);
 
-    Canvas canvas(500, 500);
+    Canvas canvas(400, 400);
     canvas.add_shape(s, state.network);
     canvas.draw();
     

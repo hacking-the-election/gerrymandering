@@ -25,6 +25,8 @@ namespace Geometry {
         */
 
         public:
+            int get_population();
+
             void save(std::string);
             void load(std::string, Graph&);
 
