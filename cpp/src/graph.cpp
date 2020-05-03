@@ -19,9 +19,28 @@ using namespace std;
 
 
 void Graph::remove_node(int id) {
+    remove_edges_to(id);
     vertices.erase(id);
 }
 
+
+Graph Graph::get_induced_subgraph(vector<int> nodes) {
+    Graph subgraph;
+    Graph copy;
+
+    for (int x : nodes) {
+        for (int i = 0; i < copy.vertices[x].edges.size(); i++) {
+            if (find(nodes.begin(), nodes.end(), copy.vertices[x].edges[i][1]) == nodes.end()) {
+                copy.vertices[x].edges.erase(copy.vertices[x].edges.begin() + i);
+                i--;
+            }
+        }
+        subgraph.vertices.insert({x, (copy.vertices[x])});
+    }
+    
+    return subgraph;
+}
+        
 
 std::vector<Graph> Graph::get_components() {
     /*

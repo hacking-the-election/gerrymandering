@@ -36,7 +36,7 @@ const long int c = pow(2, 18);
 // identifications for files
 map<ID_TYPE, string> id_headers;
 map<POLITICAL_PARTY, string> election_headers;
-const vector<string> non_precinct = {"ZZZZZ"};
+const vector<string> non_precinct = {"ZZZZZ", "LAKE", "WWWWWW", "1808904150", "1812700460"};
 
 // parsing functions for tsv files
 vector<vector<string > > parse_sv(string, string);
@@ -725,7 +725,7 @@ Graph generate_graph(Precinct_Group pg) {
         n.id = i;
         // assign precinct to node
         n.precinct = &pg.precincts[i];
-        graph.vertices.insert({n.id, n});
+        graph.vertices[n.id] = n;
     }
 
 

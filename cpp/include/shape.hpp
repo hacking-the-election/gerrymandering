@@ -103,8 +103,8 @@ namespace Geometry {
         LinearRing() {};
 
         LinearRing(coordinate_set b) {
-            if (b[0] != b[b.size() - 1])
-                throw Exceptions::LinearRingOpen();
+            // if (b[0] != b[b.size() - 1])
+            //     throw Exceptions::LinearRingOpen();
 
             border = b;
         }
@@ -333,6 +333,8 @@ namespace Geometry {
     public:
         tsl::ordered_map<int, Node> vertices;
         std::vector<Edge> edges;
+
+        Graph get_induced_subgraph(std::vector<int> nodes);
 
         // drivers for component algorithm
         int get_num_components();
