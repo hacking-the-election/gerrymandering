@@ -7,7 +7,7 @@ import math
 import os
 
 import miniball
-from shapely.geometry import MultiPolygon
+from shapely.geometry import MultiPolygon, Point
 
 from hacking_the_election.utils.geometry import get_compactness, get_distance
 from hacking_the_election.utils.graph import (
@@ -15,8 +15,10 @@ from hacking_the_election.utils.graph import (
     get_induced_subgraph,
     get_components
 )
-from hacking_the_election.utils.visualization import COLORS, add_leading_zeroes
-from hacking_the_election.visualization.map_visualization import visualize_map
+from hacking_the_election.visualization.misc import draw_state
+
+
+N = 20
 
 
 def optimize_compactness(communities, graph, animation_dir=None):
@@ -35,40 +37,23 @@ def optimize_compactness(communities, graph, animation_dir=None):
     for community in communities:
         community.update_compactness()
 
+    if animation_dir is not None:
+        draw_state(graph, animation_dir)
+
     # The compactness of the least compact community after each iteration.
     compactnesses = []
     i = 0
     while True:
 
-        if animation_dir is not None:
-            # Draw districts to image file.
-            precincts = [graph.node_attributes(node)[0] for node in graph.nodes()]
-
-            # Get next file number in `animation_dir`
-            file_numbers = []
-            for f in os.listdir(animation_dir):
-                try:
-                    file_numbers.append(int(f[:3]))
-                except ValueError:
-                    pass
-            try:
-                new_file_number = max(file_numbers) + 1
-            except ValueError:
-                # No numbered files in dir.
-                new_file_number = 0
-            file_name = f"{add_leading_zeroes(new_file_number)}.png"
-
-            visualize_map(precincts, os.path.join(animation_dir, file_name),
-                coords=lambda x: x.coords, color=lambda x: COLORS[x.community])
-
         # Find least compact community.
         community = min(communities, key=lambda c: c.compactness)
-        print([round(c.compactness, 3) for c in communities])
+        rounded_compactnesses = [round(c.compactness, 3) for c in communities]
+        print(rounded_compactnesses, min(rounded_compactnesses))
 
-        # Exit function if solution is worse than all of previous 5 solutions.
-        if len(compactnesses) > 5:
+        # Exit function if solution is worse than all of previous N solutions.
+        if len(compactnesses) > N:
             return_ = True
-            for compactness in compactnesses[-5:]:
+            for compactness in compactnesses[-N:]:
                 if community.compactness > compactness:
                     return_ = False
             if return_:
@@ -109,7 +94,7 @@ def optimize_compactness(communities, graph, animation_dir=None):
                 inside_precincts.append(precinct)
         
         # Give takeable precincts inside mincircle to `community`.
-        giving_communities = []  # Communities that gave precincts to `community`
+        giving_communities = set()  # Communities that gave precincts to `community`
         for precinct in inside_precincts:
             # Determine which community the precinct is currently in.
             for c in communities:
@@ -117,23 +102,35 @@ def optimize_compactness(communities, graph, animation_dir=None):
                     continue
                 if precinct.community == c.id:
 
-                    c.give_precinct(community, precinct.id)
+                    if len(c.precincts) > 1:
 
-                    # Check contiguity of `c`.
-                    c_subgraph = \
-                        get_induced_subgraph(graph, list(c.precincts.values()))
-                    if len(get_components(c_subgraph)) > 1:
-                        # Give back precinct.
-                        community.give_precinct(c, precinct.id)
-                    
-                    # Check contiguity of `community`.
-                    community_subgraph = \
-                        get_induced_subgraph(
-                            graph, list(community.precincts.values()))
-                    if len(get_components(community_subgraph)) > 1:
-                        # Give back precinct.
-                        community.give_precinct(c, precinct.id)
+                        c.give_precinct(community, precinct.id)
+
+                        precinct_removed = False
+
+                        # Check contiguity of `c`.
+                        c_subgraph = \
+                            get_induced_subgraph(graph, list(c.precincts.values()))
+                        if len(get_components(c_subgraph)) > 1:
+                            # Give back precinct.
+                            community.give_precinct(c, precinct.id)
+                            precinct_removed = True
+                        
+                        # Check contiguity of `community`.
+                        community_subgraph = \
+                            get_induced_subgraph(
+                                graph, list(community.precincts.values()))
+                        if len(get_components(community_subgraph)) > 1:
+                            # Give back precinct.
+                            community.give_precinct(c, precinct.id)
+                            precinct_removed = True
+
+                        if not precinct_removed:
+                            giving_communities.add(c)
         
+        if animation_dir is not None:
+            draw_state(graph, animation_dir, [Point(*center).buffer(radius)])
+
         for c in giving_communities:
             c.update_compactness()
         community.update_compactness()
