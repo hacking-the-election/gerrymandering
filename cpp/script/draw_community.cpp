@@ -20,8 +20,8 @@
 using namespace std::chrono; 
 
 using namespace std;
-using namespace Geometry;
-using namespace Graphics;
+using namespace Gerrymandering::Geometry;
+using namespace Gerrymandering::Graphics;
 
 
 int main(int argc, char* argv[]) {
@@ -39,21 +39,10 @@ int main(int argc, char* argv[]) {
 
     for (string st : states) {
         State state = State::from_binary("../../data/bin/cpp/" + st + ".dat");
-        cout << state.precincts.size() << ": ";
-
-        for (int i = 0; i < 30; i++) {
-            auto start = high_resolution_clock::now();
-            get_initial_configuration(state.network, 2);
-            auto stop = high_resolution_clock::now();
-            auto duration = duration_cast<microseconds>(stop - start);          
-            cout << duration.count() << ", ";
-        }
-
-        cout << endl;
-        // canvas.add_graph(state.network);
+        canvas.add_graph(state.network);
     }
 
-    // canvas.draw();
+    canvas.draw();
 
     return 0;
 }

@@ -14,10 +14,9 @@
 #include "../include/shape.hpp"
 #include "../include/canvas.hpp"
 #include "../include/util.hpp"
-#include "../include/term_disp.hpp"
 
 using namespace std;
-using namespace Geometry;
+using namespace Gerrymandering::Geometry;
 
 
 int main(int argc, char* argv[]) {
@@ -42,46 +41,46 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    vector<vector<string> > opts = {};
     vector<string> new_argv{};
+
+    map<ID_TYPE, string> ids;
+    map<POLITICAL_PARTY, string> voter_heads;
+
 
     for (int i = 0; i < argc; i++) {
         // loop through and find key set
         string arg = string(argv[i]);
 
         if (arg.substr(0, KEY.size()) == KEY) {
-            // need to parse key set
-            arg = arg.substr(KEY.size(), arg.size() - 1);
-            int argsize;
+            bool done = false;
+            while (!done) {
+                string rem = arg.substr(arg.find('"'), arg.size());
+                string key = rem.substr(0, rem.find(":"));
+                key = string(key.begin() + 1, key.end() - 1);
 
-            if (argc == 6) argsize = 5;
-            else argsize = 4;
-
-            for (int i = 0; i < argsize; i++) {
-                string csv;
-                vector<string> vals;
-                int end = -1;
-
-                if (arg.at(0) == '{') {
-                    // need to parse multiply vals
-                    csv = arg.substr(1, arg.find('}') - 1);
-                    end = arg.find('}') + 2;
-                }
-                else {
-                    // single val list
-                    csv = arg.substr(0, arg.find(','));
-                    end = arg.find(',') + 1;
+                string search = ",";
+                if (rem.find(search) == string::npos) {
+                    search = "}";
+                    done = true;
                 }
 
-                size_t pos = 0;
-                while ((pos = csv.find(",")) != std::string::npos) {
-                    vals.push_back(csv.substr(0, pos));
-                    csv.erase(0, pos + 1);
-                }
-                vals.push_back(csv);
+                string val = rem.substr(rem.find(":") + 1, rem.find(search) - rem.find(":") - 1);
+                val = string(val.begin() + 1, val.end() - 1);
 
-                opts.push_back(vals);
-                arg = arg.substr(end, arg.size() - 1);
+                // i'm so sorry about this if statement
+                if (key == "GEO") ids[ID_TYPE::GEOID] = val;
+                else if (key == "ELE") ids[ID_TYPE::ELECTIONID] = val;
+                else if (key == "POP") ids[ID_TYPE::POPUID] = val;
+                else if (key == "DEM") voter_heads[POLITICAL_PARTY::DEMOCRAT] = val;
+                else if (key == "REP") voter_heads[POLITICAL_PARTY::REPUBLICAN] = val;
+                else if (key == "LIB") voter_heads[POLITICAL_PARTY::LIBERTARIAN] = val;
+                else if (key == "REF") voter_heads[POLITICAL_PARTY::REFORM] = val;
+                else if (key == "GRE") voter_heads[POLITICAL_PARTY::GREEN] = val;
+                else if (key == "IND") voter_heads[POLITICAL_PARTY::INDEPENDENT] = val;                
+                else if (key == "OTH") voter_heads[POLITICAL_PARTY::OTHER] = val;
+                else if (key == "TOT") voter_heads[POLITICAL_PARTY::TOTAL] = val;
+
+                if (!done) arg = rem.substr(rem.find(","), rem.size() - rem.find(","));
             }
         }
         else {
@@ -101,14 +100,14 @@ int main(int argc, char* argv[]) {
         string voter_data = readf(new_argv[2]);
         string district_geoJSON = readf(new_argv[3]);
         write_path = string(new_argv[4]);
-        state = State::generate_from_file(precinct_geoJSON, voter_data, district_geoJSON, opts);
+        state = State::generate_from_file(precinct_geoJSON, voter_data, district_geoJSON, voter_heads, ids);
     }
     else {
         // read files into strings
         string precinct_geoJSON = readf(new_argv[1]);
         string district_geoJSON = readf(new_argv[2]);
         write_path = string(new_argv[3]);
-        state = State::generate_from_file(precinct_geoJSON, district_geoJSON, opts);
+        state = State::generate_from_file(precinct_geoJSON, district_geoJSON, voter_heads, ids);
     }
 
     state.to_binary(write_path);  // write as binary
@@ -116,13 +115,29 @@ int main(int argc, char* argv[]) {
     cout << "precincts:\t" << state.precincts.size() << endl;
     cout << "districts:\t" << state.districts.size() << endl;
 
-    int dem = 0, rep = 0, pop = 0;
-
+    map<POLITICAL_PARTY, int> total_voter_data;
+    int total_popu = 0;
     for (Precinct pre : state.precincts) {
-        pop += pre.pop;
+        for (auto& par : pre.voter_data) {
+            total_voter_data[par.first] += par.second;
+        }
+        total_popu += pre.pop;
     }
 
-    cout << "population:\t" << pop << endl;
+    for (auto& par : total_voter_data) {
+        if (par.first == POLITICAL_PARTY::DEMOCRAT) cout << "dem:\t";
+        else if (par.first == POLITICAL_PARTY::REPUBLICAN) cout << "rep:\t";
+        else if (par.first == POLITICAL_PARTY::TOTAL) cout << "total:\t";
+        else if (par.first == POLITICAL_PARTY::LIBERTARIAN) cout << "lib:\t";
+        else if (par.first == POLITICAL_PARTY::GREEN) cout << "green:\t";
+        else if (par.first == POLITICAL_PARTY::INDEPENDENT) cout << "ind:\t";
+        else if (par.first == POLITICAL_PARTY::REFORM) cout << "reform:\t";
+        else if (par.first == POLITICAL_PARTY::OTHER) cout << "other:\t";
+
+        cout << par.second << endl;
+    }
+
+    cout << "population:\t" << total_popu << endl;
     cout << "state written to " << write_path << endl;
 
     return 0;

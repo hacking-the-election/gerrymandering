@@ -10,7 +10,6 @@
 
 #include "../include/shape.hpp"     // class definitions
 #include "../include/geometry.hpp"  // class definitions
-#include "../include/graph.hpp"     // class definitions
 #include "../include/util.hpp"      // split and join
 
 #include <boost/serialization/split_free.hpp>
@@ -20,6 +19,8 @@
 #include <cstdint>
 #include <fstream>
 #include <iostream>
+
+using namespace Gerrymandering;
 
 using std::cout;
 using std::endl;
@@ -122,28 +123,31 @@ void Geometry::Precinct_Group::add_precinct(Geometry::Precinct pre) {
         @params: `Precinct` pre: Precinct to be added
         @return: none
     */
-   
+
+    // just add the precinct to the precinct group
     precincts.push_back(pre);
-    if (border.size() == 0)
-        border.push_back(pre.hull);
-    else {
-        ClipperLib::Paths subj;
-        for (Polygon shape : border)
-            subj.push_back(ring_to_path(shape.hull));
 
-        ClipperLib::Paths clip;
-        clip.push_back(ring_to_path(pre.hull));
 
-        ClipperLib::Paths solutions;
-        ClipperLib::Clipper c; // the executor
+    // if (border.size() == 0)
+    //     border.push_back(pre.hull);
+    // else {
+    //     ClipperLib::Paths subj;
+    //     for (Polygon shape : border)
+    //         subj.push_back(ring_to_path(shape.hull));
 
-        // execute union on paths array
-        c.AddPaths(subj, ClipperLib::ptSubject, true);
-        c.AddPaths(clip, ClipperLib::ptClip, true);
-        c.Execute(ClipperLib::ctUnion, solutions, ClipperLib::pftNonZero);
+    //     ClipperLib::Paths clip;
+    //     clip.push_back(ring_to_path(pre.hull));
 
-        this->border = paths_to_multi_shape(solutions).border;
-    }
+    //     ClipperLib::Paths solutions;
+    //     ClipperLib::Clipper c; // the executor
+
+    //     // execute union on paths array
+    //     c.AddPaths(subj, ClipperLib::ptSubject, true);
+    //     c.AddPaths(clip, ClipperLib::ptClip, true);
+    //     c.Execute(ClipperLib::ctUnion, solutions, ClipperLib::pftNonZero);
+
+    //     this->border = paths_to_multi_shape(solutions).border;
+    // }
 }
 
 
@@ -303,6 +307,22 @@ Geometry::State Geometry::State::from_binary(string path) {
 }
 
 
+template<class Archive> class deserializer {
+    public:
+        deserializer(Archive& ar): m_ar(ar) {}
+        
+        template<typename T> T operator()() {
+            T t; 
+            m_ar & t; 
+            
+            return t;
+        }
+
+    private:
+        Archive& m_ar;
+};
+
+
 namespace boost {
     namespace serialization {
         /*
@@ -315,7 +335,6 @@ namespace boost {
         void serialize(Archive & ar, Geometry::State& s, const unsigned int version) {
             ar & boost::serialization::base_object<Geometry::Precinct_Group>(s);
             ar & s.districts;
-            ar & s.name;
             ar & s.network;
         }
 
@@ -385,8 +404,7 @@ namespace boost {
 
         template<class Archive>
         void serialize(Archive & ar, Geometry::Precinct& s, const unsigned int version) {
-            ar & s.dem;
-            ar & s.rep;
+            ar & s.voter_data;
             ar & s.pop;
             ar & boost::serialization::base_object<Geometry::Polygon>(s);
         }

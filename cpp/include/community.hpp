@@ -1,6 +1,6 @@
 /*=======================================
- graph.hpp:                     k-vernooy
- last modified:              Tues, Apr 14
+ community.hpp:                     k-vernooy
+ last modified:              Tues, May 1
  
  Definition of the community class, and
  declaration of community algorithm 
@@ -10,7 +10,7 @@
 #pragma once
 #include "shape.hpp"
 
-
+namespace Gerrymandering {
 namespace Geometry {
 
     // for cleaner naming of types when writing community algorithm
@@ -43,7 +43,7 @@ namespace Geometry {
             Community(std::vector<int>& node_ids, Graph& graph);
             Community() {}
     };
+
+    Geometry::Communities get_initial_configuration(Geometry::Graph graph, int n_communities);
 }
-
-
-Geometry::Communities get_initial_configuration(Geometry::Graph graph, int n_communities);
+}

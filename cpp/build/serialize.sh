@@ -47,5 +47,5 @@ for (( i = 1; i <= "$(echo "$CMD" | tr ' ' '\n' | grep . | wc -l)"; i++)); do
 done
 
 # echo "$CMD"
-echo "$CMDSTR"
-# exec $CMD
+# echo "$CMDSTR"
+exec $CMDSTR
