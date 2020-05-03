@@ -3,6 +3,7 @@ Refines a configuration of political communities in a state so that
 they all have Schwartzberg compactness scores above a certain threshold.
 """
 
+import copy
 import math
 import os
 
@@ -42,6 +43,7 @@ def optimize_compactness(communities, graph, animation_dir=None):
 
     # The compactness of the least compact community after each iteration.
     compactnesses = []
+    community_states = []
     i = 0
     while True:
 
@@ -57,9 +59,27 @@ def optimize_compactness(communities, graph, animation_dir=None):
                 if community.compactness > compactness:
                     return_ = False
             if return_:
+                # Revert to best community state.
+                best_communities = \
+                    community_states[compactnesses.index(max(compactnesses))]
+                for c in best_communities:
+                    for c2 in communities:
+                        if c.id == c2.id:
+                            c2.precincts = c.precincts
+                            c2.update_compactness()
+                for c in communities:
+                    for precinct in c.precincts.values():
+                        precinct.community = c.id
+
+                rounded_compactnesses = [round(c.compactness, 3) for c in communities]
+                print(rounded_compactnesses, min(rounded_compactnesses))
+                if animation_dir is not None:
+                    draw_state(graph, animation_dir)
                 return
 
         compactnesses.append(community.compactness)
+        # Not deepcopy so that precinct objects are not copied.
+        community_states.append(copy.copy(communities))
 
         # Calculate mincircle of precinct centroids.
         precinct_centroids = \
