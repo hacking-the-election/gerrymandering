@@ -124,6 +124,7 @@ double get_compactness(Community& community) {
     lp.clear();
 
     MB mb (2, p.begin(), p.end());
+
     int t = (double)community.shape.get_area() / (mb.squared_radius() * PI);
     return t;
 } 
@@ -139,6 +140,8 @@ void exchange_precinct(Graph& g, Communities& cs, int node_to_take, int communit
 
 vector<int> get_takeable_precincts(Graph& g, Communities& c, int in) {
 
+    // this can be sped up with `community` attr
+    
     vector<int> takeable;
     for (int i = 0; i < g.vertices.size(); i++) {
         if (find(c[in].node_ids.begin(), c[in].node_ids.end(), i) == c[in].node_ids.end()) {
@@ -157,6 +160,33 @@ vector<int> get_takeable_precincts(Graph& g, Communities& c, int in) {
     }
 
     return takeable;
+}
+
+
+vector<array<int, 2> > get_giveable_precincts(Graph& g, Communities& c, int in) {
+    /*
+        @desc: Find precincts bordering another community
+    */
+
+    vector<array<int, 2> > giveable;
+    for (int i = 0; i < c[in].node_ids.size(); i++) {
+        bool has_neighbor_outside = false;
+        int community_neighbor = 0;
+
+        for (Edge edge : g.vertices[c[in].node_ids[i]].edges) {
+            if (g.vertices[edge[1]].community != in) {
+            // if (find(c[in].node_ids.begin(), c[in].node_ids.end(), edge[1]) == c[in].node_ids.end()){
+                has_neighbor_outside = true;
+                community_neighbor = g.vertices[edge[1]].community;
+                break;
+            }
+            // }
+        }
+
+        if (has_neighbor_outside) giveable.push_back({c[in].node_ids[i], community_neighbor});
+    }
+
+    return giveable;
 }
 
 
@@ -297,7 +327,6 @@ void optimize_population(Graph& g, Communities& communities, double range) {
 
         if (lower) {
             vector<int> take = get_takeable_precincts(g, communities, worst_index);
-            std::shuffle(take.begin(), take.end(), std::random_device());
 
             int x = 0;
             while (communities[worst_index].get_population() < bounds[0] && x < take.size()) {
@@ -305,9 +334,15 @@ void optimize_population(Graph& g, Communities& communities, double range) {
                 exchange_precinct(g, communities, take[x], worst_index);
                 x++;
             }
-            // cout << take.size() << " available" << endl;
         }
         else {
+            vector<array<int, 2> > give = get_giveable_precincts(g, communities, worst_index);
+            int x = 0;
+            while (communities[worst_index].get_population() > bounds[1] && x < give.size()) {
+                cout << "GIVING PRECINCT" << endl;
+                exchange_precinct(g, communities, give[x][0], give[x][1]);
+            }
+
             cout << "remove preicncts" << endl;
         }
     }

@@ -10,9 +10,9 @@
 #   r_head
 #   population_id 
 
-"alabama": alabama/geodata.json alabama/election_data.tab alabama/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 alabama.dat
+"alabama": alabama/geodata.json alabama/election_data.tab alabama/district.json --keys='{"DEM":"usp_d_08","REP":"usp_r_08","ELE":"geoid10","GEO":"GEOID10","POP":"POP100","TOT":"usp_tot"}' alabama.dat
 "alaska": alaska/geodata.json alaska/election_data.tab alaska/district.json --keys=geoid10,GEOID10,ndv,nrv,TOTPOP alaska.dat
-"arizona": arizona/geodata.json arizona/election_data.tab arizona/district.json --keys=geoid10,GEOID10,ndv,nrv,TOTPOP arizona.dat
+"arizona": arizona/geodata.json arizona/election_data.tab arizona/district.json --keys='{"DEM":"prs08_dem","REP":"prs08_rep","ELE":"geoid10","GEO":"GEOID10","POP":"TOTPOP","OTH":"prs08_oth"}' arizona.dat
 
 "colorado": colorado/geodata.json colorado/election_data.tab colorado/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 colorado.dat
 "connecticut": connecticut/geodata.json connecticut/election_data.tab connecticut/district.json --keys=geoid10,GEOID10,democrat,republican,POP100 connecticut.dat
