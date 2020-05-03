@@ -91,7 +91,8 @@ def shapely_to_geojson(shape, json_format=False):
             geojson.append(interior_coords)
     else:
         raise TypeError("shapely_to_geojson only accepts arguments of type "
-                        "shapely.geometry.Polygon or shapely.geometry.MultiPolygon")
+                        "shapely.geometry.Polygon or shapely.geometry.MultiPolygon",
+                        f", not {type(shape)}")
     if json_format:
         return {"type": "FeatureCollection", "features": [
             {"type": "Feature", "geometry":{
@@ -189,8 +190,7 @@ def get_compactness(district):
 
 
 def area(ring):
-    """
-    Calculates the area of a json ring
+    """Calculates the area of a json ring
 
     :param ring: polygon of which area you wish to find
     :type ring: LinearRing[Point[3,2]
@@ -214,10 +214,13 @@ def area(ring):
 
 def get_distance(p1, p2):
     """Finds the distance between two points.
+
     :param p1: A point in format [x, y]
     :type p1: list of int
+
     :param p2: A point in format [x, y]
     :type p2: list of int
+
     :return: The euclidean distance between p1 and p2.
     :rtype: float
     """

@@ -27,35 +27,33 @@ def _draw_polygon(draw, polygon, color):
 
     # Draw exterior of image.
     draw.polygon([tuple(point) for point in polygon[0]], fill=color, outline=(0, 0, 0))
-    # Draw white interiors as holes.
+    # Draw blank interiors as holes.
     for interior in polygon[1:]:
         draw.polygon([tuple(point) for point in interior],
-            fill=(255, 255, 255), outline=(0, 0, 0))
+            fill=None, outline=(0, 0, 0))
 
 
-def visualize_map(shapes, output_path, coords=lambda x: x, color=None, show=False):
-    """Draws a set of geograph units onto a canvas.
+def _get_coords(shapes, coords, n_extras):
+    """Gets the list coords of a list of shapes.
 
-    :param shapes: A list of shapes to visualize.
-    :type shapes: object
+    :param shapes: A list of shapes.
+    :type shapes: list
 
-    :param output_path: Path to where image should be saved. None if you don't want it to be saved.
-    :type output_path: str or NoneType
-
-    :param coords: A function that returns a shapely object when passed an element in `shapes`, defaults to `lambda x: x`
+    :param coords: A function that takes an item in `shapes` and returns a shapely object.
     :type coords: function
 
-    :param color: A function that takes a shape in `shapes` and returns an rgb 3-tuple or a list of rbg tuples that correspond to the index of shapes in `shapes`, defaults to None
-    :type color: function or NoneType
+    :param n_extras: The number of shapes that are already in shapely format.
+    :type n_extras: int
 
-    :param show: whether or not to show the image once generated.
-    :type show: bool
+    :return: A list of lists, each containing coordinate data for a shape in geojson format.
+    :rtype: list of lists in geojson format.
     """
 
-    map_image = Image.new("RGB", (1000, 1000), "white")
-    draw = ImageDraw.Draw(map_image, "RGB")
-
-    shape_coords = [shapely_to_geojson(coords(shape)) for shape in shapes]
+    if n_extras > 0:
+        shape_coords = [shapely_to_geojson(coords(shape)) for shape in shapes[:-n_extras]]
+        shape_coords += [shapely_to_geojson(shape) for shape in shapes[-n_extras:]]
+    else:
+        shape_coords = [shapely_to_geojson(coords(shape)) for shape in shapes]
 
     flattened_coords = []  # List of all points in state.
     # Flatten coords.
@@ -99,6 +97,36 @@ def visualize_map(shapes, output_path, coords=lambda x: x, color=None, show=Fals
                     rings.append(new_ring_coords)
                 polygons.append(rings)
             modified_coords.append(polygons)
+    
+    return modified_coords
+
+
+def visualize_map(shapes, output_path, coords=lambda x: x, color=None, extras=[], show=False):
+    """Draws a set of geograph units onto a canvas.
+
+    :param shapes: A list of shapes to visualize.
+    :type shapes: list
+
+    :param output_path: Path to where image should be saved. None if you don't want it to be saved.
+    :type output_path: str or NoneType
+
+    :param coords: A function that returns a shapely object when passed an element in `shapes`, defaults to `lambda x: x`
+    :type coords: function
+
+    :param color: A function that takes a shape in `shapes` and returns an rgb 3-tuple or a list of rbg tuples that correspond to the index of shapes in `shapes`, defaults to None
+    :type color: function or NoneType
+
+    :param extras: A list of extra shapes that are to be drawn with default settings.
+    :type extras: list of (`shapely.geometry.Polygon` or `shapely.geometry.MultiPolygon`)
+
+    :param show: whether or not to show the image once generated.
+    :type show: bool
+    """
+
+    map_image = Image.new("RGB", (1000, 1000), "white")
+    draw = ImageDraw.Draw(map_image, "RGB")
+
+    modified_coords = _get_coords(shapes + extras, coords, len(extras))
 
     if color is not None:
         if isinstance(color, types.FunctionType):
@@ -110,7 +138,7 @@ def visualize_map(shapes, output_path, coords=lambda x: x, color=None, show=Fals
     else:
         colors = [(255, 255, 255) for _ in shapes]
     
-    for shape, color in zip(modified_coords, colors):
+    for shape, color in zip(modified_coords[:len(shapes)], colors):
         if isinstance(shape[0][0][0], float):
             # Shape is polygon.
             _draw_polygon(draw, shape, color)
@@ -118,6 +146,16 @@ def visualize_map(shapes, output_path, coords=lambda x: x, color=None, show=Fals
             # Shape is multipolygon.
             for polygon in shape:
                 _draw_polygon(draw, shape, color)
+    
+    # Draw extras.
+    for shape in modified_coords[len(shapes):]:
+        if isinstance(shape[0][0][0], float):
+            # Shape is polygon.
+            _draw_polygon(draw, shape, None)
+        elif isinstance(shape[0][0][0], list):
+            # Shape is multipolygon.
+            for polygon in shape:
+                _draw_polygon(draw, shape, None)
 
     if output_path is not None:
         map_image.save(output_path)
