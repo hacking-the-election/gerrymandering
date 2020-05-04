@@ -21,7 +21,7 @@ using std::endl;
 using namespace Gerrymandering;
 
 int RECURSION_STATE = 0;
-double PADDING = (14.0/16.0);
+double PADDING = (15.0/16.0);
 
 
 Graphics::Pixel::Pixel() {
@@ -223,19 +223,26 @@ void Graphics::Canvas::add_shape(Geometry::Communities s, Geometry::Graph g, boo
 
     for (int i = 0; i < s.size(); i++) {
         Geometry::Community community = s[i];
-        for (Geometry::Polygon shape : community.shape.border) {
-            Outline outline(shape.hull, colors[i], t, true);
-            outlines.push_back(outline);
+        community.update_shape(g);
 
+        for (Geometry::Precinct shape : community.shape.precincts) {
+            // this->add_shape(shape, true, colors[i], 1);
+            // Outline outline(shape.hull, colors[i], t, true);
+            // outlines.push_back(outline);
 
-            for (Geometry::LinearRing l : shape.holes) {
-                Outline hole(l, colors[i], t, true);
-                holes.push_back(hole);
-            }
+            Outline border(shape.hull, colors[i], 2, false);
+            outlines.push_back(border);
+
+            // for (Geometry::LinearRing l : shape.holes) {
+            //     Outline hole(l, colors[i], t, true);
+            //     holes.push_back(hole);
+            // }
         }
 
-        Outline outline2(generate_exterior_border(community.shape).border[0].hull, Color(0,0,0), t, false);
-        outlines.push_back(outline2);
+        // for (Geometry::Polygon p : generate_exterior_border(community.shape).border) {
+        //     Outline outline2(p.hull, Color(0,0,0), t, false);
+        //     outlines.push_back(outline2);
+        // }
     }
 
 }
@@ -445,10 +452,10 @@ void Graphics::Outline::rasterize(Canvas& canvas) {
         @return: void
     */
 
+
     if (filled) this->pixels = std::vector<std::vector<Pixel> > (canvas.x, std::vector<Pixel>(canvas.y, Pixel()));
-    
     int dx, dy, x0, x1, y0, y1;
-    
+
     for (Geometry::segment s : this->border.get_segments()) {
         x0 = s[0];
         y0 = s[1];
@@ -562,12 +569,9 @@ void Graphics::Canvas::draw() {
     //     translate(0, t, false);
     // }
 
-    // cout << "a" << endl;
     for (int i = 0; i < outlines.size(); i++) {
         outlines[i].rasterize(*this);
     }
-
-    // cout << "a" << endl;
 
     for (std::vector<Pixel> pr : this->pixels) {
         for (Pixel p : pr) {
