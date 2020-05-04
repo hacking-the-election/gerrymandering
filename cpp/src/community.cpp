@@ -43,7 +43,7 @@ using namespace chrono;
 
 #define VERBOSE 1
 #define DEBUG 0
-#define ITERATION_LIMIT 100
+#define ITERATION_LIMIT 200
 
 
 class EdgeWrapper {
@@ -125,7 +125,9 @@ double get_compactness(Community& community) {
 
     MB mb (2, p.begin(), p.end());
 
-    int t = (double)community.shape.get_area() / (mb.squared_radius() * PI);
+    // cout << mb.squared_radius() << ", " << (double)community.shape.get_area() << endl;
+    double t = (double)community.shape.get_area() / (mb.squared_radius() * PI);
+    // cout << "t " << t << endl;
     return t;
 } 
 
@@ -186,25 +188,27 @@ vector<array<int, 2> > get_giveable_precincts(Graph& g, Communities& c, int in) 
         if (has_neighbor_outside) giveable.push_back({c[in].node_ids[i], community_neighbor});
     }
 
+    // if (giveable.size() > 0) cout << "FOASFI" << endl;
     return giveable;
 }
 
 
-// double average(Communities& communities, double (*measure)(Community&)) {
-//     /*
-//         @desc: find average `measure` of the `communities`
+double average(Communities& communities, double (*measure)(Community&)) {
+    /*
+        @desc: find average `measure` of the `communities`
 
-//         @params:
-//             `Communities&` communities: list of communities measure
-//             `double (*measure)(Community&)`: pointer to function of type double with param `Community&`
+        @params:
+            `Communities&` communities: list of communities measure
+            `double (*measure)(Community&)`: pointer to function of type double with param `Community&`
         
-//         @return: `double` average measure
-//     */
+        @return: `double` average measure
+    */
 
-//     double sum = 0;
-//     for (Community& c : communities) sum += measure(c);
-//     return (sum / (double) communities.size());
-// }
+    double sum = 0;
+    for (Community& c : communities) sum += measure(c);
+    // cout << "sum " << sum << endl;
+    return (sum / (double) communities.size());
+}
 
 
 // void maximize(Communities& communities, Graph& graph, double (*measure)(Community&)) {
@@ -278,6 +282,77 @@ vector<array<int, 2> > get_giveable_precincts(Graph& g, Communities& c, int in) 
 // }
 
 
+
+void optimize_compactness(Communities& communities, Graph& graph, double (*measure)(Community&)) {
+
+    Canvas canvas(600, 600);
+    canvas.add_shape(communities, graph);
+    canvas.draw();
+    
+    int n_communities = communities.size();
+    int iterations_since_best = 0;
+    Communities best = communities;
+
+    while (iterations_since_best < ITERATION_LIMIT) {
+        int smallest_index = 0;//rand_num(0, communities.size() - 1);//0;
+        double smallest_measure = measure(communities[0]);
+        
+        for (int i = 1; i < communities.size(); i++) {
+            double x = measure(communities[i]);
+            if (x < smallest_measure) {
+                smallest_measure = x;
+                smallest_index = i;
+            }
+        }
+
+        // cout << "the worst community is " << smallest_index << endl;
+
+        vector<int> takeable = get_takeable_precincts(graph, communities, smallest_index);
+        vector<array<int, 2> > giveable = get_giveable_precincts(graph, communities, smallest_index);
+
+        coordinate center = communities[smallest_index].shape.get_center();
+        double radius = sqrt(communities[smallest_index].shape.get_area() / PI);
+
+        for (int t : takeable) {
+            if (point_in_circle(center, radius, graph.vertices[t].precinct->get_center())) {
+                // cout << "taking precinct " << t << endl;
+                exchange_precinct(graph, communities, t, smallest_index);
+            }
+        }
+
+        for (array<int, 2> g : giveable) {
+            if (!point_in_circle(center, radius, graph.vertices[g[0]].precinct->get_center())) {
+                // cout << "giving precinct " << g[0] << endl;
+                exchange_precinct(graph, communities, g[0], g[1]);
+            }
+        }
+
+        
+        cout << average(communities, measure) << endl;
+
+        if (average(communities, measure) > average(best, measure)) {
+            // cout << "found a better solution" << endl;
+            best = communities;
+            iterations_since_best = 0;
+        }
+        else {
+            iterations_since_best++;
+            // cout << "not currently a better solution" << endl;
+        }
+        // Canvas canvas(400, 400);
+        // canvas.add_shape(communities, graph);
+        // canvas.draw();
+    }
+
+    communities = best;
+    canvas.clear();
+    canvas.add_shape(communities, graph);
+    canvas.draw();
+    cout << "did not improve after " << ITERATION_LIMIT << " iterations, returning..." << endl;
+    cout << average(communities, measure) << endl;
+}
+
+
 void optimize_population(Graph& g, Communities& communities, double range) {
     bool done = false;
 
@@ -300,7 +375,7 @@ void optimize_population(Graph& g, Communities& communities, double range) {
         int worst_index = 0;
         int index = 0;
         double worst_margin = 0.0;
-        bool lower = false;
+        bool lower = true;
 
         for (int p : pops) {
             if (p < bounds[0]) {
@@ -338,6 +413,8 @@ void optimize_population(Graph& g, Communities& communities, double range) {
         else {
             vector<array<int, 2> > give = get_giveable_precincts(g, communities, worst_index);
             int x = 0;
+            cout << communities[worst_index].get_population() << ", " << bounds[1] << endl;
+            cout << give.size() << endl;
             while (communities[worst_index].get_population() > bounds[1] && x < give.size()) {
                 cout << "GIVING PRECINCT" << endl;
                 exchange_precinct(g, communities, give[x][0], give[x][1]);
@@ -445,8 +522,8 @@ Communities Gerrymandering::Geometry::get_initial_configuration(Graph graph, int
     }
 
     cout << "got init config." << endl;
-    // maximize(cs, graph, get_compactness);
-    optimize_population(graph, cs, 0.01);
+    optimize_compactness(cs, graph, get_compactness);
+    // optimize_population(graph, cs, 0.01);
 
     return cs;
 }
