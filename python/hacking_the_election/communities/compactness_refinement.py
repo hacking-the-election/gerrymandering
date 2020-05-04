@@ -6,8 +6,8 @@ they all have Schwartzberg compactness scores above a certain threshold.
 import copy
 import math
 import os
+import random
 
-import miniball
 from shapely.geometry import MultiPolygon, Point
 
 from hacking_the_election.utils.geometry import get_compactness, get_distance
@@ -48,15 +48,17 @@ def optimize_compactness(communities, graph, animation_dir=None):
     while True:
 
         # Find least compact community.
-        community = min(communities, key=lambda c: c.compactness)
-        rounded_compactnesses = [round(c.compactness, 3) for c in communities]
+        community = random.choice(communities)
+        iteration_compactnesses = [c.compactness for c in communities]
+        rounded_compactnesses = [round(c, 3) for c in iteration_compactnesses]
+        min_compactness = min(iteration_compactnesses)
         print(rounded_compactnesses, min(rounded_compactnesses))
 
         # Exit function if solution is worse than all of previous N solutions.
         if len(compactnesses) > N:
             return_ = True
             for compactness in compactnesses[-N:]:
-                if community.compactness > compactness:
+                if min_compactness > compactness:
                     return_ = False
             if return_:
                 # Revert to best community state.
@@ -77,23 +79,16 @@ def optimize_compactness(communities, graph, animation_dir=None):
                     draw_state(graph, animation_dir)
                 return
 
-        compactnesses.append(community.compactness)
+        compactnesses.append(min_compactness)
         # Not deepcopy so that precinct objects are not copied.
         community_states.append(copy.copy(communities))
-
-        # Calculate mincircle of precinct centroids.
-        precinct_centroids = \
-            [tuple(p.centroid) for p in community.precincts.values()]
-        minx = min(precinct_centroids, key=lambda p: p[0])[0]
-        miny = min(precinct_centroids, key=lambda p: p[1])[1]
-        # List of points that have been translated to origin.
-        P = [(p[0] - minx, p[1] - miny) for p in precinct_centroids]
         
-        mb = miniball.Miniball(P)
-        center = mb.center()
-        radius = math.sqrt(mb.squared_radius())
-        center[0] += minx
-        center[1] += miny
+        # Get area of district.
+        community_precinct_coords = \
+            [p.coords for p in community.precincts.values()]
+        community_coords = MultiPolygon(community_precinct_coords)
+        center = list(community_coords.centroid.coords[0])
+        radius = math.sqrt(community_coords.area / math.pi)
 
         # Determine takeable nodes.
         takeable_nodes = []
