@@ -8,7 +8,10 @@ import types
 
 from PIL import Image, ImageDraw
 
-from hacking_the_election.utils.visualization import modify_coords
+from hacking_the_election.utils.visualization import (
+    get_partisanship_colors,
+    modify_coords
+)
 from hacking_the_election.utils.geometry import shapely_to_geojson
 
 
@@ -169,6 +172,7 @@ if __name__ == "__main__":
         precinct_graph = pickle.load(f)
 
     precincts = [precinct_graph.node_attributes(node)[0] for node in precinct_graph.nodes()]
+    color_dict = get_partisanship_colors(precincts, lambda p: p.dem_rep_partisanship)
 
-    # TODO: Add color function based on partisanship.
-    visualize_map(precincts, None if sys.argv[2] == "None" else sys.argv[2], coords=lambda x: x.coords, show=True)
+    visualize_map(precincts, None if sys.argv[2] == "None" else sys.argv[2],
+        coords=lambda x: x.coords, color=lambda x: color_dict[x], show=True)

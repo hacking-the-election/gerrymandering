@@ -1,9 +1,9 @@
 """Functions necessary for creating visuals.
 """
 
-import numpy as np
-from shapely.geometry import Point
 cimport numpy as np
+import numpy as np
+from shapely.geometry import point
 
 
 DTYPE = np.float64
@@ -90,7 +90,7 @@ cpdef list modify_coords(list coords, list bounds):
     return new_coords
 
 
-def add_leading_zeroes(n):
+cpdef str add_leading_zeroes(int n):
     """Adds leading zeroes to an int until it is 3 chars long.
     
     :param n: Number to add zeroes to.
@@ -100,7 +100,35 @@ def add_leading_zeroes(n):
     :rtype: str
     """
 
-    chars = list(str(int(n)))
+    cdef list chars = list(str(int(n)))
     while len(chars) < 3:
         chars.insert(0, "0")
     return "".join(chars)
+
+
+cpdef dict get_partisanship_colors(list objects,  get_partisanship):
+    """Maps objects to a color based on partisanship.
+
+    :param objects: A list of objects.
+    :type objects: list, most commonly containing `hacking_the_election.utils.precinct.Precinct` or `hacking_the_election.utils.community.Community`
+
+    :param get_partisanship: A function that gets the partisanship of an item in `objects`. -1 means democrat and 1 means republican.
+    :type get_partisanship: `types.FunctionType` that takes type of item in `objects` and returns float.
+
+    :return: A dict mapping the objects in `objects` to rgb codes.
+    :rtype: dict mapping type of item in `objects` to 3-tuple of int.
+    """
+
+    cpdef dict colors = {}
+
+    cdef float partisanship
+    for obj in objects:
+        partisanship = get_partisanship(obj)
+        if partisanship > 0:
+            # Object is republican - purple to red.
+            colors[obj] = (255, 0, - int(partisanship / 255))
+        elif partisanship < 0:
+            # Object is democratic - blue to purple.
+            colors[obj] = (int(255 * abs(partisanship)), 0, 255)
+    
+    return colors
