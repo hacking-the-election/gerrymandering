@@ -9,6 +9,7 @@
 
 #include <iostream>
 #include <random>
+#include <cmath>
 
 #include "../include/community.hpp"
 #include "../include/util.hpp"
@@ -155,9 +156,9 @@ std::vector<RGB_Color> Graphics::generate_n_colors(int n) {
         // create and add colors
         colors.push_back(
             hsl_to_rgb({
-                (double)i / 360.0,
-                (double)(80 + rand_num(0, 20)) / 100.0,
-                (double)(50 + rand_num(0, 10)) / 100.0
+                (int)((double)i / 360.0),
+                (int)((double)(80 + rand_num(0, 20)) / 100.0),
+                (int)((double)(50 + rand_num(0, 10)) / 100.0)
             })
         );
 
@@ -169,6 +170,11 @@ std::vector<RGB_Color> Graphics::generate_n_colors(int n) {
 
 int PixelBuffer::index_from_position(int a, int b) {
     return ((x * (b - 1)) + a - 1);
+}
+
+
+void PixelBuffer::set_from_position(int a, int b, Uint32 value) {
+    ar[index_from_position(a, b)] = value;
 }
 
 
@@ -300,107 +306,131 @@ void Canvas::scale(double scale_factor) {
 // }
 
 
-Geometry::coordinate Outline::get_representative_point() {
-    return this->border.get_center();
-}
-
-
-void Outline::rasterize(Canvas& canvas) {
+void Graphics::draw_line(PixelBuffer& buffer, Geometry::coordinate start, Geometry::coordinate end, RGB_Color color, double t) {
     /*
-        @desc:
-            scales an array of coordinates to fit on a screen
-            of dimensions {x, y}, and determines pixel values
-            and placements
+        @desc: draws a line from a to b using Bresenham's algorithm
 
-        @params: none
+        @params: 
+            `PixelBuffer&` buffer: the buffer to draw line to
+            `Geometry::coordinate` start, end: endpoints of the line
+            `double` t: thickness of the line
+
         @return: void
     */
 
+    int dx = abs(end[0] - start[0]), sx = start[0] < end[0] ? 1 : -1;
+    int dy = abs(end[1] - start[1]), sy = start[1] < end[1] ? 1 : -1;
+    int err = dx - dy, e2, x2, y2;
+    float ed = dx + dy == 0 ? 1 : sqrt((float)dx * dx + (float)dy * dy);
+    
+    for (t = (t + 1) / 2; ;) {
+        int cval = std::max(0.0, 255 * (abs(err - dx + dy) / ed - t + 1));
+        RGB_Color adj(cval, cval, cval);
+        buffer.set_from_position(start[0], start[1], adj.to_uint());
+        e2 = err; x2 = start[0];
 
-    if (filled) this->pixels = std::vector<std::vector<Pixel> > (canvas.x, std::vector<Pixel>(canvas.y, Pixel()));
-    int dx, dy, x0, x1, y0, y1;
-
-    for (Geometry::segment s : this->border.get_segments()) {
-        x0 = s[0];
-        y0 = s[1];
-        x1 = s[2];
-        y1 = s[3];
-
-        dx = x1 - x0;
-        dy = y1 - y0;
-
-        int steps = abs(dx) > abs(dy) ? abs(dx) : abs(dy);
-
-        double xinc = (double) dx / (double) steps;
-        double yinc = (double) dy / (double) steps;
-
-        double xv = (double) x0;
-        double yv = (double) y0;
-
-        for (int i = 0; i <= steps; i++) {
-         
-            if (filled) this->pixels[xv][yv] = Pixel((int)xv, (int)yv, this->color);
-            canvas.pixels[xv][yv] = Pixel((int)xv , (int)yv, this->color);
-            
-            if (line_thickness > 1) {
-                if (abs(dx) > abs(dy)) {
-                    // up/down
-                    int add = 0;
-                    for (int i = 1; i <= ceil((double)(line_thickness - 1) / 2.0); i++) {
-                        for (int f = 1; f >= -1; f -= 2) {
-                            if (filled) this->pixels[xv][yv + (i * f)] = Pixel((int)xv, (int)yv + (i * f), this->color);
-                            canvas.pixels[xv][yv + (i * f)] = Pixel((int)xv, (int)yv + (i * f), this->color);
-                            add++;
-
-                            if (add == line_thickness - 1) break;
-                        }
-                    }
-                }
-                else {
-                    // left/right
-                    int add = 0;
-                    for (int i = 1; i <= ceil((double)(line_thickness - 1) / 2.0); i++) {
-                        for (int f = 1; f >= -1; f -= 2) {
-                            if (filled) this->pixels[xv + (i * f)][yv] = Pixel((int)xv + (i * f), (int)yv, this->color);
-                            canvas.pixels[xv + (i * f)][yv] = Pixel((int)xv + (i * f), (int)yv, this->color);
-                            add++;
-
-                            if (add == line_thickness - 1) break;
-                        }
-                    }
-                }
+        if (2 * e2 >= -dx) {
+            for (e2 += dy, y2 = start[1]; e2 < ed*t && (end[1] != y2 || dx > dy); e2 += dx) {
+                int cval = std::max(0.0, 255 * (abs(e2) / ed - t + 1));
+                RGB_Color adj(cval, cval, cval);
+                buffer.set_from_position(start[0], y2 += sy, adj.to_uint());
             }
-
-            xv += xinc;
-            yv += yinc;
+            if (start[0] == end[0]) break;
+            e2 = err; err -= dy; start[0] += sx; 
+        } 
+        if (2 * e2 <= dy) {
+            for (e2 = dx - e2; e2 < ed * t && (end[0] != x2 || dx < dy); e2 += dy) {
+                int cval = std::max(0.0, 255 * (abs(e2) / ed - t + 1));
+                RGB_Color adj(cval, cval, cval);
+                buffer.set_from_position(x2 += sx, start[1], adj.to_uint());
+            }
+            if (start[1] == end[1]) break;
+            err += dx; start[1] += sy; 
         }
     }
 
-    if (this->filled) {
-        this->flood_fill(this->get_representative_point(), this->color, canvas);
-    }
+    
+    // // old untested method for setting
+    // // single width lines
+    // int dx = end[0] - start[0],
+    //     dy = end[1] - start[1];
 
-    this->pixels.clear();
+    // int steps = abs(dx) > abs(dy) ? abs(dx) : abs(dy);
+
+    // double xinc = (double) dx / (double) steps;
+    // double yinc = (double) dy / (double) steps;
+
+    // double xv = (double) start[0];
+    // double yv = (double) start[1];
+
+    // for (int i = 0; i <= steps; i++) {
+
+    //     buffer.set_from_position(xv, yv, color.to_uint());
+
+    //     xv += xinc;
+    //     yv += yinc;
+    // }
 
     return;
 }
 
 
-Uint32 Pixel::get_uint() {
-    Uint32 rgba = (0 << 24) +
-         (color.r << 16) +
-         (color.g << 8)  +
-         color.b;
+Uint32 RGB_Color::to_uint() {
+    Uint32 rgba =
+        (0 << 24) +
+        (r << 16) +
+        (g << 8)  +
+        (b);
+
     return rgba;
 }
 
 
-Uint32 Color::get_uint() {
-    Uint32 rgba = (0 << 24) +
-         (r << 16) +
-         (g << 8)  +
-         b;
-    return rgba;
+void Canvas::rasterize() {
+    /*
+        @desc: Updates the canvas's pixel buffer with rasterized outlines
+        @params: 
+    */
+
+    if (!to_date) {
+        this->pixel_buffer = PixelBuffer(x, y);
+        get_bounding_box();
+        translate(-box[2], -box[1], true);
+
+        double ratio_top = ceil((double) this->box[0]) / (double) (x);   // the rounded ratio of top:top
+        double ratio_right = ceil((double) this->box[3]) / (double) (y); // the rounded ratio of side:side
+        double scale_factor = 1 / ((ratio_top > ratio_right) ? ratio_top : ratio_right); 
+        scale(scale_factor * PADDING);
+
+        int px = (int)((double)x * (1.0-PADDING) / 2.0), py = (int)((double)y * (1.0-PADDING) / 2.0);
+        translate(px, py, false);
+
+        // if (ratio_top < ratio_right) {
+        //     // center vertically
+        //     std::cout << "x" << std::endl;
+        //     int t = (int)((((double)y - ((double)py * 2.0)) - (double)this->box[0]) / 2.0);
+        //     std::cout << t << std::endl;
+        //     translate(0, t, false);
+        // }
+
+        for (int i = 0; i < outlines.size(); i++) {
+            outlines[i].rasterize(*this);
+        }
+
+        for (std::vector<Pixel> pr : this->pixels) {
+            for (Pixel p : pr) {
+                if (p.color.r != -1) {
+                    int total = (x * y) - 1;
+                    int start = p.y * x - p.x;
+
+                    if (total - start < x * y && total - start >= 0) 
+                        this->background[total - start] = p.to_uint();
+                }
+            }
+        }
+    }
+
+    to_date = true;
 }
 
 
@@ -411,43 +441,6 @@ void Canvas::draw() {
         @return: void
     */
 
-    // size and position coordinates in the right quad
-    this->pixels = std::vector<std::vector<Pixel> > (x, std::vector<Pixel>(y));
-    memset(background, 255, x * y * sizeof(Uint32));
-    get_bounding_box();
-    translate(-box[2], -box[1], true);
-
-    double ratio_top = ceil((double) this->box[0]) / (double) (x);   // the rounded ratio of top:top
-    double ratio_right = ceil((double) this->box[3]) / (double) (y); // the rounded ratio of side:side
-    double scale_factor = 1 / ((ratio_top > ratio_right) ? ratio_top : ratio_right); 
-    scale(scale_factor * PADDING);
-
-    int px = (int)((double)x * (1.0-PADDING) / 2.0), py = (int)((double)y * (1.0-PADDING) / 2.0);
-    translate(px, py, false);
-
-    // if (ratio_top < ratio_right) {
-    //     // center vertically
-    //     std::cout << "x" << std::endl;
-    //     int t = (int)((((double)y - ((double)py * 2.0)) - (double)this->box[0]) / 2.0);
-    //     std::cout << t << std::endl;
-    //     translate(0, t, false);
-    // }
-
-    for (int i = 0; i < outlines.size(); i++) {
-        outlines[i].rasterize(*this);
-    }
-
-    for (std::vector<Pixel> pr : this->pixels) {
-        for (Pixel p : pr) {
-            if (p.color.r != -1) {
-                int total = (x * y) - 1;
-                int start = p.y * x - p.x;
-
-                if (total - start < x * y && total - start >= 0) 
-                    this->background[total - start] = p.get_uint();
-            }
-        }
-    }
 
     SDL_Init(SDL_INIT_VIDEO);
     SDL_Event event;
@@ -560,7 +553,7 @@ void Anim::playback() {
                     int start = p.y * c.x - p.x;
 
                     if (total - start < c.x * c.y && total - start >= 0) 
-                        background[total - start] = p.get_uint();
+                        background[total - start] = p.to_uint();
                 }
             }
         }
