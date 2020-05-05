@@ -23,7 +23,7 @@ const long int c = pow(10, 18);
 const long int d = pow(10, 9);
 const long int l = pow(2, 6);
 
-using namespace Gerrymandering;
+using namespace hte;
 using namespace Geometry;
 using namespace std;
 
@@ -798,6 +798,24 @@ bool point_in_circle(Geometry::coordinate center, double radius, Geometry::coord
     */
 
     return (get_distance(center, point) <= radius);
+}
+
+
+Geometry::bounding_box Geometry::LinearRing::get_bounding_box() {
+    int top = border[0][1], 
+    bottom = border[0][1], 
+    left = border[0][0], 
+    right = border[0][0];
+
+    // loop through and find actual corner using ternary assignment
+    for (Geometry::coordinate coord : border) {
+        if (coord[1] > top) top = coord[1];
+        if (coord[1] < bottom) bottom = coord[1];
+        if (coord[0] < left) left = coord[0];
+        if (coord[0] > right) right = coord[0];
+    }
+
+    return {top, bottom, left, right}; // return bounding box
 }
 
 

@@ -20,8 +20,8 @@
 using namespace std::chrono; 
 
 using namespace std;
-using namespace Gerrymandering::Geometry;
-using namespace Gerrymandering::Graphics;
+using namespace hte::Geometry;
+using namespace hte::Graphics;
 
 
 int main(int argc, char* argv[]) {

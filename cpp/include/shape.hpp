@@ -27,7 +27,7 @@
 #include "../lib/ordered-map/include/tsl/ordered_map.h"
 
 
-namespace Gerrymandering {
+namespace hte {
 namespace Geometry {
 
     // Geometry classes. These all define groups of points
@@ -116,6 +116,7 @@ namespace Geometry {
         virtual coordinate get_center();      // average of all points in shape
         virtual segments get_segments();      // return a segment list with shape's segments
         virtual std::string to_json();
+        virtual bounding_box get_bounding_box();
 
         // add operator overloading for object equality
         friend bool operator== (const LinearRing& l1, const LinearRing& l2);
@@ -315,10 +316,10 @@ namespace Geometry {
 
         int id;
         int community;
-        Gerrymandering::Geometry::Precinct* precinct;
+        hte::Geometry::Precinct* precinct;
 
         Node() {};
-        Node(Gerrymandering::Geometry::Precinct* precinct) : precinct(precinct) {};
+        Node(hte::Geometry::Precinct* precinct) : precinct(precinct) {};
 
         std::vector<Edge> edges;
         std::vector<int> collapsed;

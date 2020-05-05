@@ -37,8 +37,8 @@
 #include "../include/canvas.hpp"      // geometry modification, border functions
 
 using namespace std;
-using namespace Gerrymandering::Geometry;
-using namespace Gerrymandering::Graphics;
+using namespace hte::Geometry;
+using namespace hte::Graphics;
 using namespace chrono;
 
 #define VERBOSE 1
@@ -285,9 +285,9 @@ double average(Communities& communities, double (*measure)(Community&)) {
 
 void optimize_compactness(Communities& communities, Graph& graph, double (*measure)(Community&)) {
 
-    Canvas canvas(600, 600);
-    canvas.add_shape(communities, graph);
-    canvas.draw();
+    // Canvas canvas(600, 600);
+    // canvas.add_shape(communities, graph);
+    // canvas.draw();
     
     int n_communities = communities.size();
     int iterations_since_best = 0;
@@ -345,9 +345,9 @@ void optimize_compactness(Communities& communities, Graph& graph, double (*measu
     }
 
     communities = best;
-    canvas.clear();
-    canvas.add_shape(communities, graph);
-    canvas.draw();
+    // canvas.clear();
+    // canvas.add_shape(communities, graph);
+    // canvas.draw();
     cout << "did not improve after " << ITERATION_LIMIT << " iterations, returning..." << endl;
     cout << average(communities, measure) << endl;
 }
@@ -503,7 +503,7 @@ Communities karger_stein(Graph& g1, int n_communities) {
 }
 
 
-Communities Gerrymandering::Geometry::get_initial_configuration(Graph graph, int n_communities) {
+Communities hte::Geometry::get_initial_configuration(Graph graph, int n_communities) {
     /*
         @desc: determines a random list of community objects
 
