@@ -136,3 +136,39 @@ cpdef list get_components(graph):
         components.append(list(component))
         discovered_nodes.update(component)
     return components
+
+
+cpdef get_induced_subgraph(graph, list precincts):
+    """Creates an induced subgraph of a graph based off of a list of precincts in the graph.
+
+    :param graph: A graph with precincts as node attributes.
+    :type graph: `pygraph.classes.graph.graph`
+
+    :param precincts: A list of precincts which are attributes in `graph`
+    :type precincts: list of `hacking_the_election.utils.precicnt.Precinct`
+
+    :return: A graph that is the induced subgraph of `graph`, containing `precincts` as nodes.
+    :rtype: `pygraph.classes.graph.graph`
+    """
+
+    cdef list nodes = [get_node_number(precinct, graph) for precinct in precincts]
+    cdef list edges = []
+
+    cdef int node
+    cdef int neighbor
+    for node in nodes:
+        for neighbor in graph.neighbors(node):
+            if neighbor in nodes:
+                edges.append((node, neighbor))
+    
+    induced_subgraph = Graph()
+    for node in nodes:
+        induced_subgraph.add_node(node)
+    cdef tuple edge
+    for edge in edges:
+        try:
+            induced_subgraph.add_edge(edge)
+        except AdditionError:
+            pass
+
+    return induced_subgraph

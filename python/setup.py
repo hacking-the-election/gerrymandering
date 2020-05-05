@@ -11,8 +11,6 @@ setup(
         "matplotlib",
         "shapely",
         "Pillow",
-        "colormap",
-        "easydev",
         "python-graph-core",
         "cython"
     ],

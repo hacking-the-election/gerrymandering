@@ -138,3 +138,17 @@ class Precinct:
             self.percent_const = self.total_const / self.total_votes
 
             self.percent_other = self.total_other / self.total_votes
+
+    @property
+    def dem_rep_partisanship(self):
+        """A value between -1 and 1, which represent democratic and republican, respectively.
+        """
+
+        try:
+            republican = self.total_rep / (self.total_rep + self.total_dem)
+        except ZeroDivisionError:
+            republican = 0
+        if republican < 0.5:
+            return republican - 1
+        elif republican >= 0.5:
+            return republican

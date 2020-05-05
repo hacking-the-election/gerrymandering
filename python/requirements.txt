@@ -3,6 +3,3 @@ matplotlib
 shapely
 python-graph-core
 Pillow
-colormap
-easydev
-miniball

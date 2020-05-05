@@ -17,6 +17,25 @@ from hacking_the_election.utils.precinct import Precinct
 SOURCE_DIR = os.path.dirname(__file__)
 
 
+def _get_precinct_from_id(graph, id_):
+    """Gets a precinct object from a precinct id.
+
+    :param graph: A graph with precincts as node attributes.
+    :type graph: `pygraph.classes.graph.graph`
+
+    :param id_: The id of a precinct in `graph`.
+    :type id_: str
+
+    :return: The precinct with id `id_`
+    :rtype: `hacking_the_election.utils.precinct.Precinct`
+    """
+
+    for node in graph.nodes():
+        precinct = graph.node_attributes(node)[0]
+        if precinct.id == id_:
+            return precinct
+
+
 class TestGraph(unittest.TestCase):
 
     def setUp(self):
@@ -69,6 +88,19 @@ class TestGraph(unittest.TestCase):
         precinct = Precinct(0, Point(0, 0).buffer(1), "North Montana", "0", 0, 0)
         precinct_graph.add_node(0, attrs=[precinct])
         graph.get_node_number(precinct, precinct_graph)
+
+    def test_get_induced_subgraph(self):
+        """Tests `hacking_the_election.utils.graph.get_induced_subgraph`
+        """
+
+        precinct_ids = ["50013VD102", "50011VD101", "50011VD95", "50011VD93"]
+        precincts = [_get_precinct_from_id(self.vermont_graph, id_)
+                     for id_ in precinct_ids]
+        
+        precincts_graph = graph.get_induced_subgraph(self.vermont_graph, precincts)
+        
+        self.assertEqual(len(precincts_graph.nodes()), 4)
+        self.assertEqual(len(precincts_graph.edges()) / 2, 3)
 
 
 if __name__ == "__main__":
