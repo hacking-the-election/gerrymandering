@@ -15,77 +15,121 @@
 #include "shape.hpp"
 #include "community.hpp"
 
-namespace Gerrymandering {
+namespace hte {
 namespace Graphics {
 
+    // to render shapes
     class Canvas;
-    class Color;
+
+    // not inherited from base
+    // color for naming attrs
+    class RGB_Color;
+    class HSL_Color;
+    
     class Outline;
-    class Pixel;
+    class Style;
+    class PixelBuffer;
 
 
-    std::array<int, 3> interpolate_rgb(std::array<int, 3> rgb1, std::array<int, 3> rgb2, double interpolator);
+    // for color space conversions (currently just hsl/rgb)
     double hue_to_rgb(double p, double q, double t);
-    std::array<int, 3> hsl_to_rgb(std::array<double, 3> hsl);
-    std::array<double, 3> rgb_to_hsl(std::array<int, 3> rgb);
-    std::array<double, 3> interpolate_hsl(std::array<double, 3> hsl1, std::array<double, 3> hsl2, double interpolator);
+    RGB_Color hsl_to_rgb(HSL_Color hsl);
+    HSL_Color rgb_to_hsl(RGB_Color rgb);
 
-    class Color {
+    // interpolate between colors
+    HSL_Color interpolate_hsl(HSL_Color, HSL_Color, double);
+    RGB_Color interpolate_rgb(RGB_Color, RGB_Color, double);
+    double lerp(double, double, double);
+
+    // color palette generators
+    std::vector<RGB_Color> Graphics::generate_n_colors(int n);
+    enum ImageFmt { PNG, SVG, BMP, PNM };
+
+
+    class RGB_Color {
+        // a color representing rgb color channels
         public:
-        int r, g, b;
-        Uint32 get_uint();
+            int r, g, b;
+            Uint32 get_uint();
 
-        void set_color(int rx, int gx, int bx) {
-            r = rx;
-            g = gx;
-            b = bx;
-        }
+            friend bool operator!= (const RGB_Color& c1, const RGB_Color& c2) {
+                return (c1.r != c2.r || c1.g != c2.g || c1.b != c2.b);
+            }
 
-        friend bool operator!= (Color c1, Color c2) {
-            return (c1.r != c2.r || c1.g != c2.g || c1.b != c2.b);
-        }
+            friend bool operator== (const RGB_Color& c1, const RGB_Color& c2) {
+                return (c1.r == c2.r && c1.g == c2.g && c1.b == c2.b);
+            }
 
-        friend bool operator== (Color c1, Color c2) {
-            return (c1.r == c2.r && c1.g == c2.g && c1.b == c2.b);
-        }
-
-        Color() {};
-        Color(std::string hex);
-        Color(int rx, int gx, int bx) : r(rx), g(gx), b(bx) {};
+            // constructors with default conversions
+            RGB_Color() {};
+            RGB_Color(int r, int g, int b) : r(r), g(g), b(b) {};
+            RGB_Color(std::string hex);
+            RGB_Color(HSL_Color);
     };
 
 
-    class Pixel {
+    class HSL_Color {
+        // a color representing hsl color channels
         public:
+            int h, s, l;
 
-            Color color;
-            int x, y;
-            Uint32 get_uint();
-            Pixel();
-            Pixel(int ax, int ay, Color c) : color(c), x(ax), y(ay) {}
-            void draw(SDL_Renderer* renderer);
+            friend bool operator!= (const HSL_Color& c1, const HSL_Color& c2) {
+                return (c1.h != c2.h || c1.s != c2.s || c1.l != c2.l);
+            }
+
+            friend bool operator== (const HSL_Color& c1, const HSL_Color& c2) {
+                return (c1.h == c2.h && c1.s == c2.s && c1.l == c2.l);
+            }
+
+            // constructors with default conversions
+            HSL_Color() {};
+            HSL_Color(int h, int s, int l) : h(h), s(s), l(l) {}
+            HSL_Color(RGB_Color);
+            HSL_Color(std::string hex);
+    };
+ 
+
+    class PixelBuffer {
+        // contains pixel data in the form of
+        // uint array, see `Uint_to_rgb`
+
+        Uint32* ar;
+        int x, y;
+
+        public:
+            PixelBuffer();
+            PixelBuffer(int x, int y) : x(x), y(y) { ar = new Uint32[x * y]; }
+            void resize(int x, int y) { x = x; y = y; ar = new Uint32[x * y]; }
+
+            int index_from_position(int x, int y);
+    };
+
+
+    class Style {
+        private:
+            RGB_Color fill_;
+            RGB_Color outline_;
+            int thickness_;
+        
+        public:
+            Style& thickness(int);
+            Style& fill(RGB_Color);
+            Style& fill(HSL_Color);
+            Style& outline(RGB_Color);
     };
 
 
     class Outline {
+        private:
+            Style style_;
+
         public:
+            PixelBuffer pix;
             Geometry::LinearRing border;
-            Color color;
-            int line_thickness;
-            bool filled;
+            void rasterize(Canvas&);
+            Style& style() {return style_;}
 
-            Geometry::coordinate get_representative_point();
-            
-            std::vector<std::vector<Pixel> > pixels;
-            Pixel get_pixel(Geometry::coordinate c);
-            void rasterize(Canvas& canvas);
-
-            // modify canvas attributes
-            void flood_fill_util(Geometry::coordinate coord, Color c1, Color c2, Canvas& canvas);
-            void flood_fill(Geometry::coordinate, Color c, Canvas& canvas);
-
-            Outline(Geometry::LinearRing lr, Color c, int th, bool f) :
-                border(lr), color(c), line_thickness(th), filled(f) {}
+            Outline(Geometry::LinearRing border) : border(border) {}
     };
 
 
@@ -101,46 +145,39 @@ namespace Graphics {
         std::vector<Outline> outlines;               // shapes to be drawn individually
         std::vector<Outline> holes;                  // shapes to be drawn individually
 
-
         // meta information
-        std::vector<std::vector<Pixel> > pixels;        // the pixel array to write to screen
+        PixelBuffer pix;
 
-        Geometry::bounding_box box;       // the outer bounding box
         Geometry::bounding_box get_bounding_box();   // calculate bounding box of coordinates
-        Uint32* background;
+        Geometry::bounding_box box;       // the outer bounding box
         int x, y;                         // dimensions of the screen
 
-        // modify canvas attributes
-        void translate(long int x, long int y, bool b);      // move the outlines by x and y
-        void scale(double scale_factor);             // scale the shapes by scale factor
-        Pixel get_pixel(Geometry::coordinate c);
+        // hte::Geometry::BoundingBox
+        // transformations for getting the coordinates of
+        // the outlines in the right size
 
-        Canvas(int dx, int dy) : x(dx), y(dy) {
-            background = new Uint32[dx * dy];
-            memset(background, 255, dx * dy * sizeof(Uint32));
-        }
+        void translate(long, long, bool);         // move the outlines by x and y
+        void scale(double scale_factor);                        // scale the shapes by scale factor
+        void rotate(Geometry::coordinate center, int degrees);  // rotate the shapes by n degrees
+
+        std::string get_svg();
+        void save_image(ImageFmt, std::string);
+
+        Canvas(int x, int y) : x(x), y(y) {}
 
         // add shape to the canvas
-        void add_shape(Geometry::Polygon s, bool = false, Color = Color(0,0,0), int = 1);
-        void add_shape(Geometry::LinearRing s, bool = false, Color = Color(0,0,0), int = 1);
-        void add_shape(Geometry::Multi_Polygon s, bool = false, Color = Color(0,0,0), int = 1);
-        void add_shape(Geometry::Precinct_Group s, bool = false, Color = Color(0,0,0), int = 1);
-        void add_shape(Geometry::Communities s, Geometry::Graph g, bool = false, Color = Color(0,0,0), int = 1);
-
-        void add_graph(Geometry::Graph s, Color = Color(0,0,0));
-
+        void add_outline(Outline);
         void clear();
-        void resize_window(int x, int y);
         void draw();
     };
 
-    class Anim {
-        public:
-        std::vector<Canvas> frames;
-        int delay;
+    // class Anim {
+    //     public:
+    //     std::vector<Canvas> frames;
+    //     int delay;
 
-        void playback();
-        Anim(int d) : delay(d) {};
-    };
+    //     void playback();
+    //     Anim(int d) : delay(d) {};
+    // };
 }
 }
