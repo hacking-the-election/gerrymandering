@@ -27,24 +27,28 @@ double PADDING = (15.0/16.0);
 
 
 Style& Style::outline(RGB_Color c) {
+    // set the outline color
     outline_ = c;
     return *this;
 }
 
 
 Style& Style::thickness(int t) {
+    // set the outline thickness
     thickness_ = t;
     return *this;
 }
 
 
 Style& Style::fill(RGB_Color c) {
+    // set the fill color (RGB)
     fill_ = c;
     return *this;
 }
 
 
 Style& Style::fill(HSL_Color c) {
+    // set the fill color (HSL)
     fill_ = hsl_to_rgb(c);
     return *this;
 }
@@ -65,7 +69,13 @@ double Graphics::hue_to_rgb(double p, double q, double t) {
 }	
 
 
-RGB_Color Graphics::hsl_to_rgb(HSL_Color hsl) {	
+RGB_Color Graphics::hsl_to_rgb(HSL_Color hsl) {
+    /*
+        @desc: Convert a HSL_Color object into RGB_Color
+        @params: `HSL_Color` hsl: color to convert
+        @return: `RGB_Color` converted color
+    */
+
     double r, g, b;
 
     if (hsl.s == 0.0) {
@@ -89,6 +99,10 @@ RGB_Color Graphics::hsl_to_rgb(HSL_Color hsl) {
 
 
 HSL_Color Graphics::rgb_to_hsl(RGB_Color rgb) {
+    /*
+        @desc: Converts RGB_Color object into HSL_Color
+    */
+
     double r = (double) rgb.r / 255.0;
     double g = (double) rgb.g / 255.0;
     double b = (double) rgb.b / 255.0;
@@ -248,6 +262,7 @@ void Canvas::translate(long int t_x, long int t_y, bool b) {
         }
     }
     
+    to_date = false;
     if (b) box = {box[0] + t_y, box[1] + t_y, box[2] + t_x, box[3] + t_x};
 }
 
@@ -276,6 +291,8 @@ void Canvas::scale(double scale_factor) {
             holes[i].border.border[j][1] *= scale_factor;
         }
     }
+
+    to_date = false;
 }
 
 
@@ -386,20 +403,81 @@ Uint32 RGB_Color::to_uint() {
 }
 
 
+void Canvas::clear() {
+    // @warn: reset background here
+    this->outlines = {};
+    this->holes = {};
+    this->background = new Uint32[x * y];
+    memset(background, 255, x * y * sizeof(Uint32));
+    to_date = true;
+}
+
+
+void SDL_Screenshot(string write_path) {
+    /*
+        @desc: Takes a screenshot as a BMP image of an SDL surface
+        @params:
+            `string` write_path: output image file
+    */
+
+    // create empty RGB surface to hold window data
+    SDL_Surface* pScreenShot = SDL_CreateRGBSurface(
+        0, x, y, 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000
+    );
+    
+    // check file path and output
+    if (write_path.substr(write_path.size() - 4, 4) != ".bmp") cout << "warning - not saving to bmp file!" << endl;
+    if (boost::filesystem::exists(write_path)) cout << "File already exists, returning"
+    
+    if (pScreenShot) {
+
+        // read pixels from render target, save to surface
+        SDL_RenderReadPixels(
+            renderer, NULL, SDL_GetWindowPixelFormat(window),
+            pScreenShot->pixels, pScreenShot->pitch
+        );
+
+        // Create the bmp screenshot file
+        SDL_SaveBMP(pScreenShot, (app).c_str());
+        SDL_FreeSurface(pScreenShot);
+    }
+    else {
+        cout << "Uncaught error here, returning" << endl;
+        return;
+    }
+}
+
+
+void Canvas::save_image(ImageFmt fmt, std::string path) {
+    if (!up_to_date && fmt != ImageFmt::SVG) rasterize();
+
+    if (fmt == ImageFmt::BMP) {
+        SDL_Screenshot(path);
+    }
+}
+
+
 void Canvas::rasterize() {
     /*
         @desc: Updates the canvas's pixel buffer with rasterized outlines
-        @params: 
+        @params: none
+        @return `void`
     */
 
     if (!to_date) {
         this->pixel_buffer = PixelBuffer(x, y);
+
+        // @warn may be doing extra computation here
         get_bounding_box();
+
+        // translate into first quadrant
         translate(-box[2], -box[1], true);
 
-        double ratio_top = ceil((double) this->box[0]) / (double) (x);   // the rounded ratio of top:top
-        double ratio_right = ceil((double) this->box[3]) / (double) (y); // the rounded ratio of side:side
+        // determine smaller side/side ratio for scaling
+        double ratio_top = ceil((double) this->box[0]) / (double) (x);
+        double ratio_right = ceil((double) this->box[3]) / (double) (y);
         double scale_factor = 1 / ((ratio_top > ratio_right) ? ratio_top : ratio_right); 
+        // scale by factor
         scale(scale_factor * PADDING);
 
         int px = (int)((double)x * (1.0-PADDING) / 2.0), py = (int)((double)y * (1.0-PADDING) / 2.0);
@@ -415,18 +493,6 @@ void Canvas::rasterize() {
 
         for (int i = 0; i < outlines.size(); i++) {
             outlines[i].rasterize(*this);
-        }
-
-        for (std::vector<Pixel> pr : this->pixels) {
-            for (Pixel p : pr) {
-                if (p.color.r != -1) {
-                    int total = (x * y) - 1;
-                    int start = p.y * x - p.x;
-
-                    if (total - start < x * y && total - start >= 0) 
-                        this->background[total - start] = p.to_uint();
-                }
-            }
         }
     }
 
@@ -456,38 +522,6 @@ void Canvas::draw() {
     SDL_RenderCopy(renderer, texture, NULL, NULL);
     SDL_RenderPresent(renderer);
 
-    // // Create an empty RGB surface that will be used to create the screenshot bmp file
-    // SDL_Surface* pScreenShot = SDL_CreateRGBSurface(0, x, y, 32, 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000);
-
-    // if (pScreenShot) {
-    //     // Read the pixels from the current render target and save them onto the surface
-    //     SDL_RenderReadPixels(renderer, NULL, SDL_GetWindowPixelFormat(window), pScreenShot->pixels, pScreenShot->pitch); 
-
-    //     std::string filename = "anim-out/test";
-    //     int x = 0;
-    //     std::string app = filename + std::to_string(x);
-
-    //     do {
-    //         x++;
-
-    //         app = filename;
-    //         if (x < 10)
-    //             app += "0";
-    //         if (x < 100)
-    //             app += "0";
-
-    //         app += std::to_string(x);
-            
-    //     } while (boost::filesystem::exists(app + ".bmp"));
-    
-    //     // Create the bmp screenshot file
-    //     SDL_SaveBMP(pScreenShot, (app + ".bmp").c_str());
-
-    //     // Destroy the screenshot surface
-    //     SDL_FreeSurface(pScreenShot);
-    // }
-
-
     bool quit = false;
 
     while (!quit) {
@@ -506,15 +540,6 @@ void Canvas::draw() {
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow( window );
     SDL_Quit();
-}
-
-
-void Canvas::clear() {
-    // @warn: reset background here
-    this->outlines = {};
-    this->holes = {};
-    this->background = new Uint32[x * y];
-    memset(background, 255, x * y * sizeof(Uint32));
 }
 
 

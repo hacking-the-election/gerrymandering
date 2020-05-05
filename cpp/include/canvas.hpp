@@ -42,15 +42,22 @@ namespace Graphics {
     double lerp(double, double, double);
 
     // color palette generators
-    std::vector<RGB_Color> Graphics::generate_n_colors(int n);
-    enum ImageFmt { PNG, SVG, BMP, PNM };
+    std::vector<RGB_Color> generate_n_colors(int n);
+
+    // rasterizers for random shapes
+    void draw_line(
+        PixelBuffer&, Geometry::coordinate, Geometry::coordinate,
+        RGB_Color color = RGB_Color(0,0,0), double t = 1
+    );
+
+    enum class ImageFmt { PNG, SVG, BMP, PNM };
 
 
     class RGB_Color {
         // a color representing rgb color channels
         public:
             int r, g, b;
-            Uint32 get_uint();
+            Uint32 to_uint();
 
             friend bool operator!= (const RGB_Color& c1, const RGB_Color& c2) {
                 return (c1.r != c2.r || c1.g != c2.g || c1.b != c2.b);
@@ -98,10 +105,11 @@ namespace Graphics {
 
         public:
             PixelBuffer();
-            PixelBuffer(int x, int y) : x(x), y(y) { ar = new Uint32[x * y]; }
-            void resize(int x, int y) { x = x; y = y; ar = new Uint32[x * y]; }
+            PixelBuffer(int x, int y) : x(x), y(y) { ar = new Uint32[x * y]; memset(ar, 255, x * y * sizeof(Uint32));}
+            void resize(int x, int y) { x = x; y = y; ar = new Uint32[x * y]; memset(ar, 255, x * y * sizeof(Uint32));}
 
-            int index_from_position(int x, int y);
+            void set_from_position(int, int, Uint32);
+            int index_from_position(int, int);
     };
 
 
@@ -138,37 +146,47 @@ namespace Graphics {
             A class for storing information about a screen
             of pixels and shapes to be written to an SDL display
         */
-       
+
+        private:
+            // update the canvas's pixel buffer
+            // to be called by internal methods such as to_gui();
+            void rasterize();
+            std::string get_svg();
+
         public:
 
-        // contents of the canvas
-        std::vector<Outline> outlines;               // shapes to be drawn individually
-        std::vector<Outline> holes;                  // shapes to be drawn individually
+            bool to_date = true;
 
-        // meta information
-        PixelBuffer pix;
+            // contents of the canvas
+            std::vector<Outline> outlines;     // shapes to be drawn individually
+            std::vector<Outline> holes;        // shapes to be drawn individually
 
-        Geometry::bounding_box get_bounding_box();   // calculate bounding box of coordinates
-        Geometry::bounding_box box;       // the outer bounding box
-        int x, y;                         // dimensions of the screen
+            // meta information
+            PixelBuffer pixel_buffer;
+            
+            // dimensions of the screen
+            int width, height;
 
-        // hte::Geometry::BoundingBox
-        // transformations for getting the coordinates of
-        // the outlines in the right size
+            Geometry::bounding_box box;
+            Geometry::bounding_box get_bounding_box();
 
-        void translate(long, long, bool);         // move the outlines by x and y
-        void scale(double scale_factor);                        // scale the shapes by scale factor
-        void rotate(Geometry::coordinate center, int degrees);  // rotate the shapes by n degrees
+            // transformations for getting the coordinates of
+            // the outlines in the right size
 
-        std::string get_svg();
-        void save_image(ImageFmt, std::string);
+            void translate(long, long, bool);         // move the outlines by x and y
+            void scale(double scale_factor);                        // scale the shapes by scale factor
+            void rotate(Geometry::coordinate center, int degrees);  // rotate the shapes by n degrees
 
-        Canvas(int x, int y) : x(x), y(y) {}
+            void save_image(ImageFmt, std::string);
 
-        // add shape to the canvas
-        void add_outline(Outline);
-        void clear();
-        void draw();
+            Canvas(int width, int height) : width(width), height(height) {}
+
+            // add shape to the canvas
+            void add_outline(Outline);
+
+            void clear();
+            void draw_to_window();
+            void draw_to_window(SDL_Window* window);
     };
 
     // class Anim {

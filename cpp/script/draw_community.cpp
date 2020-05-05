@@ -32,17 +32,6 @@ int main(int argc, char* argv[]) {
     */
 
     // draw communities
-    Canvas canvas(900, 900);
-
-    // read binary file from path
-    // vector<string> states = {"connecticut", "indiana", "iowa", "mass_connected", "new_hampshire", "new_jersey", "new_york", "north_carolina", "pennsylvania", "vermont"};
-
-    // for (string st : states) {
-        State state = State::from_binary(argv[1]);
-        canvas.add_graph(state.network);
-    // }
-
-    canvas.draw();
-
+    State state = State::from_binary(argv[1]);
     return 0;
 }
