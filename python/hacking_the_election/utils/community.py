@@ -66,7 +66,7 @@ class Community:
     def update_population(self):
         """Update the population attribute for this community.
         """
-        self.population = sum([p.population for p in self.precincts.values()])
+        self.population = sum([p.pop for p in self.precincts.values()])
 
     def take_precinct(self, precinct, update=set()):
         """Adds a precinct to this community.
