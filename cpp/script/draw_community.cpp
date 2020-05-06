@@ -32,6 +32,9 @@ int main(int argc, char* argv[]) {
     */
 
     // draw communities
-    State state = State::from_binary(argv[1]);
+    Canvas canvas(900, 900);
+    canvas.draw_to_window();
+
+    // State state = State::from_binary(argv[1]);
     return 0;
 }

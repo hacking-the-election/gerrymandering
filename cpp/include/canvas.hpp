@@ -44,12 +44,6 @@ namespace Graphics {
     // color palette generators
     std::vector<RGB_Color> generate_n_colors(int n);
 
-    // rasterizers for random shapes
-    void draw_line(
-        PixelBuffer&, Geometry::coordinate, Geometry::coordinate,
-        RGB_Color color = RGB_Color(0,0,0), double t = 1
-    );
-
     enum class ImageFmt { PNG, SVG, BMP, PNM };
 
 
@@ -100,11 +94,11 @@ namespace Graphics {
         // contains pixel data in the form of
         // uint array, see `Uint_to_rgb`
 
-        Uint32* ar;
-        int x, y;
-
         public:
-            PixelBuffer();
+            int x, y;
+            Uint32* ar;
+        
+            PixelBuffer() {};
             PixelBuffer(int x, int y) : x(x), y(y) { ar = new Uint32[x * y]; memset(ar, 255, x * y * sizeof(Uint32));}
             void resize(int x, int y) { x = x; y = y; ar = new Uint32[x * y]; memset(ar, 255, x * y * sizeof(Uint32));}
 
@@ -151,7 +145,8 @@ namespace Graphics {
             // update the canvas's pixel buffer
             // to be called by internal methods such as to_gui();
             void rasterize();
-            std::string get_svg();
+            // std::string get_svg();
+            void get_bmp(std::string write_path, SDL_Window* window, SDL_Renderer* renderer);
 
         public:
 
@@ -197,5 +192,11 @@ namespace Graphics {
     //     void playback();
     //     Anim(int d) : delay(d) {};
     // };
+
+    // rasterizers for various shapes
+    void draw_line(
+        PixelBuffer&, Geometry::coordinate, Geometry::coordinate,
+        RGB_Color color = RGB_Color(0,0,0), double t = 1
+    );
 }
 }
