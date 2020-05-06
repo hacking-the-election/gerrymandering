@@ -44,7 +44,6 @@ def optimize_compactness(communities, graph, animation_dir=None):
     # The compactness of the least compact community after each iteration.
     compactnesses = []
     community_states = []
-    i = 0
     while True:
 
         # Find least compact community.
@@ -149,5 +148,3 @@ def optimize_compactness(communities, graph, animation_dir=None):
         for c in giving_communities:
             c.update_compactness()
         community.update_compactness()
-            
-        i += 1
