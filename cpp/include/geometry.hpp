@@ -8,10 +8,8 @@
 
 #pragma once
 
-
 #include "shape.hpp"
 #include "community.hpp"
-
 #include "../lib/clipper/clipper.hpp"
 #include "../lib/Miniball.hpp"
 
@@ -23,27 +21,27 @@ typedef std::vector<double>::const_iterator CoordIterator;
 typedef Miniball::Miniball <Miniball::CoordAccessor<PointIterator, CoordIterator> > MB;
 
 // segment and coordiante manipulation
-Gerrymandering::Geometry::segment coords_to_seg(Gerrymandering::Geometry::coordinate c1, Gerrymandering::Geometry::coordinate c2);
-double get_distance(Gerrymandering::Geometry::coordinate c1, Gerrymandering::Geometry::coordinate c2);
+hte::Geometry::segment coords_to_seg(hte::Geometry::coordinate c1, hte::Geometry::coordinate c2);
+double get_distance(hte::Geometry::coordinate c1, hte::Geometry::coordinate c2);
 double get_distance(std::array<long long int, 2> c1, std::array<long long int, 2> c2);
-double get_distance(Gerrymandering::Geometry::segment s);
+double get_distance(hte::Geometry::segment s);
 
 // two shapes have adjacent and colinear segments
-bool get_bordering(Gerrymandering::Geometry::Polygon s0, Gerrymandering::Geometry::Polygon s1);
+bool get_bordering(hte::Geometry::Polygon s0, hte::Geometry::Polygon s1);
 
 // for clipper conversions
-ClipperLib::Path ring_to_path(Gerrymandering::Geometry::LinearRing ring);
-Gerrymandering::Geometry::LinearRing path_to_ring(ClipperLib::Path path);
-ClipperLib::Paths shape_to_paths(Gerrymandering::Geometry::Polygon shape);
-Gerrymandering::Geometry::Multi_Polygon paths_to_multi_shape(ClipperLib::Paths paths);
+ClipperLib::Path ring_to_path(hte::Geometry::LinearRing ring);
+hte::Geometry::LinearRing path_to_ring(ClipperLib::Path path);
+ClipperLib::Paths shape_to_paths(hte::Geometry::Polygon shape);
+hte::Geometry::Multi_Polygon paths_to_multi_shape(ClipperLib::Paths paths);
 
 // get outside border from a group of precincts
-Gerrymandering::Geometry::Multi_Polygon generate_exterior_border(Gerrymandering::Geometry::Precinct_Group p);
-Gerrymandering::Geometry::Polygon generate_gon(Gerrymandering::Geometry::coordinate c, double radius, int n);
+hte::Geometry::Multi_Polygon generate_exterior_border(hte::Geometry::Precinct_Group p);
+hte::Geometry::Polygon generate_gon(hte::Geometry::coordinate c, double radius, int n);
 
 // testing bounds and overlaps
-bool bound_overlap(Gerrymandering::Geometry::bounding_box b1, Gerrymandering::Geometry::bounding_box b2);
-bool point_in_ring(Gerrymandering::Geometry::coordinate coord, Gerrymandering::Geometry::LinearRing lr);
-bool get_inside(Gerrymandering::Geometry::LinearRing s0, Gerrymandering::Geometry::LinearRing s1);
-bool get_inside_first(Gerrymandering::Geometry::LinearRing s0, Gerrymandering::Geometry::LinearRing s1);
-bool point_in_circle(Gerrymandering::Geometry::coordinate center, double radius, Gerrymandering::Geometry::coordinate point);
+bool bound_overlap(hte::Geometry::bounding_box b1, hte::Geometry::bounding_box b2);
+bool point_in_ring(hte::Geometry::coordinate coord, hte::Geometry::LinearRing lr);
+bool get_inside(hte::Geometry::LinearRing s0, hte::Geometry::LinearRing s1);
+bool get_inside_first(hte::Geometry::LinearRing s0, hte::Geometry::LinearRing s1);
+bool point_in_circle(hte::Geometry::coordinate center, double radius, hte::Geometry::coordinate point);

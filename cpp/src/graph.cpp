@@ -13,8 +13,8 @@
 #include "../include/shape.hpp"
 #include "../include/canvas.hpp"
 
-using namespace Gerrymandering::Graphics;
-using namespace Gerrymandering::Geometry;
+using namespace hte::Graphics;
+using namespace hte::Geometry;
 using namespace std;
 
 

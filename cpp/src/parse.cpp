@@ -27,7 +27,7 @@
 
 using namespace rapidjson;
 using namespace std;
-using namespace Gerrymandering;
+using namespace hte;
 using namespace Geometry;
 
 // the number to multiply floating coordinates by
