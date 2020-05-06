@@ -19,11 +19,26 @@
 
 using std::cout;
 using std::endl;
+using std::vector;
+
 using namespace hte;
 using namespace Graphics;
 
 int RECURSION_STATE = 0;
 double PADDING = (15.0/16.0);
+
+
+vector<Outline> Graphics::to_outline(Geometry::State state) {
+    /*
+        Return list of precinct outlines
+    */
+
+    vector<Outline> outlines;
+    for (Geometry::Precinct p : state.precincts) {
+        outlines.push_back(Outline(p.hull));
+    }
+    return outlines;
+}
 
 
 Style& Style::outline(RGB_Color c) {
@@ -387,7 +402,7 @@ void Graphics::draw_polygon(PixelBuffer& buffer, Geometry::LinearRing ring, Styl
     */
 
     for (Geometry::segment s : ring.get_segments()) {
-        draw_line(buffer, {s[0], s[1]}, {s[2], s[3]}, RGB_Color(0,0,0));
+        draw_line(buffer, {s[0], buffer.y - s[1]}, {s[2], buffer.y - s[3]}, RGB_Color(0,0,0));
     }
 }
 
@@ -467,43 +482,37 @@ void Canvas::rasterize() {
     */
 
     // if (!to_date) {
-        cout << "ok" << endl;
-        this->clear();
-        cout << "ok" << endl;
-        // this->pixel_buffer = PixelBuffer(width, height);
+    pixel_buffer = PixelBuffer(width, height);
+    // @warn may be doing extra computation here
+    get_bounding_box();
+    // translate into first quadrant
+    translate(-box[2], -box[1], true);
 
-        // @warn may be doing extra computation here
-        get_bounding_box();
-        cout << "ok" << endl;
-        // translate into first quadrant
-        translate(-box[2], -box[1], true);
-        cout << "ok" << endl;
+    // determine smaller side/side ratio for scaling
+    double ratio_top = ceil((double) this->box[0]) / (double) (width);
+    double ratio_right = ceil((double) this->box[3]) / (double) (height);
+    double scale_factor = 1 / ((ratio_top > ratio_right) ? ratio_top : ratio_right); 
+    scale(scale_factor * PADDING);
 
-        // determine smaller side/side ratio for scaling
-        double ratio_top = ceil((double) this->box[0]) / (double) (width);
-        double ratio_right = ceil((double) this->box[3]) / (double) (height);
-        double scale_factor = 1 / ((ratio_top > ratio_right) ? ratio_top : ratio_right); 
-        // scale by factor
-        scale(scale_factor * PADDING);
-        int px = (int)((double)width * (1.0-PADDING) / 2.0), py = (int)((double)height * (1.0-PADDING) / 2.0);
-        translate(px, py, false);
+    // add padding and translate for corner sizes
+    int px = (int)((double)width * (1.0-PADDING) / 2.0), py = (int)((double)height * (1.0-PADDING) / 2.0);
+    translate(px, py, false);
 
-        cout << "ok" << endl;
-        draw_polygon(pixel_buffer, generate_gon({400,400}, 200, 5).hull, Style());
-        // if (ratio_top < ratio_right) {
-        //     // center vertically
-        //     std::cout << "x" << std::endl;
-        //     int t = (int)((((double)y - ((double)py * 2.0)) - (double)this->box[0]) / 2.0);
-        //     std::cout << t << std::endl;
-        //     translate(0, t, false);
-        // }
+    if (ratio_top < ratio_right) {
+        // center vertically
+        int t = (int)((((double)height - ((double)py * 2.0)) - (double)this->box[0] * scale_factor) / 2.0);
+        translate(0, t, false);
+    }
+    else {
+        int t = (int)((((double)width - ((double)px * 2.0)) - (double)this->box[3] * scale_factor) / 2.0);
+        translate(t, 0, false);
+    }
 
-        // for (int i = 0; i < outlines.size(); i++) {
-        //     outlines[i].rasterize(*this);
-        // }
-    // }
 
-    cout << "rasterized" << endl;
+    for (Outline o : outlines) {
+        draw_polygon(pixel_buffer, o.border, o.style());
+    }
+
 
     to_date = true;
 }
