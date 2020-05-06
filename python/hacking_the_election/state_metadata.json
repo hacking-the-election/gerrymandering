@@ -22,7 +22,7 @@
     "idaho": {"party_data":{"dem_keys":["USP_D_08"],"rep_keys":["USP_R_08"], "other_keys":["USP_O_08"]},"ele_id":["none"],"geo_id":["GEOID10"],"pop_key":["POP100"], "non_precinct_ids":["none"]},
     "illinois": {"party_data":{"dem_keys":["OBAMA"],"rep_keys":["MCCAIN"], "other_keys":["OTHER"]},"ele_id":["none"],"geo_id":["GEOID10"],"pop_key":["TOTAL_POPU"], "non_precinct_ids":["WWWWWW", "LAKE"]},
     "massachusetts": {"party_data":{"dem_keys":["DEMOCRAT"],"rep_keys":["REPUBLICAN"], "green_keys":["GREEN"], "lib_keys":["LIBERTARIA"], "reform_keys":["REFORM"], "independent_keys":["INDEPENDEN"], "other_keys":["OTHER"]},"ele_id":["none"],"geo_id":["GEOID10"],"pop_key":["POP100"], "non_precinct_ids":["ZZZZZZ"]},
-    "michigan": {"parzzzty_data":{"dem_keys":["PRS08DEM"],"rep_keys":["PRS08REP"], "other_keys":["PRS08OTH"]},"ele_id":["none"],"geo_id":["GEOID10"],"pop_key":["TOTPOP"], "non_precinct_ids":["ZZZZZZ"]},
+    "michigan": {"party_data":{"dem_keys":["PRS08DEM"],"rep_keys":["PRS08REP"], "other_keys":["PRS08OTH"]},"ele_id":["none"],"geo_id":["GEOID10"],"pop_key":["TOTPOP"], "non_precinct_ids":["ZZZZZZ"]},
     "nebraska": {"party_data":{"dem_keys":["PRESDV08"],"rep_keys":["PRESRV08"]},"ele_id":["none"],"geo_id":["GEOID10"],"pop_key":["POP100"], "non_precinct_ids":["none"]},
     "new jersey": {"party_data":{"dem_keys":["USP_DV_08"],"rep_keys":["USP_RV_08"]},"ele_id":["none"],"geo_id":["GEOID10"],"pop_key":["POP100"], "non_precinct_ids":["ZZZZZZ"]},
     "north carolina": {"party_data":{"dem_keys":["ndv"],"rep_keys":["nrv"]},"ele_id":["vtd_key"],"geo_id":["GEOID10"],"pop_key":["PL10AA_TOT"]},
