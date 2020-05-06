@@ -27,7 +27,7 @@
 #include "../lib/ordered-map/include/tsl/ordered_map.h"
 
 
-namespace Gerrymandering {
+namespace hte {
 namespace Geometry {
 
     // Geometry classes. These all define groups of points
@@ -103,8 +103,8 @@ namespace Geometry {
         LinearRing() {};
 
         LinearRing(coordinate_set b) {
-            if (b[0] != b[b.size() - 1])
-                throw Exceptions::LinearRingOpen();
+            // if (b[0] != b[b.size() - 1])
+            //     throw Exceptions::LinearRingOpen();
 
             border = b;
         }
@@ -115,7 +115,11 @@ namespace Geometry {
         virtual double get_perimeter();       // sum distance of segments
         virtual coordinate get_center();      // average of all points in shape
         virtual segments get_segments();      // return a segment list with shape's segments
+        virtual bounding_box get_bounding_box();
+        virtual coordinate get_representative_point();
+
         virtual std::string to_json();
+        virtual std::string to_svg();
 
         // add operator overloading for object equality
         friend bool operator== (const LinearRing& l1, const LinearRing& l2);
@@ -315,10 +319,10 @@ namespace Geometry {
 
         int id;
         int community;
-        Gerrymandering::Geometry::Precinct* precinct;
+        hte::Geometry::Precinct* precinct;
 
         Node() {};
-        Node(Gerrymandering::Geometry::Precinct* precinct) : precinct(precinct) {};
+        Node(hte::Geometry::Precinct* precinct) : precinct(precinct) {};
 
         std::vector<Edge> edges;
         std::vector<int> collapsed;
@@ -333,6 +337,8 @@ namespace Geometry {
     public:
         tsl::ordered_map<int, Node> vertices;
         std::vector<Edge> edges;
+
+        Graph get_induced_subgraph(std::vector<int> nodes);
 
         // drivers for component algorithm
         int get_num_components();

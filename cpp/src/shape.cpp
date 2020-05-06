@@ -20,7 +20,7 @@
 #include <fstream>
 #include <iostream>
 
-using namespace Gerrymandering;
+using namespace hte;
 
 using std::cout;
 using std::endl;

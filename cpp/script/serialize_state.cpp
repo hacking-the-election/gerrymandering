@@ -16,7 +16,7 @@
 #include "../include/util.hpp"
 
 using namespace std;
-using namespace Gerrymandering::Geometry;
+using namespace hte::Geometry;
 
 
 int main(int argc, char* argv[]) {

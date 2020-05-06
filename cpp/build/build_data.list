@@ -10,17 +10,17 @@
 #   r_head
 #   population_id 
 
-"alabama": alabama/geodata.json alabama/election_data.tab alabama/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 alabama.dat
+"alabama": alabama/geodata.json alabama/election_data.tab alabama/district.json --keys='{"DEM":"usp_d_08","REP":"usp_r_08","ELE":"geoid10","GEO":"GEOID10","POP":"POP100","TOT":"usp_tot"}' alabama.dat
 "alaska": alaska/geodata.json alaska/election_data.tab alaska/district.json --keys=geoid10,GEOID10,ndv,nrv,TOTPOP alaska.dat
-"arizona": arizona/geodata.json arizona/election_data.tab arizona/district.json --keys=geoid10,GEOID10,ndv,nrv,TOTPOP arizona.dat
+"arizona": arizona/geodata.json arizona/election_data.tab arizona/district.json --keys='{"DEM":"prs08_dem","REP":"prs08_rep","ELE":"geoid10","GEO":"GEOID10","POP":"TOTPOP","OTH":"prs08_oth"}' arizona.dat
 
 "colorado": colorado/geodata.json colorado/election_data.tab colorado/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 colorado.dat
 "connecticut": connecticut/geodata.json connecticut/election_data.tab connecticut/district.json --keys=geoid10,GEOID10,democrat,republican,POP100 connecticut.dat
 "delaware": delaware/geodata.json delaware/election_data.tab delaware/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 delaware.dat
-"florida": georgia/geodata.json georgia/district.json --keys={PRES16D,SEN16D},{PRES16R,SEN16R},TOTPOP georgia.dat
-"georgia": hawaii/geodata.json hawaii/election_data.tab hawaii/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 hawaii.dat
-"hawaii": idaho/geodata.json idaho/election_data.tab idaho/district.json --keys=geoid10,GEOID10,t_nv_d,t_nv_r,POP100 idaho.dat
-"idaho": illinois/geodata.json illinois/election_data.tab illinois/district.json --keys=GeoId2,GEOID10,Obama,McCain,TOTAL_POPU illinois.dat
+"georgia": georgia/geodata.json georgia/district.json --keys={PRES16D,SEN16D},{PRES16R,SEN16R},TOTPOP georgia.dat
+"hawaii": hawaii/geodata.json hawaii/election_data.tab hawaii/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 hawaii.dat
+"idaho": idaho/geodata.json idaho/election_data.tab idaho/district.json --keys=geoid10,GEOID10,t_nv_d,t_nv_r,POP100 idaho.dat
+"illinois": illinois/geodata.json illinois/district.json --keys='{"DEM":"OBAMA","REP":"MCCAIN","GEO":"GEOID10","POP":"TOTAL_POPU","OTH":"OTHER"}' illinois.dat
 "indiana": indiana/geodata.json indiana/election_data.tab indiana/district.json --keys=geoid10,GEOID10,ndv,nrv,POP10 indiana.dat
 "iowa": iowa/geodata.json iowa/election_data.tab iowa/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 iowa.dat
 "kansas": kansas/geodata.json kansas/election_data.tab kansas/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 kansas.dat

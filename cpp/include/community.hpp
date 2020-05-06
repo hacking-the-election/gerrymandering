@@ -10,7 +10,7 @@
 #pragma once
 #include "shape.hpp"
 
-namespace Gerrymandering {
+namespace hte {
 namespace Geometry {
 
     // for cleaner naming of types when writing community algorithm
@@ -25,6 +25,8 @@ namespace Geometry {
         */
 
         public:
+            int get_population();
+
             void save(std::string);
             void load(std::string, Graph&);
 

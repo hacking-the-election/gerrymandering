@@ -20,8 +20,8 @@
 using namespace std::chrono; 
 
 using namespace std;
-using namespace Gerrymandering::Geometry;
-using namespace Gerrymandering::Graphics;
+using namespace hte::Geometry;
+using namespace hte::Graphics;
 
 
 int main(int argc, char* argv[]) {
@@ -32,17 +32,6 @@ int main(int argc, char* argv[]) {
     */
 
     // draw communities
-    Canvas canvas(900, 900);
-
-    // read binary file from path
-    vector<string> states = {"connecticut", "indiana", "iowa", "mass_connected", "new_hampshire", "new_jersey", "new_york", "north_carolina", "pennsylvania", "vermont"};
-
-    for (string st : states) {
-        State state = State::from_binary("../../data/bin/cpp/" + st + ".dat");
-        canvas.add_graph(state.network);
-    }
-
-    canvas.draw();
-
+    State state = State::from_binary(argv[1]);
     return 0;
 }
