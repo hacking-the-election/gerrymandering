@@ -128,7 +128,6 @@ namespace Graphics {
         public:
             PixelBuffer pix;
             Geometry::LinearRing border;
-            void rasterize(Canvas&);
             Style& style() {return style_;}
 
             Outline(Geometry::LinearRing border) : border(border) {}
@@ -198,5 +197,8 @@ namespace Graphics {
         PixelBuffer&, Geometry::coordinate, Geometry::coordinate,
         RGB_Color color = RGB_Color(0,0,0), double t = 1
     );
+
+    void draw_polygon(PixelBuffer& buffer, Geometry::LinearRing ring, Style style);
+
 }
 }

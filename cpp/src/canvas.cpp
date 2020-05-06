@@ -370,29 +370,25 @@ void Graphics::draw_line(PixelBuffer& buffer, Geometry::coordinate start, Geomet
         }
     }
 
-    
-    // // old untested method for setting
-    // // single width lines
-    // int dx = end[0] - start[0],
-    //     dy = end[1] - start[1];
-
-    // int steps = abs(dx) > abs(dy) ? abs(dx) : abs(dy);
-
-    // double xinc = (double) dx / (double) steps;
-    // double yinc = (double) dy / (double) steps;
-
-    // double xv = (double) start[0];
-    // double yv = (double) start[1];
-
-    // for (int i = 0; i <= steps; i++) {
-
-    //     buffer.set_from_position(xv, yv, color.to_uint());
-
-    //     xv += xinc;
-    //     yv += yinc;
-    // }
-
     return;
+}
+
+
+void Graphics::draw_polygon(PixelBuffer& buffer, Geometry::LinearRing ring, Style style) {
+    /*
+        @desc: draws a filled and/or stroked LinearRing to a framebuffer
+
+        @params: 
+            `PixelBuffer&` buffer: the buffer to draw polygon
+            `Geometry::LinearRing`: coordinates defining polygon (*not* in pixel space)
+            `Style` style: style object (fill, outline) to apply to rasterized poly
+
+        @return: void
+    */
+
+    for (Geometry::segment s : ring.get_segments()) {
+        draw_line(buffer, {s[0], s[1]}, {s[2], s[3]}, RGB_Color(0,0,0));
+    }
 }
 
 
@@ -493,7 +489,7 @@ void Canvas::rasterize() {
         translate(px, py, false);
 
         cout << "ok" << endl;
-        draw_line(pixel_buffer, {50,50}, {20, 200}, RGB_Color(255, 0, 0), 1.0);
+        draw_polygon(pixel_buffer, generate_gon({400,400}, 200, 5).hull, Style());
         // if (ratio_top < ratio_right) {
         //     // center vertically
         //     std::cout << "x" << std::endl;
