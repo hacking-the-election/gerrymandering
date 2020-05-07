@@ -65,7 +65,7 @@ namespace Graphics {
             if (b1.miny_x < b2.miny_x) return true;
             if (b2.miny_x < b1.miny_x) return false;
 
-            return true;
+            return false;
         }
 
         EdgeBucket() {};
@@ -134,13 +134,13 @@ namespace Graphics {
     };
 
 
-    class Style {
-        private:
+    class Style {    
+        public:
+
             RGB_Color fill_;
             RGB_Color outline_;
             int thickness_;
         
-        public:
             Style& thickness(int);
             Style& fill(RGB_Color);
             Style& fill(HSL_Color);

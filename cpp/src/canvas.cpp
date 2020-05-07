@@ -35,8 +35,11 @@ vector<Outline> Graphics::to_outline(Geometry::State state) {
 
     vector<Outline> outlines;
     for (Geometry::Precinct p : state.precincts) {
-        outlines.push_back(Outline(p.hull));
+        Outline o(p.hull);
+        o.style().outline(RGB_Color(0,0,0)).thickness(3);
+        outlines.push_back(o);
     }
+
     return outlines;
 }
 
@@ -397,13 +400,13 @@ void Graphics::draw_line(PixelBuffer& buffer, Geometry::coordinate start, Geomet
     for (t = (t + 1) / 2; ;) {
         // if cval is 0, we want to draw pure color
         double cval = std::max(0.0, 255 * (abs(err - dx + dy) / ed - t + 1));
-        buffer.set_from_position(start[0], start[1], interpolate_rgb(color, RGB_Color::from_uint(buffer.get_from_position(start[0], start[1])), (cval / 255.0)).to_uint());
+        buffer.set_from_position(start[0], start[1], interpolate_rgb(color, RGB_Color(255,255,255), (cval / 255.0)).to_uint());
         e2 = err; x2 = start[0];
 
         if (2 * e2 >= -dx) {
             for (e2 += dy, y2 = start[1]; e2 < ed*t && (end[1] != y2 || dx > dy); e2 += dx) {
                 double cval = std::max(0.0, 255 * (abs(e2) / ed - t + 1));
-                buffer.set_from_position(start[0], y2 += sy, interpolate_rgb(color, RGB_Color::from_uint(buffer.get_from_position(start[0], start[1])), (cval / 255.0)).to_uint());
+                buffer.set_from_position(start[0], y2 += sy, interpolate_rgb(color, RGB_Color(255,255,255), (cval / 255.0)).to_uint());
             }
             if (start[0] == end[0]) break;
             e2 = err; err -= dy; start[0] += sx; 
@@ -411,7 +414,7 @@ void Graphics::draw_line(PixelBuffer& buffer, Geometry::coordinate start, Geomet
         if (2 * e2 <= dy) {
             for (e2 = dx - e2; e2 < ed * t && (end[0] != x2 || dx < dy); e2 += dy) {
                 int cval = std::max(0.0, 255 * (abs(e2) / ed - t + 1));
-                buffer.set_from_position(x2 += sx, start[1], interpolate_rgb(color, RGB_Color::from_uint(buffer.get_from_position(start[0], start[1])), (cval / 255.0)).to_uint());
+                buffer.set_from_position(x2 += sx, start[1], interpolate_rgb(color, RGB_Color(255,255,255), (cval / 255.0)).to_uint());
             }
             if (start[1] == end[1]) break;
             err += dx; start[1] += sy; 
@@ -436,6 +439,8 @@ void Graphics::draw_polygon(PixelBuffer& buffer, Geometry::LinearRing ring, Styl
 
 
     // fill polygon
+    cout << "filling poly" << endl;
+
     vector<EdgeBucket> all_edges;
     for (Geometry::segment seg : ring.get_segments()) {
         EdgeBucket bucket;
@@ -443,31 +448,45 @@ void Graphics::draw_polygon(PixelBuffer& buffer, Geometry::LinearRing ring, Styl
         bucket.maxy = std::max(seg[1], seg[3]);
         bucket.miny_x = (bucket.miny == seg[1]) ? seg[0] : seg[2];
         // bucket.slope = get_equation(seg)[0]; // @warn
-        double dy = seg[3] - seg[1];
-        double dx = seg[2] - seg[0];
+        int dy = seg[3] - seg[1];
+        int dx = seg[2] - seg[0];
+
         if (dx == 0) bucket.slope = INFINITY;
-        else bucket.slope = dy / dx;
-        
+        else bucket.slope = (double)dy / (double)dx;
+
         all_edges.push_back(bucket);
     }
 
-    // this following algorithm can probably get faster
-    vector<EdgeBucket> global_edges = all_edges;
-    global_edges.erase(std::remove_if(global_edges.begin(), global_edges.end() , edge_bucket_null), global_edges.end());
-    std::sort(global_edges.begin(), global_edges.end());
+    // cout << "got buckets" << endl;
 
+    // this following algorithm can probably get faster
+    vector<EdgeBucket> global_edges = {};
+    
+    for (int i = 0; i < all_edges.size(); i++) {
+        if (all_edges[i].slope != 0) {
+            global_edges.push_back(all_edges[i]);
+        }
+    }
+
+    cout << "b" << endl;
+    std::sort(global_edges.begin(), global_edges.end());
+    cout << "c" << endl;
     int scan_line = global_edges[0].miny;
+    cout << "c" << endl;
     vector<EdgeBucket> active_edges;
+    cout << "d" << endl;
 
     for (int i = 0; i < global_edges.size(); i++) {
         if (global_edges[i].miny > scan_line) break;
         if (global_edges[i].miny == scan_line) active_edges.push_back(global_edges[i]);
     }
 
+    cout << "got active edges" << endl;
 
     while (active_edges.size() > 0) {
+        // cout << "on "
         cout << "on scanline " << scan_line << endl;
-        print_edge_table(active_edges, "active edges");
+        // print_edge_table(active_edges, "active edges");
 
         for (int i = 0; i < active_edges.size(); i += 2) {
             // draw all points between edges with even parity
@@ -475,7 +494,7 @@ void Graphics::draw_polygon(PixelBuffer& buffer, Geometry::LinearRing ring, Styl
                 buffer.set_from_position(j, buffer.y - scan_line, RGB_Color(255,0,0).to_uint());
             }
         }
-        
+
         scan_line++;
 
         // Remove any edges from the active edge table for which the maximum y value is equal to the scan_line.
@@ -501,8 +520,10 @@ void Graphics::draw_polygon(PixelBuffer& buffer, Geometry::LinearRing ring, Styl
         std::sort(active_edges.begin(), active_edges.end(), [](EdgeBucket& one, EdgeBucket& two){return one.miny_x < two.miny_x;});
     }
 
+    cout << "filled poly" << endl;
+
     for (Geometry::segment s : ring.get_segments()) {
-        draw_line(buffer, {s[0], buffer.y - s[1]}, {s[2], buffer.y - s[3]}, RGB_Color(0,0,0));
+        draw_line(buffer, {s[0], buffer.y - s[1]}, {s[2], buffer.y - s[3]}, style.outline_, style.thickness_);
     }
 }
 
@@ -590,34 +611,32 @@ void Canvas::rasterize() {
     */
 
     // if (!to_date) {
-    Geometry::LinearRing ring({{10, 10}, {10, 16}, {16, 20}, {28, 10}, {28, 16}, {22, 10}});
-    add_outline(Outline(ring));
-
+    cout << "rasterizing" << endl;
     pixel_buffer = PixelBuffer(width, height);
     // @warn may be doing extra computation here
-    // get_bounding_box();
-    // // translate into first quadrant
-    // translate(-box[2], -box[1], true);
+    get_bounding_box();
+    // translate into first quadrant
+    translate(-box[2], -box[1], true);
 
-    // // determine smaller side/side ratio for scaling
-    // double ratio_top = ceil((double) this->box[0]) / (double) (width);
-    // double ratio_right = ceil((double) this->box[3]) / (double) (height);
-    // double scale_factor = 1 / ((ratio_top > ratio_right) ? ratio_top : ratio_right); 
-    // scale(scale_factor * PADDING);
+    // determine smaller side/side ratio for scaling
+    double ratio_top = ceil((double) this->box[0]) / (double) (width);
+    double ratio_right = ceil((double) this->box[3]) / (double) (height);
+    double scale_factor = 1 / ((ratio_top > ratio_right) ? ratio_top : ratio_right); 
+    scale(scale_factor * PADDING);
 
-    // // add padding and translate for corner sizes
-    // int px = (int)((double)width * (1.0-PADDING) / 2.0), py = (int)((double)height * (1.0-PADDING) / 2.0);
-    // translate(px, py, false);
+    // add padding and translate for corner sizes
+    int px = (int)((double)width * (1.0-PADDING) / 2.0), py = (int)((double)height * (1.0-PADDING) / 2.0);
+    translate(px, py, false);
 
-    // if (ratio_top < ratio_right) {
-    //     // center vertically
-    //     int t = (int)((((double)height - ((double)py * 2.0)) - (double)this->box[0] * scale_factor) / 2.0);
-    //     translate(0, t, false);
-    // }
-    // else {
-    //     int t = (int)((((double)width - ((double)px * 2.0)) - (double)this->box[3] * scale_factor) / 2.0);
-    //     translate(t, 0, false);
-    // }
+    if (ratio_top < ratio_right) {
+        // center vertically
+        int t = (int)((((double)height - ((double)py * 2.0)) - (double)this->box[0] * scale_factor) / 2.0);
+        translate(0, t, false);
+    }
+    else {
+        int t = (int)((((double)width - ((double)px * 2.0)) - (double)this->box[3] * scale_factor) / 2.0);
+        translate(t, 0, false);
+    }
 
 
     for (Outline o : outlines) {
@@ -642,7 +661,6 @@ void Canvas::draw_to_window() {
     this->rasterize();
     SDL_Init(SDL_INIT_VIDEO);
     
-    cout << "A" << endl;
     SDL_Event event;
     SDL_Window* window = SDL_CreateWindow("Window", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, 0);
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 0);

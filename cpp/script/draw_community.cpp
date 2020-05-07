@@ -31,10 +31,10 @@ int main(int argc, char* argv[]) {
         See community.cpp for the implementation of the algorithm
     */
 
-    // draw communities
-    Canvas canvas(30, 30);
-
-    // State state = State::from_binary(argv[1]);
+    // draw communitie
+    State state = State::from_binary(argv[1]);
+    Canvas canvas(700, 700);
+    canvas.add_outline(to_outline(state)[0]);
     // canvas.add_outlines(to_outline(state));
     canvas.draw_to_window();
 

@@ -204,7 +204,7 @@ segments Geometry::LinearRing::get_segments() {
         if (i == border_x.size() - 1) c2 = border_x[0];
         else c2 = border_x[i + 1];
 
-        segs.push_back(coords_to_seg(c1, c2)); // add to list
+        if (c1 != c2) segs.push_back(coords_to_seg(c1, c2)); // add to list
     }
 
     return segs;
