@@ -55,7 +55,7 @@ namespace Graphics {
     public:
         int miny;
         int maxy;
-        int miny_x;
+        double miny_x;
         double slope;
         
         friend bool operator< (const EdgeBucket& b1, const EdgeBucket& b2) {

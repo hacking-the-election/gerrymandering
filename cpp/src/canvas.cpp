@@ -327,8 +327,53 @@ bool edge_bucket_null(EdgeBucket b) {
 }
 
 
+void print_separater_row(int width) {
+    cout << "├";
+    for (int i = 0; i < width - 2; i++) {
+        cout << "─";
+    }
+    cout << "┤" << endl;
+}
+
+
+void print_word(std::string word, int length) {
+    int leftover = length - word.size();
+    for (int i = 0; i < floor(leftover / 2.0); i++) cout << " ";
+    cout << word;
+    for (int i = 0; i < ceil(leftover / 2.0); i++) cout << " ";
+}
+
+
 void print_edge_table(vector<EdgeBucket> b, std::string title) {
-    
+    int width = 42;
+
+    // print header
+    cout << "┌";
+    for (int i = 0; i < width - 2; i++) cout << "─";
+    cout << "┐" << endl;
+
+    cout << "│";
+    print_word(title, width - 2);
+    cout << "│" << endl;
+
+    for (EdgeBucket bucket : b) {
+        print_separater_row(width);
+        int num_available_chars = width - 2 - 3;
+        
+        cout << "│";
+        print_word(std::to_string(bucket.miny), floor(num_available_chars / 4.0));
+        cout << "│";
+        print_word(std::to_string(bucket.maxy), floor(num_available_chars / 4.0));
+        cout << "│";
+        print_word(std::to_string(bucket.miny_x), floor(num_available_chars / 4.0));
+        cout << "│";
+        print_word(std::to_string(bucket.slope), ceil(num_available_chars / 4.0));
+        cout << "│" << endl;
+    }
+
+    cout << "└";
+    for (int i = 0; i < width - 2; i++) cout << "─";
+    cout << "┘" << endl;
 }
 
 
@@ -409,13 +454,7 @@ void Graphics::draw_polygon(PixelBuffer& buffer, Geometry::LinearRing ring, Styl
     // this following algorithm can probably get faster
     vector<EdgeBucket> global_edges = all_edges;
     global_edges.erase(std::remove_if(global_edges.begin(), global_edges.end() , edge_bucket_null), global_edges.end());
-
     std::sort(global_edges.begin(), global_edges.end());
-    for (EdgeBucket bucket : global_edges) {
-        cout << bucket.miny << " " << bucket.maxy << " " << bucket.miny_x << " " << bucket.slope << endl;
-    }
-
-    // bool parity = 0; // even parity
 
     int scan_line = global_edges[0].miny;
     vector<EdgeBucket> active_edges;
@@ -425,18 +464,16 @@ void Graphics::draw_polygon(PixelBuffer& buffer, Geometry::LinearRing ring, Styl
         if (global_edges[i].miny == scan_line) active_edges.push_back(global_edges[i]);
     }
 
-    cout << active_edges.size() << endl;
-    cout << scan_line << endl;
 
     while (active_edges.size() > 0) {
+        cout << "on scanline " << scan_line << endl;
+        print_edge_table(active_edges, "active edges");
+
         for (int i = 0; i < active_edges.size(); i += 2) {
-            // draw all points between edges
-            // cout << "setting all points between " << active_edges[i].miny_x << ", " << active_edges[i + 1].miny_x << endl;
+            // draw all points between edges with even parity
             for (int j = active_edges[i].miny_x; j <= active_edges[i + 1].miny_x; j++) {
                 buffer.set_from_position(j, buffer.y - scan_line, RGB_Color(255,0,0).to_uint());
             }
-
-            // buffer.set_from_position()
         }
         
         scan_line++;
@@ -445,17 +482,13 @@ void Graphics::draw_polygon(PixelBuffer& buffer, Geometry::LinearRing ring, Styl
         for (int i = 0; i < active_edges.size(); i++) {
             if (active_edges[i].maxy == scan_line) {
                 active_edges.erase(active_edges.begin() + i);
-                cout << "removing " << i << endl;
                 i--;
             }
             else {
-                active_edges[i].miny_x = active_edges[i].miny_x + (1.0 / active_edges[i].slope);
+                active_edges[i].miny_x = (double)active_edges[i].miny_x + (double)(1.0 / active_edges[i].slope);
             }
         }
 
-        // for (int i = 0; i < active_edges.size(); i++) {
-        //     active_edges[i].miny_x = active_edges[i].miny_x + (1.0 / active_edges[i].slope);
-        // }
 
         for (int i = 0; i < global_edges.size(); i++) {
             if (global_edges[i].miny == scan_line) {
@@ -578,7 +611,7 @@ void Canvas::rasterize() {
 
     // if (ratio_top < ratio_right) {
     //     // center vertically
-    //     int t = (int)((((doble)height - ((double)py * 2.0)) - (double)this->box[0] * scale_factor) / 2.0);
+    //     int t = (int)((((double)height - ((double)py * 2.0)) - (double)this->box[0] * scale_factor) / 2.0);
     //     translate(0, t, false);
     // }
     // else {
