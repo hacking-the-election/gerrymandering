@@ -207,6 +207,11 @@ void PixelBuffer::set_from_position(int a, int b, Uint32 value) {
 }
 
 
+Uint32 PixelBuffer::get_from_position(int a, int b) {
+    return ar[index_from_position(a, b)];
+}
+
+
 Geometry::bounding_box get_bounding_box(Outline outline) {
     /*
         @desc: returns a bounding box of the outline
@@ -317,34 +322,13 @@ void Canvas::scale(double scale_factor) {
 }
 
 
-// void Outline::flood_fill_util(Geometry::coordinate coord, Color c1, Color c2, Canvas& canvas) {
-//     RECURSION_STATE++;
-//     if (RECURSION_STATE > 10000) return;
-
-//     if (coord[0] < 0 || coord[0] > pixels.size() || coord[1] < 0 || coord[1] > pixels[0].size()) return;
-//     if (this->get_pixel({coord[0], coord[1]}).color != c1) return;
-    
-//     Pixel p(coord[0], coord[1], c2);
-//     this->pixels[coord[0]][coord[1]] = p;
-//     canvas.pixels[coord[0]][coord[1]] = p;
-
-//     flood_fill_util({coord[0] + 1, coord[1]}, c1, c2, canvas);
-//     flood_fill_util({coord[0] - 1, coord[1]}, c1, c2, canvas);
-//     flood_fill_util({coord[0], coord[1] + 1}, c1, c2, canvas);
-//     flood_fill_util({coord[0], coord[1] - 1}, c1, c2, canvas);
-
-//     return;
-// }
-
-
-// void Outline::flood_fill(Geometry::coordinate coord, Color c, Canvas& canvas) {
-//     RECURSION_STATE = 0;
-//     this->flood_fill_util(coord, Color(-1,-1,-1), c, canvas);
-//     return;
-// }
-
 bool edge_bucket_null(EdgeBucket b) {
     return (b.slope == 0);
+}
+
+
+void print_edge_table(vector<EdgeBucket> b, std::string title) {
+    
 }
 
 
@@ -368,13 +352,13 @@ void Graphics::draw_line(PixelBuffer& buffer, Geometry::coordinate start, Geomet
     for (t = (t + 1) / 2; ;) {
         // if cval is 0, we want to draw pure color
         double cval = std::max(0.0, 255 * (abs(err - dx + dy) / ed - t + 1));
-        buffer.set_from_position(start[0], start[1], interpolate_rgb(color, RGB_Color(255, 255, 255), (cval / 255.0)).to_uint());
+        buffer.set_from_position(start[0], start[1], interpolate_rgb(color, RGB_Color::from_uint(buffer.get_from_position(start[0], start[1])), (cval / 255.0)).to_uint());
         e2 = err; x2 = start[0];
 
         if (2 * e2 >= -dx) {
             for (e2 += dy, y2 = start[1]; e2 < ed*t && (end[1] != y2 || dx > dy); e2 += dx) {
                 double cval = std::max(0.0, 255 * (abs(e2) / ed - t + 1));
-                buffer.set_from_position(start[0], y2 += sy, interpolate_rgb(color, RGB_Color(255, 255, 255), (cval / 255.0)).to_uint());
+                buffer.set_from_position(start[0], y2 += sy, interpolate_rgb(color, RGB_Color::from_uint(buffer.get_from_position(start[0], start[1])), (cval / 255.0)).to_uint());
             }
             if (start[0] == end[0]) break;
             e2 = err; err -= dy; start[0] += sx; 
@@ -382,7 +366,7 @@ void Graphics::draw_line(PixelBuffer& buffer, Geometry::coordinate start, Geomet
         if (2 * e2 <= dy) {
             for (e2 = dx - e2; e2 < ed * t && (end[0] != x2 || dx < dy); e2 += dy) {
                 int cval = std::max(0.0, 255 * (abs(e2) / ed - t + 1));
-                buffer.set_from_position(x2 += sx, start[1], interpolate_rgb(color, RGB_Color(255, 255, 255), (cval / 255.0)).to_uint());
+                buffer.set_from_position(x2 += sx, start[1], interpolate_rgb(color, RGB_Color::from_uint(buffer.get_from_position(start[0], start[1])), (cval / 255.0)).to_uint());
             }
             if (start[1] == end[1]) break;
             err += dx; start[1] += sy; 
@@ -405,9 +389,6 @@ void Graphics::draw_polygon(PixelBuffer& buffer, Geometry::LinearRing ring, Styl
         @return: void
     */
 
-    for (Geometry::segment s : ring.get_segments()) {
-        draw_line(buffer, {s[0], buffer.y - s[1]}, {s[2], buffer.y - s[3]}, RGB_Color(0,0,0));
-    }
 
     // fill polygon
     vector<EdgeBucket> all_edges;
@@ -434,10 +415,62 @@ void Graphics::draw_polygon(PixelBuffer& buffer, Geometry::LinearRing ring, Styl
         cout << bucket.miny << " " << bucket.maxy << " " << bucket.miny_x << " " << bucket.slope << endl;
     }
 
-    bool parity = 0; // even parity
+    // bool parity = 0; // even parity
 
     int scan_line = global_edges[0].miny;
     vector<EdgeBucket> active_edges;
+
+    for (int i = 0; i < global_edges.size(); i++) {
+        if (global_edges[i].miny > scan_line) break;
+        if (global_edges[i].miny == scan_line) active_edges.push_back(global_edges[i]);
+    }
+
+    cout << active_edges.size() << endl;
+    cout << scan_line << endl;
+
+    while (active_edges.size() > 0) {
+        for (int i = 0; i < active_edges.size(); i += 2) {
+            // draw all points between edges
+            // cout << "setting all points between " << active_edges[i].miny_x << ", " << active_edges[i + 1].miny_x << endl;
+            for (int j = active_edges[i].miny_x; j <= active_edges[i + 1].miny_x; j++) {
+                buffer.set_from_position(j, buffer.y - scan_line, RGB_Color(255,0,0).to_uint());
+            }
+
+            // buffer.set_from_position()
+        }
+        
+        scan_line++;
+
+        // Remove any edges from the active edge table for which the maximum y value is equal to the scan_line.
+        for (int i = 0; i < active_edges.size(); i++) {
+            if (active_edges[i].maxy == scan_line) {
+                active_edges.erase(active_edges.begin() + i);
+                cout << "removing " << i << endl;
+                i--;
+            }
+            else {
+                active_edges[i].miny_x = active_edges[i].miny_x + (1.0 / active_edges[i].slope);
+            }
+        }
+
+        // for (int i = 0; i < active_edges.size(); i++) {
+        //     active_edges[i].miny_x = active_edges[i].miny_x + (1.0 / active_edges[i].slope);
+        // }
+
+        for (int i = 0; i < global_edges.size(); i++) {
+            if (global_edges[i].miny == scan_line) {
+                active_edges.push_back(global_edges[i]);
+                global_edges.erase(global_edges.begin() + i);
+                i--;
+            }
+        }
+
+        std::sort(active_edges.begin(), active_edges.end(), [](EdgeBucket& one, EdgeBucket& two){return one.miny_x < two.miny_x;});
+    }
+
+    for (Geometry::segment s : ring.get_segments()) {
+        draw_line(buffer, {s[0], buffer.y - s[1]}, {s[2], buffer.y - s[3]}, RGB_Color(0,0,0));
+    }
 }
 
 
@@ -451,6 +484,14 @@ Uint32 RGB_Color::to_uint() {
     return rgba;
 }
 
+
+RGB_Color RGB_Color::from_uint(Uint32 color) {
+    int t_r = (color >> 16) & 255;
+    int t_g = (color >> 8) & 255;
+    int t_b = color & 255;
+
+    return RGB_Color(t_r,t_g,t_b);
+}
 
 void Canvas::clear() {
     // @warn: reset background here

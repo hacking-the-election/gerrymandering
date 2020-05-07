@@ -77,6 +77,7 @@ namespace Graphics {
         public:
             int r, g, b;
             Uint32 to_uint();
+            static RGB_Color from_uint(Uint32 color);
 
             friend bool operator!= (const RGB_Color& c1, const RGB_Color& c2) {
                 return (c1.r != c2.r || c1.g != c2.g || c1.b != c2.b);
@@ -128,6 +129,7 @@ namespace Graphics {
             void resize(int x, int y) { x = x; y = y; ar = new Uint32[x * y]; memset(ar, 255, x * y * sizeof(Uint32));}
 
             void set_from_position(int, int, Uint32);
+            Uint32 get_from_position(int a, int b);
             int index_from_position(int, int);
     };
 

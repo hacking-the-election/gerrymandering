@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
     */
 
     // draw communities
-    Canvas canvas(900, 900);
+    Canvas canvas(30, 30);
 
     // State state = State::from_binary(argv[1]);
     // canvas.add_outlines(to_outline(state));
