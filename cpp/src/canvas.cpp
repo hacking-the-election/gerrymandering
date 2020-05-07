@@ -343,6 +343,10 @@ void Canvas::scale(double scale_factor) {
 //     return;
 // }
 
+bool edge_bucket_null(EdgeBucket b) {
+    return (b.slope == 0);
+}
+
 
 void Graphics::draw_line(PixelBuffer& buffer, Geometry::coordinate start, Geometry::coordinate end, RGB_Color color, double t) {
     /*
@@ -404,6 +408,36 @@ void Graphics::draw_polygon(PixelBuffer& buffer, Geometry::LinearRing ring, Styl
     for (Geometry::segment s : ring.get_segments()) {
         draw_line(buffer, {s[0], buffer.y - s[1]}, {s[2], buffer.y - s[3]}, RGB_Color(0,0,0));
     }
+
+    // fill polygon
+    vector<EdgeBucket> all_edges;
+    for (Geometry::segment seg : ring.get_segments()) {
+        EdgeBucket bucket;
+        bucket.miny = std::min(seg[1], seg[3]);
+        bucket.maxy = std::max(seg[1], seg[3]);
+        bucket.miny_x = (bucket.miny == seg[1]) ? seg[0] : seg[2];
+        // bucket.slope = get_equation(seg)[0]; // @warn
+        double dy = seg[3] - seg[1];
+        double dx = seg[2] - seg[0];
+        if (dx == 0) bucket.slope = INFINITY;
+        else bucket.slope = dy / dx;
+        
+        all_edges.push_back(bucket);
+    }
+
+    // this following algorithm can probably get faster
+    vector<EdgeBucket> global_edges = all_edges;
+    global_edges.erase(std::remove_if(global_edges.begin(), global_edges.end() , edge_bucket_null), global_edges.end());
+
+    std::sort(global_edges.begin(), global_edges.end());
+    for (EdgeBucket bucket : global_edges) {
+        cout << bucket.miny << " " << bucket.maxy << " " << bucket.miny_x << " " << bucket.slope << endl;
+    }
+
+    bool parity = 0; // even parity
+
+    int scan_line = global_edges[0].miny;
+    vector<EdgeBucket> active_edges;
 }
 
 
@@ -482,31 +516,34 @@ void Canvas::rasterize() {
     */
 
     // if (!to_date) {
+    Geometry::LinearRing ring({{10, 10}, {10, 16}, {16, 20}, {28, 10}, {28, 16}, {22, 10}});
+    add_outline(Outline(ring));
+
     pixel_buffer = PixelBuffer(width, height);
     // @warn may be doing extra computation here
-    get_bounding_box();
-    // translate into first quadrant
-    translate(-box[2], -box[1], true);
+    // get_bounding_box();
+    // // translate into first quadrant
+    // translate(-box[2], -box[1], true);
 
-    // determine smaller side/side ratio for scaling
-    double ratio_top = ceil((double) this->box[0]) / (double) (width);
-    double ratio_right = ceil((double) this->box[3]) / (double) (height);
-    double scale_factor = 1 / ((ratio_top > ratio_right) ? ratio_top : ratio_right); 
-    scale(scale_factor * PADDING);
+    // // determine smaller side/side ratio for scaling
+    // double ratio_top = ceil((double) this->box[0]) / (double) (width);
+    // double ratio_right = ceil((double) this->box[3]) / (double) (height);
+    // double scale_factor = 1 / ((ratio_top > ratio_right) ? ratio_top : ratio_right); 
+    // scale(scale_factor * PADDING);
 
-    // add padding and translate for corner sizes
-    int px = (int)((double)width * (1.0-PADDING) / 2.0), py = (int)((double)height * (1.0-PADDING) / 2.0);
-    translate(px, py, false);
+    // // add padding and translate for corner sizes
+    // int px = (int)((double)width * (1.0-PADDING) / 2.0), py = (int)((double)height * (1.0-PADDING) / 2.0);
+    // translate(px, py, false);
 
-    if (ratio_top < ratio_right) {
-        // center vertically
-        int t = (int)((((double)height - ((double)py * 2.0)) - (double)this->box[0] * scale_factor) / 2.0);
-        translate(0, t, false);
-    }
-    else {
-        int t = (int)((((double)width - ((double)px * 2.0)) - (double)this->box[3] * scale_factor) / 2.0);
-        translate(t, 0, false);
-    }
+    // if (ratio_top < ratio_right) {
+    //     // center vertically
+    //     int t = (int)((((doble)height - ((double)py * 2.0)) - (double)this->box[0] * scale_factor) / 2.0);
+    //     translate(0, t, false);
+    // }
+    // else {
+    //     int t = (int)((((double)width - ((double)px * 2.0)) - (double)this->box[3] * scale_factor) / 2.0);
+    //     translate(t, 0, false);
+    // }
 
 
     for (Outline o : outlines) {

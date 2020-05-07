@@ -801,6 +801,7 @@ bool point_in_circle(Geometry::coordinate center, double radius, Geometry::coord
 }
 
 
+
 Geometry::bounding_box Geometry::LinearRing::get_bounding_box() {
     int top = border[0][1], 
     bottom = border[0][1], 

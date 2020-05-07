@@ -44,7 +44,32 @@ namespace Graphics {
     // color palette generators
     std::vector<RGB_Color> generate_n_colors(int n);
 
+    // convert geometry shapes into styled outlines
+    // Outline to_outline(Geometry::Polygon p);
+    std::vector<Outline> to_outline(Geometry::State state);
+
     enum class ImageFmt { PNG, SVG, BMP, PNM };
+
+
+    class EdgeBucket {
+    public:
+        int miny;
+        int maxy;
+        int miny_x;
+        double slope;
+        
+        friend bool operator< (const EdgeBucket& b1, const EdgeBucket& b2) {
+            if (b1.miny < b2.miny) return true;
+            if (b2.miny < b1.miny) return false;
+
+            if (b1.miny_x < b2.miny_x) return true;
+            if (b2.miny_x < b1.miny_x) return false;
+
+            return true;
+        }
+
+        EdgeBucket() {};
+    };
 
 
     class RGB_Color {
@@ -176,7 +201,8 @@ namespace Graphics {
             Canvas(int width, int height) : width(width), height(height) {}
 
             // add shape to the canvas
-            void add_outline(Outline);
+            void add_outline(Outline o) {outlines.push_back(o);};
+            void add_outlines(std::vector<Outline> os) {for (Outline o : os) outlines.push_back(o);}
 
             void clear();
             void draw_to_window();
