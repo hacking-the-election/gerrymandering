@@ -48,6 +48,8 @@ def optimize_population(communities, graph, percentage, animation_dir=None):
     while not all([abs(c.population - ideal_pop) < ideal_pop * percentage
             for c in communities]):
 
+        print([c.population for c in communities])
+
         # Find community farthest from ideal population.
         farthest_community = max(communities,
             key=lambda c: abs(ideal_pop - c.population))
@@ -84,6 +86,8 @@ def optimize_population(communities, graph, percentage, animation_dir=None):
                             # Adding precinct will bring population out of range.
                             precinct = min(surrounding_precincts, key=lambda p: p.pop)
                             min_precinct = True
+                    
+                    surrounding_precincts.remove(precinct)
                 except ValueError:
                     # No precincts left in surroundings, population still not high enough.
                     break
@@ -109,8 +113,6 @@ def optimize_population(communities, graph, percentage, animation_dir=None):
                     farthest_community.give_precinct(
                         other_community, precinct.id, update={"population"})
                     precinct_returned = True
-                
-                surrounding_precincts.remove(precinct)
 
                 if animation_dir is not None and not precinct_returned:
                     draw_state(graph, animation_dir)
@@ -126,12 +128,13 @@ def optimize_population(communities, graph, percentage, animation_dir=None):
             for u in farthest_community_nodes:
                 if any([v not in farthest_community_nodes
                         for v in graph.neighbors(u)]):
-                    border_precincts.add(u)
+                    border_precincts.add(graph.node_attributes(u)[0])
 
             min_precinct = False
 
             while (farthest_community.population - ideal_pop
-                    > ideal_pop * (1 + percentage)):
+                    > ideal_pop * percentage):
+
                 try:
                     if min_precinct:
                         precinct = min(border_precincts, key=lambda p: p.pop)
@@ -147,17 +150,19 @@ def optimize_population(communities, graph, percentage, animation_dir=None):
                             # Removing precinct will bring precinct out of range.
                             precinct = min(border_precincts, key=lambda p: p.pop)
                             min_precinct = True
+
+                    border_precincts.remove(precinct)
                 except ValueError:
                     # No border precincts left.
                     break
 
                 # Get the communities bordering that precinct.
                 precinct_bordering_community_ids = \
-                    [neighbor.community for neighbor in
+                    [graph.node_attributes(neighbor)[0].community for neighbor in
                      graph.neighbors(get_node_number(precinct, graph))]
                 precinct_bordering_communities = \
-                    [c for c in communities if c.id == id_
-                     for id_ in precinct_bordering_community_ids]
+                    [c for c in communities for id_ in
+                     precinct_bordering_community_ids if c.id == id_]
                 
                 # Give precinct to bordering community that has the least population.
                 other_community = min(precinct_bordering_communities,
@@ -184,8 +189,6 @@ def optimize_population(communities, graph, percentage, animation_dir=None):
 
                 if animation_dir is not None and not precinct_returned:
                     draw_state(graph, animation_dir)
-
-        print([c.population for c in communities])
 
 
 if __name__ == "__main__":
