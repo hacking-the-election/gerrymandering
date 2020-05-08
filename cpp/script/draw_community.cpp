@@ -35,8 +35,9 @@ int main(int argc, char* argv[]) {
     State state = State::from_binary(argv[1]);
     Canvas canvas(700, 700);
     canvas.add_outlines(to_outline(state));
-    // canvas.add_outlines(to_outline(state));
-    canvas.draw_to_window();
+    // canvas.save_image(ImageFmt::BMP, "test");
+    canvas.save_image(ImageFmt::SVG, "test");
+    // canvas.draw_to_window();
 
     return 0;
 }

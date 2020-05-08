@@ -29,6 +29,7 @@ namespace Graphics {
     class Outline;
     class Style;
     class PixelBuffer;
+    enum class ImageFmt { PNG, SVG, BMP, PNM };
 
 
     // for color space conversions (currently just hsl/rgb)
@@ -45,10 +46,8 @@ namespace Graphics {
     std::vector<RGB_Color> generate_n_colors(int n);
 
     // convert geometry shapes into styled outlines
-    // Outline to_outline(Geometry::Polygon p);
     std::vector<Outline> to_outline(Geometry::State state);
-
-    enum class ImageFmt { PNG, SVG, BMP, PNM };
+    std::vector<Outline> to_outline(Geometry::Graph graph);
 
 
     class EdgeBucket {
@@ -68,7 +67,7 @@ namespace Graphics {
             return false;
         }
 
-        EdgeBucket() {};
+        EdgeBucket() {}
     };
 
 
@@ -88,8 +87,8 @@ namespace Graphics {
             }
 
             // constructors with default conversions
-            RGB_Color() {};
-            RGB_Color(int r, int g, int b) : r(r), g(g), b(b) {};
+            RGB_Color() {}
+            RGB_Color(int r, int g, int b) : r(r), g(g), b(b) {}
             RGB_Color(std::string hex);
             RGB_Color(HSL_Color);
     };
@@ -156,7 +155,8 @@ namespace Graphics {
             PixelBuffer pix;
             Geometry::LinearRing border;
             Style& style() {return style_;}
-
+            std::string get_svg();
+            
             Outline(Geometry::LinearRing border) : border(border) {}
     };
 
@@ -171,8 +171,8 @@ namespace Graphics {
             // update the canvas's pixel buffer
             // to be called by internal methods such as to_gui();
             void rasterize();
-            // std::string get_svg();
-            void get_bmp(std::string write_path, SDL_Window* window, SDL_Renderer* renderer);
+            std::string get_svg();
+            bool get_bmp(std::string write_path);
 
         public:
 
