@@ -118,3 +118,17 @@ class Community:
                 exec(f"self.update_{attr}()")
             except AttributeError:
                 raise ValueError(f"No such attribute as {attr} in Community instance.")
+
+    @property
+    def dem_rep_partisanship(self):
+        """A value between -1 and 1, which represent democratic and republican, respectively.
+        """
+
+        republican_vote = sum([p.total_rep for p in self.precincts.values()])
+        democratic_vote = sum([p.total_dem for p in self.precincts.values()])
+
+        percent_rep = republican_vote / (republican_vote + democratic_vote)
+        if percent_rep > 0.5:
+            return percent_rep
+        elif percent_rep <= 0.5:
+            return - (1 - percent_rep)
