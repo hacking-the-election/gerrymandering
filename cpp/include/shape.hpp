@@ -112,14 +112,14 @@ namespace Geometry {
         coordinate_set border;
 
         virtual double get_area();            // area of shape using shoelace theorem
+        // virtual std::string to_svg();
+        virtual std::string to_json();
         virtual double get_perimeter();       // sum distance of segments
         virtual coordinate get_center();      // average of all points in shape
         virtual segments get_segments();      // return a segment list with shape's segments
         virtual bounding_box get_bounding_box();
-        virtual coordinate get_representative_point();
+        // virtual coordinate get_representative_point();
 
-        virtual std::string to_json();
-        virtual std::string to_svg();
 
         // add operator overloading for object equality
         friend bool operator== (const LinearRing& l1, const LinearRing& l2);

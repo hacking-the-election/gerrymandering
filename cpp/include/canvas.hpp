@@ -44,13 +44,32 @@ namespace Graphics {
     // color palette generators
     std::vector<RGB_Color> generate_n_colors(int n);
 
-    // rasterizers for random shapes
-    void draw_line(
-        PixelBuffer&, Geometry::coordinate, Geometry::coordinate,
-        RGB_Color color = RGB_Color(0,0,0), double t = 1
-    );
+    // convert geometry shapes into styled outlines
+    // Outline to_outline(Geometry::Polygon p);
+    std::vector<Outline> to_outline(Geometry::State state);
 
     enum class ImageFmt { PNG, SVG, BMP, PNM };
+
+
+    class EdgeBucket {
+    public:
+        int miny;
+        int maxy;
+        double miny_x;
+        double slope;
+        
+        friend bool operator< (const EdgeBucket& b1, const EdgeBucket& b2) {
+            if (b1.miny < b2.miny) return true;
+            if (b2.miny < b1.miny) return false;
+
+            if (b1.miny_x < b2.miny_x) return true;
+            if (b2.miny_x < b1.miny_x) return false;
+
+            return false;
+        }
+
+        EdgeBucket() {};
+    };
 
 
     class RGB_Color {
@@ -58,6 +77,7 @@ namespace Graphics {
         public:
             int r, g, b;
             Uint32 to_uint();
+            static RGB_Color from_uint(Uint32 color);
 
             friend bool operator!= (const RGB_Color& c1, const RGB_Color& c2) {
                 return (c1.r != c2.r || c1.g != c2.g || c1.b != c2.b);
@@ -100,26 +120,27 @@ namespace Graphics {
         // contains pixel data in the form of
         // uint array, see `Uint_to_rgb`
 
-        Uint32* ar;
-        int x, y;
-
         public:
-            PixelBuffer();
+            int x, y;
+            Uint32* ar;
+        
+            PixelBuffer() {};
             PixelBuffer(int x, int y) : x(x), y(y) { ar = new Uint32[x * y]; memset(ar, 255, x * y * sizeof(Uint32));}
             void resize(int x, int y) { x = x; y = y; ar = new Uint32[x * y]; memset(ar, 255, x * y * sizeof(Uint32));}
 
             void set_from_position(int, int, Uint32);
+            Uint32 get_from_position(int a, int b);
             int index_from_position(int, int);
     };
 
 
-    class Style {
-        private:
+    class Style {    
+        public:
+
             RGB_Color fill_;
             RGB_Color outline_;
             int thickness_;
         
-        public:
             Style& thickness(int);
             Style& fill(RGB_Color);
             Style& fill(HSL_Color);
@@ -134,7 +155,6 @@ namespace Graphics {
         public:
             PixelBuffer pix;
             Geometry::LinearRing border;
-            void rasterize(Canvas&);
             Style& style() {return style_;}
 
             Outline(Geometry::LinearRing border) : border(border) {}
@@ -151,7 +171,8 @@ namespace Graphics {
             // update the canvas's pixel buffer
             // to be called by internal methods such as to_gui();
             void rasterize();
-            std::string get_svg();
+            // std::string get_svg();
+            void get_bmp(std::string write_path, SDL_Window* window, SDL_Renderer* renderer);
 
         public:
 
@@ -182,7 +203,8 @@ namespace Graphics {
             Canvas(int width, int height) : width(width), height(height) {}
 
             // add shape to the canvas
-            void add_outline(Outline);
+            void add_outline(Outline o) {outlines.push_back(o);};
+            void add_outlines(std::vector<Outline> os) {for (Outline o : os) outlines.push_back(o);}
 
             void clear();
             void draw_to_window();
@@ -197,5 +219,14 @@ namespace Graphics {
     //     void playback();
     //     Anim(int d) : delay(d) {};
     // };
+
+    // rasterizers for various shapes
+    void draw_line(
+        PixelBuffer&, Geometry::coordinate, Geometry::coordinate,
+        RGB_Color color = RGB_Color(0,0,0), double t = 1
+    );
+
+    void draw_polygon(PixelBuffer& buffer, Geometry::LinearRing ring, Style style);
+
 }
 }
