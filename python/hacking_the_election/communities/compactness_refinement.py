@@ -10,7 +10,6 @@ import copy
 import math
 import os
 import pickle
-import random
 import sys
 import time
 
@@ -93,7 +92,8 @@ def optimize_compactness(communities, graph, animation_dir=None):
             last_communities = set(tuple(p.id for p in c.precincts.values())
                 for c in community_states[-1])
             if current_communities == last_communities:
-                community = random.choice([c for c in communities if c != community])
+                other_communities = [c for c in communities if c != community]
+                community = min(other_communities, key=lambda c: c.compactness)
 
         compactnesses.append(min_compactness)
         # Not deepcopy so that precinct objects are not copied (saves memory).
