@@ -3,7 +3,7 @@ Refines a configuration of political communities in a state so that
 they all have populations within a certain percent of each other.
 
 Usage:
-python3 -m hacking_the_election.communities.population_refinement <serialized_state> <n_communities> <max_pop_percentage> <animation_dir>
+python3 -m hacking_the_election.communities.population_refinement <serialized_state> <n_communities> <max_pop_percentage> (<animation_dir> | "none") <output_path>
 """
 
 import os
@@ -197,10 +197,14 @@ if __name__ == "__main__":
         graph = pickle.load(f)
     communities = create_initial_configuration(graph, int(sys.argv[2]))
 
-    animation_dir = sys.argv[4]
-    try:
-        os.mkdir(animation_dir)
-    except FileExistsError:
-        pass
+    animation_dir = None if sys.argv[4] == "none" else sys.argv[4]
+    if animation_dir is not None:
+        try:
+            os.mkdir(animation_dir)
+        except FileExistsError:
+            pass
 
     optimize_population(communities, graph, float(sys.argv[3]), animation_dir)
+
+    with open(sys.argv[5], "wb+") as f:
+        pickle.dump(communities, f)
