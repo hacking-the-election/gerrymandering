@@ -439,7 +439,6 @@ void Graphics::draw_polygon(PixelBuffer& buffer, Geometry::LinearRing ring, Styl
 
 
     // fill polygon
-    cout << "filling poly" << endl;
 
     vector<EdgeBucket> all_edges;
     for (Geometry::segment seg : ring.get_segments()) {
@@ -457,8 +456,6 @@ void Graphics::draw_polygon(PixelBuffer& buffer, Geometry::LinearRing ring, Styl
         all_edges.push_back(bucket);
     }
 
-    // cout << "got buckets" << endl;
-
     // this following algorithm can probably get faster
     vector<EdgeBucket> global_edges = {};
     
@@ -468,62 +465,53 @@ void Graphics::draw_polygon(PixelBuffer& buffer, Geometry::LinearRing ring, Styl
         }
     }
 
-    cout << "b" << endl;
     std::sort(global_edges.begin(), global_edges.end());
-    cout << "c" << endl;
-    int scan_line = global_edges[0].miny;
-    cout << "c" << endl;
-    vector<EdgeBucket> active_edges;
-    cout << "d" << endl;
-
-    for (int i = 0; i < global_edges.size(); i++) {
-        if (global_edges[i].miny > scan_line) break;
-        if (global_edges[i].miny == scan_line) active_edges.push_back(global_edges[i]);
-    }
-
-    cout << "got active edges" << endl;
-
-    while (active_edges.size() > 0) {
-        // cout << "on "
-        cout << "on scanline " << scan_line << endl;
-        // print_edge_table(active_edges, "active edges");
-
-        for (int i = 0; i < active_edges.size(); i += 2) {
-            // draw all points between edges with even parity
-            for (int j = active_edges[i].miny_x; j <= active_edges[i + 1].miny_x; j++) {
-                buffer.set_from_position(j, buffer.y - scan_line, RGB_Color(255,0,0).to_uint());
-            }
-        }
-
-        scan_line++;
-
-        // Remove any edges from the active edge table for which the maximum y value is equal to the scan_line.
-        for (int i = 0; i < active_edges.size(); i++) {
-            if (active_edges[i].maxy == scan_line) {
-                active_edges.erase(active_edges.begin() + i);
-                i--;
-            }
-            else {
-                active_edges[i].miny_x = (double)active_edges[i].miny_x + (double)(1.0 / active_edges[i].slope);
-            }
-        }
-
+    if (global_edges.size() != 0) {
+        int scan_line = global_edges[0].miny;
+        vector<EdgeBucket> active_edges = {};
 
         for (int i = 0; i < global_edges.size(); i++) {
-            if (global_edges[i].miny == scan_line) {
-                active_edges.push_back(global_edges[i]);
-                global_edges.erase(global_edges.begin() + i);
-                i--;
-            }
+            if (global_edges[i].miny > scan_line) break;
+            if (global_edges[i].miny == scan_line) active_edges.push_back(global_edges[i]);
         }
 
-        std::sort(active_edges.begin(), active_edges.end(), [](EdgeBucket& one, EdgeBucket& two){return one.miny_x < two.miny_x;});
-    }
+        while (active_edges.size() > 0) {
+            for (int i = 0; i < active_edges.size(); i += 2) {
+                // draw all points between edges with even parity
+                for (int j = active_edges[i].miny_x; j <= active_edges[i + 1].miny_x; j++) {
+                    buffer.set_from_position(j, buffer.y - scan_line, RGB_Color(255,0,0).to_uint());
+                }
+            }
 
-    cout << "filled poly" << endl;
+            scan_line++;
 
-    for (Geometry::segment s : ring.get_segments()) {
-        draw_line(buffer, {s[0], buffer.y - s[1]}, {s[2], buffer.y - s[3]}, style.outline_, style.thickness_);
+            // Remove any edges from the active edge table for which the maximum y value is equal to the scan_line.
+            for (int i = 0; i < active_edges.size(); i++) {
+                if (active_edges[i].maxy == scan_line) {
+                    active_edges.erase(active_edges.begin() + i);
+                    i--;
+                }
+                else {
+                    active_edges[i].miny_x = (double)active_edges[i].miny_x + (double)(1.0 / active_edges[i].slope);
+                }
+            }
+
+
+            for (int i = 0; i < global_edges.size(); i++) {
+                if (global_edges[i].miny == scan_line) {
+                    active_edges.push_back(global_edges[i]);
+                    global_edges.erase(global_edges.begin() + i);
+                    i--;
+                }
+            }
+
+            std::sort(active_edges.begin(), active_edges.end(), [](EdgeBucket& one, EdgeBucket& two){return one.miny_x < two.miny_x;});
+        }
+
+
+        for (Geometry::segment s : ring.get_segments()) {
+            draw_line(buffer, {s[0], buffer.y - s[1]}, {s[2], buffer.y - s[3]}, style.outline_, style.thickness_);
+        }
     }
 }
 
