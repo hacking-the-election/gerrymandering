@@ -85,10 +85,20 @@ def optimize_compactness(communities, graph, animation_dir=None):
                 if animation_dir is not None:
                     draw_state(graph, animation_dir)
                 return
+        
+        if compactnesses != []:
+            # Check if anything changed. If not, exit the function.
+            current_communities = set(tuple(p.id for p in c.precincts.values())
+                for c in communities)
+            last_communities = set(tuple(p.id for p in c.precincts.values())
+                for c in community_states[-1])
+            if current_communities == last_communities:
+                community = random.choice([c for c in communities if c != community])
 
         compactnesses.append(min_compactness)
-        # Not deepcopy so that precinct objects are not copied.
-        community_states.append(copy.copy(communities))
+        # Not deepcopy so that precinct objects are not copied (saves memory).
+        communities_copy = [copy.copy(c) for c in communities]
+        community_states.append(communities_copy)
         
         # Get area of district.
         community_precinct_coords = \

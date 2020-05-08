@@ -2,6 +2,7 @@
 A class representing political communities
 """
 
+import copy
 
 from shapely.geometry import MultiPolygon, Polygon
 from shapely.ops import unary_union
@@ -132,3 +133,19 @@ class Community:
             return percent_rep
         elif percent_rep <= 0.5:
             return - (1 - percent_rep)
+
+    def __copy__(self):
+        """Creates a shallow copy, to the point that precinct object instances are not copied. All attributes are unique references.
+        """
+
+        new = Community(self.id)
+        for precinct in self.precincts.values():
+            new.take_precinct(precinct)
+        
+        new.coords = copy.copy(self.coords)
+        new.partisanship = copy.copy(self.partisanship)
+        new.partisanship_stdev = copy.copy(self.partisanship_stdev)
+        new.compactness = copy.copy(self.compactness)
+        new.population = copy.copy(self.population)
+
+        return new
