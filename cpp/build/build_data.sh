@@ -23,13 +23,11 @@ for i in "${states[@]}"; do
 done
 
 echo "all data present"
-# cmds=$(cat build_data.list | cut -d '#' -f 1 | grep .)
-
-
 IFS=$'\n'
 
 for i in "${states[@]}"; do
-    exec "build/serialize.sh \"$i\""
+    echo "serializing ${i}..."
+    build/serialize.sh "$i"
     # printf "\nbuilding $(echo "$i" | cut -d ' ' -f 2 | rev | cut -d '/' -f2 | rev)\n\n"
     # eval "$i"
 done

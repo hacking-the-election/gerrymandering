@@ -312,10 +312,12 @@ void optimize_compactness(Communities& communities, Graph& graph, double (*measu
 
         coordinate center = communities[smallest_index].shape.get_center();
         double radius = sqrt(communities[smallest_index].shape.get_area() / PI);
+        int num_exchanged = 0;
 
         for (int t : takeable) {
             if (point_in_circle(center, radius, graph.vertices[t].precinct->get_center())) {
                 // cout << "taking precinct " << t << endl;
+                num_exchanged++;
                 exchange_precinct(graph, communities, t, smallest_index);
             }
         }
@@ -324,24 +326,24 @@ void optimize_compactness(Communities& communities, Graph& graph, double (*measu
             if (!point_in_circle(center, radius, graph.vertices[g[0]].precinct->get_center())) {
                 // cout << "giving precinct " << g[0] << endl;
                 exchange_precinct(graph, communities, g[0], g[1]);
+                num_exchanged++;
             }
         }
 
-        
-        cout << average(communities, measure) << endl;
-
         if (average(communities, measure) > average(best, measure)) {
-            // cout << "found a better solution" << endl;
             best = communities;
             iterations_since_best = 0;
         }
         else {
             iterations_since_best++;
-            // cout << "not currently a better solution" << endl;
         }
-        // Canvas canvas(400, 400);
-        // canvas.add_shape(communities, graph);
-        // canvas.draw();
+
+        if (num_exchanged == 0) {
+            cout << "nothing happened this iteration" << endl;
+            break;
+        }
+
+        cout << average(communities, measure) << endl;
     }
 
     communities = best;

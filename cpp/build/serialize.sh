@@ -46,6 +46,4 @@ for (( i = 1; i <= "$(echo "$CMD" | tr ' ' '\n' | grep . | wc -l)"; i++)); do
     fi
 done
 
-# echo "$CMD"
-# echo "$CMDSTR"
 exec $CMDSTR

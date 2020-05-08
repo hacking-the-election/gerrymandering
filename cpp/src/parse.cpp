@@ -36,7 +36,7 @@ const long int c = pow(2, 18);
 // identifications for files
 map<ID_TYPE, string> id_headers;
 map<POLITICAL_PARTY, string> election_headers;
-const vector<string> non_precinct = {"ZZZZZ", "LAKE", "WWWWWW", "1808904150", "1812700460"};
+const vector<string> non_precinct = {"9999", "WV", "ZZZZZ", "LAKE", "WWWWWW", "1808904150", "1812700460", "39095123ZZZ", "39123123ZZZ", "39093093999", "39035007999", "3908500799", "3900700799"};
 
 // parsing functions for tsv files
 vector<vector<string > > parse_sv(string, string);
@@ -311,7 +311,7 @@ vector<Precinct> parse_precinct_data(string geoJSON) {
                     vote = (int) shapes["features"][i]["properties"][party_header.second.c_str()].GetDouble();
                 }
             }
-            else cout << "\e[31merror: \e[0mNo voter data near parse.cpp:314" << endl;
+            else cout << "\e[31merror: \e[0mNo voter data near parse.cpp:314 " << party_header.second << endl;
             voter_data[party_header.first] = vote;
         }
         
@@ -770,7 +770,6 @@ Graph generate_graph(Precinct_Group pg) {
         while (graph.get_num_components() > 1) {
             // add edges between two precincts on two islands
             // until `graph` is connected
-            cout << "a: " << graph.get_num_components() << endl;
 
             vector<Graph> components = graph.get_components();
             vector<NodePair> dists;
