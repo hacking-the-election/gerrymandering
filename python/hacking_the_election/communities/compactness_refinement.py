@@ -1,15 +1,23 @@
 """
 Refines a configuration of political communities in a state so that
 they all have Schwartzberg compactness scores above a certain threshold.
+
+Usage:
+python3 -m hacking_the_election.communities.compactness_refinement <serialized_state> <n_communities> (<animation_dir> | "none") <output_path>
 """
 
 import copy
 import math
 import os
+import pickle
 import random
+import sys
+import time
 
 from shapely.geometry import MultiPolygon, Point
 
+from hacking_the_election.communities.initial_configuration import \
+    create_initial_configuration
 from hacking_the_election.utils.geometry import get_compactness, get_distance
 from hacking_the_election.utils.graph import (
     get_node_number,
@@ -19,7 +27,7 @@ from hacking_the_election.utils.graph import (
 from hacking_the_election.visualization.misc import draw_state
 
 
-N = 20
+N = 200
 
 
 def optimize_compactness(communities, graph, animation_dir=None):
@@ -44,11 +52,10 @@ def optimize_compactness(communities, graph, animation_dir=None):
     # The compactness of the least compact community after each iteration.
     compactnesses = []
     community_states = []
-    i = 0
     while True:
 
         # Find least compact community.
-        community = random.choice(communities)
+        community = min(communities, key=lambda c: c.compactness)
         iteration_compactnesses = [c.compactness for c in communities]
         rounded_compactnesses = [round(c, 3) for c in iteration_compactnesses]
         min_compactness = min(iteration_compactnesses)
@@ -149,5 +156,24 @@ def optimize_compactness(communities, graph, animation_dir=None):
         for c in giving_communities:
             c.update_compactness()
         community.update_compactness()
-            
-        i += 1
+
+
+if __name__ == "__main__":
+
+    with open(sys.argv[1], "rb") as f:
+        graph = pickle.load(f)
+    communities = create_initial_configuration(graph, int(sys.argv[2]))
+
+    animation_dir = None if sys.argv[3] == "none" else sys.argv[3]
+    if animation_dir is not None:
+        try:
+            os.mkdir(animation_dir)
+        except FileExistsError:
+            pass
+
+    start_time = time.time()
+    optimize_compactness(communities, graph, animation_dir)
+    print(f"Compactness optimization took {time.time() - start_time} seconds.")
+
+    with open(sys.argv[4], "wb+") as f:
+        pickle.dump(communities, f)

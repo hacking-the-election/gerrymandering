@@ -126,9 +126,9 @@ cpdef dict get_partisanship_colors(list objects,  get_partisanship):
         partisanship = get_partisanship(obj)
         if partisanship > 0:
             # Object is republican - purple to red.
-            colors[obj] = (255, 0, - int(partisanship / 255))
-        elif partisanship < 0:
+            colors[obj] = (207, 27, int(-180 * partisanship) + 207)
+        elif partisanship <= 0:
             # Object is democratic - blue to purple.
-            colors[obj] = (int(255 * abs(partisanship)), 0, 255)
+            colors[obj] = (int(-180 * abs(partisanship)) + 207, 27, 207)
     
     return colors
