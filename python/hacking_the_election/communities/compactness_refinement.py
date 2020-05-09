@@ -26,7 +26,7 @@ from hacking_the_election.utils.graph import (
 from hacking_the_election.visualization.misc import draw_state
 
 
-N = 200
+N = 40
 
 
 def optimize_compactness(communities, graph, animation_dir=None):
@@ -92,8 +92,7 @@ def optimize_compactness(communities, graph, animation_dir=None):
             last_communities = set(tuple(p.id for p in c.precincts.values())
                 for c in community_states[-1])
             if current_communities == last_communities:
-                other_communities = [c for c in communities if c != community]
-                community = min(other_communities, key=lambda c: c.compactness)
+                return
 
         compactnesses.append(min_compactness)
         # Not deepcopy so that precinct objects are not copied (saves memory).
@@ -133,35 +132,11 @@ def optimize_compactness(communities, graph, animation_dir=None):
                 if c == community:
                     continue
                 if precinct.community == c.id:
-
-                    if len(c.precincts) > 1:
-
-                        c.give_precinct(community, precinct.id)
-
-                        precinct_removed = False
-
-                        # Check contiguity of `c`.
-                        c_subgraph = \
-                            get_induced_subgraph(graph, list(c.precincts.values()))
-                        if len(get_components(c_subgraph)) > 1:
-                            # Give back precinct.
-                            community.give_precinct(c, precinct.id)
-                            precinct_removed = True
-                        
-                        # Check contiguity of `community`.
-                        community_subgraph = \
-                            get_induced_subgraph(
-                                graph, list(community.precincts.values()))
-                        if len(get_components(community_subgraph)) > 1:
-                            # Give back precinct.
-                            community.give_precinct(c, precinct.id)
-                            precinct_removed = True
-
-                        if not precinct_removed:
-                            giving_communities.add(c)
+                    c.give_precinct(community, precinct.id)
         
         if animation_dir is not None:
-            draw_state(graph, animation_dir, [Point(*center).buffer(radius)])
+            # draw_state(graph, animation_dir, [Point(*center).buffer(radius)])
+            draw_state(graph, animation_dir)
 
         for c in giving_communities:
             c.update_compactness()
@@ -172,7 +147,21 @@ if __name__ == "__main__":
 
     with open(sys.argv[1], "rb") as f:
         graph = pickle.load(f)
-    communities = create_initial_configuration(graph, int(sys.argv[2]))
+    # communities = create_initial_configuration(graph, int(sys.argv[2]))
+    with open("test_vermont_init_config.txt", "r") as f:
+        precinct_list = eval(f.read())
+    communities = []
+
+    from hacking_the_election.utils.community import Community
+
+    for i, community in enumerate(precinct_list):
+        c = Community(i)
+        for precinct_id in community:
+            for node in graph.nodes():
+                precinct = graph.node_attributes(node)[0]
+                if precinct.id == precinct_id:
+                    c.take_precinct(precinct)
+        communities.append(c)
 
     animation_dir = None if sys.argv[3] == "none" else sys.argv[3]
     if animation_dir is not None:

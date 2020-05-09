@@ -38,7 +38,7 @@ def create_initial_configuration(precinct_graph, n_communities):
                              + len(G.node_attributes(e[1])))
         contract(G, min(attr_lengths))
 
-    communities = [Community(i) for i in range(n_communities)]
+    communities = [Community(i, precinct_graph) for i in range(n_communities)]
     for i, node in enumerate(G.nodes()):
         for precinct_node in G.node_attributes(node):
             communities[i].take_precinct(
