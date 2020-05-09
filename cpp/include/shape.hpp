@@ -348,6 +348,7 @@ namespace Geometry {
         void dfs_recursor(int v, std::vector<bool>& visited);
         void dfs_recursor(int v, std::vector<bool>& visited, std::vector<int>* nodes);
 
+        void add_node(Node node);
         void remove_node(int id);
         void add_edge(Edge);
         void remove_edge(Edge);
