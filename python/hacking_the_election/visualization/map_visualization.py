@@ -29,7 +29,11 @@ def _draw_polygon(draw, polygon, color):
     """
 
     # Draw exterior of image.
-    draw.polygon([tuple(point) for point in polygon[0]], fill=color, outline=(0, 0, 0))
+    try:
+        draw.polygon([tuple(point) for point in polygon[0]], fill=color, outline=(0, 0, 0))
+    except TypeError as e:
+        # print(polygon)
+        raise e
     # Draw blank interiors as holes.
     for interior in polygon[1:]:
         draw.polygon([tuple(point) for point in interior],
@@ -92,7 +96,7 @@ def _get_coords(shapes, coords, n_extras):
             polygons = []
             for polygon in shape:
                 rings = []
-                for ring in shape:
+                for ring in polygon:
                     new_ring_coords = []
                     for i, point in enumerate(ring):
                         new_ring_coords.append(flat_modified_coords[coord_index])
@@ -148,7 +152,7 @@ def visualize_map(shapes, output_path, coords=lambda x: x, color=None, extras=[]
         elif isinstance(shape[0][0][0], list):
             # Shape is multipolygon.
             for polygon in shape:
-                _draw_polygon(draw, shape, color)
+                _draw_polygon(draw, polygon, color)
     
     # Draw extras.
     for shape in modified_coords[len(shapes):]:
@@ -158,7 +162,7 @@ def visualize_map(shapes, output_path, coords=lambda x: x, color=None, extras=[]
         elif isinstance(shape[0][0][0], list):
             # Shape is multipolygon.
             for polygon in shape:
-                _draw_polygon(draw, shape, None)
+                _draw_polygon(draw, polygon, None)
 
     if output_path is not None:
         map_image.save(output_path)
