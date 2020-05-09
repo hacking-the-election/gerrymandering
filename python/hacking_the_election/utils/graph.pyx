@@ -198,32 +198,41 @@ cdef _remove_edges_to(graph, int node):
     return new_graph
 
 
-cpdef list get_giveable_precincts(state_graph, community_graph):
+cpdef dict get_giveable_precincts(state_graph, list communities, int community):
     """Finds all precincts that can be given to another community.
 
     :param state_graph: A graph containing all precincts in a state.
     :type state_graph: `pygraph.classes.graph.graph`
 
-    :param community_graph: A graph that is an induced subgraph of `state_graph` which contains all the precincts in a community.
-    :type community_graph: `pygraph.classes.graph.graph`
+    :param communities: All the communities in a state.
+    :type communities: list of `hacking_the_election.utils.community.Community`
 
-    :return: A list of precinct ids that can be given to another community without making either community in the exchange non-contiguous.
-    :rtype: list of str
+    :param community: ID of the community that is taking the nodes.
+    :type community: int
+
+    :return: A dict of precincts mapping to communities they can be given to without making a community non-contiguous.
+    :rtype: dict with keys `hacking_the_election.utils.precinct.Precinct` and values `hacking_the_election.utils.community.Community`
     """
 
-    cpdef list giveable_precincts = []
+    cpdef dict giveable_precincts = {}
 
+    cdef dict community_dict = {c.id: c for c in communities}
+
+    cpdef community_graph = community_dict[community].induced_subgraph
     cdef list community_nodes = community_graph.nodes()
     cdef int node
     cdef int neighbor
+    cpdef neighbor_precinct
     for node in community_nodes:
         if not all([neighbor in community_nodes for
                 neighbor in state_graph.neighbors(node)]):
             # The node is bordering another community.
+            neighbor_precinct = state_graph.node_attributes(node)[0]
 
             # Check if removing the node would cause the community to become non-contiguous.
             if len(get_components(_remove_edges_to(community_graph, node))) <= 2:
-                giveable_precincts.append(state_graph.node_attributes(node)[0].id)
+                giveable_precincts[neighbor_precinct] = \
+                    community_dict[neighbor_precinct.community]
     
     return giveable_precincts
 

@@ -110,8 +110,8 @@ class TestGraph(unittest.TestCase):
         """Tests `hacking_the_election.utils.graph.get_giveable_precincts`
         """
         
-        giveable_precincts = graph.get_giveable_precincts(
-            self.vermont_graph, self.communities[0].induced_subgraph)
+        giveable_precincts = [p.id for p in graph.get_giveable_precincts(
+            self.vermont_graph, self.communities, 0).keys()]
 
         for c in self.communities:
             c.update_coords()
@@ -129,8 +129,8 @@ class TestGraph(unittest.TestCase):
         at_large = Community(0, self.vermont_graph)
         self.assertEqual(
             graph.get_giveable_precincts(self.vermont_graph,
-                at_large.induced_subgraph),
-            []
+                [at_large], 0),
+            {}
         )
 
     def test_get_takeable_precincts(self):
