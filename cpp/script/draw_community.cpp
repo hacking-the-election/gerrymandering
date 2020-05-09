@@ -32,12 +32,15 @@ int main(int argc, char* argv[]) {
     */
 
     // draw communitie
-    State state = State::from_binary(argv[1]);
+    vector<string> states = {"alabama", "arizona", "delaware", "illinois", "indiana", "iowa", "kansas", "massachusetts", "michigan", "mississippi", "colorado", "nebraska", "nevada", "ohio", "oklahoma", "missouri", "pennsylvania", "vermont"};
     Canvas canvas(700, 700);
-    canvas.add_outlines(to_outline(state));
-    // canvas.save_image(ImageFmt::BMP, "test");
-    canvas.save_image(ImageFmt::SVG, "test");
-    // canvas.draw_to_window();
+    
+    for (string st : states) {
+        State state = State::from_binary("../../data/bin/cpp/" + st + ".dat");
+        canvas.add_outlines(to_outline(state));
+    }
+
+    canvas.draw_to_window();
 
     return 0;
 }

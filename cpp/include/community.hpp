@@ -18,6 +18,9 @@ namespace Geometry {
     class Community;
     typedef std::vector<Community> Communities;
 
+    void save(Communities, std::string);
+    Communities load(std::string, Graph&);
+
     class Community {
         /*
             Contains a list of precincts, as well as information about
@@ -27,8 +30,7 @@ namespace Geometry {
         public:
             int get_population();
 
-            void save(std::string);
-            void load(std::string, Graph&);
+
 
             void add_node(Node&);
             void remove_node(Node&);

@@ -175,7 +175,6 @@ double get_compactness(Community& community) {
 
     // cout << mb.squared_radius() << ", " << (double)community.shape.get_area() << endl;
     double t = (double)community.shape.get_area() / (mb.squared_radius() * PI);
-    // cout << "t " << t << endl;
     return t;
 } 
 
