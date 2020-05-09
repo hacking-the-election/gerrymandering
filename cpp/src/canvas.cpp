@@ -77,9 +77,13 @@ vector<Outline> Graphics::to_outline(Communities& communities) {
     for (int i = 0; i < communities.size(); i++) {
         for (auto& j : communities[i].vertices) {
             Outline o(j.second.precinct->hull);
-            o.style().fill(colors[i]).outline(RGB_Color(0,0,0)).thickness(1.5);
+            o.style().fill(colors[i]).outline(colors[i]).thickness(1);
             outlines.push_back(o);
         }
+
+        Outline border(generate_exterior_border(communities[i].shape).border[0].hull);
+        border.style().outline(RGB_Color(0,0,0)).thickness(1.4).fill(RGB_Color(-1, -1, -1));
+        outlines.push_back(border);
     }
 
     return outlines;
@@ -226,14 +230,15 @@ std::vector<RGB_Color> Graphics::generate_n_colors(int n) {
     */
 
     std::vector<RGB_Color> colors;
+
     for (int i = 0; i < 360; i += 360 / n) {
         // create and add colors
         colors.push_back(
             hsl_to_rgb(
                 HSL_Color(
                     ((double)i / 360.0),
-                    ((double)(80 + rand_num(0, 20)) / 100.0),
-                    ((double)(50 + rand_num(0, 10)) / 100.0)
+                    ((double)(95) / 100.0),
+                    ((double)(60) / 100.0)
                 )
             )
         );
@@ -483,79 +488,81 @@ void Graphics::draw_polygon(PixelBuffer& buffer, Geometry::LinearRing ring, Styl
 
 
     // fill polygon
+    if (style.fill_.r != -1) {
+        vector<EdgeBucket> all_edges;
+        for (Geometry::segment seg : ring.get_segments()) {
+            EdgeBucket bucket;
+            bucket.miny = std::min(seg[1], seg[3]);
+            bucket.maxy = std::max(seg[1], seg[3]);
+            bucket.miny_x = (bucket.miny == seg[1]) ? seg[0] : seg[2];
+            // bucket.slope = get_equation(seg)[0]; // @warn
+            int dy = seg[3] - seg[1];
+            int dx = seg[2] - seg[0];
 
-    vector<EdgeBucket> all_edges;
-    for (Geometry::segment seg : ring.get_segments()) {
-        EdgeBucket bucket;
-        bucket.miny = std::min(seg[1], seg[3]);
-        bucket.maxy = std::max(seg[1], seg[3]);
-        bucket.miny_x = (bucket.miny == seg[1]) ? seg[0] : seg[2];
-        // bucket.slope = get_equation(seg)[0]; // @warn
-        int dy = seg[3] - seg[1];
-        int dx = seg[2] - seg[0];
+            if (dx == 0) bucket.slope = INFINITY;
+            else bucket.slope = (double)dy / (double)dx;
 
-        if (dx == 0) bucket.slope = INFINITY;
-        else bucket.slope = (double)dy / (double)dx;
-
-        all_edges.push_back(bucket);
-    }
-
-    // this following algorithm can probably get faster
-    vector<EdgeBucket> global_edges = {};
-    
-    for (int i = 0; i < all_edges.size(); i++) {
-        if (all_edges[i].slope != 0) {
-            global_edges.push_back(all_edges[i]);
-        }
-    }
-
-    std::sort(global_edges.begin(), global_edges.end());
-    if (global_edges.size() != 0) {
-        int scan_line = global_edges[0].miny;
-        vector<EdgeBucket> active_edges = {};
-
-        for (int i = 0; i < global_edges.size(); i++) {
-            if (global_edges[i].miny > scan_line) break;
-            if (global_edges[i].miny == scan_line) active_edges.push_back(global_edges[i]);
+            all_edges.push_back(bucket);
         }
 
-        while (active_edges.size() > 0) {
-            for (int i = 0; i < active_edges.size(); i += 2) {
-                // draw all points between edges with even parity
-                for (int j = active_edges[i].miny_x; j <= active_edges[i + 1].miny_x; j++) {
-                    buffer.set_from_position(j, buffer.y - scan_line, style.fill_.to_uint());
-                }
+        // this following algorithm can probably get faster
+        vector<EdgeBucket> global_edges = {};
+
+        for (int i = 0; i < all_edges.size(); i++) {
+            if (all_edges[i].slope != 0) {
+                global_edges.push_back(all_edges[i]);
             }
+        }
 
-            scan_line++;
-
-            // Remove any edges from the active edge table for which the maximum y value is equal to the scan_line.
-            for (int i = 0; i < active_edges.size(); i++) {
-                if (active_edges[i].maxy == scan_line) {
-                    active_edges.erase(active_edges.begin() + i);
-                    i--;
-                }
-                else {
-                    active_edges[i].miny_x = (double)active_edges[i].miny_x + (double)(1.0 / active_edges[i].slope);
-                }
-            }
-
+        std::sort(global_edges.begin(), global_edges.end());
+        if (global_edges.size() != 0) {
+            int scan_line = global_edges[0].miny;
+            vector<EdgeBucket> active_edges = {};
 
             for (int i = 0; i < global_edges.size(); i++) {
-                if (global_edges[i].miny == scan_line) {
-                    active_edges.push_back(global_edges[i]);
-                    global_edges.erase(global_edges.begin() + i);
-                    i--;
-                }
+                if (global_edges[i].miny > scan_line) break;
+                if (global_edges[i].miny == scan_line) active_edges.push_back(global_edges[i]);
             }
 
-            std::sort(active_edges.begin(), active_edges.end(), [](EdgeBucket& one, EdgeBucket& two){return one.miny_x < two.miny_x;});
-        }
+            while (active_edges.size() > 0) {
+                for (int i = 0; i < active_edges.size(); i += 2) {
+                    // draw all points between edges with even parity
+                    for (int j = active_edges[i].miny_x; j <= active_edges[i + 1].miny_x; j++) {
+                        buffer.set_from_position(j, buffer.y - scan_line, style.fill_.to_uint());
+                    }
+                }
+
+                scan_line++;
+
+                // Remove any edges from the active edge table for which the maximum y value is equal to the scan_line.
+                for (int i = 0; i < active_edges.size(); i++) {
+                    if (active_edges[i].maxy == scan_line) {
+                        active_edges.erase(active_edges.begin() + i);
+                        i--;
+                    }
+                    else {
+                        active_edges[i].miny_x = (double)active_edges[i].miny_x + (double)(1.0 / active_edges[i].slope);
+                    }
+                }
 
 
-        for (Geometry::segment s : ring.get_segments()) {
-            draw_line(buffer, {s[0], buffer.y - s[1]}, {s[2], buffer.y - s[3]}, style.outline_, style.thickness_);
+                for (int i = 0; i < global_edges.size(); i++) {
+                    if (global_edges[i].miny == scan_line) {
+                        active_edges.push_back(global_edges[i]);
+                        global_edges.erase(global_edges.begin() + i);
+                        i--;
+                    }
+                }
+
+                std::sort(active_edges.begin(), active_edges.end(), [](EdgeBucket& one, EdgeBucket& two){return one.miny_x < two.miny_x;});
+            }
+
         }
+    }
+
+    // draw polygon outline 
+    for (Geometry::segment s : ring.get_segments()) {
+        draw_line(buffer, {s[0], buffer.y - s[1]}, {s[2], buffer.y - s[3]}, style.outline_, style.thickness_);
     }
 }
 
@@ -730,6 +737,7 @@ void Canvas::rasterize() {
     pixel_buffer = PixelBuffer(width, height);
     // @warn may be doing extra computation here
     get_bounding_box();
+
     // translate into first quadrant
     translate(-box[2], -box[1], true);
 
@@ -757,7 +765,6 @@ void Canvas::rasterize() {
     for (Outline o : outlines) {
         draw_polygon(pixel_buffer, o.border, o.style());
     }
-
 
     to_date = true;
     // draw_to_window();

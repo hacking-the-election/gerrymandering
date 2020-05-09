@@ -65,16 +65,9 @@ bool operator< (const EdgeWrapper& l1, const EdgeWrapper& l2) {
 
 
 void Community::update_shape(Graph& graph) {
-    this->shape = Precinct_Group();
-    cout << "adding precincts" << endl;
+    this->shape = Precinct_Group();    
     for (int i = 0; i < this->vertices.size(); i++) {
-        // cout << t.first << endl
-        cout << "a" << endl;
-        cout << (vertices.begin() + i).key() << endl;
-        cout << vertices[(vertices.begin() + i).key()].precinct << endl;
-        cout << "b" << endl;
         this->shape.add_precinct(*(vertices.begin() + i).value().precinct);
-        // cout << t.first << endl;
     }
 }
 
@@ -352,13 +345,15 @@ void optimize_compactness(Communities& communities, Graph& graph, double (*measu
             }
         }
 
-
+        cout << "a" << endl;
         vector<int> takeable = get_takeable_precincts(graph, communities, smallest_index);
         vector<array<int, 2> > giveable = get_giveable_precincts(graph, communities, smallest_index);
+        cout << "b" << endl;
 
         coordinate center = communities[smallest_index].shape.get_center();
         double radius = sqrt(communities[smallest_index].shape.get_area() / PI);
         int num_exchanged = 0;
+        cout << "c" << endl;
 
         for (int t : takeable) {
             if (point_in_circle(center, radius, graph.vertices[t].precinct->get_center())) {
@@ -367,6 +362,7 @@ void optimize_compactness(Communities& communities, Graph& graph, double (*measu
             }
         }
 
+        cout << "d" << endl;
 
         for (array<int, 2> g : giveable) {
             if (!point_in_circle(center, radius, graph.vertices[g[0]].precinct->get_center())) {
@@ -388,6 +384,8 @@ void optimize_compactness(Communities& communities, Graph& graph, double (*measu
             cout << "nothing happened this iteration" << endl;
             break;
         }
+        
+        cout << "e" << endl;
 
         Canvas canvas(900, 900);
         canvas.add_outlines(to_outline(communities));
@@ -571,12 +569,12 @@ Communities hte::Geometry::get_initial_configuration(Graph& graph, int n_communi
     srand(time(NULL));
     // Communities cs;
 
-    // Communities cs = load("test.txt", graph);
-    Communities cs = karger_stein(graph, n_communities);
+    Communities cs = load("test.txt", graph);
+    // Communities cs = karger_stein(graph, n_communities);
     
-    // for (int i = 0; i < cs.size(); i++) {
-    //     cs[i].update_shape(graph);
-    // }
+    for (int i = 0; i < cs.size(); i++) {
+        cs[i].update_shape(graph);
+    }
 
     Canvas canvas(900, 900);
     canvas.add_outlines(to_outline(cs));

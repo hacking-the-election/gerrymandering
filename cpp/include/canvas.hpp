@@ -126,7 +126,7 @@ namespace Graphics {
         
             PixelBuffer() {};
             PixelBuffer(int x, int y) : x(x), y(y) { ar = new Uint32[x * y]; memset(ar, 255, x * y * sizeof(Uint32));}
-            void resize(int x, int y) { x = x; y = y; ar = new Uint32[x * y]; memset(ar, 255, x * y * sizeof(Uint32));}
+            void resize(int t_x, int t_y) { x = t_x; y = t_y; ar = new Uint32[x * y]; memset(ar, 255, x * y * sizeof(Uint32));}
 
             void set_from_position(int, int, Uint32);
             Uint32 get_from_position(int a, int b);
