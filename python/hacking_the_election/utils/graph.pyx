@@ -172,3 +172,53 @@ cpdef get_induced_subgraph(graph, list precincts):
             pass
 
     return induced_subgraph
+
+
+cdef _remove_edges_to(graph, int node):
+    """Removes edges connected to a node.
+
+    :param graph: A graph.
+    :type graph: `pygraph.classes.graph.graph`
+
+    :param node: A node.
+    :type node: int
+
+    :return: A copy of `graph` with all edges connected to `node` removed.
+    :rtype: `pygraph.classes.graph.graph`
+    """
+
+    new_graph = light_copy(graph)
+    cdef tuple edge
+    for edge in new_graph.edges():
+        if node in edge:
+            new_graph.del_edge(edge)
+    return new_graph
+
+
+cpdef list get_giveable_precincts(state_graph, community_graph):
+    """Finds all precincts that can be given to another community.
+
+    :param state_graph: A graph containing all precincts in a state.
+    :type state_graph: `pygraph.classes.graph.graph`
+
+    :param community_graph: A graph that is an induced subgraph of `state_graph` which contains all the precincts in a community.
+    :type community_graph: `pygraph.classes.graph.graph`
+
+    :return: A list of precinct ids that can be given to another community without making either community in the exchange non-contiguous.
+    :rtype: list of str
+    """
+
+    cpdef list giveable_precincts = []
+
+    cdef list community_nodes = community_graph.nodes()
+    cdef int node
+    cdef int neighbor
+    for node in community_nodes:
+        if not all([neighbor in community_nodes for
+                neighbor in state_graph.neighbors(node)]):
+            # The node is bordering another community.
+            # Check if removing the node would cause the community to become non-contiguous.
+            if len(get_components(_remove_edges_to(community_graph, node))) <= 2:
+                giveable_precincts.append(node)
+    
+    return giveable_precincts
