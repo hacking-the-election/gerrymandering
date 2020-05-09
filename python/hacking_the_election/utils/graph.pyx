@@ -223,15 +223,17 @@ cpdef dict get_giveable_precincts(state_graph, list communities, int community):
     cdef int node
     cdef int neighbor
     cpdef neighbor_precinct
+    cpdef node_precinct
     for node in community_nodes:
         if not all([neighbor in community_nodes for
                 neighbor in state_graph.neighbors(node)]):
             # The node is bordering another community.
-            neighbor_precinct = state_graph.node_attributes(node)[0]
+            neighbor_precinct = state_graph.node_attributes(neighbor)[0]
+            node_precinct = state_graph.node_attributes(node)[0]
 
             # Check if removing the node would cause the community to become non-contiguous.
             if len(get_components(_remove_edges_to(community_graph, node))) <= 2:
-                giveable_precincts[neighbor_precinct] = \
+                giveable_precincts[node_precinct] = \
                     community_dict[neighbor_precinct.community]
     
     return giveable_precincts
