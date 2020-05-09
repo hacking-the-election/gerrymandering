@@ -12,6 +12,8 @@
 
 #include "../include/shape.hpp"
 #include "../include/canvas.hpp"
+#include "../include/util.hpp"
+
 
 using namespace hte::Graphics;
 using namespace hte::Geometry;
@@ -24,9 +26,15 @@ void Graph::remove_node(int id) {
 }
 
 
+void Graph::add_node(Node node) {
+    this->vertices.insert({node.id, node});
+}
+
+
 Graph Graph::get_induced_subgraph(vector<int> nodes) {
+
     Graph subgraph;
-    Graph copy;
+    Graph copy = *this;
 
     for (int x : nodes) {
         for (int i = 0; i < copy.vertices[x].edges.size(); i++) {
@@ -35,7 +43,7 @@ Graph Graph::get_induced_subgraph(vector<int> nodes) {
                 i--;
             }
         }
-        subgraph.vertices.insert({x, (copy.vertices[x])});
+        subgraph.vertices[x] = copy.vertices[x];
     }
     
     return subgraph;

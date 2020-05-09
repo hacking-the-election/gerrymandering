@@ -70,13 +70,13 @@ vector<Outline> Graphics::to_outline(Geometry::Graph graph) {
 }
 
 
-vector<Outline> Graphics::to_outline(Communities& communities, Geometry::Graph graph) {
+vector<Outline> Graphics::to_outline(Communities& communities) {
     vector<Outline> outlines;
     vector<RGB_Color> colors = generate_n_colors(communities.size());
 
     for (int i = 0; i < communities.size(); i++) {
-        for (int j = 0; j < communities[i].node_ids.size(); j++) {
-            Outline o(graph.vertices[communities[i].node_ids[j]].precinct->hull);
+        for (auto& j : communities[i].vertices) {
+            Outline o(j.second.precinct->hull);
             o.style().fill(colors[i]).outline(RGB_Color(0,0,0)).thickness(1.5);
             outlines.push_back(o);
         }

@@ -48,7 +48,7 @@ namespace Graphics {
     // convert geometry shapes into styled outlines
     std::vector<Outline> to_outline(Geometry::State state);
     std::vector<Outline> to_outline(Geometry::Graph graph);
-    std::vector<Outline> to_outline(Geometry::Communities& communities, Geometry::Graph graph);
+    std::vector<Outline> to_outline(Geometry::Communities& communities);
 
 
     class EdgeBucket {
@@ -195,7 +195,7 @@ namespace Graphics {
             // transformations for getting the coordinates of
             // the outlines in the right size
 
-            void translate(long, long, bool);         // move the outlines by x and y
+            void translate(long, long, bool);                       // move the outlines by x and y
             void scale(double scale_factor);                        // scale the shapes by scale factor
             void rotate(Geometry::coordinate center, int degrees);  // rotate the shapes by n degrees
 

@@ -65,8 +65,16 @@ bool operator< (const EdgeWrapper& l1, const EdgeWrapper& l2) {
 
 
 void Community::update_shape(Graph& graph) {
-    for (int x : this->node_ids) {
-        this->shape.add_precinct(*graph.vertices[x].precinct);
+    this->shape = Precinct_Group();
+    cout << "adding precincts" << endl;
+    for (int i = 0; i < this->vertices.size(); i++) {
+        // cout << t.first << endl
+        cout << "a" << endl;
+        cout << (vertices.begin() + i).key() << endl;
+        cout << vertices[(vertices.begin() + i).key()].precinct << endl;
+        cout << "b" << endl;
+        this->shape.add_precinct(*(vertices.begin() + i).value().precinct);
+        // cout << t.first << endl;
     }
 }
 
@@ -77,18 +85,6 @@ int Community::get_population() {
         sum += p.pop;
     }
     return sum;
-}
-
-
-void Community::add_node(Node& node) {
-    node_ids.push_back(node.id);
-    this->shape.add_precinct(*node.precinct);
-}
-
-
-void Community::remove_node(Node& node) {
-    node_ids.erase(remove(node_ids.begin(), node_ids.end(), node.id), node_ids.end());
-    shape.remove_precinct(*node.precinct);
 }
 
 
@@ -126,7 +122,7 @@ Communities hte::Geometry::load(std::string path, Graph& g) {
 
                     for (int n = 0; n < g.vertices.size(); n++) {
                         if ((g.vertices.begin() + n).value().precinct->shape_id == mod) {
-                            communities[x - 1].node_ids.push_back((g.vertices.begin() + n).key());
+                            communities[x - 1].add_node((g.vertices.begin() + n).value());
                             g.vertices[(g.vertices.begin() + n).key()].community = x - 1;
                         }
                     }
@@ -182,7 +178,7 @@ double get_compactness(Community& community) {
 void exchange_precinct(Graph& g, Communities& cs, int node_to_take, int community_to_take) {
     // moves a node from its community into `community_to_take`
     cs[community_to_take].add_node(g.vertices[node_to_take]);
-    cs[g.vertices[node_to_take].community].remove_node(g.vertices[node_to_take]);
+    cs[g.vertices[node_to_take].community].remove_node(node_to_take);
     g.vertices[node_to_take].community = community_to_take;
 }
 
@@ -192,11 +188,12 @@ vector<int> get_takeable_precincts(Graph& g, Communities& c, int in) {
     // this can be sped up with `community` attr
     
     vector<int> takeable;
+
     for (int i = 0; i < g.vertices.size(); i++) {
-        if (find(c[in].node_ids.begin(), c[in].node_ids.end(), i) == c[in].node_ids.end()) {
+        if (g.vertices[i].community != in) {
             bool has_neighbor = false;
             for (Edge e : g.vertices[i].edges) {
-                if (find(c[in].node_ids.begin(), c[in].node_ids.end(), e[1]) != c[in].node_ids.end()) {
+                if (g.vertices[e[1]].community == in) {
                     has_neighbor = true;
                     break;
                 }
@@ -215,27 +212,34 @@ vector<int> get_takeable_precincts(Graph& g, Communities& c, int in) {
 vector<array<int, 2> > get_giveable_precincts(Graph& g, Communities& c, int in) {
     /*
         @desc: Find precincts bordering another community
+        @params:
+            `Graph&` g: graph for reference
+            `Communities&` c: communities to check
+            `int` in: index of community to check
+
+        @return: `vector<array<int, 2>` giveable precincts, and the community to give to
     */
 
     vector<array<int, 2> > giveable;
-    for (int i = 0; i < c[in].node_ids.size(); i++) {
+    for (int i = 0; i < c[in].vertices.size(); i++) {
         bool has_neighbor_outside = false;
         int community_neighbor = 0;
 
-        for (Edge edge : g.vertices[c[in].node_ids[i]].edges) {
+        for (Edge edge : g.vertices[(c[in].vertices.begin() + i).key()].edges) {
+            // if the node borders a precinct not in the community
             if (g.vertices[edge[1]].community != in) {
-            // if (find(c[in].node_ids.begin(), c[in].node_ids.end(), edge[1]) == c[in].node_ids.end()){
+                // this arbitrarily decides to give the precinct
+                // to the first edge's community that goes outside
+                // communities[c]
                 has_neighbor_outside = true;
                 community_neighbor = g.vertices[edge[1]].community;
                 break;
             }
-            // }
         }
 
-        if (has_neighbor_outside) giveable.push_back({c[in].node_ids[i], community_neighbor});
+        if (has_neighbor_outside) giveable.push_back({(c[in].vertices.begin() + i).key(), community_neighbor});
     }
 
-    // if (giveable.size() > 0) cout << "FOASFI" << endl;
     return giveable;
 }
 
@@ -386,7 +390,7 @@ void optimize_compactness(Communities& communities, Graph& graph, double (*measu
         }
 
         Canvas canvas(900, 900);
-        canvas.add_outlines(to_outline(communities, graph));
+        canvas.add_outlines(to_outline(communities));
         canvas.save_img_to_anim(ImageFmt::BMP, "output");
 
         cout << average(communities, measure) << endl;
@@ -395,7 +399,7 @@ void optimize_compactness(Communities& communities, Graph& graph, double (*measu
     communities = best;
     
     Canvas canvas(900, 900);
-    canvas.add_outlines(to_outline(communities, graph));
+    canvas.add_outlines(to_outline(communities));
     canvas.draw_to_window();
 
     cout << "did not improve after " << ITERATION_LIMIT << " iterations, returning..." << endl;
@@ -541,19 +545,19 @@ Communities karger_stein(Graph& g1, int n_communities) {
     
     for (int i = 0; i < g.vertices.size(); i++) {
         // update communities with precincts according to `collapsed` vectors
-        communities[i].node_ids = (g.vertices.begin() + i).value().collapsed;
-        communities[i].node_ids.push_back((g.vertices.begin() + i).key());
+        (g.vertices.begin() + i).value().collapsed.push_back((g.vertices.begin() + i).key());
+        communities[i].vertices = g1.get_induced_subgraph((g.vertices.begin() + i).value().collapsed).vertices;
 
-        for (int x : (g.vertices.begin() + i).value().collapsed)
+        for (int x : (g.vertices.begin() + i).value().collapsed) {
             g1.vertices[x].community = i;
-        g1.vertices[(g.vertices.begin() + i).key()].community = i;
+        }
     }
 
     return communities;
 }
 
 
-Communities hte::Geometry::get_initial_configuration(Graph graph, int n_communities) {
+Communities hte::Geometry::get_initial_configuration(Graph& graph, int n_communities) {
     /*
         @desc: determines a random list of community objects
 
@@ -565,19 +569,20 @@ Communities hte::Geometry::get_initial_configuration(Graph graph, int n_communit
     */
 
     srand(time(NULL));
-    cout << "getting init config..." << endl;
-    Communities cs = load("test.txt", graph);
-    // Communities cs = karger_stein(graph, n_communities);
+    // Communities cs;
 
-    for (int i = 0; i < cs.size(); i++) {
-        cs[i].update_shape(graph);
-    }
+    // Communities cs = load("test.txt", graph);
+    Communities cs = karger_stein(graph, n_communities);
+    
+    // for (int i = 0; i < cs.size(); i++) {
+    //     cs[i].update_shape(graph);
+    // }
 
-
-    cout << "got init config." << endl;
     Canvas canvas(900, 900);
-    canvas.add_outlines(to_outline(cs, graph));
+    canvas.add_outlines(to_outline(cs));
     canvas.draw_to_window();
+
+    // cout << "got init config." << endl;
 
     optimize_compactness(cs, graph, get_compactness);
     // optimize_population(graph, cs, 0.01);
