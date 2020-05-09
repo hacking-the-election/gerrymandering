@@ -43,7 +43,7 @@ using namespace chrono;
 
 #define VERBOSE 1
 #define DEBUG 0
-#define ITERATION_LIMIT 200
+#define ITERATION_LIMIT 40
 
 
 class EdgeWrapper {
@@ -89,6 +89,54 @@ void Community::add_node(Node& node) {
 void Community::remove_node(Node& node) {
     node_ids.erase(remove(node_ids.begin(), node_ids.end(), node.id), node_ids.end());
     shape.remove_precinct(*node.precinct);
+}
+
+
+void hte::Geometry::save(Communities cs, std::string out) {
+    
+    string file = "[";
+    for (Community c : cs) {
+        file += "[";
+        for (Precinct p : c.shape.precincts)
+            file += "'" + p.shape_id + "', ";
+        file.pop_back(); file.pop_back();
+        file += "]";
+    }
+
+    file += "]";
+    writef(file, out);
+}
+
+
+Communities hte::Geometry::load(std::string path, Graph& g) {
+    
+    string file = readf(path);
+    file = file.substr(1, file.size() - 3);
+    vector<string> strs = split(file, "[");
+    Communities communities(strs.size() - 1);
+    
+    for (int x = 0; x < strs.size(); x++) {
+        if (strs[x] != "" && strs[x] != " ") {
+            vector<string> s = split(strs[x], ",");
+            for (int i = 0; i < s.size(); i++) {
+                if (s[i] != " " && s[i] != "") {
+                    string mod = s[i];
+                    mod = mod.substr(mod.find("'") + 1, mod.size() - mod.find("'") - 1);
+                    mod = mod.substr(0, mod.find("'"));
+
+                    for (int n = 0; n < g.vertices.size(); n++) {
+                        if ((g.vertices.begin() + n).value().precinct->shape_id == mod) {
+                            communities[x - 1].node_ids.push_back((g.vertices.begin() + n).key());
+                            g.vertices[(g.vertices.begin() + n).key()].community = x - 1;
+                        }
+                    }
+                }
+            }
+            // communities[x - 1].update_shape(g);
+        }
+    }
+
+    return communities;
 }
 
 
@@ -285,10 +333,6 @@ double average(Communities& communities, double (*measure)(Community&)) {
 
 void optimize_compactness(Communities& communities, Graph& graph, double (*measure)(Community&)) {
 
-    // Canvas canvas(600, 600);
-    // canvas.add_shape(communities, graph);
-    // canvas.draw();
-    
     int n_communities = communities.size();
     int iterations_since_best = 0;
     Communities best = communities;
@@ -296,7 +340,7 @@ void optimize_compactness(Communities& communities, Graph& graph, double (*measu
     while (iterations_since_best < ITERATION_LIMIT) {
         int smallest_index = 0;//rand_num(0, communities.size() - 1);//0;
         double smallest_measure = measure(communities[0]);
-        
+
         for (int i = 1; i < communities.size(); i++) {
             double x = measure(communities[i]);
             if (x < smallest_measure) {
@@ -305,7 +349,6 @@ void optimize_compactness(Communities& communities, Graph& graph, double (*measu
             }
         }
 
-        // cout << "the worst community is " << smallest_index << endl;
 
         vector<int> takeable = get_takeable_precincts(graph, communities, smallest_index);
         vector<array<int, 2> > giveable = get_giveable_precincts(graph, communities, smallest_index);
@@ -316,11 +359,11 @@ void optimize_compactness(Communities& communities, Graph& graph, double (*measu
 
         for (int t : takeable) {
             if (point_in_circle(center, radius, graph.vertices[t].precinct->get_center())) {
-                // cout << "taking precinct " << t << endl;
                 num_exchanged++;
                 exchange_precinct(graph, communities, t, smallest_index);
             }
         }
+
 
         for (array<int, 2> g : giveable) {
             if (!point_in_circle(center, radius, graph.vertices[g[0]].precinct->get_center())) {
@@ -343,13 +386,19 @@ void optimize_compactness(Communities& communities, Graph& graph, double (*measu
             break;
         }
 
+        Canvas canvas(900, 900);
+        canvas.add_outlines(to_outline(communities, graph));
+        canvas.save_img_to_anim(ImageFmt::BMP, "output");
+
         cout << average(communities, measure) << endl;
     }
 
     communities = best;
-    // canvas.clear();
-    // canvas.add_shape(communities, graph);
-    // canvas.draw();
+    
+    Canvas canvas(900, 900);
+    canvas.add_outlines(to_outline(communities, graph));
+    canvas.draw_to_window();
+
     cout << "did not improve after " << ITERATION_LIMIT << " iterations, returning..." << endl;
     cout << average(communities, measure) << endl;
 }
@@ -518,12 +567,19 @@ Communities hte::Geometry::get_initial_configuration(Graph graph, int n_communit
 
     srand(time(NULL));
     cout << "getting init config..." << endl;
-    Communities cs = karger_stein(graph, n_communities);
+    Communities cs = load("test.txt", graph);
+    // Communities cs = karger_stein(graph, n_communities);
+
     for (int i = 0; i < cs.size(); i++) {
         cs[i].update_shape(graph);
     }
 
+
     cout << "got init config." << endl;
+    Canvas canvas(900, 900);
+    canvas.add_outlines(to_outline(cs, graph));
+    canvas.draw_to_window();
+
     optimize_compactness(cs, graph, get_compactness);
     // optimize_population(graph, cs, 0.01);
 
