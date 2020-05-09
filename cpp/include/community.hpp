@@ -18,7 +18,10 @@ namespace Geometry {
     class Community;
     typedef std::vector<Community> Communities;
 
-    class Community {
+    void save(Communities, std::string);
+    Communities load(std::string, Graph&);
+
+    class Community : public Graph {
         /*
             Contains a list of precincts, as well as information about
             linking and where is it on an island list.
@@ -27,13 +30,8 @@ namespace Geometry {
         public:
             int get_population();
 
-            void save(std::string);
-            void load(std::string, Graph&);
-
-            void add_node(Node&);
-            void remove_node(Node&);
-            
-            std::vector<int> node_ids;
+            // void add_node(Node&);
+            // void remove_node(Node&);
 
             // shape object for geometry methods,
             // must be kept up to date in every operation
@@ -46,6 +44,6 @@ namespace Geometry {
             Community() {}
     };
 
-    Geometry::Communities get_initial_configuration(Geometry::Graph graph, int n_communities);
+    Geometry::Communities get_initial_configuration(Geometry::Graph& graph, int n_communities);
 }
 }

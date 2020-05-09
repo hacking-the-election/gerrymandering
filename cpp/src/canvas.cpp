@@ -22,7 +22,10 @@ using std::endl;
 using std::vector;
 
 using namespace hte;
+using namespace Geometry;
 using namespace Graphics;
+
+namespace fs = boost::filesystem;
 
 int RECURSION_STATE = 0;
 double PADDING = (15.0/16.0);
@@ -36,12 +39,55 @@ vector<Outline> Graphics::to_outline(Geometry::State state) {
     vector<Outline> outlines;
     for (Geometry::Precinct p : state.precincts) {
         Outline o(p.hull);
-        o.style().outline(RGB_Color(0,0,0)).thickness(3);
+        double ratio = 0.5;
+        if (!(p.voter_data[POLITICAL_PARTY::DEMOCRAT] == 0 && p.voter_data[POLITICAL_PARTY::REPUBLICAN] == 0)) {
+            ratio = (double)(p.voter_data[POLITICAL_PARTY::DEMOCRAT]) / (double)(p.voter_data[POLITICAL_PARTY::DEMOCRAT] + p.voter_data[POLITICAL_PARTY::REPUBLICAN]);
+        }
+
+        o.style().outline(interpolate_rgb(RGB_Color(255,0,0), RGB_Color(0,0,255), ratio)).thickness(1.0).fill(interpolate_rgb(RGB_Color(255,0,0), RGB_Color(0,0,255), ratio));
         outlines.push_back(o);
     }
 
     return outlines;
 }
+
+
+vector<Outline> Graphics::to_outline(Geometry::Graph graph) {
+    vector<Outline> outlines;
+
+    for (int i = 0; i < graph.vertices.size(); i++) {
+        Node node = (graph.vertices.begin() + i).value();
+        for (Edge edge : node.edges) {
+            coordinate start = graph.vertices[edge[0]].precinct->get_center();
+            coordinate end = graph.vertices[edge[1]].precinct->get_center();
+            Outline o(LinearRing({start, end}));
+            o.style().outline(RGB_Color(0,0,0)).thickness(2.0);
+            outlines.push_back(o);
+        }
+    }
+
+    return outlines;
+}
+
+
+vector<Outline> Graphics::to_outline(Communities& communities) {
+    vector<Outline> outlines;
+    vector<RGB_Color> colors = generate_n_colors(communities.size());
+
+    for (int i = 0; i < communities.size(); i++) {
+        for (auto& j : communities[i].vertices) {
+            Outline o(j.second.precinct->hull);
+            o.style().fill(colors[i]).outline(colors[i]).thickness(1);
+            outlines.push_back(o);
+        }
+
+        Outline border(generate_exterior_border(communities[i].shape).border[0].hull);
+        border.style().outline(RGB_Color(0,0,0)).thickness(1.4).fill(RGB_Color(-1, -1, -1));
+        outlines.push_back(border);
+    }
+
+    return outlines;
+} 
 
 
 Style& Style::outline(RGB_Color c) {
@@ -51,7 +97,7 @@ Style& Style::outline(RGB_Color c) {
 }
 
 
-Style& Style::thickness(int t) {
+Style& Style::thickness(double t) {
     // set the outline thickness
     thickness_ = t;
     return *this;
@@ -184,14 +230,17 @@ std::vector<RGB_Color> Graphics::generate_n_colors(int n) {
     */
 
     std::vector<RGB_Color> colors;
+
     for (int i = 0; i < 360; i += 360 / n) {
         // create and add colors
         colors.push_back(
-            hsl_to_rgb({
-                (int)((double)i / 360.0),
-                (int)((double)(80 + rand_num(0, 20)) / 100.0),
-                (int)((double)(50 + rand_num(0, 10)) / 100.0)
-            })
+            hsl_to_rgb(
+                HSL_Color(
+                    ((double)i / 360.0),
+                    ((double)(95) / 100.0),
+                    ((double)(60) / 100.0)
+                )
+            )
         );
 
     }
@@ -400,13 +449,13 @@ void Graphics::draw_line(PixelBuffer& buffer, Geometry::coordinate start, Geomet
     for (t = (t + 1) / 2; ;) {
         // if cval is 0, we want to draw pure color
         double cval = std::max(0.0, 255 * (abs(err - dx + dy) / ed - t + 1));
-        buffer.set_from_position(start[0], start[1], interpolate_rgb(color, RGB_Color(255,255,255), (cval / 255.0)).to_uint());
+        buffer.set_from_position(start[0], start[1], interpolate_rgb(color, RGB_Color::from_uint(buffer.get_from_position(start[0], start[1])), (cval / 255.0)).to_uint());
         e2 = err; x2 = start[0];
 
         if (2 * e2 >= -dx) {
             for (e2 += dy, y2 = start[1]; e2 < ed*t && (end[1] != y2 || dx > dy); e2 += dx) {
                 double cval = std::max(0.0, 255 * (abs(e2) / ed - t + 1));
-                buffer.set_from_position(start[0], y2 += sy, interpolate_rgb(color, RGB_Color(255,255,255), (cval / 255.0)).to_uint());
+                buffer.set_from_position(start[0], y2 += sy, interpolate_rgb(color, RGB_Color::from_uint(buffer.get_from_position(start[0], start[1])), (cval / 255.0)).to_uint());
             }
             if (start[0] == end[0]) break;
             e2 = err; err -= dy; start[0] += sx; 
@@ -414,7 +463,7 @@ void Graphics::draw_line(PixelBuffer& buffer, Geometry::coordinate start, Geomet
         if (2 * e2 <= dy) {
             for (e2 = dx - e2; e2 < ed * t && (end[0] != x2 || dx < dy); e2 += dy) {
                 int cval = std::max(0.0, 255 * (abs(e2) / ed - t + 1));
-                buffer.set_from_position(x2 += sx, start[1], interpolate_rgb(color, RGB_Color(255,255,255), (cval / 255.0)).to_uint());
+                buffer.set_from_position(x2 += sx, start[1], interpolate_rgb(color, RGB_Color::from_uint(buffer.get_from_position(start[0], start[1])), (cval / 255.0)).to_uint());
             }
             if (start[1] == end[1]) break;
             err += dx; start[1] += sy; 
@@ -439,89 +488,79 @@ void Graphics::draw_polygon(PixelBuffer& buffer, Geometry::LinearRing ring, Styl
 
 
     // fill polygon
-    cout << "filling poly" << endl;
+    if (style.fill_.r != -1) {
+        vector<EdgeBucket> all_edges;
+        for (Geometry::segment seg : ring.get_segments()) {
+            EdgeBucket bucket;
+            bucket.miny = std::min(seg[1], seg[3]);
+            bucket.maxy = std::max(seg[1], seg[3]);
+            bucket.miny_x = (bucket.miny == seg[1]) ? seg[0] : seg[2];
+            // bucket.slope = get_equation(seg)[0]; // @warn
+            int dy = seg[3] - seg[1];
+            int dx = seg[2] - seg[0];
 
-    vector<EdgeBucket> all_edges;
-    for (Geometry::segment seg : ring.get_segments()) {
-        EdgeBucket bucket;
-        bucket.miny = std::min(seg[1], seg[3]);
-        bucket.maxy = std::max(seg[1], seg[3]);
-        bucket.miny_x = (bucket.miny == seg[1]) ? seg[0] : seg[2];
-        // bucket.slope = get_equation(seg)[0]; // @warn
-        int dy = seg[3] - seg[1];
-        int dx = seg[2] - seg[0];
+            if (dx == 0) bucket.slope = INFINITY;
+            else bucket.slope = (double)dy / (double)dx;
 
-        if (dx == 0) bucket.slope = INFINITY;
-        else bucket.slope = (double)dy / (double)dx;
-
-        all_edges.push_back(bucket);
-    }
-
-    // cout << "got buckets" << endl;
-
-    // this following algorithm can probably get faster
-    vector<EdgeBucket> global_edges = {};
-    
-    for (int i = 0; i < all_edges.size(); i++) {
-        if (all_edges[i].slope != 0) {
-            global_edges.push_back(all_edges[i]);
+            all_edges.push_back(bucket);
         }
-    }
 
-    cout << "b" << endl;
-    std::sort(global_edges.begin(), global_edges.end());
-    cout << "c" << endl;
-    int scan_line = global_edges[0].miny;
-    cout << "c" << endl;
-    vector<EdgeBucket> active_edges;
-    cout << "d" << endl;
+        // this following algorithm can probably get faster
+        vector<EdgeBucket> global_edges = {};
 
-    for (int i = 0; i < global_edges.size(); i++) {
-        if (global_edges[i].miny > scan_line) break;
-        if (global_edges[i].miny == scan_line) active_edges.push_back(global_edges[i]);
-    }
-
-    cout << "got active edges" << endl;
-
-    while (active_edges.size() > 0) {
-        // cout << "on "
-        cout << "on scanline " << scan_line << endl;
-        // print_edge_table(active_edges, "active edges");
-
-        for (int i = 0; i < active_edges.size(); i += 2) {
-            // draw all points between edges with even parity
-            for (int j = active_edges[i].miny_x; j <= active_edges[i + 1].miny_x; j++) {
-                buffer.set_from_position(j, buffer.y - scan_line, RGB_Color(255,0,0).to_uint());
+        for (int i = 0; i < all_edges.size(); i++) {
+            if (all_edges[i].slope != 0) {
+                global_edges.push_back(all_edges[i]);
             }
         }
 
-        scan_line++;
+        std::sort(global_edges.begin(), global_edges.end());
+        if (global_edges.size() != 0) {
+            int scan_line = global_edges[0].miny;
+            vector<EdgeBucket> active_edges = {};
 
-        // Remove any edges from the active edge table for which the maximum y value is equal to the scan_line.
-        for (int i = 0; i < active_edges.size(); i++) {
-            if (active_edges[i].maxy == scan_line) {
-                active_edges.erase(active_edges.begin() + i);
-                i--;
+            for (int i = 0; i < global_edges.size(); i++) {
+                if (global_edges[i].miny > scan_line) break;
+                if (global_edges[i].miny == scan_line) active_edges.push_back(global_edges[i]);
             }
-            else {
-                active_edges[i].miny_x = (double)active_edges[i].miny_x + (double)(1.0 / active_edges[i].slope);
+
+            while (active_edges.size() > 0) {
+                for (int i = 0; i < active_edges.size(); i += 2) {
+                    // draw all points between edges with even parity
+                    for (int j = active_edges[i].miny_x; j <= active_edges[i + 1].miny_x; j++) {
+                        buffer.set_from_position(j, buffer.y - scan_line, style.fill_.to_uint());
+                    }
+                }
+
+                scan_line++;
+
+                // Remove any edges from the active edge table for which the maximum y value is equal to the scan_line.
+                for (int i = 0; i < active_edges.size(); i++) {
+                    if (active_edges[i].maxy == scan_line) {
+                        active_edges.erase(active_edges.begin() + i);
+                        i--;
+                    }
+                    else {
+                        active_edges[i].miny_x = (double)active_edges[i].miny_x + (double)(1.0 / active_edges[i].slope);
+                    }
+                }
+
+
+                for (int i = 0; i < global_edges.size(); i++) {
+                    if (global_edges[i].miny == scan_line) {
+                        active_edges.push_back(global_edges[i]);
+                        global_edges.erase(global_edges.begin() + i);
+                        i--;
+                    }
+                }
+
+                std::sort(active_edges.begin(), active_edges.end(), [](EdgeBucket& one, EdgeBucket& two){return one.miny_x < two.miny_x;});
             }
+
         }
-
-
-        for (int i = 0; i < global_edges.size(); i++) {
-            if (global_edges[i].miny == scan_line) {
-                active_edges.push_back(global_edges[i]);
-                global_edges.erase(global_edges.begin() + i);
-                i--;
-            }
-        }
-
-        std::sort(active_edges.begin(), active_edges.end(), [](EdgeBucket& one, EdgeBucket& two){return one.miny_x < two.miny_x;});
     }
 
-    cout << "filled poly" << endl;
-
+    // draw polygon outline 
     for (Geometry::segment s : ring.get_segments()) {
         draw_line(buffer, {s[0], buffer.y - s[1]}, {s[2], buffer.y - s[3]}, style.outline_, style.thickness_);
     }
@@ -529,13 +568,13 @@ void Graphics::draw_polygon(PixelBuffer& buffer, Geometry::LinearRing ring, Styl
 
 
 Uint32 RGB_Color::to_uint() {
-    Uint32 rgba =
-        (0 << 24) +
+    Uint32 argb =
+        (255 << 24) +
         (r << 16) +
         (g << 8)  +
         (b);
 
-    return rgba;
+    return argb;
 }
 
 
@@ -556,12 +595,26 @@ void Canvas::clear() {
 }
 
 
-void Canvas::get_bmp(std::string write_path, SDL_Window* window, SDL_Renderer* renderer) {
+bool Canvas::get_bmp(std::string write_path) {
     /*
         @desc: Takes a screenshot as a BMP image of an SDL surface
         @params:
             `string` write_path: output image file
     */
+
+    // SDL_Init(SDL_INIT_VIDEO);
+    
+    SDL_Event event;
+    SDL_Window* window = SDL_CreateWindow("Window", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, width, height, 0);
+    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 0);
+    SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, width, height);
+
+    // SDL_SetWindowResizable(window, SDL_TRUE);
+    SDL_UpdateTexture(texture, NULL, pixel_buffer.ar, width * sizeof(Uint32));
+    // SDL_WaitEvent(&event);
+    SDL_RenderClear(renderer);
+    SDL_RenderCopy(renderer, texture, NULL, NULL);
+    // SDL_RenderPresent(renderer);
 
     // create empty RGB surface to hold window data
     SDL_Surface* pScreenShot = SDL_CreateRGBSurface(
@@ -569,7 +622,10 @@ void Canvas::get_bmp(std::string write_path, SDL_Window* window, SDL_Renderer* r
     );
     
     // check file path and output
-    if (boost::filesystem::exists(write_path + ".bmp")) cout << "File already exists, returning" << endl;
+    if (boost::filesystem::exists(write_path + ".bmp")) {
+        cout << "File already exists, returning" << endl;
+        return false;
+    }
     
     if (pScreenShot) {
 
@@ -581,25 +637,92 @@ void Canvas::get_bmp(std::string write_path, SDL_Window* window, SDL_Renderer* r
 
         // Create the bmp screenshot file
         SDL_SaveBMP(pScreenShot, std::string(write_path + ".bmp").c_str());
-        SDL_FreeSurface(pScreenShot);
     }
     else {
         cout << "Uncaught error here, returning" << endl;
-        return;
+        return false;
     }
+
+    SDL_FreeSurface(pScreenShot);
+    SDL_DestroyTexture(texture);
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+    return true;
+}
+
+
+std::string Outline::get_svg() {
+    std::string svg = "<path d=\"M";
+    svg += std::to_string(border.border[0][0]) + "," + std::to_string(border.border[0][1]);
+
+    for (segment s : border.get_segments()) {
+        svg += "L";
+        svg += std::to_string(s[0]) + "," + std::to_string(s[1]) + "," 
+            + std::to_string(s[2]) + "," + std::to_string(s[3]);
+    }
+
+    svg += "z\" stroke=\"rgb(" + std::to_string(style().outline_.r) + "," + std::to_string(style().outline_.g) + ","
+        + std::to_string(style().outline_.b) + ")\" fill=\"rgb(" + std::to_string(style().fill_.r) + "," + std::to_string(style().fill_.g) + ","
+        + std::to_string(style().fill_.b) + ")\" stroke-width=\"" + std::to_string(style().thickness_) + "\"></path>";
+
+    return svg;
+}
+
+
+std::string Canvas::get_svg() {
+    /*
+        @desc: gets a string representing an svg graphic from a canvas
+        @params: none
+        @return: string
+    */
+
+    std::string svg = "<svg height=\"" + std::to_string(height) + "\" width=\"" + std::to_string(width) + "\">";
+    
+    for (Outline o : outlines) {
+        svg += o.get_svg();
+    }
+
+    return (svg + "</svg>");
 }
 
 
 void Canvas::save_image(ImageFmt fmt, std::string path) {
-    if (!to_date && fmt != ImageFmt::SVG) rasterize();
-    
+    /*if (!to_date && fmt != ImageFmt::SVG)*/
+    rasterize();
 
-    // if (fmt == ImageFmt::BMP) {
-    //     get_bmp(path);
-    // }
-    // else if (fmt == ImageFmt::BMP) {
-    //     writef(get_svg(), path);
-    // }
+    if (fmt == ImageFmt::BMP) {
+        get_bmp(path);
+    }
+    else if (fmt == ImageFmt::SVG) {
+        writef(get_svg(), path + ".svg");
+    }
+}
+
+
+void Canvas::save_img_to_anim(ImageFmt fmt, std::string anim_dir) {
+
+    if (!fs::is_directory(fs::path(anim_dir))) {
+        cout << "creating dir " << anim_dir << endl;
+        boost::filesystem::create_directory(fs::path(anim_dir));
+    }
+
+    std::string filename = anim_dir + "/";
+    int x = 0;
+    std::string app = filename + std::to_string(x);
+
+    do {
+        x++;
+        app = filename;
+        if (x < 10)
+            app += "0";
+        if (x < 100)
+            app += "0";
+
+        app += std::to_string(x);
+    } while (boost::filesystem::exists(app + ".bmp"));
+
+    save_image(fmt, app);
 }
 
 
@@ -611,10 +734,10 @@ void Canvas::rasterize() {
     */
 
     // if (!to_date) {
-    cout << "rasterizing" << endl;
     pixel_buffer = PixelBuffer(width, height);
     // @warn may be doing extra computation here
     get_bounding_box();
+
     // translate into first quadrant
     translate(-box[2], -box[1], true);
 
@@ -643,8 +766,8 @@ void Canvas::rasterize() {
         draw_polygon(pixel_buffer, o.border, o.style());
     }
 
-
     to_date = true;
+    // draw_to_window();
 }
 
 

@@ -127,7 +127,6 @@ void Geometry::Precinct_Group::add_precinct(Geometry::Precinct pre) {
     // just add the precinct to the precinct group
     precincts.push_back(pre);
 
-
     // if (border.size() == 0)
     //     border.push_back(pre.hull);
     // else {

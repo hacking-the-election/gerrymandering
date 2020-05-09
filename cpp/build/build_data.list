@@ -11,46 +11,43 @@
 #   population_id 
 
 "alabama": alabama/geodata.json alabama/election_data.tab alabama/district.json --keys='{"DEM":"usp_d_08","REP":"usp_r_08","ELE":"geoid10","GEO":"GEOID10","POP":"POP100","TOT":"usp_tot"}' alabama.dat
-"alaska": alaska/geodata.json alaska/election_data.tab alaska/district.json --keys='{"DEM":"USP_D_08","REP":"USP_R_08","GEO":"GEOID10","POP":"TOTPOP","TOTAL":"VOTES_08"}'
 "arizona": arizona/geodata.json arizona/election_data.tab arizona/district.json --keys='{"DEM":"prs08_dem","REP":"prs08_rep","ELE":"geoid10","GEO":"GEOID10","POP":"TOTPOP","OTH":"prs08_oth"}' arizona.dat
-"colorado": colorado/geodata.json colorado/election_data.tab colorado/district.json --keys='{"DEM":"PRES08__D","REP":"PRES08__R","GEO":"GEOID10","POP":"POP100","OTH":"PRES08_MP"}' colorado.dat
-"connecticut":  connecticut/geodata.json connecticut/election_data.tab connecticut/district.json --keys='{"DEM":"DEMOCRAT","REP":"REPUBLICAN,"GEO":"GEOID10","POP":"POP100","GRE":"GREEN","IND":"INDEPENDEN","LIB":"LIBERTARIA","REF":"REFORM","TOT":"TOTAL"}' connecticut.dat
-"delaware": delaware/geodata.json delaware/election_data.tab delaware/district.json --keys='{"DEM":"USP_D_08","REP":"USP_R_08","ELE":"geoid10","GEO":"GEOID10","POP":"POP100","TOT":"usp_tot"}' delaware.dat
-
-"#georgia": georgia/geodata.json georgia/district.json --keys={PRES16D,SEN16D},{PRES16R,SEN16R},TOTPOP georgia.dat
-
-"hawaii": hawaii/geodata.json hawaii/election_data.tab hawaii/district.json --keys='{"DEM":"USP_D_08","REP":"USP_R_08","ELE":"geoid10","GEO":"GEOID10","POP":"POP100","TOT":"USP_08_TOT"}' hawaii.dat
-"idaho": idaho/geodata.json idaho/election_data.tab idaho/district.json --keys='{"DEM":"USP_D_08","REP":"USP_R_08","GEO":"GEOID10","POP":"POP100","OTH":"USP_O_08"}' idaho.dat
+"colorado": colorado/geodata.json colorado/district.json --keys='{"DEM":"PRES08__D","REP":"PRES08__R","GEO":"GEOID10","POP":"POP100","OTH":"PRES08_MP"}' colorado.dat
+"delaware": delaware/geodata.json delaware/district.json --keys='{"DEM":"USP_D_08","REP":"USP_R_08","ELE":"geoid10","GEO":"GEOID10","POP":"POP100","TOT":"USP_08_TOT"}' delaware.dat
+"hawaii": hawaii/geodata.json hawaii/district.json --keys='{"DEM":"USP_D_08","REP":"USP_R_08","GEO":"GEOID10","POP":"POP100","TOT":"USP_08_TOT"}' hawaii.dat
+"idaho": idaho/geodata.json idaho/district.json --keys='{"DEM":"USP_D_08","REP":"USP_R_08","GEO":"GEOID10","POP":"POP100","OTH":"USP_O_08"}' idaho.dat
 "illinois": illinois/geodata.json illinois/district.json --keys='{"DEM":"OBAMA","REP":"MCCAIN","GEO":"GEOID10","POP":"TOTAL_POPU","OTH":"OTHER"}' illinois.dat
-"indiana": indiana/geodata.json indiana/election_data.tab indiana/district.json --keys='{"DEM":"OBAMA","REP":"MCCAIN","GEO":"GEOID10","POP":"POP10","LIB":"BARR"}' indiana.dat
-"iowa": iowa/geodata.json iowa/election_data.tab iowa/district.json --keys='{"DEM":"PRES_D_08","REP":"PRES_R_08","GEO":"GEOID10","POP":"POP100","TOT":"PRES_TOT"}' iowa.dat
-"kansas": kansas/geodata.json kansas/election_data.tab kansas/district.json --keys='{"DEM":"PRES_D_08","REP":"PRES_R_08","GEO":"GEOID10","POP":"POP100"}' kansas.dat
-"louisiana": louisiana/geodata.json louisiana/election_data.tab louisiana/district.json --keys='{"DEM":"USP_D_08_V","REP":"USP_R_08_V","GEO":"GEOID10","POP":"POP100"}' louisiana.dat
-
+"indiana": indiana/geodata.json indiana/district.json --keys='{"DEM":"OBAMA","REP":"MCCAIN","GEO":"GEOID10","POP":"POP10","LIB":"BARR"}' indiana.dat
+"iowa": iowa/geodata.json iowa/district.json --keys='{"DEM":"PRES_D_08","REP":"PRES_R_08","GEO":"GEOID10","POP":"POP100","TOT":"PRES_TOT"}' iowa.dat
+"kansas": kansas/geodata.json kansas/district.json --keys='{"DEM":"PRES_D_08","REP":"PRES_R_08","GEO":"GEOID10","POP":"POP100"}' kansas.dat
+"louisiana": louisiana/geodata.json louisiana/district.json --keys='{"DEM":"USP_D_08_V","REP":"USP_R_08_V","GEO":"GEOID10","POP":"POP100"}' louisiana.dat
 "massachusetts": massachusetts/geodata.json massachusetts/district.json --keys='{"DEM":"DEMOCRAT","REP":"REPUBLICAN","GEO":"GEOID10","POP":"POP100","LIB":"LIBERTARIA","GRE":"GREEN","IND":"INDEPENDEN","REF":"REFORM","OTH":"OTHER"}' massachusetts.dat
 "michigan": michigan/geodata.json michigan/district.json --keys='{"GEO":"GEOID10","DEM":"PRS08DEM","REP":"PRS08REP","POP":"TOTPOP","OTH":"PRS08OTH"}' michigan.dat
-
 "minnesota": minnesota/geodata.json minnesota/district.json --keys='{"DEM":"PRES_DVOTE","REP":"PRES_RVOTE","GEO":"GEOID10","POP":"REGISTERED","OTHER":"PRESOTHER"}'
-"mississippi": mississippi/geodata.json mississippi/election_data.tab mississippi/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 mississippi.dat
-"missouri": missouri/geodata.json missouri/election_data.tab missouri/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 missouri.dat
-"nebraska": nebraska/geodata.json nebraska/election_data.tab nebraska/district.json --keys=geoid10,GEOID10,ndv_0608,nrv_0608,POP100 nebraska.dat
-"nevada": nevada/geodata.json nevada/election_data.tab nevada/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 nevada.dat
-"new hampshire": new\ hampshire/geodata.json new\ hampshire/district.json --keys=NDV,NRV,POP100 new_hampshire.dat
-"new jersey": new\ jersey/geodata.json new\ jersey/district.json --keys=NDV,NRV,POP100 new_jersey.dat
-"new mexico": new\ mexico/geodata.json new\ mexico/election_data.tab new\ mexico/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 new_mexico.dat
-"new york": new\ york/geodata.json new\ york/district.json --keys=NDV,NRV,POP100 new_york.dat
-"north carolina": north\ carolina/geodata.json north\ carolina/election_data.tab north\ carolina/district.json --keys=vtd_key,GEOID10,ndv,nrv,PL10AA_TOT north_carolina.dat
-"north dakota": north\ dakota/geodata.json north\ dakota/election_data.tab north\ dakota/district.json --keys=geoid10,GEOID10,ndv,nrv,TOTPOP north_dakota.dat
-"oklahoma": oklahoma/geodata.json oklahoma/election_data.tab oklahoma/district.json --keys=geoid10,GEOID10,ndv,ndr,VAP oklahoma.dat
-"pennsylvania": pennsylvania/geodata.json pennsylvania/election_data.tab pennsylvania/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 pennsylvania.dat
-
-"sourth dakota": south\ dakota/geodata.json south\ dakota/election_data.tab south\ dakota/district.json --keys=geoid10,GEOID10,ndv,nrv,TOTPOP south_dakota.dat
-"tennesse": tennesse/geodata.json tennesse/election_data.tab tennesse/district.json --keys=geoid10,GEOID10,ndv,nrv,POP100 tennesse.dat
-
-"texas": texas/geodata.json texas/district.json --keys=NV_D,NV_R,vap texas.dat
-"utah": utah/geodata.json utah/district.json --keys={PRES16D,SEN16D,GOV16D},{PRES16R,SEN16R,GOV16R},TOTPOP utah.dat
+"mississippi": mississippi/geodata.json mississippi/district.json --keys='{"DEM":"USP_D_08","REP":"USP_R_08","GEO":"GEOID10","POP":"POP100","OTH":"USP_O_08"}' mississippi.dat
+"missouri": missouri/geodata.json missouri/district.json --keys='{"DEM":"PR_DV08","REP":"PR_RV08","GEO":"GEOID10","POP":"POP100","OTH":"PR_OTHV08"}' missouri.dat
+"nebraska": nebraska/geodata.json nebraska/district.json --keys='{"DEM":"PRESDV08","REP":"PRESRV08","GEO":"GEOID10","POP":"POP100"}' nebraska.dat
+"nevada": nevada/geodata.json nevada/district.json --keys='{"DEM":"USP_D_2008","REP":"USP_R_2008","GEO":"GEOID10","POP":"POP100"}' nevada.dat
+"new hampshire": new\ hampshire/geodata.json new\ hampshire/district.json --keys='{"DEM":"PRES_DEM08","REP":"PRES_REP08","GEO":"GEOID10","POP":"POP100","TOT":"PRES_TOT08"}' new_hampshire.dat
+"new jersey": new\ jersey/geodata.json new\ jersey/district.json --keys='{"DEM":"USP_DV_08","REP":"USP_RV_08","GEO":"GEOID10","POP":"POP100"}' new_jersey.dat
+"new mexico": new\ mexico/geodata.json new\ mexico/district.json --keys='{"DEM":"PRES_DEM_0","REP":"PRES_REP_0","GEO":"GEOID10","POP":"POP100"}' new_mexico.dat
+"north dakota": north\ dakota/geodata.json north\ dakota/district.json --keys='{"DEM":"USP_D_08","REP":"USP_R_08","GEO":"GEOID10","POP":"TOTPOP"}' north_dakota.dat
+"ohio": ohio/geodata.json ohio/district.json --keys='{"DEM":"PRES_DVOTE","REP":"PRES_RVOTE","GEO":"GEOID10","POP":"REG_08","TOT":"PRES_TVOTE"}' ohio.dat
+"oklahoma": oklahoma/geodata.json oklahoma/district.json --keys='{"DEM":"PRES_DVOTE","REP":"PRES_RVOTE","GEO":"GEOID10","POP":"VAP","TOT":"PRES_TOT_0"}' oklahoma.dat
+"pennsylvania": pennsylvania/geodata.json pennsylvania/district.json --keys='{"DEM":"USPDV2008","REP":"USPRV2008","GEO":"GEOID10","POP":"POP100"}' pennsylvania.dat
+"sourth dakota": south\ dakota/geodata.json south\ dakota/district.json --keys='{"DEM":"USP_D_08","REP":"USP_R_08","GEO":"GEOID10","POP":"TOTPOP","TOT":"USP_TOT_08"}' south_dakota.dat
+"tennesse": tennesse/geodata.json tennesse/district.json --keys='{"DEM":"PRES_DVOTE","REP":"PRES_RVOTE","GEO":"GEOID10","POP":"POP100"}' tennesse.dat
+"texas": texas/geodata.json texas/district.json --keys='{"DEM":"Pres_D_08","REP":"Pres_R_08","GEO":"CNTYVTD","POP":"vap"}' texas.dat
 "vermont": vermont/geodata.json vermont/election_data.tab vermont/district.json --keys={"POP":"POP100","GEO":"GEOID10","ELE":"geoid10","DEM":"usp_d_08","REP":"usp_r_08","TOT":"usp_tot_08"} vermont.dat
-"virginia": virginia/geodata.json virginia/district.json --keys=G16DPRS,G16RPRS,TOTPOP virginia.dat
-"washington": washington/geodata.json washington/election_data.tab washington/district.json --keys=geoid10,GEOID10,ndv_08,nrv_08,POP100 washington.dat
-"wisconsin": wisconsin/geodata.json wisconsin/district.json --keys=NDV,NDR,PERSONS wisconsin.dat
-"wyoming": wyoming/geodata.json wyoming/election_data.tab wyoming/district.json --keys=geoid10,GEOID10,ndv_08,nrv_08,VAP wyoming.dat
+"washington": washington/geodata.json washington/district.json --keys='{"DEM":"PRES_DVOTE","REP":"PRES_RVOTE","GEO":"GEOID10","POP":"POP100"}' washington.dat
+"wyoming": wyoming/geodata.json wyoming/district.json --keys='{"DEM":"USP_D08","REP":"USP_R08","GEO":"GEOID10","POP":"VAP"}' wyoming.dat
+
+"#alaska": alaska/geodata.json alaska/election_data.tab alaska/district.json --keys='{"DEM":"USP_D_08","REP":"USP_R_08","GEO":"GEOID10","POP":"TOTPOP","TOTAL":"VOTES_08"}'
+"#georgia": georgia/geodata.json georgia/district.json --keys={PRES16D,SEN16D},{PRES16R,SEN16R},TOTPOP georgia.dat
+"#north carolina": north\ carolina/geodata.json north\ carolina/election_data.tab north\ carolina/district.json --keys=vtd_key,GEOID10,ndv,nrv,PL10AA_TOT north_carolina.dat
+"#new york": new\ york/geodata.json new\ york/district.json --keys=NDV,NRV,POP100 new_york.dat
+"#utah": utah/geodata.json utah/district.json --keys={PRES16D,SEN16D,GOV16D},{PRES16R,SEN16R,GOV16R},TOTPOP utah.dat
+"#virginia": virginia/geodata.json virginia/district.json --keys=G16DPRS,G16RPRS,TOTPOP virginia.dat
+"#connecticut":  connecticut/geodata.json connecticut/election_data.tab connecticut/district.json --keys='{"DEM":"DEMOCRAT","REP":"REPUBLICAN,"GEO":"GEOID10","POP":"POP100","GRE":"GREEN","IND":"INDEPENDEN","LIB":"LIBERTARIA","REF":"REFORM","TOT":"TOTAL"}' connecticut.dat
+
+########### "#wisconsin": wisconsin/geodata.json wisconsin/district.json --keys='{"DEM":"PRESDEM08","REP":"PRESREP08","GEO":"JID","POP":"PERSONS","GRE":"PRESGRN08","LIB":"PRESLBR08","IND":"PRESIND108","PRESIND208, PRESIND308, PRESIND408, PRESIND508}' wisconsin.dat

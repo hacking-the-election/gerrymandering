@@ -29,6 +29,7 @@ namespace Graphics {
     class Outline;
     class Style;
     class PixelBuffer;
+    enum class ImageFmt { PNG, SVG, BMP, PNM };
 
 
     // for color space conversions (currently just hsl/rgb)
@@ -45,10 +46,9 @@ namespace Graphics {
     std::vector<RGB_Color> generate_n_colors(int n);
 
     // convert geometry shapes into styled outlines
-    // Outline to_outline(Geometry::Polygon p);
     std::vector<Outline> to_outline(Geometry::State state);
-
-    enum class ImageFmt { PNG, SVG, BMP, PNM };
+    std::vector<Outline> to_outline(Geometry::Graph graph);
+    std::vector<Outline> to_outline(Geometry::Communities& communities);
 
 
     class EdgeBucket {
@@ -68,7 +68,7 @@ namespace Graphics {
             return false;
         }
 
-        EdgeBucket() {};
+        EdgeBucket() {}
     };
 
 
@@ -88,8 +88,8 @@ namespace Graphics {
             }
 
             // constructors with default conversions
-            RGB_Color() {};
-            RGB_Color(int r, int g, int b) : r(r), g(g), b(b) {};
+            RGB_Color() {}
+            RGB_Color(int r, int g, int b) : r(r), g(g), b(b) {}
             RGB_Color(std::string hex);
             RGB_Color(HSL_Color);
     };
@@ -98,7 +98,7 @@ namespace Graphics {
     class HSL_Color {
         // a color representing hsl color channels
         public:
-            int h, s, l;
+            double h, s, l;
 
             friend bool operator!= (const HSL_Color& c1, const HSL_Color& c2) {
                 return (c1.h != c2.h || c1.s != c2.s || c1.l != c2.l);
@@ -110,7 +110,7 @@ namespace Graphics {
 
             // constructors with default conversions
             HSL_Color() {};
-            HSL_Color(int h, int s, int l) : h(h), s(s), l(l) {}
+            HSL_Color(double h, double s, double l) : h(h), s(s), l(l) {}
             HSL_Color(RGB_Color);
             HSL_Color(std::string hex);
     };
@@ -126,7 +126,7 @@ namespace Graphics {
         
             PixelBuffer() {};
             PixelBuffer(int x, int y) : x(x), y(y) { ar = new Uint32[x * y]; memset(ar, 255, x * y * sizeof(Uint32));}
-            void resize(int x, int y) { x = x; y = y; ar = new Uint32[x * y]; memset(ar, 255, x * y * sizeof(Uint32));}
+            void resize(int t_x, int t_y) { x = t_x; y = t_y; ar = new Uint32[x * y]; memset(ar, 255, x * y * sizeof(Uint32));}
 
             void set_from_position(int, int, Uint32);
             Uint32 get_from_position(int a, int b);
@@ -139,9 +139,9 @@ namespace Graphics {
 
             RGB_Color fill_;
             RGB_Color outline_;
-            int thickness_;
+            double thickness_;
         
-            Style& thickness(int);
+            Style& thickness(double);
             Style& fill(RGB_Color);
             Style& fill(HSL_Color);
             Style& outline(RGB_Color);
@@ -156,6 +156,7 @@ namespace Graphics {
             PixelBuffer pix;
             Geometry::LinearRing border;
             Style& style() {return style_;}
+            std::string get_svg();
 
             Outline(Geometry::LinearRing border) : border(border) {}
     };
@@ -171,8 +172,8 @@ namespace Graphics {
             // update the canvas's pixel buffer
             // to be called by internal methods such as to_gui();
             void rasterize();
-            // std::string get_svg();
-            void get_bmp(std::string write_path, SDL_Window* window, SDL_Renderer* renderer);
+            std::string get_svg();
+            bool get_bmp(std::string write_path);
 
         public:
 
@@ -194,11 +195,12 @@ namespace Graphics {
             // transformations for getting the coordinates of
             // the outlines in the right size
 
-            void translate(long, long, bool);         // move the outlines by x and y
+            void translate(long, long, bool);                       // move the outlines by x and y
             void scale(double scale_factor);                        // scale the shapes by scale factor
             void rotate(Geometry::coordinate center, int degrees);  // rotate the shapes by n degrees
 
             void save_image(ImageFmt, std::string);
+            void save_img_to_anim(ImageFmt, std::string);
 
             Canvas(int width, int height) : width(width), height(height) {}
 
