@@ -332,6 +332,9 @@ namespace Geometry {
     };
 
 
+    Graph remove_edges_to(Graph g, int id);
+
+
     class Graph {
 
     public:

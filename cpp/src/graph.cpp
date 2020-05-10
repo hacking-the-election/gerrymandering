@@ -194,6 +194,24 @@ void Graph::add_edge(Edge edge) {
 }
 
 
+Graph hte::Geometry::remove_edges_to(Graph g, int id) {
+    for (Edge edge : g.vertices[id].edges) {
+        Edge remove = {edge[1], edge[0]};
+
+        g.vertices[edge[1]].edges.erase(
+            std::remove(g.vertices[edge[1]].edges.begin(),
+                g.vertices[edge[1]].edges.end(),
+                remove
+            ),
+            g.vertices[edge[1]].edges.end()
+        );
+    }
+
+    g.vertices[id].edges.clear();
+    return g;
+}
+
+
 void Graph::remove_edges_to(int id) {
     /*
         @desc: removes edges to a node id
@@ -204,14 +222,15 @@ void Graph::remove_edges_to(int id) {
 
     for (Edge edge : vertices[id].edges) {
         Edge remove = {edge[1], edge[0]};
-
-        vertices[edge[1]].edges.erase(
-            std::remove(vertices[edge[1]].edges.begin(),
-                vertices[edge[1]].edges.end(),
-                remove
-            ),
-            vertices[edge[1]].edges.end()
-        );
+        if (vertices.find(edge[1]) != vertices.end()) {
+            vertices[edge[1]].edges.erase(
+                std::remove(vertices[edge[1]].edges.begin(),
+                    vertices[edge[1]].edges.end(),
+                    remove
+                ),
+                vertices[edge[1]].edges.end()
+            );
+        }
     }
 
     vertices[id].edges.clear();

@@ -75,6 +75,7 @@ vector<Outline> Graphics::to_outline(Communities& communities) {
     vector<RGB_Color> colors = generate_n_colors(communities.size());
 
     for (int i = 0; i < communities.size(); i++) {
+
         for (auto& j : communities[i].vertices) {
             Outline o(j.second.precinct->hull);
             o.style().fill(colors[i]).outline(colors[i]).thickness(1);

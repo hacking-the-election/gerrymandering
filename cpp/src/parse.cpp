@@ -29,6 +29,7 @@ using namespace rapidjson;
 using namespace std;
 using namespace hte;
 using namespace Geometry;
+using namespace Graphics;
 
 // the number to multiply floating coordinates by
 const long int c = pow(2, 18);
@@ -865,6 +866,10 @@ State State::generate_from_file(string precinct_geoJSON, string voter_data, stri
     State state = State(district_shapes, pre_group.precincts, state_shape_v);
     Multi_Polygon sborder = generate_exterior_border(state);
     state.border = sborder.border;
+
+    Canvas canvas(900, 900);
+    canvas.add_outlines(to_outline(state));
+    canvas.draw_to_window();
 
     state.network = generate_graph(pre_group);
     cout << "complete!" << endl;
