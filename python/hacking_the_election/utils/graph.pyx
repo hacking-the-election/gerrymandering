@@ -132,7 +132,7 @@ cpdef list get_components(graph):
     while discovered_nodes != graph_nodes:
         component = set()
         # Search all nodes in `start_v`'s component.
-        _dfs(graph, component, int(min(graph_nodes -  discovered_nodes)))
+        _dfs(graph, component, int(min(graph_nodes - discovered_nodes)))
         components.append(list(component))
         discovered_nodes.update(component)
     return components
