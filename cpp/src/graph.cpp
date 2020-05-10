@@ -57,7 +57,11 @@ std::vector<Graph> Graph::get_components() {
         @return: `vector<Geometry::Graph>` components subgraphs
     */
 
-    vector<bool> visited(vertices.size(), false);
+    map<int, bool> visited;
+    for (int i = 0; i < vertices.size(); i++) {
+        visited[(vertices.begin() + i).key()] = false;
+    }
+
     vector<Graph> components;
 
     for (int i = 0; i < vertices.size(); i++) {
@@ -78,7 +82,7 @@ std::vector<Graph> Graph::get_components() {
 }
 
 
-void Graph::dfs_recursor(int v, std::vector<bool>& visited, std::vector<int>* nodes) {
+void Graph::dfs_recursor(int v, std::map<int, bool>& visited, std::vector<int>* nodes) {
     /*
         @desc: recur seach for each adjacent node to index v
         
@@ -110,7 +114,11 @@ int Graph::get_num_components() {
         @return: `int` number of components
     */
 
-    vector<bool> visited(vertices.size(), false);
+    map<int, bool> visited;
+    for (int i = 0; i < vertices.size(); i++) {
+        visited[(vertices.begin() + i).key()] = false;
+    }
+
     int x = 0;
 
     for (int i = 0; i < vertices.size(); i++) {
@@ -124,7 +132,7 @@ int Graph::get_num_components() {
 }
 
 
-void Graph::dfs_recursor(int v, std::vector<bool>& visited) { 
+void Graph::dfs_recursor(int v, std::map<int, bool>& visited) { 
     /*
         @desc: recur seach for each adjacent node to index v
         
