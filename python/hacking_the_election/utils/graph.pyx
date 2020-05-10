@@ -233,18 +233,15 @@ cpdef dict get_giveable_precincts(state_graph, list communities, int community):
             # The node is bordering another community.
             node_precinct = state_graph.node_attributes(node)[0]
 
-            # Check if removing the node would cause the community to become non-contiguous.
-            if len(get_components(_remove_edges_to(community_graph, node))) <= 2:
+            # Get a community that is bordering `community`
+            for neighbor in node_neighbors:
+                neighbor_community_id = \
+                    state_graph.node_attributes(neighbor)[0].community
+                if neighbor_community_id != community:
+                    other_community = community_dict[neighbor_community_id]
 
-                # Get a community that is bordering `community`
-                for neighbor in node_neighbors:
-                    neighbor_community_id = \
-                        state_graph.node_attributes(neighbor)[0].community
-                    if neighbor_community_id != community:
-                        other_community = community_dict[neighbor_community_id]
-
-                giveable_precincts[node_precinct] = \
-                    other_community
+            giveable_precincts[node_precinct] = \
+                other_community
     
     return giveable_precincts
 
@@ -280,12 +277,7 @@ cpdef dict get_takeable_precincts(state_graph, list communities, int community):
             if neighbor not in community_nodes:
                 # `neighbor` is a bordering precinct from another community.
                 neighbor_precinct = state_graph.node_attributes(neighbor)[0]
-
-                # Check if taking node will cause other community to become non-contiguous.
                 other_community = community_dict[neighbor_precinct.community]
-                other_community_subgraph = other_community.induced_subgraph
-                if len(get_components(
-                        _remove_edges_to(other_community_subgraph, neighbor))) <= 2:
-                    takeable_precincts[neighbor_precinct] = other_community
+                takeable_precincts[neighbor_precinct] = other_community
     
     return takeable_precincts
