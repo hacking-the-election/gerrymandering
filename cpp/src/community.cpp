@@ -194,16 +194,11 @@ vector<int> get_takeable_precincts(Graph& g, Communities& c, int in) {
 
     for (int i = 0; i < g.vertices.size(); i++) {
         if (g.vertices[i].community != in) {
-            bool has_neighbor = false;
             for (Edge e : g.vertices[i].edges) {
                 if (g.vertices[e[1]].community == in) {
-                    has_neighbor = true;
+                    takeable.push_back(i);
                     break;
                 }
-            }
-
-            if (has_neighbor) {
-                takeable.push_back(i);
             }
         }
     }
@@ -235,10 +230,8 @@ vector<array<int, 2> > get_giveable_precincts(Graph& g, Communities& c, int in) 
                 // this arbitrarily decides to give the precinct
                 // to the first edge's community that goes outside
                 // communities[c]
-                if (remove_edges_to(c[in], (c[in].vertices.begin() + i).key()).get_num_components() > 2) {
-                    giveable.push_back({(c[in].vertices.begin() + i).key(), g.vertices[edge[1]].community});
-                    break;
-                }
+                giveable.push_back({(c[in].vertices.begin() + i).key(), g.vertices[edge[1]].community});
+                break;
             }
         }
     }
@@ -343,8 +336,12 @@ void optimize_compactness(Communities& communities, Graph& graph, double (*measu
     int iterations_since_best = 0;
     Communities best = communities;
 
+    Canvas canvas(900, 900);
+    canvas.add_outlines(to_outline(communities));
+    canvas.draw_to_window();
+
     while (iterations_since_best < ITERATION_LIMIT) {
-        int smallest_index = 0;//rand_num(0, communities.size() - 1);//0;
+        int smallest_index = 0;
         double smallest_measure = measure(communities[0]);
 
         for (int i = 1; i < communities.size(); i++) {
@@ -359,30 +356,33 @@ void optimize_compactness(Communities& communities, Graph& graph, double (*measu
         double radius = sqrt(communities[smallest_index].shape.get_area() / PI);
         int num_exchanged = 0;
 
+        vector<array<int, 2> > giveable = get_giveable_precincts(graph, communities, smallest_index);
+
+        for (array<int, 2> g : giveable) {
+            if (!point_in_circle(center, radius, graph.vertices[g[0]].precinct->get_center())) {
+                // cout << "giving precinct " << g[0] << " to community " << g[1] << endl;
+                exchange_precinct(graph, communities, g[0], g[1]);
+                num_exchanged++;
+
+                // Canvas canvas(900, 900);
+                // canvas.add_outlines(to_outline(communities));
+                // canvas.save_img_to_anim(ImageFmt::BMP, "output");
+            }
+        }
+
         vector<int> takeable = get_takeable_precincts(graph, communities, smallest_index);
 
         for (int t : takeable) {
             if (point_in_circle(center, radius, graph.vertices[t].precinct->get_center())) {
                 cout << "taking precinct " << t << " for community " << smallest_index << endl;
                 exchange_precinct(graph, communities, t, smallest_index);
-                cout << communities[smallest_index].vertices.size() << endl;
-                cout << communities[smallest_index].shape.precincts.size() << endl;
+
+                // Canvas canvas(900, 900);
+                // canvas.add_outlines(to_outline(communities));
+                // canvas.save_img_to_anim(ImageFmt::BMP, "output");
                 num_exchanged++;
             }
         }
-
-        vector<array<int, 2> > giveable = get_giveable_precincts(graph, communities, smallest_index);
-        for (array<int, 2> g : giveable) {
-            if (!point_in_circle(center, radius, graph.vertices[g[0]].precinct->get_center())) {
-                cout << "giving precinct " << g[0] << " to community " << g[1] << endl;
-                exchange_precinct(graph, communities, g[0], g[1]);
-                cout << communities[smallest_index].vertices.size() << endl;
-                cout << communities[smallest_index].shape.precincts.size() << endl;
-                num_exchanged++;
-            }
-        }
-
-        cout << takeable.size() << ", " << giveable.size() << endl;
 
         if (average(communities, measure) > average(best, measure)) {
             best = communities;
@@ -397,101 +397,95 @@ void optimize_compactness(Communities& communities, Graph& graph, double (*measu
             break;
         }
 
-        // cout << "drawing" << endl;
-        // Canvas canvas(900, 900);
-        // cout << "drawing" << endl;
-        // canvas.add_outlines(to_outline(communities));
-        // cout << "drawing" << endl;
-        // canvas.draw_to_window();
-        // cout << "drawing" << endl;
+        for (int i = 0; i < communities.size(); i++) {
+            communities[i].update_shape(graph);
+        }
+
         cout << average(communities, measure) << endl;
-        // for (int i = 0; i < communities.size(); i++) {
-        //     communities[i].update_shape(graph);
-        // }
     }
 
     communities = best;
     
-    Canvas canvas(900, 900);
-    canvas.add_outlines(to_outline(communities));
-    canvas.draw_to_window();
+    // Canvas canvas(900, 900);
+    // canvas.add_outlines(to_outline(communities));
+    // canvas.draw_to_window();
 
     cout << "did not improve after " << ITERATION_LIMIT << " iterations, returning..." << endl;
     cout << average(communities, measure) << endl;
 }
 
 
-void optimize_population(Graph& g, Communities& communities, double range) {
-    bool done = false;
+// void optimize_population(Graph& g, Communities& communities, double range) {
+//     bool done = false;
 
-    // find optimal populations
-    int opt = get_population(communities) / communities.size();
-    cout << opt << endl;
-    array<int, 2> bounds = {opt - (int)((double) opt * (double)range), opt + (int)((double) opt * (double)range)};
-    cout << bounds[0] << ", " << bounds[1] << endl;
+//     // find optimal populations
+//     int opt = get_population(communities) / communities.size();
+//     cout << opt << endl;
+//     array<int, 2> bounds = {opt - (int)((double) opt * (double)range), opt + (int)((double) opt * (double)range)};
+//     cout << bounds[0] << ", " << bounds[1] << endl;
 
-    while (true) {
-        // determine populations
-        vector<int> pops;
-        for (Community c : communities)
-            pops.push_back(c.get_population());
+//     while (true) {
+//         // determine populations
+//         vector<int> pops;
+//         for (Community c : communities)
+//             pops.push_back(c.get_population());
 
-        int sum = 0;
-        for (int p : pops) sum += p;
+//         int sum = 0;
+//         for (int p : pops) sum += p;
 
-        done = true;
-        int worst_index = 0;
-        int index = 0;
-        double worst_margin = 0.0;
-        bool lower = true;
+//         done = true;
+//         int worst_index = 0;
+//         int index = 0;
+//         double worst_margin = 0.0;
+//         bool lower = true;
 
-        for (int p : pops) {
-            if (p < bounds[0]) {
-                done = false;
-                if (abs(p - bounds[0]) > worst_margin) {
-                    worst_margin = abs(p - bounds[0]);
-                    worst_index = index;
-                    lower = true;
-                }
-            }
-            else if (p > bounds[1]) {
-                done = false;
-                if (bounds[1] - p > worst_margin) {
-                    worst_margin = bounds[1] - p;
-                    worst_index = index;
-                    lower = false;
-                }
-            }
+//         for (int p : pops) {
+//             if (p < bounds[0]) {
+//                 done = false;
+//                 if (abs(p - bounds[0]) > worst_margin) {
+//                     worst_margin = abs(p - bounds[0]);
+//                     worst_index = index;
+//                     lower = true;
+//                 }
+//             }
+//             else if (p > bounds[1]) {
+//                 done = false;
+//                 if (bounds[1] - p > worst_margin) {
+//                     worst_margin = bounds[1] - p;
+//                     worst_index = index;
+//                     lower = false;
+//                 }
+//             }
 
-            index++;
-        }
+//             index++;
+//         }
 
-        if (done) break;
+//         if (done) break;
 
-        if (lower) {
-            vector<int> take = get_takeable_precincts(g, communities, worst_index);
+//         if (lower) {
+//             vector<int> take = get_takeable_precincts(g, communities, worst_index);
 
-            int x = 0;
-            while (communities[worst_index].get_population() < bounds[0] && x < take.size()) {
-                cout << "taking precinct " << take[x] << " for community " << worst_index << endl;
-                exchange_precinct(g, communities, take[x], worst_index);
-                x++;
-            }
-        }
-        else {
-            vector<array<int, 2> > give = get_giveable_precincts(g, communities, worst_index);
-            int x = 0;
-            cout << communities[worst_index].get_population() << ", " << bounds[1] << endl;
-            cout << give.size() << endl;
-            while (communities[worst_index].get_population() > bounds[1] && x < give.size()) {
-                cout << "GIVING PRECINCT" << endl;
-                exchange_precinct(g, communities, give[x][0], give[x][1]);
-            }
+//             int x = 0;
+//             while (communities[worst_index].get_population() < bounds[0] && x < take.size()) {
+//                 cout << "taking precinct " << take[x] << " for community " << worst_index << endl;
+//                 exchange_precinct(g, communities, take[x], worst_index);
+//                 x++;
+//             }
+//         }
+//         else {
+//             vector<array<int, 2> > give = get_giveable_precincts(g, communities, worst_index);
+//             int x = 0;
+//             cout << communities[worst_index].get_population() << ", " << bounds[1] << endl;
+//             cout << give.size() << endl;
+//             while (communities[worst_index].get_population() > bounds[1] && x < give.size()) {
+//                 cout << "GIVING PRECINCT" << endl;
+//                 exchange_precinct(g, communities, give[x][0], give[x][1]);
+//             }
 
-            cout << "remove preicncts" << endl;
-        }
-    }
-}
+//             cout << "remove preicncts" << endl;
+//         }
+//     }
+// }
 
 
 Communities karger_stein(Graph& g1, int n_communities) {
@@ -585,14 +579,14 @@ Communities hte::Geometry::get_initial_configuration(Graph& graph, int n_communi
     srand(time(NULL));
     // Communities cs;
 
-    Communities cs = load("test.txt", graph);
+    Communities cs = load("config.txt", graph);
     // Communities cs = karger_stein(graph, n_communities);
     
     for (int i = 0; i < cs.size(); i++) {
         cs[i].update_shape(graph);
     }
 
-    // cout << "got init config." << endl;
+    cout << "got init config." << endl;
     optimize_compactness(cs, graph, get_compactness);
     // optimize_population(graph, cs, 0.01);
 

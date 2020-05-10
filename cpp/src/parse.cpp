@@ -935,6 +935,10 @@ State State::generate_from_file(string precinct_geoJSON, string district_geoJSON
     Multi_Polygon sborder = generate_exterior_border(state);
     state.border = sborder.border;
 
+    Canvas canvas(900, 900);
+    canvas.add_outlines(to_outline(state));
+    canvas.draw_to_window();
+
     state.network = generate_graph(pre_group);
     if (VERBOSE) cout << "state serialized!" << endl;
 
