@@ -89,7 +89,7 @@ cpdef int get_node_number(precinct, graph):
     raise ValueError("Precinct not part of inputted graph.")
 
 
-cpdef void _dfs(graph, set nodes, int v):
+cdef void _dfs(graph, set nodes, int v):
     """Finds all the nodes in a component of a graph containing a start node.
 
     Implementation of the depth-first search algorithm translated from wikipedia:
@@ -172,3 +172,110 @@ cpdef get_induced_subgraph(graph, list precincts):
             pass
 
     return induced_subgraph
+
+
+cdef _remove_edges_to(graph, int node):
+    """Removes edges connected to a node.
+
+    :param graph: A graph.
+    :type graph: `pygraph.classes.graph.graph`
+
+    :param node: A node.
+    :type node: int
+
+    :return: A copy of `graph` with all edges connected to `node` removed.
+    :rtype: `pygraph.classes.graph.graph`
+    """
+
+    new_graph = light_copy(graph)
+    cdef tuple edge
+    for edge in new_graph.edges():
+        if node in edge:
+            try:
+                new_graph.del_edge(edge)
+            except ValueError:
+                pass
+    return new_graph
+
+
+cpdef dict get_giveable_precincts(state_graph, list communities, int community):
+    """Finds all precincts that can be given to another community.
+
+    :param state_graph: A graph containing all precincts in a state.
+    :type state_graph: `pygraph.classes.graph.graph`
+
+    :param communities: All the communities in a state.
+    :type communities: list of `hacking_the_election.utils.community.Community`
+
+    :param community: ID of the community that is taking the nodes.
+    :type community: int
+
+    :return: A dict of precincts mapping to communities they can be given to without making a community non-contiguous.
+    :rtype: dict with keys `hacking_the_election.utils.precinct.Precinct` and values `hacking_the_election.utils.community.Community`
+    """
+
+    cpdef dict giveable_precincts = {}
+
+    cdef dict community_dict = {c.id: c for c in communities}
+
+    cpdef community_graph = community_dict[community].induced_subgraph
+    cdef list community_nodes = community_graph.nodes()
+    cdef int node
+    cdef int neighbor
+    cpdef neighbor_precinct
+    cpdef node_precinct
+    for node in community_nodes:
+        if not all([neighbor in community_nodes for
+                neighbor in state_graph.neighbors(node)]):
+            # The node is bordering another community.
+            neighbor_precinct = state_graph.node_attributes(neighbor)[0]
+            node_precinct = state_graph.node_attributes(node)[0]
+
+            # Check if removing the node would cause the community to become non-contiguous.
+            if len(get_components(_remove_edges_to(community_graph, node))) <= 2:
+                giveable_precincts[node_precinct] = \
+                    community_dict[neighbor_precinct.community]
+    
+    return giveable_precincts
+
+
+cpdef dict get_takeable_precincts(state_graph, list communities, int community):
+    """Finds all the precincts in a state that can be taken by a community.
+
+    :param state_graph: A graph containing all precincts in a state.
+    :type state_graph: `pygraph.classes.graph.graph`
+
+    :param communities: All the communities in a state.
+    :type communities: list of `hacking_the_election.utils.community.Community`
+
+    :param community: ID of the community that is taking the nodes.
+    :type community: int
+
+    :return: A dict mapping precincts to communities they are in.
+    :rtype: dict with `hacking_the_election.utils.precinct.Precinct` as key and `hacking_the_election.utils.community.Community` as value.
+    """
+
+    cpdef dict takeable_precincts = {}
+
+    # Map ids to community objects
+    cdef dict community_dict = {c.id: c for c in communities}
+
+    cdef list community_nodes = community_dict[community].induced_subgraph.nodes()
+    cdef int node
+    cdef int neighbor
+    cpdef neighbor_precinct
+    cpdef other_community_subgraph
+    for node in community_nodes:
+        for neighbor in state_graph.neighbors(node):
+            if neighbor not in community_nodes:
+                # `neighbor` is a bordering precinct from another community.
+                neighbor_precinct = state_graph.node_attributes(neighbor)[0]
+
+                # Check if taking node will cause other community to become non-contiguous.
+                other_community = community_dict[neighbor_precinct.community]
+                other_community_subgraph = other_community.induced_subgraph
+                if len(get_components(
+                        _remove_edges_to(other_community_subgraph, neighbor))) <= 2:
+                    takeable_precincts[neighbor_precinct] = other_community
+    
+    return takeable_precincts

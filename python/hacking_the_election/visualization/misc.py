@@ -6,8 +6,8 @@ import os
 from PIL import Image, ImageDraw
 
 from hacking_the_election.utils.visualization import (
-    add_leading_zeroes,
     COLORS,
+    get_next_file_path,
     get_partisanship_colors
 )
 from hacking_the_election.visualization.map_visualization import visualize_map
@@ -29,21 +29,7 @@ def draw_state(graph, animation_dir, shapes=[]):
     # Draw districts to image file.
     precincts = [graph.node_attributes(node)[0] for node in graph.nodes()]
 
-    # Get next file number in `animation_dir`
-    file_numbers = []
-    for f in os.listdir(animation_dir):
-        try:
-            file_numbers.append(int(f[:3]))
-        except ValueError:
-            pass
-    try:
-        new_file_number = max(file_numbers) + 1
-    except ValueError:
-        # No numbered files in dir.
-        new_file_number = 0
-    file_name = f"{add_leading_zeroes(new_file_number)}.png"
-
-    visualize_map(precincts, os.path.join(animation_dir, file_name),
+    visualize_map(precincts, get_next_file_path(animation_dir),
         coords=lambda x: x.coords, color=lambda x: COLORS[x.community],
         extras=shapes)
 

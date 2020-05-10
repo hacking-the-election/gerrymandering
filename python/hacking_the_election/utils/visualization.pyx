@@ -1,6 +1,8 @@
 """Functions necessary for creating visuals.
 """
 
+import os
+
 cimport numpy as np
 import numpy as np
 from shapely.geometry import point
@@ -90,7 +92,7 @@ cpdef list modify_coords(list coords, list bounds):
     return new_coords
 
 
-cpdef str add_leading_zeroes(int n):
+cdef str _add_leading_zeroes(int n):
     """Adds leading zeroes to an int until it is 3 chars long.
     
     :param n: Number to add zeroes to.
@@ -132,3 +134,31 @@ cpdef dict get_partisanship_colors(list objects,  get_partisanship):
             colors[obj] = (int(-180 * abs(partisanship)) + 207, 27, 207)
     
     return colors
+
+
+cpdef str get_next_file_path(str animation_dir):
+    """Gets the name of the next file if files are name in ascening order and 3 digits.
+
+    :param animation_dir: Path to a directory.
+    :type animation_dir: str
+
+    :return: Path to a file that would be next in an animation in `animation_dir`.
+    :rtype: str
+    """
+    cdef list file_numbers = []
+    cdef str f
+    for f in os.listdir(animation_dir):
+        try:
+            file_numbers.append(int(f[:3]))
+        except ValueError:
+            pass
+    cdef int new_file_number
+    try:
+        new_file_number = max(file_numbers) + 1
+    except ValueError:
+        # No numbered files in dir.
+        new_file_number = 0
+    
+    cdef str file_name = _add_leading_zeroes(new_file_number) + ".png"
+
+    return os.path.join(animation_dir, file_name)
