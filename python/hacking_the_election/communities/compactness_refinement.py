@@ -19,6 +19,7 @@ from hacking_the_election.communities.initial_configuration import \
     create_initial_configuration
 from hacking_the_election.utils.geometry import get_compactness, get_distance
 from hacking_the_election.utils.graph import (
+    get_components,
     get_giveable_precincts,
     get_takeable_precincts
 )
@@ -95,6 +96,19 @@ def optimize_compactness(communities, graph, animation_dir=None):
             last_communities = set(tuple(p.id for p in c.precincts.values())
                 for c in community_states[-1])
             if current_communities == last_communities:
+
+                # Revert to best community state.
+                best_communities = \
+                    community_states[compactnesses.index(max(compactnesses))]
+                for c in best_communities:
+                    for c2 in communities:
+                        if c.id == c2.id:
+                            c2.precincts = c.precincts
+                            c2.update_compactness()
+                for c in communities:
+                    for precinct in c.precincts.values():
+                        precinct.community = c.id
+
                 print(rounded_compactnesses, min(rounded_compactnesses))
                 if animation_dir is not None:
                     draw_state(graph, animation_dir)
@@ -111,20 +125,17 @@ def optimize_compactness(communities, graph, animation_dir=None):
         community_coords = MultiPolygon(community_precinct_coords)
         center = list(community_coords.centroid.coords[0])
         radius = math.sqrt(community_coords.area / math.pi)
-
-        # Communities that exchanged precincts with `community`.
-        other_communities = set()
         
         # Give away precincts that are outside circle.
         giveable_precincts = get_giveable_precincts(graph, communities, community.id)
-        # TMP
-        # visualize_map(graph.nodes(), get_next_file_path("../images/test_vermont_2"), lambda n: graph.node_attributes(n)[0].coords, lambda n: COLORS[0] if graph.node_attributes(n)[0] in list(giveable_precincts.keys()) else COLORS[-1])
-        print(len(giveable_precincts))
         for precinct, other_community in giveable_precincts.items():
             if get_distance(precinct.centroid, center) > radius:
                 community.give_precinct(
                     other_community, precinct.id, update={"compactness"})
-                other_communities.add(other_community)
+                if len(get_components(community.induced_subgraph)) > 1:
+                    # Exchange made `community` non-contiguous. Give precinct back
+                    other_community.give_precinct(
+                        community, precinct.id, update={"compactness"})
         
         # Take precincts inside that are inside circle.
         takeable_precincts = get_takeable_precincts(graph, communities, community.id)
@@ -132,15 +143,14 @@ def optimize_compactness(communities, graph, animation_dir=None):
             if get_distance(precinct.centroid, center) <= radius:
                 other_community.give_precinct(
                     community, precinct.id, update={"compactness"})
-                other_communities.add(other_community)
-        
-        if animation_dir is not None:
-            # draw_state(graph, animation_dir, [Point(*center).buffer(radius)])
-            draw_state(graph, animation_dir)
+                if len(get_components(other_community.induced_subgraph)) > 1:
+                    # Exchange made `other_community` non-contiguous. Give precinct back
+                    community.give_precinct(
+                        other_community, precinct.id, update={"compactness"})
 
-        for c in other_communities:
-            c.update_compactness()
-        community.update_compactness()
+        if animation_dir is not None:
+            draw_state(graph, animation_dir, [Point(*center).buffer(radius)])
+            # draw_state(graph, animation_dir)
 
 
 if __name__ == "__main__":
