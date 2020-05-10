@@ -30,8 +30,8 @@ namespace Geometry {
         public:
             int get_population();
 
-            // void add_node(Node&);
-            // void remove_node(Node&);
+            void add_node(Node&);
+            void remove_node(int);
 
             // shape object for geometry methods,
             // must be kept up to date in every operation
