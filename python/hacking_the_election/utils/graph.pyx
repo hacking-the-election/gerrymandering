@@ -280,7 +280,8 @@ cpdef list get_takeable_precincts(state_graph, list communities, int community):
     :rtype: list of tuples of `hacking_the_election.utils.precinct.Precinct` and `hacking_the_election.utils.community.Community`.
     """
 
-    cpdef list takeable_precincts = []
+    cdef set takeable_precincts_set = set()
+    cpdef takeable_precincts = []
 
     # Map ids to community objects
     cdef dict community_dict = {c.id: c for c in communities}
@@ -296,7 +297,9 @@ cpdef list get_takeable_precincts(state_graph, list communities, int community):
                 # `neighbor` is a bordering precinct from another community.
                 neighbor_precinct = state_graph.node_attributes(neighbor)[0]
                 other_community = community_dict[neighbor_precinct.community]
-                takeable_precincts.append((neighbor_precinct, other_community))
+                takeable_precincts_set.add((neighbor_precinct, other_community))
+
+    takeable_precincts = list(takeable_precincts_set)
 
     return sorted(
         takeable_precincts,
