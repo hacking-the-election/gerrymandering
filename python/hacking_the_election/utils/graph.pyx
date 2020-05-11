@@ -8,6 +8,15 @@ from pygraph.classes.graph import graph as Graph
 from pygraph.classes.exceptions import AdditionError
 
 
+cdef float _get_community_pop(community):
+    community.update_population()
+    return float(community.population)
+
+
+cdef float _get_precinct_xcoord(tuple precinct_tuple):
+    return precinct_tuple[0].centroid[0]
+
+
 cpdef light_copy(G):
     """Returns a graph without node attributes.
 
@@ -198,7 +207,7 @@ cdef _remove_edges_to(graph, int node):
     return new_graph
 
 
-cpdef dict get_giveable_precincts(state_graph, list communities, int community):
+cpdef list get_giveable_precincts(state_graph, list communities, int community):
     """Finds all precincts that can be given to another community.
 
     :param state_graph: A graph containing all precincts in a state.
@@ -210,17 +219,18 @@ cpdef dict get_giveable_precincts(state_graph, list communities, int community):
     :param community: ID of the community that is taking the nodes.
     :type community: int
 
-    :return: A dict of precincts mapping to communities they can be given to without making a community non-contiguous.
-    :rtype: dict with keys `hacking_the_election.utils.precinct.Precinct` and values `hacking_the_election.utils.community.Community`
+    :return: A list of tuples each containing a giveable precinct and a community it can be given to.
+    :rtype: list of tuple containing `hacking_the_election.utils.precinct.Precinct` and `hacking_the_election.utils.community.Community`
     """
 
-    cpdef dict giveable_precincts = {}
+    cpdef list giveable_precincts = []
 
     cdef dict community_dict = {c.id: c for c in communities}
 
     cpdef community_graph = community_dict[community].induced_subgraph
     cdef list community_nodes = community_graph.nodes()
-    cdef list node_neighbors
+    cdef list node_neighbors = []
+    cdef set other_communities
     cdef int node
     cdef int neighbor
     cdef int neighbor_community_id
@@ -234,19 +244,27 @@ cpdef dict get_giveable_precincts(state_graph, list communities, int community):
             node_precinct = state_graph.node_attributes(node)[0]
 
             # Get a community that is bordering `community`
+            other_communities = set()
             for neighbor in node_neighbors:
                 neighbor_community_id = \
                     state_graph.node_attributes(neighbor)[0].community
                 if neighbor_community_id != community:
-                    other_community = community_dict[neighbor_community_id]
+                    other_communities.add(
+                        community_dict[neighbor_community_id])
 
-            giveable_precincts[node_precinct] = \
-                other_community
+            for c in other_communities:
+                c.update_population()
+            other_community = min(other_communities, key=_get_community_pop)
+
+            giveable_precincts.append((node_precinct, other_community))
     
-    return giveable_precincts
+    return sorted(
+        giveable_precincts,
+        key=_get_precinct_xcoord
+    )
 
 
-cpdef dict get_takeable_precincts(state_graph, list communities, int community):
+cpdef list get_takeable_precincts(state_graph, list communities, int community):
     """Finds all the precincts in a state that can be taken by a community.
 
     :param state_graph: A graph containing all precincts in a state.
@@ -258,11 +276,11 @@ cpdef dict get_takeable_precincts(state_graph, list communities, int community):
     :param community: ID of the community that is taking the nodes.
     :type community: int
 
-    :return: A dict mapping precincts to communities they are in.
-    :rtype: dict with `hacking_the_election.utils.precinct.Precinct` as key and `hacking_the_election.utils.community.Community` as value.
+    :return: A list of tuples containing a takeable precinct and the community it is in.
+    :rtype: list of tuples of `hacking_the_election.utils.precinct.Precinct` and `hacking_the_election.utils.community.Community`.
     """
 
-    cpdef dict takeable_precincts = {}
+    cpdef list takeable_precincts = []
 
     # Map ids to community objects
     cdef dict community_dict = {c.id: c for c in communities}
@@ -278,6 +296,9 @@ cpdef dict get_takeable_precincts(state_graph, list communities, int community):
                 # `neighbor` is a bordering precinct from another community.
                 neighbor_precinct = state_graph.node_attributes(neighbor)[0]
                 other_community = community_dict[neighbor_precinct.community]
-                takeable_precincts[neighbor_precinct] = other_community
-    
-    return takeable_precincts
+                takeable_precincts.append((neighbor_precinct, other_community))
+
+    return sorted(
+        takeable_precincts,
+        key=_get_precinct_xcoord
+    )
