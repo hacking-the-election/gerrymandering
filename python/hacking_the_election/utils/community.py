@@ -54,11 +54,11 @@ class Community:
     def update_partisanship_stdev(self):
         """Updates the partisanship_stdev attribute for this community.
         """
-        self.partisanship = [standard_deviation(
+        self.partisanship_stdev = average([standard_deviation(
             [eval(f"p.{attr}") for p in self.precincts.values()]) for attr in
             ["percent_dem", "percent_rep", "percent_green", "percent_lib",
              "percent_reform", "percent_ind", "percent_const"]
-        ]
+        ])
 
     def update_compactness(self):
         """Update the compactness attribute for this community.
@@ -124,6 +124,9 @@ class Community:
             precinct = self.precincts[precinct_id]
         except KeyError:
             raise ValueError(f"Precinct {precinct_id} not in community {self.id}")
+
+        if other is self:
+            raise ValueError("Community cannot give precinct to itself.")
         
         # Update induced subgraph
         self.induced_subgraph.del_node(

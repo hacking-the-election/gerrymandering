@@ -53,8 +53,9 @@ def optimize_partisanship_stdev(communities, graph, animation_dir=None):
         community = max(communities, key=lambda c: c.partisanship_stdev)
         iteration_stdevs = [c.partisanship_stdev for c in communities]
         min_stdev = min(iteration_stdevs)
-        rounded_stdevs = [round(stdev) for stdev in iteration_stdevs]
+        rounded_stdevs = [round(stdev, 3) for stdev in iteration_stdevs]
         print(rounded_stdevs, min(rounded_stdevs))
+        # print(sum(rounded_stdevs) / len(rounded_stdevs))
 
         # Exit function if solution is worse than all of previous N solutions.
         if len(partisanship_stdevs) > N:
@@ -75,7 +76,7 @@ def optimize_partisanship_stdev(communities, graph, animation_dir=None):
                     for precinct in c.precincts.values():
                         precinct.community = c.id
 
-                rounded_stdevs = [round(c.stdev, 3) for c in communities]
+                rounded_stdevs = [round(c.partisanship_stdev, 3) for c in communities]
                 print(rounded_stdevs, min(rounded_stdevs))
                 if animation_dir is not None:
                     draw_state(graph, animation_dir)
@@ -102,7 +103,7 @@ def optimize_partisanship_stdev(communities, graph, animation_dir=None):
                     for precinct in c.precincts.values():
                         precinct.community = c.id
 
-                rounded_stdevs = [round(c.stdev, 3) for c in communities]
+                rounded_stdevs = [round(c.partisanship_stdev, 3) for c in communities]
                 print(rounded_stdevs, min(rounded_stdevs))
                 if animation_dir is not None:
                     draw_state(graph, animation_dir)
@@ -115,7 +116,7 @@ def optimize_partisanship_stdev(communities, graph, animation_dir=None):
 
         giveable_precincts = get_giveable_precincts(
             graph, communities, community.id)
-        for precinct, other_community in giveable_precincts.items():
+        for precinct, other_community in giveable_precincts:
 
             starting_stdev = community.partisanship_stdev
 
@@ -127,10 +128,13 @@ def optimize_partisanship_stdev(communities, graph, animation_dir=None):
                     or community.partisanship_stdev > starting_stdev):
                 other_community.give_precinct(
                     community, precinct.id, update={"partisanship_stdev"})
+            else:
+                if animation_dir is not None:
+                    draw_state(graph, animation_dir)
         
         takeable_precincts = get_takeable_precincts(
             graph, communities, community.id)
-        for precinct, other_community in takeable_precincts.items():
+        for precinct, other_community in takeable_precincts:
             
             starting_stdev = community.partisanship_stdev
 
@@ -142,6 +146,9 @@ def optimize_partisanship_stdev(communities, graph, animation_dir=None):
                     or community.partisanship_stdev > starting_stdev):
                 community.give_precinct(
                     other_community, precinct.id, update={"partisanship_stdev"})
+            else:
+                if animation_dir is not None:
+                    draw_state(graph, animation_dir)
     
 if __name__ == "__main__":
 

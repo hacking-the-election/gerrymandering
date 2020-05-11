@@ -19,6 +19,8 @@ def average(values, weights=[]):
     :rtype: float
     """
 
+    values = [v if v is not None else 0 for v in values]
+
     if weights != []:
         if len(weights) != len(values):
             raise ValueError("There should be the same number of values as weights.")
@@ -43,6 +45,8 @@ def standard_deviation(values, weights=[]):
     :return: Standard deviation of `values`. Weighted by `weights` if given.
     :rtype: float
     """
+
+    values = [v if v is not None else 0 for v in values]
 
     if weights != []:
         weighted_average = average(values, weights)
