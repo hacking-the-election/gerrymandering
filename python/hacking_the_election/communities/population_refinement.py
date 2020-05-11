@@ -9,7 +9,6 @@ python3 -m hacking_the_election.communities.population_refinement <serialized_st
 from itertools import combinations
 import os
 import pickle
-import random
 import sys
 import time
 
@@ -72,8 +71,7 @@ def optimize_population(communities, graph, percentage, animation_dir=None):
 
     while not _check_communities_complete(communities, percentage):
 
-        # community = max(communities, key=lambda c: abs(c.population - ideal_population))
-        community = random.choice(communities)
+        community = max(communities, key=lambda c: abs(c.population - ideal_population))
 
         if community.population > ideal_population:
 
@@ -82,14 +80,12 @@ def optimize_population(communities, graph, percentage, animation_dir=None):
 
             while community.population > ideal_population:
                 
-                if giveable_precincts == {}:
+                if giveable_precincts == []:
                     giveable_precincts = get_giveable_precincts(
                         graph, communities, community.id)
 
-                precinct = random.choice(list(giveable_precincts.keys()))
-                other_community = giveable_precincts[precinct]
-                del giveable_precincts[precinct]
-                
+                precinct, other_community = giveable_precincts.pop(0)
+
                 community.give_precinct(
                     other_community, precinct.id, update={"population"})
                 if len(get_components(community.induced_subgraph)) > 1:
@@ -104,13 +100,11 @@ def optimize_population(communities, graph, percentage, animation_dir=None):
 
             while community.population < ideal_population:
 
-                if takeable_precincts == {}:
+                if takeable_precincts == []:
                     takeable_precincts = get_takeable_precincts(
                         graph, communities, community.id)
 
-                precinct = random.choice(list(takeable_precincts.keys()))
-                other_community = takeable_precincts[precinct]
-                del takeable_precincts[precinct]
+                precinct, other_community = takeable_precincts.pop(0)
 
                 other_community.give_precinct(
                     community, precinct.id, update={"population"})
@@ -129,7 +123,24 @@ if __name__ == "__main__":
 
     with open(sys.argv[1], "rb") as f:
         graph = pickle.load(f)
-    communities = create_initial_configuration(graph, int(sys.argv[2]))
+    # communities = create_initial_configuration(graph, int(sys.argv[2]))
+
+    # TO LOAD INIT CONFIG FROM TEXT FILE:
+
+    with open("test_vermont_init_config.txt", "r") as f:
+        precinct_list = eval(f.read())
+    communities = []
+
+    from hacking_the_election.utils.community import Community
+
+    for i, community in enumerate(precinct_list):
+        c = Community(i, graph)
+        for precinct_id in community:
+            for node in graph.nodes():
+                precinct = graph.node_attributes(node)[0]
+                if precinct.id == precinct_id:
+                    c.take_precinct(precinct)
+        communities.append(c)
 
     animation_dir = None if sys.argv[4] == "none" else sys.argv[4]
     if animation_dir is not None:

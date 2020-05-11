@@ -128,7 +128,7 @@ def optimize_compactness(communities, graph, animation_dir=None):
         
         # Give away precincts that are outside circle.
         giveable_precincts = get_giveable_precincts(graph, communities, community.id)
-        for precinct, other_community in giveable_precincts.items():
+        for precinct, other_community in giveable_precincts:
             if get_distance(precinct.centroid, center) > radius:
                 community.give_precinct(
                     other_community, precinct.id, update={"compactness"})
@@ -139,7 +139,7 @@ def optimize_compactness(communities, graph, animation_dir=None):
         
         # Take precincts inside that are inside circle.
         takeable_precincts = get_takeable_precincts(graph, communities, community.id)
-        for precinct, other_community in takeable_precincts.items():
+        for precinct, other_community in takeable_precincts:
             if get_distance(precinct.centroid, center) <= radius:
                 other_community.give_precinct(
                     community, precinct.id, update={"compactness"})
@@ -157,21 +157,24 @@ if __name__ == "__main__":
 
     with open(sys.argv[1], "rb") as f:
         graph = pickle.load(f)
-    # communities = create_initial_configuration(graph, int(sys.argv[2]))
-    with open("test_vermont_init_config.txt", "r") as f:
-        precinct_list = eval(f.read())
-    communities = []
+    communities = create_initial_configuration(graph, int(sys.argv[2]))
 
-    from hacking_the_election.utils.community import Community
+    # TO LOAD INIT CONFIG FROM TEXT FILE:
 
-    for i, community in enumerate(precinct_list):
-        c = Community(i, graph)
-        for precinct_id in community:
-            for node in graph.nodes():
-                precinct = graph.node_attributes(node)[0]
-                if precinct.id == precinct_id:
-                    c.take_precinct(precinct)
-        communities.append(c)
+    # with open("test_vermont_init_config.txt", "r") as f:
+    #     precinct_list = eval(f.read())
+    # communities = []
+
+    # from hacking_the_election.utils.community import Community
+
+    # for i, community in enumerate(precinct_list):
+    #     c = Community(i, graph)
+    #     for precinct_id in community:
+    #         for node in graph.nodes():
+    #             precinct = graph.node_attributes(node)[0]
+    #             if precinct.id == precinct_id:
+    #                 c.take_precinct(precinct)
+    #     communities.append(c)
 
     animation_dir = None if sys.argv[3] == "none" else sys.argv[3]
     if animation_dir is not None:
