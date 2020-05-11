@@ -47,7 +47,7 @@ namespace Graphics {
 
     // convert geometry shapes into styled outlines
     std::vector<Outline> to_outline(Geometry::State state);
-    std::vector<Outline> to_outline(Geometry::Graph graph);
+    std::vector<Outline> to_outline(Geometry::Graph& graph);
     std::vector<Outline> to_outline(Geometry::Communities& communities);
 
 

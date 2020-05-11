@@ -348,8 +348,8 @@ namespace Geometry {
         std::vector<Graph> get_components();
 
         // recursors for getting different data
-        void dfs_recursor(int v, std::vector<bool>& visited);
-        void dfs_recursor(int v, std::vector<bool>& visited, std::vector<int>* nodes);
+        void dfs_recursor(int v, std::map<int, bool>& visited);
+        void dfs_recursor(int v, std::map<int, bool>& visited, std::vector<int>* nodes);
 
         void add_node(Node node);
         void remove_node(int id);

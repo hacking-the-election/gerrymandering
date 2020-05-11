@@ -67,7 +67,7 @@ bool operator< (const EdgeWrapper& l1, const EdgeWrapper& l2) {
 void Community::update_shape(Graph& graph) {
     this->shape = Precinct_Group();    
     for (int i = 0; i < this->vertices.size(); i++) {
-        this->shape.add_precinct(*(vertices.begin() + i).value().precinct);
+        this->shape.add_precinct(*graph.vertices[(vertices.begin() + i).key()].precinct);
     }
 }
 
@@ -183,8 +183,13 @@ double get_compactness(Community& community) {
 
 void exchange_precinct(Graph& g, Communities& cs, int node_to_take, int community_to_take) {
     // moves a node from its community into `community_to_take`
-    cs[community_to_take].add_node(g.vertices[node_to_take]);
+    
+    if (remove_edges_to(cs[g.vertices[node_to_take].community], node_to_take).get_num_components() > 2) {
+        return;
+    }
+    
     cs[g.vertices[node_to_take].community].remove_node(node_to_take);
+    cs[community_to_take].add_node(g.vertices[node_to_take]);
     g.vertices[node_to_take].community = community_to_take;
 }
 
@@ -336,10 +341,6 @@ void optimize_compactness(Communities& communities, Graph& graph, double (*measu
     int iterations_since_best = 0;
     Communities best = communities;
 
-    Canvas canvas(900, 900);
-    canvas.add_outlines(to_outline(communities));
-    canvas.draw_to_window();
-
     while (iterations_since_best < ITERATION_LIMIT) {
         int smallest_index = 0;
         double smallest_measure = measure(communities[0]);
@@ -352,15 +353,15 @@ void optimize_compactness(Communities& communities, Graph& graph, double (*measu
             }
         }
 
+
         coordinate center = communities[smallest_index].shape.get_center();
         double radius = sqrt(communities[smallest_index].shape.get_area() / PI);
         int num_exchanged = 0;
-
         vector<array<int, 2> > giveable = get_giveable_precincts(graph, communities, smallest_index);
 
         for (array<int, 2> g : giveable) {
             if (!point_in_circle(center, radius, graph.vertices[g[0]].precinct->get_center())) {
-                // cout << "giving precinct " << g[0] << " to community " << g[1] << endl;
+                cout << "giving precinct " << g[0] << " to community " << g[1] << endl;
                 exchange_precinct(graph, communities, g[0], g[1]);
                 num_exchanged++;
 
@@ -376,11 +377,12 @@ void optimize_compactness(Communities& communities, Graph& graph, double (*measu
             if (point_in_circle(center, radius, graph.vertices[t].precinct->get_center())) {
                 cout << "taking precinct " << t << " for community " << smallest_index << endl;
                 exchange_precinct(graph, communities, t, smallest_index);
+                num_exchanged++;
+
 
                 // Canvas canvas(900, 900);
                 // canvas.add_outlines(to_outline(communities));
                 // canvas.save_img_to_anim(ImageFmt::BMP, "output");
-                num_exchanged++;
             }
         }
 
@@ -397,18 +399,14 @@ void optimize_compactness(Communities& communities, Graph& graph, double (*measu
             break;
         }
 
-        for (int i = 0; i < communities.size(); i++) {
-            communities[i].update_shape(graph);
-        }
-
         cout << average(communities, measure) << endl;
     }
 
     communities = best;
-    
-    // Canvas canvas(900, 900);
-    // canvas.add_outlines(to_outline(communities));
-    // canvas.draw_to_window();
+
+    Canvas canvas(900, 900);
+    canvas.add_outlines(to_outline(communities));
+    canvas.draw_to_window();
 
     cout << "did not improve after " << ITERATION_LIMIT << " iterations, returning..." << endl;
     cout << average(communities, measure) << endl;
@@ -579,14 +577,13 @@ Communities hte::Geometry::get_initial_configuration(Graph& graph, int n_communi
     srand(time(NULL));
     // Communities cs;
 
-    Communities cs = load("config.txt", graph);
-    // Communities cs = karger_stein(graph, n_communities);
+    // Communities cs = load("config.txt", graph);
+    Communities cs = karger_stein(graph, n_communities);
     
     for (int i = 0; i < cs.size(); i++) {
         cs[i].update_shape(graph);
     }
 
-    cout << "got init config." << endl;
     optimize_compactness(cs, graph, get_compactness);
     // optimize_population(graph, cs, 0.01);
 
