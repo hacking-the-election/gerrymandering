@@ -206,13 +206,15 @@ Graph hte::Geometry::remove_edges_to(Graph g, int id) {
     for (Edge edge : g.vertices[id].edges) {
         Edge remove = {edge[1], edge[0]};
 
-        g.vertices[edge[1]].edges.erase(
-            std::remove(g.vertices[edge[1]].edges.begin(),
-                g.vertices[edge[1]].edges.end(),
-                remove
-            ),
-            g.vertices[edge[1]].edges.end()
-        );
+        if (g.vertices.find(edge[1]) != g.vertices.end()) {
+            g.vertices[edge[1]].edges.erase(
+                std::remove(g.vertices[edge[1]].edges.begin(),
+                    g.vertices[edge[1]].edges.end(),
+                    remove
+                ),
+                g.vertices[edge[1]].edges.end()
+            );
+        }
     }
 
     g.vertices[id].edges.clear();
