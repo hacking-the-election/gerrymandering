@@ -4,7 +4,6 @@ Usage:
 python3 -m hacking_the_election.communities.population <serialized_state> <n_communities> <max_pop_percentage> (<animation_dir> | "none") <output_path>
 """
 
-from itertools import combinations
 import os
 import pickle
 import sys
@@ -34,9 +33,10 @@ def _check_communities_complete(communities, percentage):
     :rtype: bool
     """
 
-    for c1, c2 in combinations(communities, 2):
-        if (abs(c1.population - c2.population)
-                / average([c1.population, c2.population])) > (percentage / 200):
+    ideal_pop = average([c.population for c in communities])
+
+    for community in communities:
+        if abs(community.population - ideal_pop) / ideal_pop > (percentage / 200):
             return False
 
     return True

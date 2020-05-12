@@ -1,7 +1,7 @@
 """Refines a configuration of political communities in a state so that the standard deviation of the partisanships of the precincts inside of each of the communities is as low as possible.
 
 Usage:
-python3 -m hacking_the_election.communities.partisanship <serialized_state> <n_communities> (<animation_dir> | "none") <output_path>
+python3 -m hacking_the_election.communities.partisanship_stdev <serialized_state> <n_communities> (<animation_dir> | "none") <output_path>
 """
 
 import copy
@@ -65,7 +65,7 @@ def optimize_partisanship_stdev(communities, graph, animation_dir=None):
                     for c2 in communities:
                         if c.id == c2.id:
                             c2.precincts = c.precincts
-                            c2.update_partisanship_stdev
+                            c2.update_partisanship_stdev()
                 for c in communities:
                     for precinct in c.precincts.values():
                         precinct.community = c.id
@@ -94,7 +94,7 @@ def optimize_partisanship_stdev(communities, graph, animation_dir=None):
                     for c2 in communities:
                         if c.id == c2.id:
                             c2.precincts = c.precincts
-                            c2.update_partisanship_stdev
+                            c2.update_partisanship_stdev()
                 for c in communities:
                     for precinct in c.precincts.values():
                         precinct.community = c.id
