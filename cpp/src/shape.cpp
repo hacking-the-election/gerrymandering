@@ -50,35 +50,6 @@ int Geometry::Precinct_Group::get_population() {
 }
 
 
-void Geometry::Precinct_Group::remove_precinct(int pre) {
-
-    if (pre < 0 || pre >= precincts.size()) {
-        throw Geometry::Exceptions::PrecinctNotInGroup();
-        return;
-    }
-    else {
-        precincts.erase(precincts.begin() + pre);
-
-        ClipperLib::Paths subj;
-        for (Polygon shape : this->border)
-            subj.push_back(ring_to_path(shape.hull));
-
-        ClipperLib::Paths clip;
-        clip.push_back(ring_to_path(precincts[pre].hull));
-
-        ClipperLib::Paths solutions;
-        ClipperLib::Clipper c; // the executor
-
-        // execute union on paths array
-        c.AddPaths(subj, ClipperLib::ptSubject, true);
-        c.AddPaths(clip, ClipperLib::ptClip, true);
-        c.Execute(ClipperLib::ctDifference, solutions, ClipperLib::pftNonZero);
-
-        this->border = paths_to_multi_shape(solutions).border;
-    }
-}
-
-
 void Geometry::Precinct_Group::remove_precinct(Geometry::Precinct pre) {
     /*
         @desc: Removes a precinct from a Precinct Group and updates the border with a difference
@@ -93,23 +64,6 @@ void Geometry::Precinct_Group::remove_precinct(Geometry::Precinct pre) {
 
     if (std::find(precincts.begin(), precincts.end(), pre) != precincts.end()) {
         precincts.erase(std::remove(precincts.begin(), precincts.end(), pre), precincts.end());
-
-        ClipperLib::Paths subj;
-        for (Polygon shape : this->border)
-            subj.push_back(ring_to_path(shape.hull));
-
-        ClipperLib::Paths clip;
-        clip.push_back(ring_to_path(pre.hull));
-
-        ClipperLib::Paths solutions;
-        ClipperLib::Clipper c; // the executor
-
-        // execute union on paths array
-        c.AddPaths(subj, ClipperLib::ptSubject, true);
-        c.AddPaths(clip, ClipperLib::ptClip, true);
-        c.Execute(ClipperLib::ctDifference, solutions, ClipperLib::pftNonZero);
-
-        this->border = paths_to_multi_shape(solutions).border;
     }
     else {
         throw Geometry::Exceptions::PrecinctNotInGroup();

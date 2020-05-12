@@ -100,22 +100,21 @@ namespace Geometry {
 
     public: 
 
-        LinearRing() {};
+        LinearRing() : centroid({NULL, NULL}) {};
 
-        LinearRing(coordinate_set b) {
-            // if (b[0] != b[b.size() - 1])
-            //     throw Exceptions::LinearRingOpen();
-
+        LinearRing(coordinate_set b) : centroid({NULL, NULL}) {
+            // @warn: border may be invalid
             border = b;
         }
 
         coordinate_set border;
+        coordinate centroid;
 
         virtual double get_area();            // area of shape using shoelace theorem
         // virtual std::string to_svg();
         virtual std::string to_json();
         virtual double get_perimeter();       // sum distance of segments
-        virtual coordinate get_center();      // average of all points in shape
+        virtual coordinate get_centroid();      // average of all points in shape
         virtual segments get_segments();      // return a segment list with shape's segments
         virtual bounding_box get_bounding_box();
         // virtual coordinate get_representative_point();
@@ -138,42 +137,32 @@ namespace Geometry {
 
     public: 
 
-        Polygon(){}; // default constructor
+        Polygon() {}; // default constructor
 
-        Polygon(LinearRing shape) {
-            // no holes in shape
-            hull = shape;
-        }
+        Polygon(LinearRing hull)
+            : hull(hull) {}
 
         // overload constructor for adding id
-        Polygon(LinearRing shape, std::string id) {
-            hull = shape;
-            shape_id = id;
-        }
+        Polygon(LinearRing hull, std::string shape_id)
+            : hull(hull), shape_id(shape_id) {}
 
-        Polygon(LinearRing ext, std::vector<LinearRing> interior) {
-            hull = ext;
-            holes = interior;
-        }
+        Polygon(LinearRing hull, std::vector<LinearRing> holes) 
+            : hull(hull), holes(holes) {}
 
-        Polygon(LinearRing ext, std::vector<LinearRing> interior, std::string id) {
-            hull = ext;
-            holes = interior;
-            shape_id = id;
-        }
+        Polygon(LinearRing hull, std::vector<LinearRing> holes, std::string shape_id) 
+            : hull(hull), holes(holes), shape_id(shape_id) {}
 
 
         LinearRing hull;                      // array of coordinates - ext border
         std::vector<LinearRing> holes;        // array of holes in shape
         std::string shape_id;                 // the shape's ID, if applicable
-        
-        virtual std::string to_json();
 
+        virtual std::string to_json();
         // geometric methods, overwritten in Polygon class
 
         virtual double get_area();            // return (area of shape - area of holes)
         virtual double get_perimeter();       // total perimeter of holes + hull
-        virtual coordinate get_center();      // average centers of holes + hull
+        virtual coordinate get_centroid();      // average centers of holes + hull
         virtual segments get_segments();      // return a segment list with shape's segments
         virtual bounding_box get_bounding_box();
 
@@ -262,7 +251,7 @@ namespace Geometry {
         double get_perimeter();               // total perimeter of border array
         double get_area();                    // total area of the border shape array
 
-        coordinate get_center();              // total perimeter of border array
+        coordinate get_centroid();              // total perimeter of border array
         virtual segments get_segments();      // return a segment list with shape's segments
         virtual std::string to_json();       
 
@@ -295,12 +284,11 @@ namespace Geometry {
             std::vector<Precinct> precincts;
 
             virtual void remove_precinct(Precinct);
-            virtual void remove_precinct(int precint_index);
             virtual void add_precinct(Precinct);
             Precinct get_precinct_from_id(std::string);
 
             double get_area();
-            coordinate get_center();
+            coordinate get_centroid();
 
             int get_population();
             std::string to_json();
@@ -348,8 +336,8 @@ namespace Geometry {
         std::vector<Graph> get_components();
 
         // recursors for getting different data
-        void dfs_recursor(int v, std::vector<bool>& visited);
-        void dfs_recursor(int v, std::vector<bool>& visited, std::vector<int>* nodes);
+        void dfs_recursor(int v, std::map<int, bool>& visited);
+        void dfs_recursor(int v, std::map<int, bool>& visited, std::vector<int>* nodes);
 
         void add_node(Node node);
         void remove_node(int id);

@@ -52,17 +52,24 @@ vector<Outline> Graphics::to_outline(Geometry::State state) {
 }
 
 
-vector<Outline> Graphics::to_outline(Geometry::Graph graph) {
+vector<Outline> Graphics::to_outline(Geometry::Graph& graph) {
     vector<Outline> outlines;
 
     for (int i = 0; i < graph.vertices.size(); i++) {
         Node node = (graph.vertices.begin() + i).value();
+        Outline node_b(generate_gon(node.precinct->get_centroid(), 4000, 50).hull);
+        node_b.style().fill(RGB_Color(100, 100, 100)).thickness(1).outline(RGB_Color(0,0,0));
+
+        outlines.push_back(node_b);
+
         for (Edge edge : node.edges) {
-            coordinate start = graph.vertices[edge[0]].precinct->get_center();
-            coordinate end = graph.vertices[edge[1]].precinct->get_center();
-            Outline o(LinearRing({start, end}));
-            o.style().outline(RGB_Color(0,0,0)).thickness(2.0);
-            outlines.push_back(o);
+            if (graph.vertices.find(edge[1]) != graph.vertices.end()) {
+                coordinate start = graph.vertices[edge[0]].precinct->get_centroid();
+                coordinate end = graph.vertices[edge[1]].precinct->get_centroid();
+                Outline o(LinearRing({start, end}));
+                o.style().outline(RGB_Color(0,0,0)).thickness(1.0);
+                outlines.push_back(o);
+            }
         }
     }
 

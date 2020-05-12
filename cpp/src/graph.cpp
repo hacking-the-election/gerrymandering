@@ -57,7 +57,11 @@ std::vector<Graph> Graph::get_components() {
         @return: `vector<Geometry::Graph>` components subgraphs
     */
 
-    vector<bool> visited(vertices.size(), false);
+    map<int, bool> visited;
+    for (int i = 0; i < vertices.size(); i++) {
+        visited[(vertices.begin() + i).key()] = false;
+    }
+
     vector<Graph> components;
 
     for (int i = 0; i < vertices.size(); i++) {
@@ -78,7 +82,7 @@ std::vector<Graph> Graph::get_components() {
 }
 
 
-void Graph::dfs_recursor(int v, std::vector<bool>& visited, std::vector<int>* nodes) {
+void Graph::dfs_recursor(int v, std::map<int, bool>& visited, std::vector<int>* nodes) {
     /*
         @desc: recur seach for each adjacent node to index v
         
@@ -110,7 +114,11 @@ int Graph::get_num_components() {
         @return: `int` number of components
     */
 
-    vector<bool> visited(vertices.size(), false);
+    map<int, bool> visited;
+    for (int i = 0; i < vertices.size(); i++) {
+        visited.insert({(vertices.begin() + i).key(), false});
+    }
+
     int x = 0;
 
     for (int i = 0; i < vertices.size(); i++) {
@@ -124,7 +132,7 @@ int Graph::get_num_components() {
 }
 
 
-void Graph::dfs_recursor(int v, std::vector<bool>& visited) { 
+void Graph::dfs_recursor(int v, std::map<int, bool>& visited) { 
     /*
         @desc: recur seach for each adjacent node to index v
         
@@ -139,10 +147,12 @@ void Graph::dfs_recursor(int v, std::vector<bool>& visited) {
     visited[v] = true; 
     Node node = vertices[v];
 
-    for (int i = 0; i < node.edges.size(); i++) {
-        int t_id = node.edges[i][1];
-        if (!visited[t_id]) { 
-            dfs_recursor(t_id, visited);
+    for (Edge edge : node.edges) {
+        int t_id = edge[1];
+        if (visited.find(t_id) != visited.end()) {
+            if (!visited[t_id]) { 
+                dfs_recursor(t_id, visited);
+            }
         }
     }
 } 
@@ -198,13 +208,15 @@ Graph hte::Geometry::remove_edges_to(Graph g, int id) {
     for (Edge edge : g.vertices[id].edges) {
         Edge remove = {edge[1], edge[0]};
 
-        g.vertices[edge[1]].edges.erase(
-            std::remove(g.vertices[edge[1]].edges.begin(),
-                g.vertices[edge[1]].edges.end(),
-                remove
-            ),
-            g.vertices[edge[1]].edges.end()
-        );
+        if (g.vertices.find(edge[1]) != g.vertices.end()) {
+            g.vertices[edge[1]].edges.erase(
+                std::remove(g.vertices[edge[1]].edges.begin(),
+                    g.vertices[edge[1]].edges.end(),
+                    remove
+                ),
+                g.vertices[edge[1]].edges.end()
+            );
+        }
     }
 
     g.vertices[id].edges.clear();

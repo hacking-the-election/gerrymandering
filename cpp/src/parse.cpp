@@ -763,7 +763,7 @@ Graph generate_graph(Precinct_Group pg) {
             // add center of precinct to the map
             int key = (graph.vertices.begin() + i).key();
             Node pre = (graph.vertices[key]);
-            coordinate center = (graph.vertices.begin() + i).value().precinct->get_center();
+            coordinate center = (graph.vertices.begin() + i).value().precinct->get_centroid();
             centers.insert({key, center});
         }
 
@@ -934,6 +934,10 @@ State State::generate_from_file(string precinct_geoJSON, string district_geoJSON
     State state = State(district_shapes, pre_group.precincts, state_shape_v);
     Multi_Polygon sborder = generate_exterior_border(state);
     state.border = sborder.border;
+
+    Canvas canvas(900, 900);
+    canvas.add_outlines(to_outline(state));
+    canvas.draw_to_window();
 
     state.network = generate_graph(pre_group);
     if (VERBOSE) cout << "state serialized!" << endl;
