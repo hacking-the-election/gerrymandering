@@ -83,7 +83,6 @@ int Community::get_population() {
 
 void Community::remove_node(int id) {
     this->remove_edges_to(id);
-    cout << "remove precinct" << endl;
     this->shape.remove_precinct(*vertices[id].precinct);
     this->vertices.erase(id);
 }
@@ -191,7 +190,10 @@ double get_compactness(Community& community) {
 void exchange_precinct(Graph& g, Communities& cs, int node_to_take, int community_to_take) {
     // moves a node from its community into `community_to_take`
     
-    if (remove_edges_to(cs[g.vertices[node_to_take].community], node_to_take).get_num_components() > 2) {
+    if (cs[g.vertices[node_to_take].community].vertices.size() == 1) {
+        return;
+    }
+    else if (remove_edges_to(cs[g.vertices[node_to_take].community], node_to_take).get_num_components() > 2) {
         return;
     }
     
@@ -216,6 +218,7 @@ vector<int> get_takeable_precincts(Graph& g, Communities& c, int in) {
         }
     }
 
+    // sort takeable by respective xcoord
     return takeable;
 }
 
@@ -312,11 +315,11 @@ double average(Communities& communities, double (*measure)(Community&)) {
 //             }
 //         }
 
-//         coordinate center = communities[smallest_index].shape.get_center();
+//         coordinate center = communities[smallest_index].shape.get_centroid();
 //         double radius = sqrt(communities[smallest_index].shape.get_area() / PI);
 
 //         for (int i = 0; i < takeable.size(); i++) {
-//             if (point_in_circle(center, radius, graph.vertices[takeable[i]].precinct->get_center())) {
+//             if (point_in_circle(center, radius, graph.vertices[takeable[i]].precinct->get_centroid())) {
 //                 cout << "adding takeable precinct " << i << endl;
 //                 // communities[graph.vertices[takeable[i]].community].remove_node(graph.vertices[takeable[i]]);
 //             }
@@ -362,14 +365,13 @@ void optimize_compactness(Communities& communities, Graph& graph, double (*measu
         }
 
 
-        coordinate center = communities[smallest_index].shape.get_center();
+        coordinate center = communities[smallest_index].shape.get_centroid();
         double radius = sqrt(communities[smallest_index].shape.get_area() / PI);
         int num_exchanged = 0;
         vector<array<int, 2> > giveable = get_giveable_precincts(graph, communities, smallest_index);
 
         for (array<int, 2> g : giveable) {
-            if (!point_in_circle(center, radius, graph.vertices[g[0]].precinct->get_center())) {
-                cout << "giving precinct " << g[0] << " to community " << g[1] << endl;
+            if (!point_in_circle(center, radius, graph.vertices[g[0]].precinct->get_centroid())) {
                 exchange_precinct(graph, communities, g[0], g[1]);
                 num_exchanged++;
 
@@ -382,8 +384,7 @@ void optimize_compactness(Communities& communities, Graph& graph, double (*measu
         vector<int> takeable = get_takeable_precincts(graph, communities, smallest_index);
 
         for (int t : takeable) {
-            if (point_in_circle(center, radius, graph.vertices[t].precinct->get_center())) {
-                cout << "taking precinct " << t << " for community " << smallest_index << endl;
+            if (point_in_circle(center, radius, graph.vertices[t].precinct->get_centroid())) {
                 exchange_precinct(graph, communities, t, smallest_index);
                 num_exchanged++;
 
@@ -431,6 +432,7 @@ void optimize_population(Communities& communities, Graph& g, double range) {
     vector<int> pops = {communities[0].get_population()};
     int worst_index = 0;
     int worst_difference = abs(opt - pops[0]);
+    cout << " the optimal population is " << opt << endl; 
 
 
     for (int i = 1; i < communities.size(); i++) {
@@ -443,12 +445,12 @@ void optimize_population(Communities& communities, Graph& g, double range) {
 
     while (true) {
         // determine populations
-        cout << "starting iteration" << endl;
+        // cout << "current worst community is " << pops[worst_index] << endl;
         int x = 0;
 
         if (pops[worst_index] < opt) {
+            cout << "taking precincts to get to " << opt << endl;
             vector<int> take = get_takeable_precincts(g, communities, worst_index);
-
             while (communities[worst_index].get_population() < opt) {
                 if (x == take.size()) {
                     x = 0;
@@ -456,27 +458,32 @@ void optimize_population(Communities& communities, Graph& g, double range) {
                 }
 
                 exchange_precinct(g, communities, take[x], worst_index);
-                cout << "taking precinct " << take[x] << " for community " << worst_index << endl;
-                cout << communities[worst_index].get_population() << endl;
                 x++;
             }
+
+            Canvas canvas(900, 900);
+            canvas.add_outlines(to_outline(communities));
+            canvas.save_img_to_anim(ImageFmt::BMP, "output");
+
         }
         else {
+            cout << "giving precincts to get to " << opt << endl;
             vector<array<int, 2> > give = get_giveable_precincts(g, communities, worst_index);
-
             while (communities[worst_index].get_population() > opt) {
                 if (x == give.size()) {
                     x = 0;
                     give = get_giveable_precincts(g, communities, worst_index);
                 }
-
-                communities[worst_index].update_shape(g);
                 exchange_precinct(g, communities, give[x][0], give[x][1]);
-                cout << "giving precinct " << give[x][0] << " to community " << give[x][1] << endl;
-                // cout << communities[worst_index].get_population() << endl;
                 x++;
             }
+
+            Canvas canvas(900, 900);
+            canvas.add_outlines(to_outline(communities));
+            canvas.save_img_to_anim(ImageFmt::BMP, "output");
         }
+
+        cout << "updated worst with pop of " << communities[worst_index].get_population() << endl;
 
         pops.clear();
         pops = {communities[0].get_population()};
@@ -491,6 +498,7 @@ void optimize_population(Communities& communities, Graph& g, double range) {
                 worst_index = i;
             }
         }
+
 
         for (int i = 0; i < communities.size(); i++) {
             communities[i].update_shape(g);
