@@ -1,9 +1,7 @@
-"""
-Refines a configuration of political communities in a state so that
-they all have populations within a certain percent of each other.
+"""Refines a configuration of political communities in a state so that they all have populations within a certain percent of each other.
 
 Usage:
-python3 -m hacking_the_election.communities.population_refinement <serialized_state> <n_communities> <max_pop_percentage> (<animation_dir> | "none") <output_path>
+python3 -m hacking_the_election.communities.population <serialized_state> <n_communities> <max_pop_percentage> (<animation_dir> | "none") <output_path>
 """
 
 from itertools import combinations
@@ -123,24 +121,24 @@ if __name__ == "__main__":
 
     with open(sys.argv[1], "rb") as f:
         graph = pickle.load(f)
-    # communities = create_initial_configuration(graph, int(sys.argv[2]))
+    communities = create_initial_configuration(graph, int(sys.argv[2]))
 
     # TO LOAD INIT CONFIG FROM TEXT FILE:
 
-    with open("test_vermont_init_config.txt", "r") as f:
-        precinct_list = eval(f.read())
-    communities = []
+    # with open("test_vermont_init_config.txt", "r") as f:
+    #     precinct_list = eval(f.read())
+    # communities = []
 
-    from hacking_the_election.utils.community import Community
+    # from hacking_the_election.utils.community import Community
 
-    for i, community in enumerate(precinct_list):
-        c = Community(i, graph)
-        for precinct_id in community:
-            for node in graph.nodes():
-                precinct = graph.node_attributes(node)[0]
-                if precinct.id == precinct_id:
-                    c.take_precinct(precinct)
-        communities.append(c)
+    # for i, community in enumerate(precinct_list):
+    #     c = Community(i, graph)
+    #     for precinct_id in community:
+    #         for node in graph.nodes():
+    #             precinct = graph.node_attributes(node)[0]
+    #             if precinct.id == precinct_id:
+    #                 c.take_precinct(precinct)
+    #     communities.append(c)
 
     animation_dir = None if sys.argv[4] == "none" else sys.argv[4]
     if animation_dir is not None:

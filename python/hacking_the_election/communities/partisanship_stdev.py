@@ -1,10 +1,7 @@
-"""
-Refines a configuration of political communities in a state so that
-the standard deviation of the partisanships of the precincts inside
-of each of the communities is below a threshold.
+"""Refines a configuration of political communities in a state so that the standard deviation of the partisanships of the precincts inside of each of the communities is as low as possible.
 
 Usage:
-python3 -m hacking_the_election.communities.partisanship_refinement <serialized_state> <n_communities> (<animation_dir> | "none") <output_path>
+python3 -m hacking_the_election.communities.partisanship <serialized_state> <n_communities> (<animation_dir> | "none") <output_path>
 """
 
 import copy
@@ -153,6 +150,23 @@ if __name__ == "__main__":
         graph = pickle.load(f)
 
     communities = create_initial_configuration(graph, int(sys.argv[2]))
+
+    # TO LOAD INIT CONFIG FROM TEXT FILE:
+
+    # with open("test_vermont_init_config.txt", "r") as f:
+    #     precinct_list = eval(f.read())
+    # communities = []
+
+    # from hacking_the_election.utils.community import Community
+
+    # for i, community in enumerate(precinct_list):
+    #     c = Community(i, graph)
+    #     for precinct_id in community:
+    #         for node in graph.nodes():
+    #             precinct = graph.node_attributes(node)[0]
+    #             if precinct.id == precinct_id:
+    #                 c.take_precinct(precinct)
+    #     communities.append(c)
 
     animation_dir = None if sys.argv[3] == "none" else sys.argv[3]
     if animation_dir is not None:
