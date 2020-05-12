@@ -171,13 +171,13 @@ namespace Graphics {
         private:
             // update the canvas's pixel buffer
             // to be called by internal methods such as to_gui();
-            void rasterize();
             std::string get_svg();
             bool get_bmp(std::string write_path);
 
         public:
 
             bool to_date = true;
+            void rasterize();
 
             // contents of the canvas
             std::vector<Outline> outlines;     // shapes to be drawn individually

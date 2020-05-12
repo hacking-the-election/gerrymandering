@@ -116,7 +116,7 @@ int Graph::get_num_components() {
 
     map<int, bool> visited;
     for (int i = 0; i < vertices.size(); i++) {
-        visited[(vertices.begin() + i).key()] = false;
+        visited.insert({(vertices.begin() + i).key(), false});
     }
 
     int x = 0;
@@ -147,10 +147,12 @@ void Graph::dfs_recursor(int v, std::map<int, bool>& visited) {
     visited[v] = true; 
     Node node = vertices[v];
 
-    for (int i = 0; i < node.edges.size(); i++) {
-        int t_id = node.edges[i][1];
-        if (!visited[t_id]) { 
-            dfs_recursor(t_id, visited);
+    for (Edge edge : node.edges) {
+        int t_id = edge[1];
+        if (visited.find(t_id) != visited.end()) {
+            if (!visited[t_id]) { 
+                dfs_recursor(t_id, visited);
+            }
         }
     }
 } 
