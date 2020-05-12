@@ -26,10 +26,11 @@ class Community:
 
         self.precincts = {}  # Dict maps node ids (in graph) to precinct objects.
         self.coords = Polygon()  # Geometric shape of the community.
-        self.partisanship = 0
+        self.partisanship = []
         self.partisanship_stdev = 0
         self.compactness = 0
         self.population = 0
+        self.population_stdev = 0
 
         self.induced_subgraph = Graph()
         self.state_graph = state_graph
@@ -73,6 +74,12 @@ class Community:
         """Update the population attribute for this community.
         """
         self.population = sum([p.pop for p in self.precincts.values()])
+
+    def update_population_stdev(self):
+        """Update the population_stdev attribute for this community.
+        """
+        self.population_stdev = \
+            standard_deviation([p.pop for p in self.precincts.values()])
 
     def take_precinct(self, precinct, update=set()):
         """Adds a precinct to this community.
