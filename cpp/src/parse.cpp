@@ -763,7 +763,7 @@ Graph generate_graph(Precinct_Group pg) {
             // add center of precinct to the map
             int key = (graph.vertices.begin() + i).key();
             Node pre = (graph.vertices[key]);
-            coordinate center = (graph.vertices.begin() + i).value().precinct->get_center();
+            coordinate center = (graph.vertices.begin() + i).value().precinct->get_centroid();
             centers.insert({key, center});
         }
 

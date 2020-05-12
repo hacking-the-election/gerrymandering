@@ -244,7 +244,7 @@ segments Geometry::Multi_Polygon::get_segments() {
 }
 
 
-coordinate Geometry::LinearRing::get_center() {
+coordinate Geometry::LinearRing::get_centroid() {
     /* 
         @desc: Gets the centroid of a polygon with coords
         @ref: https://en.wikipedia.org/wiki/Centroid#Centroid_of_polygon
@@ -252,25 +252,27 @@ coordinate Geometry::LinearRing::get_center() {
         @return: coordinate of centroid
     */
 
-    long int Cx = 0, Cy = 0;
+    if (centroid[0] != NULL) {
+        long int Cx = 0, Cy = 0;
 
-    if (border[0] != border[border.size() - 1])
-        border.push_back(border[0]);
+        if (border[0] != border[border.size() - 1])
+            border.push_back(border[0]);
 
-    for (int i = 0; i < border.size() - 1; i++) {
-        long int x1 = border[i][0];
-        long int y1 = border[i][1];
-        long int x2 = border[i + 1][0];
-        long int y2 = border[i + 1][1];
+        for (int i = 0; i < border.size() - 1; i++) {
+            long int x1 = border[i][0];
+            long int y1 = border[i][1];
+            long int x2 = border[i + 1][0];
+            long int y2 = border[i + 1][1];
 
-        Cx += (x1 + x2) * ((x1 * y2) - (x2 * y1));
-        Cy += (y1 + y2) * ((x1 * y2) - (x2 * y1));
+            Cx += (x1 + x2) * ((x1 * y2) - (x2 * y1));
+            Cy += (y1 + y2) * ((x1 * y2) - (x2 * y1));
+        }
+
+        centroid[0] = (long int) round(1.0 / (6.0 * this->get_area()) * (double) Cx);
+        centroid[1] = (long int) round(1.0 / (6.0 * this->get_area()) * (double) Cy);
     }
 
-    Cx = round(1.0 / (6.0 * this->get_area()) * (double) Cx);
-    Cy = round(1.0 / (6.0 * this->get_area()) * (double) Cy);
-
-    return {Cx, Cy};
+    return centroid;
 }
 
 
@@ -314,34 +316,25 @@ double Geometry::LinearRing::get_perimeter() {
 }
 
 
-coordinate Geometry::Polygon::get_center() {
+coordinate Geometry::Polygon::get_centroid() {
     /*
         @desc:
             returns average centroid from list of `holes`
-            and `hull` by calling `LinearRing::get_center`
+            and `hull` by calling `LinearRing::get_centroid`
 
         @params: none
         @return: `coordinate` average centroid of shape
     */
 
-    coordinate center = hull.get_center();
-
-    for (Geometry::LinearRing lr : holes) {
-        coordinate nc = lr.get_center();
-        center[0] += nc[0];
-        center[1] += nc[1];
-    }
-
-    int size = 1 + holes.size();
-    return {center[0] / size, center[1] / size};
+    return (hull.get_centroid());
 }
 
 
-coordinate Geometry::Multi_Polygon::get_center() {
+coordinate Geometry::Multi_Polygon::get_centroid() {
     /*
         @desc:
             returns average centroid from list of `holes`
-            and `hull` by calling `LinearRing::get_center`
+            and `hull` by calling `LinearRing::get_centroid`
 
         @params: none
         @return: `coordinate` average centroid of shape
@@ -350,10 +343,10 @@ coordinate Geometry::Multi_Polygon::get_center() {
     coordinate average = {0,0};
 
     for (Polygon s : border) {
-        coordinate center = s.hull.get_center();
+        coordinate center = s.hull.get_centroid();
 
         for (Geometry::LinearRing lr : s.holes) {
-            coordinate nc = lr.get_center();
+            coordinate nc = lr.get_centroid();
             center[0] += nc[0];
             center[1] += nc[1];
         }
@@ -367,11 +360,11 @@ coordinate Geometry::Multi_Polygon::get_center() {
 }
 
 
-coordinate Geometry::Precinct_Group::get_center() {
+coordinate Geometry::Precinct_Group::get_centroid() {
     /*
         @desc:
             returns average centroid from list of `holes`
-            and `hull` by calling `LinearRing::get_center`
+            and `hull` by calling `LinearRing::get_centroid`
 
         @params: none
         @return: `coordinate` average centroid of shape
@@ -380,7 +373,7 @@ coordinate Geometry::Precinct_Group::get_center() {
     coordinate average = {0,0};
 
     for (Precinct s : precincts) {
-        coordinate center = s.hull.get_center();
+        coordinate center = s.hull.get_centroid();
         average[0] += center[0];
         average[1] += center[1];
     }

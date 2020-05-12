@@ -168,7 +168,7 @@ void State::generate_initial_communities(int num_communities) {
             array<long long int, 2> island_center = {0,0};
 
             for (int p : island) {
-                coordinate p_center = precincts[p].get_center();
+                coordinate p_center = precincts[p].get_centroid();
                 island_center[0] += p_center[0];
                 island_center[1] += p_center[1];
             }
@@ -220,7 +220,7 @@ void State::generate_initial_communities(int num_communities) {
                         array<long long int, 2> island_center_c = {0,0};  
 
                         for (int p : island_c) {
-                            coordinate p_center = precincts[p].get_center();
+                            coordinate p_center = precincts[p].get_centroid();
                             island_center_c[0] += p_center[0];
                             island_center_c[1] += p_center[1];
                         }
@@ -260,7 +260,7 @@ void State::generate_initial_communities(int num_communities) {
                     do {
                         for (int p : get_inner_boundary_precincts(islands[fractional_islands[min_index]], *this)) {
                         // for (int p : islands[fractional_islands[min_index]]) {
-                            array<long long int, 2> p_center = {(long long int) precincts[p].get_center()[0], (long long int) precincts[p].get_center()[1]};
+                            array<long long int, 2> p_center = {(long long int) precincts[p].get_centroid()[0], (long long int) precincts[p].get_centroid()[1]};
                             double dist = get_distance(p_center, island_center);
 
                             if (dist < min_p_distance && (std::find(ignore_p.begin(), ignore_p.end(), p) == ignore_p.end())) {
@@ -284,7 +284,7 @@ void State::generate_initial_communities(int num_communities) {
 
                 do {
                     for (int p : get_inner_boundary_precincts(islands[fractional_islands[n_fractional_island_i]], *this)) {
-                        array<long long int, 2> p_center = {(long long int) precincts[p].get_center()[0], (long long int) precincts[p].get_center()[1]};
+                        array<long long int, 2> p_center = {(long long int) precincts[p].get_centroid()[0], (long long int) precincts[p].get_centroid()[1]};
                         double distc = get_distance(p_center, min_island_center);
 
                         if (distc < min_p_distance && (std::find(ignore_p.begin(), ignore_p.end(), p) == ignore_p.end())) {
@@ -722,7 +722,7 @@ void State::refine_compactness(double compactness_tolerance) {
 
     while (!is_done) {
         Polygon circle;
-        coordinate center = state_communities[worst_community].get_center();
+        coordinate center = state_communities[worst_community].get_centroid();
         circle = generate_gon(center, sqrt(state_communities[worst_community].get_area() / PI), 30);
         std::vector<int> giveable = get_inner_boundary_precincts(state_communities[worst_community]);
 
