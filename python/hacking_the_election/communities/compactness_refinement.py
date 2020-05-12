@@ -52,9 +52,10 @@ def optimize_compactness(communities, graph, animation_dir=None):
     if animation_dir is not None:
         draw_state(graph, animation_dir)
 
-    # The compactness of the least compact community after each iteration.
-    compactnesses = []
-    community_states = []
+    best_communities = [copy.copy(c) for c in communities]
+    last_communities = []
+    iterations_since_best = 0
+    
     while True:
 
         # Find least compact community.
@@ -64,16 +65,15 @@ def optimize_compactness(communities, graph, animation_dir=None):
         min_compactness = min(iteration_compactnesses)
         print(rounded_compactnesses, min(rounded_compactnesses))
 
-        # Exit function if solution is worse than all of previous N solutions.
-        if len(compactnesses) > N:
-            return_ = True
-            for compactness in compactnesses[-N:]:
-                if min_compactness > compactness:
-                    return_ = False
-            if return_:
+        # Exit function if algorithm hasn't found new best solution in
+        # the last `N` iterations.
+        if min_compactness > min([c.compactness for c in best_communities]):
+
+            iterations_since_best += 1
+
+            if iterations_since_best >= N:
+
                 # Revert to best community state.
-                best_communities = \
-                    community_states[compactnesses.index(max(compactnesses))]
                 for c in best_communities:
                     for c2 in communities:
                         if c.id == c2.id:
@@ -88,18 +88,20 @@ def optimize_compactness(communities, graph, animation_dir=None):
                 if animation_dir is not None:
                     draw_state(graph, animation_dir)
                 return
+
+        else:
+            best_communities = [copy.copy(c) for c in communities]
+            iterations_since_best = 0
         
-        if compactnesses != []:
+        if last_communities != []:
             # Check if anything changed. If not, exit the function.
             current_communities = set(tuple(p.id for p in c.precincts.values())
                 for c in communities)
             last_communities = set(tuple(p.id for p in c.precincts.values())
-                for c in community_states[-1])
+                for c in last_communities)
             if current_communities == last_communities:
 
                 # Revert to best community state.
-                best_communities = \
-                    community_states[compactnesses.index(max(compactnesses))]
                 for c in best_communities:
                     for c2 in communities:
                         if c.id == c2.id:
@@ -114,10 +116,8 @@ def optimize_compactness(communities, graph, animation_dir=None):
                     draw_state(graph, animation_dir)
                 return
 
-        compactnesses.append(min_compactness)
         # Not deepcopy so that precinct objects are not copied (saves memory).
-        communities_copy = [copy.copy(c) for c in communities]
-        community_states.append(communities_copy)
+        last_communities = [copy.copy(c) for c in communities]
         
         # Get area of district.
         community_precinct_coords = \

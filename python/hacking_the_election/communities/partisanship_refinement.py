@@ -44,34 +44,31 @@ def optimize_partisanship_stdev(communities, graph, animation_dir=None):
     if animation_dir is not None:
         draw_state(graph, animation_dir)
 
-    partisanship_stdevs = []  # Worst partisanship stdev after each iteration.
-    community_states = []  # Community objects after each iteration.
+    best_communities = [copy.copy(c) for c in communities]
+    last_communities = []
+    iterations_since_best = 0
 
     while True:
         
         # Find most diverse community.
         community = max(communities, key=lambda c: c.partisanship_stdev)
         iteration_stdevs = [c.partisanship_stdev for c in communities]
-        min_stdev = min(iteration_stdevs)
+        max_stdev = max(iteration_stdevs)
         rounded_stdevs = [round(stdev, 3) for stdev in iteration_stdevs]
-        print(rounded_stdevs, min(rounded_stdevs))
-        # print(sum(rounded_stdevs) / len(rounded_stdevs))
+        print(rounded_stdevs, max(rounded_stdevs))
 
-        # Exit function if solution is worse than all of previous N solutions.
-        if len(partisanship_stdevs) > N:
-            return_ = True
-            for stdev in partisanship_stdevs[-N:]:
-                if min_stdev > stdev:
-                    return_ = False
-            if return_:
+        # Exit function if algorithm hasn't found new best solution in
+        # the last `N` iterations.
+        if max_stdev > max([c.partisanship_stdev for c in best_communities]):
+            iterations_since_best += 1
+            if iterations_since_best >= N:
+
                 # Revert to best community state.
-                best_communities = \
-                    community_states[partisanship_stdevs.index(max(partisanship_stdevs))]
                 for c in best_communities:
                     for c2 in communities:
                         if c.id == c2.id:
                             c2.precincts = c.precincts
-                            c2.update_partisanship_stdev()
+                            c2.update_partisanship_stdev
                 for c in communities:
                     for precinct in c.precincts.values():
                         precinct.community = c.id
@@ -80,20 +77,22 @@ def optimize_partisanship_stdev(communities, graph, animation_dir=None):
                 print(rounded_stdevs, min(rounded_stdevs))
                 if animation_dir is not None:
                     draw_state(graph, animation_dir)
+
+                # Exit the function.
                 return
-        
-        if partisanship_stdevs != []:
+        else:
+            best_communities = [copy.copy(c) for c in communities]
+            iterations_since_best = 0
+
+        if last_communities != []:
             # Check if anything changed. If not, exit the function.
             current_communities = set(tuple(p.id for p in c.precincts.values())
                 for c in communities)
             last_communities = set(tuple(p.id for p in c.precincts.values())
-                for c in community_states[-1])
+                for c in last_communities)
             if current_communities == last_communities:
 
                 # Revert to best community state.
-                best_communities = \
-                    community_states[partisanship_stdevs.index(
-                        min(partisanship_stdevs))]
                 for c in best_communities:
                     for c2 in communities:
                         if c.id == c2.id:
@@ -109,10 +108,8 @@ def optimize_partisanship_stdev(communities, graph, animation_dir=None):
                     draw_state(graph, animation_dir)
                 return
 
-        partisanship_stdevs.append(min_stdev)
         # Not deepcopy so that precinct objects are not copied (saves memory).
-        communities_copy = [copy.copy(c) for c in communities]
-        community_states.append(communities_copy)
+        last_communities = [copy.copy(c) for c in communities]
 
         giveable_precincts = get_giveable_precincts(
             graph, communities, community.id)
