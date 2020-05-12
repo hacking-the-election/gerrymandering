@@ -252,7 +252,7 @@ coordinate Geometry::LinearRing::get_centroid() {
         @return: coordinate of centroid
     */
 
-    if (centroid[0] != NULL) {
+    if (centroid[0] == NULL) {
         long int Cx = 0, Cy = 0;
 
         if (border[0] != border[border.size() - 1])

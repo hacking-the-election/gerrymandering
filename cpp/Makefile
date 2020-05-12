@@ -23,7 +23,7 @@ LIBS := $(BOOST) $(SDL)
 
 
 .SECONDARY: $(STATE_OBJECTS)
-all: generate_communities# serialize_state
+all: generate_communities
 
 #====================================
 # Binary targets for end compilations
