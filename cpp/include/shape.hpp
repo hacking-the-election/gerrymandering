@@ -294,8 +294,7 @@ namespace Geometry {
             // array of precinct objects
             std::vector<Precinct> precincts;
 
-            virtual void remove_precinct(Precinct);
-            virtual void remove_precinct(int precint_index);
+ad            virtual void remove_precinct(Precinct);
             virtual void add_precinct(Precinct);
             Precinct get_precinct_from_id(std::string);
 

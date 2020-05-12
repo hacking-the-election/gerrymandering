@@ -83,6 +83,7 @@ int Community::get_population() {
 
 void Community::remove_node(int id) {
     this->remove_edges_to(id);
+    cout << "remove precinct" << endl;
     this->shape.remove_precinct(*vertices[id].precinct);
     this->vertices.erase(id);
 }
@@ -90,6 +91,12 @@ void Community::remove_node(int id) {
 
 void Community::add_node(Node& node) {
     this->vertices.insert({node.id, node});
+    for (Edge edge : node.edges) {
+        if (vertices.find(edge[1]) != vertices.end()) {
+            this->add_edge(edge);
+        }
+    }
+
     this->shape.add_precinct(*node.precinct);
 }
 
@@ -188,6 +195,7 @@ void exchange_precinct(Graph& g, Communities& cs, int node_to_take, int communit
         return;
     }
     
+    // cout << "removex node" << endl;
     cs[g.vertices[node_to_take].community].remove_node(node_to_take);
     cs[community_to_take].add_node(g.vertices[node_to_take]);
     g.vertices[node_to_take].community = community_to_take;
@@ -418,7 +426,7 @@ void optimize_population(Communities& communities, Graph& g, double range) {
     // find optimal populations
     range /= 2.0;
     int opt = get_population(communities) / communities.size();
-    int bounds[2] = {opt - (range * (double)opt), opt + (range * (double)opt)};
+    int bounds[2] = {(int)(opt - (range * (double)opt)), (int)(opt + (range * (double)opt))};
 
     vector<int> pops = {communities[0].get_population()};
     int worst_index = 0;
@@ -427,7 +435,7 @@ void optimize_population(Communities& communities, Graph& g, double range) {
 
     for (int i = 1; i < communities.size(); i++) {
         pops.push_back(communities[i].get_population());
-        if (abs(opt - pops[i] > worst_difference)) {
+        if (abs(opt - pops[i]) > worst_difference) {
             worst_difference = abs(opt - pops[i]);
             worst_index = i;
         }
@@ -435,20 +443,37 @@ void optimize_population(Communities& communities, Graph& g, double range) {
 
     while (true) {
         // determine populations
+        cout << "starting iteration" << endl;
         int x = 0;
 
         if (pops[worst_index] < opt) {
             vector<int> take = get_takeable_precincts(g, communities, worst_index);
 
-            while (communities[worst_index].get_population() < opt && x < take.size()) {
+            while (communities[worst_index].get_population() < opt) {
+                if (x == take.size()) {
+                    x = 0;
+                    take = get_takeable_precincts(g, communities, worst_index);
+                }
+
                 exchange_precinct(g, communities, take[x], worst_index);
+                cout << "taking precinct " << take[x] << " for community " << worst_index << endl;
+                cout << communities[worst_index].get_population() << endl;
                 x++;
             }
         }
         else {
             vector<array<int, 2> > give = get_giveable_precincts(g, communities, worst_index);
-            while (communities[worst_index].get_population() > opt && x < give.size()) {
+
+            while (communities[worst_index].get_population() > opt) {
+                if (x == give.size()) {
+                    x = 0;
+                    give = get_giveable_precincts(g, communities, worst_index);
+                }
+
+                communities[worst_index].update_shape(g);
                 exchange_precinct(g, communities, give[x][0], give[x][1]);
+                cout << "giving precinct " << give[x][0] << " to community " << give[x][1] << endl;
+                // cout << communities[worst_index].get_population() << endl;
                 x++;
             }
         }
@@ -461,11 +486,18 @@ void optimize_population(Communities& communities, Graph& g, double range) {
 
         for (int i = 1; i < communities.size(); i++) {
             pops.push_back(communities[i].get_population());
-            if (abs(opt - pops[i] > worst_difference)) {
+            if (abs(opt - pops[i]) > worst_difference) {
                 worst_difference = abs(opt - pops[i]);
                 worst_index = i;
             }
         }
+
+        for (int i = 0; i < communities.size(); i++) {
+            communities[i].update_shape(g);
+        }
+
+        for (int pop : pops) cout << pop << ", ";
+        cout << endl;
 
         if (worst_difference < (int)(range * (double)opt)) {
             cout << "got it bois!" << endl;

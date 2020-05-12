@@ -57,8 +57,9 @@ vector<Outline> Graphics::to_outline(Geometry::Graph& graph) {
 
     for (int i = 0; i < graph.vertices.size(); i++) {
         Node node = (graph.vertices.begin() + i).value();
-        Outline node_b(generate_gon(node.precinct->get_center(), 1000, 50).hull);
-        node_b.style().fill(RGB_Color(50, 50, 50)).thickness(1).outline(RGB_Color(0,0,0));
+        Outline node_b(generate_gon(node.precinct->get_center(), 4000, 50).hull);
+        node_b.style().fill(RGB_Color(100, 100, 100)).thickness(1).outline(RGB_Color(0,0,0));
+
         outlines.push_back(node_b);
 
         for (Edge edge : node.edges) {
