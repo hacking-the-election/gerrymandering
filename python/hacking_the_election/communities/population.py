@@ -6,6 +6,7 @@ python3 -m hacking_the_election.communities.population <serialized_state> <n_com
 
 import os
 import pickle
+import random
 import sys
 import time
 
@@ -75,12 +76,14 @@ def optimize_population(communities, graph, percentage, animation_dir=None):
 
             giveable_precincts = get_giveable_precincts(
                 graph, communities, community.id)
+            random.shuffle(giveable_precincts)
 
             while community.population > ideal_population:
                 
                 if giveable_precincts == []:
                     giveable_precincts = get_giveable_precincts(
                         graph, communities, community.id)
+                    random.shuffle(giveable_precincts)
 
                 precinct, other_community = giveable_precincts.pop(0)
 
@@ -95,12 +98,14 @@ def optimize_population(communities, graph, percentage, animation_dir=None):
 
             takeable_precincts = get_takeable_precincts(
                 graph, communities, community.id)
+            random.shuffle(takeable_precincts)
 
             while community.population < ideal_population:
 
                 if takeable_precincts == []:
                     takeable_precincts = get_takeable_precincts(
                         graph, communities, community.id)
+                    random.shuffle(takeable_precincts)
 
                 precinct, other_community = takeable_precincts.pop(0)
 
