@@ -681,7 +681,7 @@ Communities karger_stein(Graph& g1, int n_communities) {
 }
 
 
-Communities hte::Geometry::get_initial_configuration(Graph& graph, int n_communities) {
+Communities hte::Geometry::get_communities(Graph& graph, int n_communities) {
     /*
         @desc: determines a random list of community objects
 

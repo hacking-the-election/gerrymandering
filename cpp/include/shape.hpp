@@ -100,9 +100,9 @@ namespace Geometry {
 
     public: 
 
-        LinearRing() : centroid({NULL, NULL}) {};
+        LinearRing() : centroid({{NULL, NULL}}) {};
 
-        LinearRing(coordinate_set b) : centroid({NULL, NULL}) {
+        LinearRing(coordinate_set b) : centroid({{NULL, NULL}}) {
             // @warn: border may be invalid
             border = b;
         }

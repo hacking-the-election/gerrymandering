@@ -30,16 +30,16 @@ int main(int argc, char* argv[]) {
         See community.cpp for the implementation of the algorithm
     */
 
-    // if (argc != 3) {
-    //     cerr << "generate_communities: usage: <state.dat> <data_dir>" << endl;
-    //     return 1;
-    // }
+    if (argc != 3) {
+        cerr << "generate_communities: usage: <state.dat> num_communities" << endl;
+        return 1;
+    }
 
     // read binary file from path
     string read_path = string(argv[1]);
     State state = State::from_binary(read_path);
     int n_communities = stoi(string(argv[2]));
 
-    Communities s = get_initial_configuration(state.network, n_communities);
+    Communities s = get_communities(state.network, n_communities);
     return 0;
 }
