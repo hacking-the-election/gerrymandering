@@ -145,7 +145,8 @@ bool Geometry::operator!= (const Geometry::Multi_Polygon& s1, const Geometry::Mu
 
 
 bool Geometry::operator< (const Node& l1, const Node& l2) {
-    return (l1.edges.size() < l2.edges.size());
+    // return (l1.edges.size() < l2.edges.size());
+    return (l1.precinct->get_centroid()[0] < l2.precinct->get_centroid()[0]);
 }
 
 
