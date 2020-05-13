@@ -91,7 +91,6 @@ class Community:
             for precinct in self.precincts.values():
                 precinct_percentages.append(percentage_func(precinct))
             party_stdevs.append(standard_deviation(precinct_percentages))
-        print(party_stdevs)
         self.partisanship_stdev = average(party_stdevs)
 
     def update_compactness(self):

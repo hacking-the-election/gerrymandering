@@ -11,11 +11,13 @@ import sys
 
 from hacking_the_election.communities.initial_configuration import \
     create_initial_configuration
+from hacking_the_election.utils.exceptions import LoopBreakException
 from hacking_the_election.utils.graph import (
     get_components,
     get_giveable_precincts,
     get_takeable_precincts
 )
+from hacking_the_election.utils.stats import average
 from hacking_the_election.visualization.misc import draw_state
 
 
@@ -50,13 +52,13 @@ def optimize_partisanship_stdev(communities, graph, animation_dir=None):
         # Find most diverse community.
         community = max(communities, key=lambda c: c.partisanship_stdev)
         iteration_stdevs = [c.partisanship_stdev for c in communities]
-        max_stdev = max(iteration_stdevs)
-        rounded_stdevs = [round(stdev, 3) for stdev in iteration_stdevs]
-        print(rounded_stdevs, max(rounded_stdevs))
+        avg_stdev = average(iteration_stdevs)
+        rounded_stdevs = [round(c.partisanship_stdev, 3) for c in communities]
+        print(rounded_stdevs, round(avg_stdev, 3))
 
         # Exit function if algorithm hasn't found new best solution in
         # the last `N` iterations.
-        if max_stdev > max([c.partisanship_stdev for c in best_communities]):
+        if avg_stdev > average([c.partisanship_stdev for c in best_communities]):
             iterations_since_best += 1
             if iterations_since_best >= N:
 
@@ -71,10 +73,11 @@ def optimize_partisanship_stdev(communities, graph, animation_dir=None):
                         precinct.community = c.id
 
                 rounded_stdevs = [round(c.partisanship_stdev, 3) for c in communities]
-                print(rounded_stdevs, min(rounded_stdevs))
+                avg_stdev = average([c.partisanship_stdev for c in communities])
+                print(rounded_stdevs, round(avg_stdev, 3))
                 if animation_dir is not None:
                     draw_state(graph, animation_dir)
-
+                draw_state(graph, "test_communities")
                 # Exit the function.
                 return
         else:
@@ -83,11 +86,19 @@ def optimize_partisanship_stdev(communities, graph, animation_dir=None):
 
         if last_communities != []:
             # Check if anything changed. If not, exit the function.
-            current_communities = set(tuple(p.id for p in c.precincts.values())
-                for c in communities)
-            last_communities = set(tuple(p.id for p in c.precincts.values())
-                for c in last_communities)
-            if current_communities == last_communities:
+
+            changed = False
+            try:
+                for c in communities:
+                    for c2 in last_communities:
+                        if c.id == c2.id:
+                            if c.precincts != c2.precincts:
+                                changed = True
+                                raise LoopBreakException
+            except LoopBreakException:
+                pass
+
+            if not changed:
 
                 # Revert to best community state.
                 for c in best_communities:
@@ -100,9 +111,11 @@ def optimize_partisanship_stdev(communities, graph, animation_dir=None):
                         precinct.community = c.id
 
                 rounded_stdevs = [round(c.partisanship_stdev, 3) for c in communities]
-                print(rounded_stdevs, min(rounded_stdevs))
+                avg_stdev = average([c.partisanship_stdev for c in communities])
+                print(rounded_stdevs, round(avg_stdev, 3))
                 if animation_dir is not None:
                     draw_state(graph, animation_dir)
+                draw_state(graph, "test_communities")
                 return
 
         # Not deepcopy so that precinct objects are not copied (saves memory).
