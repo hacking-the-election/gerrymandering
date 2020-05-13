@@ -1,9 +1,7 @@
-"""
-Refines a configuration of political communities in a state so that
-they all have Schwartzberg compactness scores above a certain threshold.
+"""Refines a configuration of political communities in a state so that their Reock compactness score is as low as possible.
 
 Usage:
-python3 -m hacking_the_election.communities.compactness_refinement <serialized_state> <n_communities> (<animation_dir> | "none") <output_path>
+python3 -m hacking_the_election.communities.compactness <serialized_state> <n_communities> (<animation_dir> | "none") <output_path>
 """
 
 import copy
@@ -17,6 +15,7 @@ from shapely.geometry import MultiPolygon, Point
 
 from hacking_the_election.communities.initial_configuration import \
     create_initial_configuration
+from hacking_the_election.utils.exceptions import LoopBreakException
 from hacking_the_election.utils.geometry import get_compactness, get_distance
 from hacking_the_election.utils.graph import (
     get_components,
@@ -24,10 +23,6 @@ from hacking_the_election.utils.graph import (
     get_takeable_precincts
 )
 from hacking_the_election.visualization.misc import draw_state
-
-# TMP
-from hacking_the_election.visualization.map_visualization import visualize_map
-from hacking_the_election.utils.visualization import COLORS, get_next_file_path
 
 
 N = 40
@@ -52,9 +47,10 @@ def optimize_compactness(communities, graph, animation_dir=None):
     if animation_dir is not None:
         draw_state(graph, animation_dir)
 
-    # The compactness of the least compact community after each iteration.
-    compactnesses = []
-    community_states = []
+    best_communities = [copy.copy(c) for c in communities]
+    last_communities = []
+    iterations_since_best = 0
+    
     while True:
 
         # Find least compact community.
@@ -64,16 +60,15 @@ def optimize_compactness(communities, graph, animation_dir=None):
         min_compactness = min(iteration_compactnesses)
         print(rounded_compactnesses, min(rounded_compactnesses))
 
-        # Exit function if solution is worse than all of previous N solutions.
-        if len(compactnesses) > N:
-            return_ = True
-            for compactness in compactnesses[-N:]:
-                if min_compactness > compactness:
-                    return_ = False
-            if return_:
+        # Exit function if algorithm hasn't found new best solution in
+        # the last `N` iterations.
+        if min_compactness < min([c.compactness for c in best_communities]):
+
+            iterations_since_best += 1
+
+            if iterations_since_best >= N:
+
                 # Revert to best community state.
-                best_communities = \
-                    community_states[compactnesses.index(max(compactnesses))]
                 for c in best_communities:
                     for c2 in communities:
                         if c.id == c2.id:
@@ -88,18 +83,28 @@ def optimize_compactness(communities, graph, animation_dir=None):
                 if animation_dir is not None:
                     draw_state(graph, animation_dir)
                 return
+
+        else:
+            best_communities = [copy.copy(c) for c in communities]
+            iterations_since_best = 0
         
-        if compactnesses != []:
+        if last_communities != []:
             # Check if anything changed. If not, exit the function.
-            current_communities = set(tuple(p.id for p in c.precincts.values())
-                for c in communities)
-            last_communities = set(tuple(p.id for p in c.precincts.values())
-                for c in community_states[-1])
-            if current_communities == last_communities:
+
+            changed = False
+            try:
+                for c in communities:
+                    for c2 in last_communities:
+                        if c.id == c2.id:
+                            if c.precincts != c2.precincts:
+                                changed = True
+                                raise LoopBreakException
+            except LoopBreakException:
+                pass
+
+            if not changed:
 
                 # Revert to best community state.
-                best_communities = \
-                    community_states[compactnesses.index(max(compactnesses))]
                 for c in best_communities:
                     for c2 in communities:
                         if c.id == c2.id:
@@ -109,15 +114,14 @@ def optimize_compactness(communities, graph, animation_dir=None):
                     for precinct in c.precincts.values():
                         precinct.community = c.id
 
+                rounded_compactnesses = [round(c.compactness, 3) for c in communities]
                 print(rounded_compactnesses, min(rounded_compactnesses))
                 if animation_dir is not None:
                     draw_state(graph, animation_dir)
                 return
 
-        compactnesses.append(min_compactness)
         # Not deepcopy so that precinct objects are not copied (saves memory).
-        communities_copy = [copy.copy(c) for c in communities]
-        community_states.append(communities_copy)
+        last_communities = [copy.copy(c) for c in communities]
         
         # Get area of district.
         community_precinct_coords = \
@@ -128,7 +132,7 @@ def optimize_compactness(communities, graph, animation_dir=None):
         
         # Give away precincts that are outside circle.
         giveable_precincts = get_giveable_precincts(graph, communities, community.id)
-        for precinct, other_community in giveable_precincts.items():
+        for precinct, other_community in giveable_precincts:
             if get_distance(precinct.centroid, center) > radius:
                 community.give_precinct(
                     other_community, precinct.id, update={"compactness"})
@@ -136,10 +140,14 @@ def optimize_compactness(communities, graph, animation_dir=None):
                     # Exchange made `community` non-contiguous. Give precinct back
                     other_community.give_precinct(
                         community, precinct.id, update={"compactness"})
+                else:
+                    if animation_dir is not None:
+                        # draw_state(graph, animation_dir, [Point(*center).buffer(radius)])
+                        draw_state(graph, animation_dir)
         
         # Take precincts inside that are inside circle.
         takeable_precincts = get_takeable_precincts(graph, communities, community.id)
-        for precinct, other_community in takeable_precincts.items():
+        for precinct, other_community in takeable_precincts:
             if get_distance(precinct.centroid, center) <= radius:
                 other_community.give_precinct(
                     community, precinct.id, update={"compactness"})
@@ -147,31 +155,38 @@ def optimize_compactness(communities, graph, animation_dir=None):
                     # Exchange made `other_community` non-contiguous. Give precinct back
                     community.give_precinct(
                         other_community, precinct.id, update={"compactness"})
+                else:
+                    if animation_dir is not None:
+                        # draw_state(graph, animation_dir, [Point(*center).buffer(radius)])
+                        draw_state(graph, animation_dir)
 
-        if animation_dir is not None:
-            draw_state(graph, animation_dir, [Point(*center).buffer(radius)])
-            # draw_state(graph, animation_dir)
+        # if animation_dir is not None:
+        #     # draw_state(graph, animation_dir, [Point(*center).buffer(radius)])
+        #     draw_state(graph, animation_dir)
 
 
 if __name__ == "__main__":
 
     with open(sys.argv[1], "rb") as f:
         graph = pickle.load(f)
-    # communities = create_initial_configuration(graph, int(sys.argv[2]))
-    with open("test_vermont_init_config.txt", "r") as f:
-        precinct_list = eval(f.read())
-    communities = []
+    communities = create_initial_configuration(graph, int(sys.argv[2]))
 
-    from hacking_the_election.utils.community import Community
+    # TO LOAD INIT CONFIG FROM TEXT FILE:
 
-    for i, community in enumerate(precinct_list):
-        c = Community(i, graph)
-        for precinct_id in community:
-            for node in graph.nodes():
-                precinct = graph.node_attributes(node)[0]
-                if precinct.id == precinct_id:
-                    c.take_precinct(precinct)
-        communities.append(c)
+    # with open("test_vermont_init_config.txt", "r") as f:
+    #     precinct_list = eval(f.read())
+    # communities = []
+
+    # from hacking_the_election.utils.community import Community
+
+    # for i, community in enumerate(precinct_list):
+    #     c = Community(i, graph)
+    #     for precinct_id in community:
+    #         for node in graph.nodes():
+    #             precinct = graph.node_attributes(node)[0]
+    #             if precinct.id == precinct_id:
+    #                 c.take_precinct(precinct)
+    #     communities.append(c)
 
     animation_dir = None if sys.argv[3] == "none" else sys.argv[3]
     if animation_dir is not None:
