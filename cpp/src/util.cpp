@@ -6,11 +6,12 @@
  string, and other utilities.
 ========================================*/
 
-#include "../include/util.hpp"
-#include <regex> // for is_number()
+#include <regex>
 #include <random>
 #include <iostream>
+#include <numeric>
 
+#include "../include/util.hpp"
 using namespace std;
 
 
@@ -106,4 +107,19 @@ int rand_num(int start, int end) {
     // std::mt19937 eng(rd()); 
     // uniform_int_distribution<int> distr(start, end);
     // return distr(eng);
+}
+
+
+double get_stdev(vector<int>& data) {
+    /*
+        Determine standard deviation of a list of numbers.
+    */
+
+    double sum = std::accumulate(data.begin(), data.end(), 0.0);
+    double mean = sum / data.size();
+
+    std::vector<double> diff(data.size());
+    std::transform(data.begin(), data.end(), diff.begin(), [mean](double x) { return x - mean; });
+    double sq_sum = std::inner_product(diff.begin(), diff.end(), diff.begin(), 0.0);
+    return (std::sqrt(sq_sum / data.size()));
 }
