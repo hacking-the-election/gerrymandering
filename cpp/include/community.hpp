@@ -44,6 +44,6 @@ namespace Geometry {
             Community() {}
     };
 
-    Geometry::Communities get_initial_configuration(Geometry::Graph& graph, int n_communities);
+    Geometry::Communities get_communities(Geometry::Graph& graph, int n_communities);
 }
 }
