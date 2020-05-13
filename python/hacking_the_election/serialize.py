@@ -458,8 +458,10 @@ def create_graph(election_file, geo_file, pop_file, state):
                         break
         sys.stdout.write("\r                                ")
         sys.stdout.write(f"\rAdding edges progress: {round(100 * node/node_num, 2)}%")
+        print(unordered_precinct_graph.node_attributes(node)[0].id, "original")
         sys.stdout.flush()
-        for precinct10 in precincts_to_check:            
+        for precinct10 in precincts_to_check:
+            print(precinct10)            
             if get_if_bordering(coordinate_data, unordered_precinct_graph.node_attributes(precinct10)[0].coords):
                 unordered_precinct_graph.add_edge((node, precinct10))
         completed_precincts.append(node)
@@ -540,6 +542,7 @@ def create_graph(election_file, geo_file, pop_file, state):
                 break
             print(f"\rConnecting islands progress: {100 - round(100 * len(graph_components)/original_graph_components_num, 2)}%")
             unordered_precinct_graph.add_edge(edge_to_add)
+    print(f'Number of islands (including mainland if applicable): {original_graph_components_num}')
     print('Edges after island linking: ', round(len(unordered_precinct_graph.edges())/2))
 
     # Create list of nodes in ascending order by degree
