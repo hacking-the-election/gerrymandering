@@ -187,20 +187,22 @@ double get_compactness(Community& community) {
 } 
 
 
-void exchange_precinct(Graph& g, Communities& cs, int node_to_take, int community_to_take) {
+bool exchange_precinct(Graph& g, Communities& cs, int node_to_take, int community_to_take) {
     // moves a node from its community into `community_to_take`
     
     if (cs[g.vertices[node_to_take].community].vertices.size() == 1) {
-        return;
+        return false;
     }
     else if (remove_edges_to(cs[g.vertices[node_to_take].community], node_to_take).get_num_components() > 2) {
-        return;
+        return false;
     }
     
     // cout << "removex node" << endl;
     cs[g.vertices[node_to_take].community].remove_node(node_to_take);
     cs[community_to_take].add_node(g.vertices[node_to_take]);
     g.vertices[node_to_take].community = community_to_take;
+
+    return true;
 }
 
 
@@ -248,7 +250,7 @@ vector<int> get_takeable_precincts(Graph& g, Communities& c, int in) {
     }
 
     // sort takeable by respective xcoord
-    // sort_by_xcoord(g, takeable);
+    sort_by_xcoord(g, takeable);
     return takeable;
 }
 
@@ -391,6 +393,7 @@ void optimize_compactness(Communities& communities, Graph& graph, double (*measu
     int n_communities = communities.size();
     int iterations_since_best = 0;
     Communities best = communities;
+    double best_measure = average(communities, measure);
 
     while (iterations_since_best < ITERATION_LIMIT) {
         int smallest_index = 0;
@@ -407,18 +410,24 @@ void optimize_compactness(Communities& communities, Graph& graph, double (*measu
 
         coordinate center = communities[smallest_index].shape.get_centroid();
         double radius = sqrt(communities[smallest_index].shape.get_area() / PI);
+
+        cout << endl << radius << endl;
+        cout << center[0] << ", " << center[1] << endl;
+
         int num_exchanged = 0;
         vector<array<int, 2> > giveable = get_giveable_precincts(graph, communities, smallest_index);
 
         for (array<int, 2> g : giveable) {
             if (!point_in_circle(center, radius, graph.vertices[g[0]].precinct->get_centroid())) {
                 // cout << "giving precinct " << graph.vertices[g[0]].precinct->shape_id << " to community " << g[1] << endl;
-                exchange_precinct(graph, communities, g[0], g[1]);
-                num_exchanged++;
+                if (exchange_precinct(graph, communities, g[0], g[1])) {
+                    num_exchanged++;
 
-                Canvas canvas(900, 900);
-                canvas.add_outlines(to_outline(communities));
-                canvas.save_img_to_anim(ImageFmt::BMP, "output");
+                    // Canvas canvas(500, 500);
+                    // canvas.add_outlines(to_outline(communities));
+                    // canvas.add_outlines(to_outline(communities[smallest_index]));
+                    // canvas.save_img_to_anim(ImageFmt::BMP, "output");
+                }
             }
         }
 
@@ -427,17 +436,21 @@ void optimize_compactness(Communities& communities, Graph& graph, double (*measu
         for (int t : takeable) {
             if (point_in_circle(center, radius, graph.vertices[t].precinct->get_centroid())) {
                 // cout << "taking precinct " << t << " for community " << smallest_index << endl;
-                exchange_precinct(graph, communities, t, smallest_index);
-                num_exchanged++;
+                if (exchange_precinct(graph, communities, t, smallest_index)) {
+                    num_exchanged++;
 
-                Canvas canvas(900, 900);
-                canvas.add_outlines(to_outline(communities));
-                canvas.save_img_to_anim(ImageFmt::BMP, "output");
+                    // Canvas canvas(500, 500);
+                    // canvas.add_outlines(to_outline(communities));
+                    // canvas.add_outlines(to_outline(communities[smallest_index]));
+                    // canvas.save_img_to_anim(ImageFmt::BMP, "output");
+                }
             }
         }
 
-        if (average(communities, measure) > average(best, measure)) {
+        double cur_measure = average(communities, measure);
+        if (cur_measure > best_measure) {
             best = communities;
+            best_measure = cur_measure;
             iterations_since_best = 0;
         }
         else {
@@ -449,7 +462,7 @@ void optimize_compactness(Communities& communities, Graph& graph, double (*measu
             break;
         }
 
-        cout << average(communities, measure) << endl;
+        cout << cur_measure << endl;
     }
 
     communities = best;
@@ -467,19 +480,16 @@ void optimize_population(Communities& communities, Graph& g, double range) {
 
     // find optimal populations
     range /= 2.0;
-    int opt = get_population(communities) / communities.size();
-    int bounds[2] = {(int)(opt - (range * (double)opt)), (int)(opt + (range * (double)opt))};
+    int ideal_pop = get_population(communities) / communities.size();
 
     vector<int> pops = {communities[0].get_population()};
     int worst_index = 0;
-    int worst_difference = abs(opt - pops[0]);
-    cout << " the optimal population is " << opt << endl; 
-
+    int worst_difference = abs(ideal_pop - pops[0]);
 
     for (int i = 1; i < communities.size(); i++) {
         pops.push_back(communities[i].get_population());
-        if (abs(opt - pops[i]) > worst_difference) {
-            worst_difference = abs(opt - pops[i]);
+        if (abs(ideal_pop - pops[i]) > worst_difference) {
+            worst_difference = abs(ideal_pop - pops[i]);
             worst_index = i;
         }
     }
@@ -489,41 +499,43 @@ void optimize_population(Communities& communities, Graph& g, double range) {
         // cout << "current worst community is " << pops[worst_index] << endl;
         int x = 0;
 
-        if (pops[worst_index] < opt) {
+        if (pops[worst_index] < ideal_pop) {
             cout << "before\t" << communities[worst_index].get_population() << endl;
             vector<int> take = get_takeable_precincts(g, communities, worst_index);
-            while (communities[worst_index].get_population() < opt) {
+            while (communities[worst_index].get_population() < ideal_pop) {
                 if (x == take.size()) {
                     x = 0;
                     take = get_takeable_precincts(g, communities, worst_index);
                 }
 
-                exchange_precinct(g, communities, take[x], worst_index);
+                if (exchange_precinct(g, communities, take[x], worst_index)) {
+                    Canvas canvas(900, 900);
+                    canvas.add_outlines(to_outline(communities));
+                    canvas.save_img_to_anim(ImageFmt::BMP, "output");
+                }
+
                 x++;
             }
-
-            Canvas canvas(900, 900);
-            canvas.add_outlines(to_outline(communities));
-            canvas.save_img_to_anim(ImageFmt::BMP, "output");
-            cout << "finished\t" << opt << endl;
 
         }
         else {
             cout << "before\t" << communities[worst_index].get_population() << endl;
             vector<array<int, 2> > give = get_giveable_precincts(g, communities, worst_index);
-            while (communities[worst_index].get_population() > opt) {
+            while (communities[worst_index].get_population() > ideal_pop) {
                 if (x == give.size()) {
                     x = 0;
                     give = get_giveable_precincts(g, communities, worst_index);
                 }
-                exchange_precinct(g, communities, give[x][0], give[x][1]);
+
+                if (exchange_precinct(g, communities, give[x][0], give[x][1])) {
+                    Canvas canvas(900, 900);
+                    canvas.add_outlines(to_outline(communities));
+                    canvas.save_img_to_anim(ImageFmt::BMP, "output");
+                }
+                
                 x++;
             }
 
-            Canvas canvas(900, 900);
-            canvas.add_outlines(to_outline(communities));
-            canvas.save_img_to_anim(ImageFmt::BMP, "output");
-            cout << "finished\t" << opt << endl;
         }
 
         cout << "after\t" << communities[worst_index].get_population() << endl;
@@ -531,19 +543,19 @@ void optimize_population(Communities& communities, Graph& g, double range) {
         pops.clear();
         pops = {communities[0].get_population()};
         worst_index = 0;
-        worst_difference = abs(opt - pops[0]);
+        worst_difference = abs(ideal_pop - pops[0]);
 
 
         for (int i = 1; i < communities.size(); i++) {
             pops.push_back(communities[i].get_population());
-            if (abs(opt - pops[i]) > worst_difference) {
-                worst_difference = abs(opt - pops[i]);
+            if (abs(ideal_pop - pops[i]) > worst_difference) {
+                worst_difference = abs(ideal_pop - pops[i]);
                 worst_index = i;
             }
         }
 
 
-        if (worst_difference < (int)(range * (double)opt)) {
+        if (worst_difference < (int)(range * (double)ideal_pop)) {
             Canvas canvas(900, 900);
             canvas.add_outlines(to_outline(communities));
             canvas.draw_to_window();
@@ -643,14 +655,18 @@ Communities hte::Geometry::get_initial_configuration(Graph& graph, int n_communi
 
     srand(time(NULL));
     Communities cs = load("config.txt", graph);
+    // Canvas canvas(900, 900);
+    // canvas.add_outlines(to_outline(graph));
+    // canvas.save_image(ImageFmt::BMP, "vt_graph");
+
     // Communities cs = karger_stein(graph, n_communities);
     
     for (int i = 0; i < cs.size(); i++) {
         cs[i].update_shape(graph);
     }
 
-    // optimize_population(cs, graph, 0.01);
-    optimize_compactness(cs, graph, get_compactness);
+    optimize_population(cs, graph, 0.01);
+    // optimize_compactness(cs, graph, get_compactness);
 
     return cs;
 }
