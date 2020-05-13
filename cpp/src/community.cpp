@@ -140,7 +140,6 @@ Communities hte::Geometry::load(std::string path, Graph& g) {
                     }
                 }
             }
-            // communities[x - 1].update_shape(g);
         }
     }
 
@@ -194,11 +193,11 @@ double get_partisanship_stdev(Community& community) {
     for (auto& pair : community.vertices) {
         int total = 0;
         for (auto& p2 : pair.second.precinct->voter_data) {
-            if (p2.first != POLITICAL_PARTY::TOTAL && p2.second != -1) total += p2.second;
+            if (p2.first != POLITICAL_PARTY::TOTAL && p2.second >= 0) total += p2.second;
         }
 
         for (auto& p2 : pair.second.precinct->voter_data) {
-            if (p2.first != POLITICAL_PARTY::TOTAL && p2.second != -1) {
+            if (p2.first != POLITICAL_PARTY::TOTAL && p2.second >= 0) {
                 if (total == 0) total_data[p2.first].push_back(0.0);
                 else total_data[p2.first].push_back((double)p2.second / (double)total);
             }
@@ -207,7 +206,10 @@ double get_partisanship_stdev(Community& community) {
 
     for (auto& pair : total_data) {
         average += get_stdev(pair.second);
+        cout << get_stdev(pair.second) << ", ";
     }
+
+    cout << endl;
     
     return (average / total_data.size());
 }
@@ -397,7 +399,7 @@ void optimize_compactness(Communities& communities, Graph& graph, double (*measu
 
         for (array<int, 2> g : giveable) {
             if (!point_in_circle(center, radius, graph.vertices[g[0]].precinct->get_centroid())) {
-                // cout << "giving precinct " << graph.vertices[g[0]].precinct->shape_id << " to community " << g[1] << endl;
+                cout << "giving precinct " << graph.vertices[g[0]].precinct->shape_id << " to community " << g[1] << endl;
                 if (exchange_precinct(graph, communities, g[0], g[1])) {
                     num_exchanged++;
 
@@ -722,10 +724,6 @@ Communities hte::Geometry::get_communities(Graph& graph, int n_communities) {
 
     srand(time(NULL));
     Communities cs = load("config.txt", graph);
-    // Canvas canvas(900, 900);
-    // canvas.add_outlines(to_outline(graph));
-    // canvas.save_image(ImageFmt::BMP, "vt_graph");
-
     // Communities cs = karger_stein(graph, n_communities);
     
     for (int i = 0; i < cs.size(); i++) {
@@ -734,10 +732,10 @@ Communities hte::Geometry::get_communities(Graph& graph, int n_communities) {
 
     cout << "init config: " << average(cs, get_partisanship_stdev) << endl;
 
-    maximize(cs, graph, get_partisanship_stdev, true);
-    maximize(cs, graph, get_population_stdev, true);
+    // maximize(cs, graph, get_partisanship_stdev, true);
+    // maximize(cs, graph, get_population_stdev, true);
     optimize_compactness(cs, graph, get_compactness);
-    optimize_population(cs, graph, 0.01);
+    // optimize_population(cs, graph, 0.01);
 
     return cs;
 }
