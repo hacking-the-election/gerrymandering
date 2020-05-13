@@ -218,5 +218,6 @@ class Community:
         new.partisanship_stdev = copy.copy(self.partisanship_stdev)
         new.compactness = copy.copy(self.compactness)
         new.population = copy.copy(self.population)
+        new.population_stdev = copy.copy(self.population_stdev)
 
         return new

@@ -45,7 +45,6 @@ def optimize_partisanship_stdev(communities, graph, animation_dir=None):
 
     best_communities = [copy.copy(c) for c in communities]
     last_communities = []
-    iterations_since_best = 0
 
     while True:
         
@@ -56,31 +55,7 @@ def optimize_partisanship_stdev(communities, graph, animation_dir=None):
         rounded_stdevs = [round(c.partisanship_stdev, 3) for c in communities]
         print(rounded_stdevs, round(avg_stdev, 3))
 
-        # Exit function if algorithm hasn't found new best solution in
-        # the last `N` iterations.
-        if avg_stdev > average([c.partisanship_stdev for c in best_communities]):
-            iterations_since_best += 1
-            if iterations_since_best >= N:
-
-                # Revert to best community state.
-                for c in best_communities:
-                    for c2 in communities:
-                        if c.id == c2.id:
-                            c2.precincts = c.precincts
-                            c2.update_partisanship_stdev()
-                for c in communities:
-                    for precinct in c.precincts.values():
-                        precinct.community = c.id
-
-                rounded_stdevs = [round(c.partisanship_stdev, 3) for c in communities]
-                avg_stdev = average([c.partisanship_stdev for c in communities])
-                print(rounded_stdevs, round(avg_stdev, 3))
-                if animation_dir is not None:
-                    draw_state(graph, animation_dir)
-                draw_state(graph, "test_communities")
-                # Exit the function.
-                return
-        else:
+        if avg_stdev < average([c.partisanship_stdev for c in best_communities]):
             best_communities = [copy.copy(c) for c in communities]
             iterations_since_best = 0
 
@@ -115,7 +90,6 @@ def optimize_partisanship_stdev(communities, graph, animation_dir=None):
                 print(rounded_stdevs, round(avg_stdev, 3))
                 if animation_dir is not None:
                     draw_state(graph, animation_dir)
-                draw_state(graph, "test_communities")
                 return
 
         # Not deepcopy so that precinct objects are not copied (saves memory).
@@ -125,7 +99,7 @@ def optimize_partisanship_stdev(communities, graph, animation_dir=None):
             graph, communities, community.id)
         for precinct, other_community in giveable_precincts:
 
-            starting_stdev = community.partisanship_stdev
+            starting_stdev = average([c.partisanship_stdev for c in communities])
 
             community.give_precinct(
                 other_community, precinct.id, update={"partisanship_stdev"})
@@ -136,26 +110,35 @@ def optimize_partisanship_stdev(communities, graph, animation_dir=None):
                 other_community.give_precinct(
                     community, precinct.id, update={"partisanship_stdev"})
             else:
-                if animation_dir is not None:
-                    draw_state(graph, animation_dir)
+                average_stdev = average([c.partisanship_stdev for c in communities])
+                if average_stdev > starting_stdev:
+                    community.give_precinct(
+                        other_community, precinct.id, update={"partisanship_stdev"})
+                else:
+                    if animation_dir is not None:
+                        draw_state(graph, animation_dir)
         
         takeable_precincts = get_takeable_precincts(
             graph, communities, community.id)
         for precinct, other_community in takeable_precincts:
             
-            starting_stdev = community.partisanship_stdev
+            starting_stdev = average([c.partisanship_stdev for c in communities])
 
             other_community.give_precinct(
                 community, precinct.id, update={"partisanship_stdev"})
             # Check if exchange made `community` non-contiguous.
             # Or if it hurt the previous partisanship stdev.
-            if (len(get_components(other_community.induced_subgraph)) > 1
-                    or community.partisanship_stdev > starting_stdev):
+            if len(get_components(other_community.induced_subgraph)) > 1:
                 community.give_precinct(
                     other_community, precinct.id, update={"partisanship_stdev"})
             else:
-                if animation_dir is not None:
-                    draw_state(graph, animation_dir)
+                average_stdev = average([c.partisanship_stdev for c in communities])
+                if average_stdev > starting_stdev:
+                    community.give_precinct(
+                        other_community, precinct.id, update={"partisanship_stdev"})
+                else:
+                    if animation_dir is not None:
+                        draw_state(graph, animation_dir)
     
 if __name__ == "__main__":
 
