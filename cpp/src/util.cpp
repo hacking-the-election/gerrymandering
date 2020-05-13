@@ -110,16 +110,16 @@ int rand_num(int start, int end) {
 }
 
 
-double get_stdev(vector<int>& data) {
+double get_stdev(vector<double>& data) {
     /*
         Determine standard deviation of a list of numbers.
     */
 
     double sum = std::accumulate(data.begin(), data.end(), 0.0);
-    double mean = sum / data.size();
+    double mean = sum / (double)data.size();
 
     std::vector<double> diff(data.size());
     std::transform(data.begin(), data.end(), diff.begin(), [mean](double x) { return x - mean; });
     double sq_sum = std::inner_product(diff.begin(), diff.end(), diff.begin(), 0.0);
-    return (std::sqrt(sq_sum / data.size()));
+    return (std::sqrt(sq_sum / (double)data.size()));
 }
