@@ -1,7 +1,7 @@
 """Refines a configuration of political communities in a state so that the standard deviation of the populations of the precincts in each community is as low as possible.
 
 Usage:
-python3 -m hacking_the_election.communities.population_stdev
+python3 -m hacking_the_election.communities.population_stdev <serialized_state> <n_communities> (<animation_dir> | "none") <output_path>
 """
 
 import copy
@@ -11,11 +11,13 @@ import sys
 
 from hacking_the_election.communities.initial_configuration import \
     create_initial_configuration
+from hacking_the_election.utils.exceptions import LoopBreakException
 from hacking_the_election.utils.graph import (
     get_components,
     get_giveable_precincts,
     get_takeable_precincts
 )
+from hacking_the_election.utils.stats import average
 from hacking_the_election.visualization.misc import draw_state
 
 
@@ -43,51 +45,34 @@ def optimize_population_stdev(communities, graph, animation_dir=None):
 
     best_communities = [copy.copy(c) for c in communities]
     last_communities = []
-    iterations_since_best = 0
 
     while True:
         
         # Find most inconsistent population community.
         community = max(communities, key=lambda c: c.population_stdev)
         iteration_stdevs = [c.population_stdev for c in communities]
-        max_stdev = max(iteration_stdevs)
+        avg_stdev = average(iteration_stdevs)
         rounded_stdevs = [round(stdev, 3) for stdev in iteration_stdevs]
-        print(rounded_stdevs, max(rounded_stdevs))
+        print(rounded_stdevs, round(avg_stdev, 3))
 
-        # Exit function if algorithm hasn't found new best solution in
-        # the last `N` iterations.
-        if max_stdev > max([c.population_stdev for c in best_communities]):
-            iterations_since_best += 1
-            if iterations_since_best >= N:
-
-                # Revert to best community state.
-                for c in best_communities:
-                    for c2 in communities:
-                        if c.id == c2.id:
-                            c2.precincts = c.precincts
-                            c2.update_population_stdev()
-                for c in communities:
-                    for precinct in c.precincts.values():
-                        precinct.community = c.id
-
-                rounded_stdevs = [round(c.population_stdev, 3) for c in communities]
-                print(rounded_stdevs, min(rounded_stdevs))
-                if animation_dir is not None:
-                    draw_state(graph, animation_dir)
-
-                # Exit the function.
-                return
-        else:
+        if avg_stdev > average([c.population_stdev for c in best_communities]):
             best_communities = [copy.copy(c) for c in communities]
-            iterations_since_best = 0
 
         if last_communities != []:
             # Check if anything changed. If not, exit the function.
-            current_communities = set(tuple(p.id for p in c.precincts.values())
-                for c in communities)
-            last_communities = set(tuple(p.id for p in c.precincts.values())
-                for c in last_communities)
-            if current_communities == last_communities:
+
+            changed = False
+            try:
+                for c in communities:
+                    for c2 in last_communities:
+                        if c.id == c2.id:
+                            if c.precincts != c2.precincts:
+                                changed = True
+                                raise LoopBreakException
+            except LoopBreakException:
+                pass
+
+            if not changed:
 
                 # Revert to best community state.
                 for c in best_communities:
@@ -100,7 +85,8 @@ def optimize_population_stdev(communities, graph, animation_dir=None):
                         precinct.community = c.id
 
                 rounded_stdevs = [round(c.population_stdev, 3) for c in communities]
-                print(rounded_stdevs, min(rounded_stdevs))
+                avg_stdev = average([c.population_stdev for c in communities])
+                print(rounded_stdevs, round(avg_stdev, 3))
                 if animation_dir is not None:
                     draw_state(graph, animation_dir)
                 return
@@ -112,7 +98,7 @@ def optimize_population_stdev(communities, graph, animation_dir=None):
             graph, communities, community.id)
         for precinct, other_community in giveable_precincts:
 
-            starting_stdev = community.population_stdev
+            starting_stdev = average([c.population_stdev for c in communities])
 
             community.give_precinct(
                 other_community, precinct.id, update={"population_stdev"})
@@ -123,26 +109,35 @@ def optimize_population_stdev(communities, graph, animation_dir=None):
                 other_community.give_precinct(
                     community, precinct.id, update={"population_stdev"})
             else:
-                if animation_dir is not None:
-                    draw_state(graph, animation_dir)
+                average_stdev = average([c.population_stdev for c in communities])
+                if average_stdev > starting_stdev:
+                    other_community.give_precinct(
+                        community, precinct.id, update={"population_stdev"})
+                else:
+                    if animation_dir is not None:
+                        draw_state(graph, animation_dir)
         
         takeable_precincts = get_takeable_precincts(
             graph, communities, community.id)
         for precinct, other_community in takeable_precincts:
             
-            starting_stdev = community.population_stdev
+            starting_stdev = average([c.population_stdev for c in communities])
 
             other_community.give_precinct(
                 community, precinct.id, update={"population_stdev"})
             # Check if exchange made `community` non-contiguous.
             # Or if it hurt the previous population stdev.
-            if (len(get_components(other_community.induced_subgraph)) > 1
-                    or community.population_stdev > starting_stdev):
+            if len(get_components(other_community.induced_subgraph)) > 1:
                 community.give_precinct(
                     other_community, precinct.id, update={"population_stdev"})
             else:
-                if animation_dir is not None:
-                    draw_state(graph, animation_dir)
+                average_stdev = average([c.population_stdev for c in communities])
+                if average_stdev > starting_stdev:
+                    community.give_precinct(
+                        other_community, precinct.id, update={"population_stdev"})
+                else:
+                    if animation_dir is not None:
+                        draw_state(graph, animation_dir)
     
 if __name__ == "__main__":
 

@@ -3,6 +3,8 @@ A class representing political communities
 """
 
 import copy
+import json
+import os
 
 from pygraph.classes.graph import graph as Graph
 from shapely.geometry import MultiPolygon, Polygon
@@ -11,6 +13,9 @@ from shapely.ops import unary_union
 from hacking_the_election.utils.geometry import get_compactness
 from hacking_the_election.utils.graph import get_node_number
 from hacking_the_election.utils.stats import average, standard_deviation
+
+
+PACKAGE_ROOT = os.path.dirname(os.path.dirname(__file__))
 
 
 class Community:
@@ -35,6 +40,31 @@ class Community:
         self.induced_subgraph = Graph()
         self.state_graph = state_graph
 
+        self.state = ""
+        self.parties = ["percent_other"]
+        self.state_metadata = {}
+
+
+    def _update_parties(self):
+        """Determines which parties there is data for in the state.
+        """
+        with open(f"{PACKAGE_ROOT}/state_metadata.json", "r") as f:
+            self.state_metadata = json.load(f)
+
+        for party in self.state_metadata[self.state]["party_data"]:
+            if party == "dem_keys":
+               self.parties.append("percent_dem")
+            elif party == "rep_keys":
+                self.parties.append("percent_rep")
+            elif party == "green_keys":
+                self.parties.append("percent_green")
+            elif party == "lib_keys":
+                self.parties.append("percent_lib")
+            elif party == "reform_keys":
+                self.parties.append("percent_reform")
+            elif party == "independent_keys":
+                self.parties.append("percent_ind")
+
     # The following functions exist so that certain attributes don't
     # have to be calculated when they aren't needed right away.
 
@@ -48,18 +78,20 @@ class Community:
         """
         self.partisanship = [average(
             [eval(f"p.{attr}") for p in self.precincts.values()]) for attr in
-            ["percent_dem", "percent_rep", "percent_green", "percent_lib",
-             "percent_reform", "percent_ind", "percent_const"]
+            self.parties
         ]
 
     def update_partisanship_stdev(self):
         """Updates the partisanship_stdev attribute for this community.
         """
-        self.partisanship_stdev = average([standard_deviation(
-            [eval(f"p.{attr}") for p in self.precincts.values()]) for attr in
-            ["percent_dem", "percent_rep", "percent_green", "percent_lib",
-             "percent_reform", "percent_ind", "percent_const"]
-        ])
+        party_stdevs = []
+        for party in self.parties:
+            percentage_func = eval(f"lambda p: p.{party}")
+            precinct_percentages = []
+            for precinct in self.precincts.values():
+                precinct_percentages.append(percentage_func(precinct))
+            party_stdevs.append(standard_deviation(precinct_percentages))
+        self.partisanship_stdev = average(party_stdevs)
 
     def update_compactness(self):
         """Update the compactness attribute for this community.
@@ -90,6 +122,10 @@ class Community:
         :param update: Set of attribute names of this class that should be updated after adding this precinct.
         :type update: set of string
         """
+
+        if self.state == "":
+            self.state = precinct.state
+            self._update_parties()
 
         self.precincts[precinct.id] = precinct
         precinct.community = self.id
@@ -126,6 +162,9 @@ class Community:
         :param update: Set of attribute names of this class that should be updated after losing this precinct.
         :type update: set of string
         """
+
+        if len(self.precincts) == 1:
+            return
 
         try:
             precinct = self.precincts[precinct_id]
@@ -179,5 +218,6 @@ class Community:
         new.partisanship_stdev = copy.copy(self.partisanship_stdev)
         new.compactness = copy.copy(self.compactness)
         new.population = copy.copy(self.population)
+        new.population_stdev = copy.copy(self.population_stdev)
 
         return new

@@ -19,7 +19,7 @@ def average(values, weights=[]):
     :rtype: float
     """
 
-    values = [v if v is not None else 0 for v in values]
+    values = [v for v in values if v is not None]
 
     if weights != []:
         if len(weights) != len(values):
@@ -46,7 +46,7 @@ def standard_deviation(values, weights=[]):
     :rtype: float
     """
 
-    values = [v if v is not None else 0 for v in values]
+    values = [v for v in values if v is not None]
 
     if weights != []:
         weighted_average = average(values, weights)

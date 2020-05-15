@@ -22,6 +22,7 @@ from hacking_the_election.utils.graph import (
     get_giveable_precincts,
     get_takeable_precincts
 )
+from hacking_the_election.utils.stats import average
 from hacking_the_election.visualization.misc import draw_state
 
 
@@ -123,15 +124,26 @@ def optimize_compactness(communities, graph, animation_dir=None):
         # Not deepcopy so that precinct objects are not copied (saves memory).
         last_communities = [copy.copy(c) for c in communities]
         
-        # Get area of district.
+        # Get center and radius of equal-area circle.
         community_precinct_coords = \
             [p.coords for p in community.precincts.values()]
-        community_coords = MultiPolygon(community_precinct_coords)
-        center = list(community_coords.centroid.coords[0])
-        radius = math.sqrt(community_coords.area / math.pi)
+        
+        precinct_X = []
+        precinct_Y = []
+        for p in community_precinct_coords:
+            precinct_X.append(list(p.centroid.coords[0])[0])
+            precinct_Y.append(list(p.centroid.coords[0])[1])
+        
+        community_area = sum([p.area for p in community_precinct_coords])
+        # print(community_area)
+        
+        center = [average(precinct_X), average(precinct_Y)]
+        radius = math.sqrt(community_area / math.pi)
+        # print(center, radius)
         
         # Give away precincts that are outside circle.
         giveable_precincts = get_giveable_precincts(graph, communities, community.id)
+        # print([p[0].id for p in giveable_precincts])
         for precinct, other_community in giveable_precincts:
             if get_distance(precinct.centroid, center) > radius:
                 community.give_precinct(
@@ -142,8 +154,8 @@ def optimize_compactness(communities, graph, animation_dir=None):
                         community, precinct.id, update={"compactness"})
                 else:
                     if animation_dir is not None:
-                        # draw_state(graph, animation_dir, [Point(*center).buffer(radius)])
-                        draw_state(graph, animation_dir)
+                        draw_state(graph, animation_dir, [Point(*center).buffer(radius)])
+                        # draw_state(graph, animation_dir)
         
         # Take precincts inside that are inside circle.
         takeable_precincts = get_takeable_precincts(graph, communities, community.id)
@@ -157,8 +169,8 @@ def optimize_compactness(communities, graph, animation_dir=None):
                         other_community, precinct.id, update={"compactness"})
                 else:
                     if animation_dir is not None:
-                        # draw_state(graph, animation_dir, [Point(*center).buffer(radius)])
-                        draw_state(graph, animation_dir)
+                        draw_state(graph, animation_dir, [Point(*center).buffer(radius)])
+                        # draw_state(graph, animation_dir)
 
         # if animation_dir is not None:
         #     # draw_state(graph, animation_dir, [Point(*center).buffer(radius)])
