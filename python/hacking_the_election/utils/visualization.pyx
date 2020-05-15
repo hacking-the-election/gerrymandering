@@ -162,3 +162,33 @@ cpdef str get_next_file_path(str animation_dir):
     cdef str file_name = _add_leading_zeroes(new_file_number) + ".png"
 
     return os.path.join(animation_dir, file_name)
+
+
+cpdef list get_community_colors(int n):
+    """Gets a list of colors that are significantly different for visualizing communities in a state.
+
+    :param n: The number of communities.
+    :type n: int
+
+    :return: A list of rgb codes each for a community.
+    :rtype: list of 3-tuple of int
+    """
+
+    cpdef list colors = []
+
+    cdef int i
+    cdef int x
+    for i in range(n):
+        x = (1275 // n) * i
+        if -1 < x <= 255:
+            colors.append((255, x, 0))
+        elif 255 < x <= 510:
+            colors.append((255 - (x - 255), 255, 0))
+        elif 510 < x <= 765:
+            colors.append((0, 255, x - 510, 0))
+        elif 765 < x <= 1020:
+            colors.append((0, 255 - (x - 765), 255))
+        elif 1020 < x <= 1275:
+            colors.append((x - 1020, 0, 255))
+    
+    return colors
