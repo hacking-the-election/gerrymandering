@@ -844,3 +844,8 @@ bool bound_overlap(Geometry::bounding_box b1, Geometry::bounding_box b2) {
     if (b1[1] > b2[0] || b2[1] > b1[0]) return false;
     return true;
 }
+
+bool bound_inside(hte::Geometry::bounding_box b1, hte::Geometry::bounding_box b2) {
+    // gets whether or not b1 is inside b2
+    return (b1[0] < b2[0] && b1[1] > b2[1] && b1[2] > b2[2] && b1[3] < b2[3]);
+}

@@ -37,7 +37,7 @@ const long int c = pow(2, 18);
 // identifications for files
 map<ID_TYPE, string> id_headers;
 map<POLITICAL_PARTY, string> election_headers;
-const vector<string> non_precinct = {"9999", "WV", "ZZZZZ", "LAKE", "WWWWWW", "1808904150", "1812700460", "39095123ZZZ", "39123123ZZZ", "39093093999", "39035007999", "3908500799", "3900700799"};
+const vector<string> non_precinct = {"9999", "WV", "ZZZZZ", "LAKE", "WWWWWW", "1808904150", "1812700460", "39095123ZZZ", "39043043ACN", "39123123ZZZ", "39043043ZZZ", "39093093999", "39035007999", "3908500799", "3900700799"};
 
 // parsing functions for tsv files
 vector<vector<string > > parse_sv(string, string);
@@ -656,6 +656,12 @@ Precinct_Group combine_holes(Precinct_Group pg) {
     vector<Precinct> precincts;
     vector<int> precincts_to_ignore;
 
+    vector<bounding_box> bounds;
+    for (Precinct p : pg.precincts) {
+        bounds.push_back(p.get_bounding_box());
+    }
+
+
     for (int x = 0; x < pg.precincts.size(); x++) {
         // for each precinct in the pg array
         Precinct p = pg.precincts[x];
@@ -673,20 +679,23 @@ Precinct_Group combine_holes(Precinct_Group pg) {
             for (int j = 0; j < pg.precincts.size(); j++) {
                 // check all other precincts for if they're inside
                 Precinct p_c = pg.precincts[j];
-                if (j != x && get_inside(p_c.hull, p.hull)) {
-                    // precinct j is inside precinct x,
-                    // add the appropriate data from j to x
-                    for (auto const& x : pg.precincts[j].voter_data) {
-                        voter[x.first] += x.second;
+
+                if (bound_overlap(bounds[x], bounds[j])) {
+                    if (j != x && get_inside(p_c.hull, p.hull)) {
+                        // precinct j is inside precinct x,
+                        // add the appropriate data from j to x
+                        for (auto const& x : pg.precincts[j].voter_data) {
+                            voter[x.first] += x.second;
+                        }
+
+                        // demv += pg.precincts[j].dem;
+                        // repv += pg.precincts[j].rep;
+                        pop += pg.precincts[j].pop;
+
+                        // this precinct will not be returned
+                        precincts_to_ignore.push_back(j);
+                        interior_pre++;
                     }
-
-                    // demv += pg.precincts[j].dem;
-                    // repv += pg.precincts[j].rep;
-                    pop += pg.precincts[j].pop;
-
-                    // this precinct will not be returned
-                    precincts_to_ignore.push_back(j);
-                    interior_pre++;
                 }
             }
         }
@@ -843,12 +852,10 @@ State State::generate_from_file(string precinct_geoJSON, string voter_data, stri
     for (int i = 0; i < precincts.size(); i++) {
         string id = precincts[i].shape_id;
         for (string str : non_precinct) {
-            if (id.size() >= str.size() + 1) {
-                if (id.find(str) != string::npos) {
-                    precincts.erase(precincts.begin() + i);
-                    i--;
-                    n_removed++;
-                }
+            if (id.find(str) != string::npos) {
+                precincts.erase(precincts.begin() + i);
+                i--;
+                n_removed++;
             }
         }
     }
@@ -907,12 +914,10 @@ State State::generate_from_file(string precinct_geoJSON, string district_geoJSON
     for (int i = 0; i < precinct_shapes.size(); i++) {
         string id = precinct_shapes[i].shape_id;
         for (string str : non_precinct) {
-            if (id.size() >= str.size() + 1) {
-                if (id.find(str) != string::npos) {
-                    precinct_shapes.erase(precinct_shapes.begin() + i);
-                    i--;
-                    n_removed++;
-                }
+            if (id.find(str) != string::npos) {
+                precinct_shapes.erase(precinct_shapes.begin() + i);
+                i--;
+                n_removed++;
             }
         }
     }
