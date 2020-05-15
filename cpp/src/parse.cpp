@@ -318,8 +318,17 @@ vector<Precinct> parse_precinct_data(string geoJSON) {
         
 
         // get the population data from geodata
-        if (shapes["features"][i]["properties"].HasMember(id_headers[ID_TYPE::POPUID].c_str()))
-            pop = shapes["features"][i]["properties"][id_headers[ID_TYPE::POPUID].c_str()].GetInt();
+        if (shapes["features"][i]["properties"].HasMember(id_headers[ID_TYPE::POPUID].c_str())) {
+            if (shapes["features"][i]["properties"][id_headers[ID_TYPE::POPUID].c_str()].IsInt()) {
+                pop = shapes["features"][i]["properties"][id_headers[ID_TYPE::POPUID].c_str()].GetInt();
+            }
+            else if (shapes["features"][i]["properties"][id_headers[ID_TYPE::POPUID].c_str()].IsString()) {
+                string test = shapes["features"][i]["properties"][id_headers[ID_TYPE::POPUID].c_str()].GetString();
+                if (test != "" && test != "NA") {
+                    pop = stoi(test);
+                }
+            }
+        }
         else cout << "\e[31merror: \e[0mNo population data" << endl;
 
 
