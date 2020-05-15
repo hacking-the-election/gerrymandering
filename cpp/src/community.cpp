@@ -344,15 +344,16 @@ double worst(Communities& communities, double (*measure)(Community&)) {
 }
 
 
-void optimize_compactness(Communities& communities, Graph& graph, double (*measure)(Community&)) {
+void optimize_compactness(Communities& communities, Graph& graph) {
 
     int community_to_modify = 0;
     int sub_modifications = 20;
-    double area = 0;
-    for (Community c : communities) area += c.shape.get_area();
-    area /= communities.size();
 
-    for (int i = 0; i < 40; i++) {
+    Communities best = communities;
+    double best_val = average(best, get_compactness);
+    int iterations_since_best = 0;
+
+    while (iterations_since_best < ITERATION_LIMIT) {
         coordinate center = communities[community_to_modify].shape.get_centroid();
         double radius = sqrt(communities[community_to_modify].shape.get_area() / PI);
 
@@ -374,13 +375,21 @@ void optimize_compactness(Communities& communities, Graph& graph, double (*measu
 
         community_to_modify++;
         if (community_to_modify == communities.size()) community_to_modify = 0;
+
+        double cur = average(communities, get_compactness);
+        if (cur < best_val) {
+            best_val = cur;
+            best = communities;
+            iterations_since_best = 0;
+        }
+        else iterations_since_best++;
     }
 
-    cout << "drawing" << endl;
-    Canvas canvas(900, 900);
-    canvas.add_outlines(to_outline(communities));
-    canvas.add_outlines(to_outline(communities[community_to_modify]));
-    canvas.draw_to_window();
+    // cout << "drawing" << endl;
+    // Canvas canvas(900, 900);
+    // canvas.add_outlines(to_outline(communities));
+    // canvas.add_outlines(to_outline(communities[community_to_modify]));
+    // canvas.draw_to_window();
     // int n_communities = communities.size();
     // int iterations_since_best = 0;
     // Communities best = communities;
@@ -726,7 +735,7 @@ Communities hte::Geometry::get_communities(Graph& graph, int n_communities) {
         cs[i].update_shape(graph);
     }
 
-    cout << "updated, drawing" << endl;
+    // cout << "updated, drawing" << endl;
     Canvas canvas(900, 900);
     canvas.add_outlines(to_outline(cs));
     canvas.draw_to_window();
@@ -736,7 +745,12 @@ Communities hte::Geometry::get_communities(Graph& graph, int n_communities) {
     //     cout << "optimizing pop" << endl;
     //     optimize_population(cs, graph, 0.01);
     //     cout << "optimizing compactness" << endl;
-    optimize_compactness(cs, graph, get_compactness);
+    // optimize_compactness(cs, graph, get_compactness);
+    // for (int i = 0; i < 40; i++) {
+        optimize_compactness(cs, graph);
+        // optimize_population(cs, graph, 0.01);
+        // maximize(cs, graph, get_partisanship_stdev, true);
+        // maximize(cs, graph, get_population_stdev, true);
     // }
 
     canvas.clear();
