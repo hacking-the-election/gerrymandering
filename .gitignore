@@ -26,7 +26,6 @@ settings.json
 # c++
 cpp/bin/
 cpp/test/test
-cpp/lib/clipper/
 cpp/test_data/
 # cpp/build/*.o
 *.o

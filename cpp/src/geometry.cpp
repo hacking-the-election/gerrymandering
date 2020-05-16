@@ -558,7 +558,7 @@ bool point_in_ring(Geometry::coordinate coord, Geometry::LinearRing lr) {
             gets whether or not a point is in a ring using
             the ray intersection method (clipper implementation)
 
-        @ref: http://www.angusj.com/delphi/clipper/documentation/Docs/Units/ClipperLib/Functions/PointInPolygon.htm
+        @ref: http://www.angusj.com/delphi/Clipper/documentation/Docs/Units/ClipperLib/Functions/PointInPolygon.htm
         @params: 
             `coordinate` coord: the point to check
             `LinearRing` lr: the shape to check the point against

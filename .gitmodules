@@ -7,3 +7,6 @@
 [submodule "cpp/lib/ordered-map"]
 	path = cpp/lib/ordered-map
 	url = https://github.com/Tessil/ordered-map
+[submodule "cpp/lib/Clipper"]
+	path = cpp/lib/Clipper
+	url = https://github.com/GeriBorbas/Clipper
