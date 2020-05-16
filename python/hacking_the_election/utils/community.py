@@ -10,8 +10,7 @@ from pygraph.classes.graph import graph as Graph
 from shapely.geometry import MultiPolygon, Polygon
 from shapely.ops import unary_union
 
-from hacking_the_election.utils.geometry import get_compactness
-from hacking_the_election.utils.graph import get_node_number
+from hacking_the_election.utils.geometry import get_compactne
 from hacking_the_election.utils.stats import average, standard_deviation
 
 
@@ -131,7 +130,7 @@ class Community:
         precinct.community = self.id
 
         # Update induced subgraph.
-        precinct_node_number = get_node_number(precinct, self.state_graph)
+        precinct_node_number = precinct.node
         self.induced_subgraph.add_node(precinct_node_number)
         for neighbor in self.state_graph.neighbors(precinct_node_number):
             if neighbor in self.induced_subgraph.nodes():
@@ -176,7 +175,7 @@ class Community:
         
         # Update induced subgraph
         self.induced_subgraph.del_node(
-            get_node_number(self.precincts[precinct_id], self.state_graph))
+            self.precincts[precinct_id].node)
         
         del self.precincts[precinct_id]
         other.take_precinct(precinct, update)

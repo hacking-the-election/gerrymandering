@@ -15,8 +15,7 @@ from hacking_the_election.utils.graph import (
     contract,
     light_copy
 )
-from hacking_the_election.utils.visualization import COLORS
-from hacking_the_election.visualization.map_visualization import visualize_map
+from hacking_the_election.visualization.misc import draw_state
 
 
 def create_initial_configuration(precinct_graph, n_communities):
@@ -59,13 +58,5 @@ if __name__ == "__main__":
         pickle.dump(communities, f)
 
     # Display and/or save image.
-    precinct_colors = {}
-    for c, community in enumerate(communities):
-        for precinct in community.precincts.values():
-            precinct_colors[precinct] = COLORS[c]
-
-    precincts = [precinct_graph.node_attributes(p)[0]
-                 for p in precinct_graph.nodes()]
-    image_output = None if sys.argv[4] == "none" else sys.argv[4]
-    visualize_map(precincts, image_output, coords=lambda x: x.coords,
-                  color=lambda x: precinct_colors[x], show=True)
+    image_output = sys.argv[4] if sys.argv[4] != "none" else None
+    draw_state(precinct_graph, None, fpath=image_output)

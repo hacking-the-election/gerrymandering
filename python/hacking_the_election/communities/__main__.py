@@ -12,9 +12,18 @@ import sys
 
 from hacking_the_election.communities.compactness_refinement import \
     optimize_compactness
+from hacking_the_election.communities.partisanship_stdev import \
+    optimize_partisanship_stdev
+from hacking_the_election.communities.population import \
+    optimize_population
+from hacking_the_election.population_stdev import \
+    optimize_population_stdev
 from hacking_the_election.communities.initial_configuration import \
     create_initial_configuration
 from hacking_the_election.visualization.map_visualization import visualize_map
+
+
+POPULATION_THRESHOLD = 1
 
 
 def generate_communities(precinct_graph, n_communities, animation_dir=None):
@@ -40,7 +49,13 @@ def generate_communities(precinct_graph, n_communities, animation_dir=None):
             pass
 
     communities = create_initial_configuration(precinct_graph, n_communities)
-    optimize_compactness(communities, precinct_graph, animation_dir)
+
+    while True:
+        optimize_compactness(communities, precinct_graph, animation_dir)
+        optimize_partisanship_stdev(communities, precinct_graph, animation_dir)
+        optimize_population(communities, precinct_graph,
+            POPULATION_THRESHOLD, animation_dir)
+        optimize_population_stdev(communities, precinct_graph, animation_dir)
 
     return communities
 

@@ -6,14 +6,14 @@ import os
 from PIL import Image, ImageDraw
 
 from hacking_the_election.utils.visualization import (
-    COLORS,
+    get_community_colors,
     get_next_file_path,
     get_partisanship_colors
 )
 from hacking_the_election.visualization.map_visualization import visualize_map
 
 
-def draw_state(graph, animation_dir, shapes=[]):
+def draw_state(graph, animation_dir, shapes=[], fpath=None):
     """Draws a precinct map of a state with colors associated to each community.
 
     :param graph: A graph with precincts as node attributes.
@@ -24,13 +24,22 @@ def draw_state(graph, animation_dir, shapes=[]):
 
     :param shapes: A list of extra shapes to be drawn.
     :type shapes: list of (`shapely.geometry.Polygon` or `shapely.geometry.MultiPolygon`)
+
+    :param fpath: A custom path for this image to be saved to.
+    :type fpath: str
     """
 
-    # Draw districts to image file.
     precincts = [graph.node_attributes(node)[0] for node in graph.nodes()]
+    colors = get_community_colors(len(set([p.community for p in precincts])))
+    
+    if fpath is not None:
+        output_path = fpath
+    else:
+        output_path = get_next_file_path(animation_dir)
 
-    visualize_map(precincts, get_next_file_path(animation_dir),
-        coords=lambda x: x.coords, color=lambda x: COLORS[x.community],
+    # Draw districts to image file.
+    visualize_map(precincts, output_path,
+        coords=lambda x: x.coords, color=lambda x: colors[x.community],
         extras=shapes)
 
 

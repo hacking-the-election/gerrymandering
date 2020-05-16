@@ -78,26 +78,6 @@ cpdef void contract(G, tuple t):
         G.add_edge((new_node, neighbor))
 
 
-cpdef int get_node_number(precinct, graph):
-    """Returns the node number of precinct that is in the node_attributes of a graph.
-
-    :param precinct: Precinct to find node number of.
-    :type precinct: `hacking_the_election.utils.precinct.Precinct`
-
-    :param graph: Graph that contains `precinct` in node_attributes.
-    :type graph: `pygraph.classes.graph.graph`
-
-    :return: The node that contains `precinct` as an attribute.
-    :rtype: int
-    """
-
-    cdef int node
-    for node in graph.nodes():
-        if precinct in graph.node_attributes(node):
-            return node
-    raise ValueError("Precinct not part of inputted graph.")
-
-
 cdef void _dfs(graph, set nodes, int v):
     """Finds all the nodes in a component of a graph containing a start node.
 
@@ -160,7 +140,7 @@ cpdef get_induced_subgraph(graph, list precincts):
     :rtype: `pygraph.classes.graph.graph`
     """
 
-    cdef list nodes = [get_node_number(precinct, graph) for precinct in precincts]
+    cdef list nodes = [precinct.node for precinct in precincts]
     cdef list edges = []
 
     cdef int node
@@ -230,7 +210,6 @@ cpdef list get_giveable_precincts(state_graph, list communities, int community):
     cpdef community_graph = community_dict[community].induced_subgraph
     cdef list community_nodes = community_graph.nodes()
     cdef list node_neighbors = []
-    cdef set other_communities
     cdef int node
     cdef int neighbor
     cdef int neighbor_community_id
@@ -244,24 +223,15 @@ cpdef list get_giveable_precincts(state_graph, list communities, int community):
             node_precinct = state_graph.node_attributes(node)[0]
 
             # Get a community that is bordering `community`
-            other_communities = set()
             for neighbor in node_neighbors:
                 neighbor_community_id = \
                     state_graph.node_attributes(neighbor)[0].community
                 if neighbor_community_id != community:
-                    other_communities.add(
-                        community_dict[neighbor_community_id])
-
-            for c in other_communities:
-                c.update_population()
-            other_community = min(other_communities, key=_get_community_pop)
+                    other_community = community
 
             giveable_precincts.append((node_precinct, other_community))
     
-    return sorted(
-        giveable_precincts,
-        key=_get_precinct_xcoord
-    )
+    return giveable_precincts
 
 
 cpdef list get_takeable_precincts(state_graph, list communities, int community):
@@ -301,7 +271,4 @@ cpdef list get_takeable_precincts(state_graph, list communities, int community):
 
     takeable_precincts = list(takeable_precincts_set)
 
-    return sorted(
-        takeable_precincts,
-        key=_get_precinct_xcoord
-    )
+    return takeable_precincts
