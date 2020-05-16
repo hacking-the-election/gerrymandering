@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
     */
 
     Canvas canvas(700, 700);
-    State state = State::from_binary("../../data/bin/cpp/texas.state");
+    State state = State::from_binary(argv[1]);
     canvas.add_outlines(to_outline(state.network));
     canvas.draw_to_window();
     // path p ("../../data/bin/cpp");

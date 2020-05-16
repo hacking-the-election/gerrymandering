@@ -352,6 +352,7 @@ void optimize_compactness(Communities& communities, Graph& graph) {
     Communities best = communities;
     double best_val = average(best, get_compactness);
     int iterations_since_best = 0;
+    cout << "\e[92m" << best_val << endl;
 
     while (iterations_since_best < ITERATION_LIMIT) {
         coordinate center = communities[community_to_modify].shape.get_centroid();
@@ -377,14 +378,17 @@ void optimize_compactness(Communities& communities, Graph& graph) {
         if (community_to_modify == communities.size()) community_to_modify = 0;
 
         double cur = average(communities, get_compactness);
-        cout << cur << endl;
         
         if (cur > best_val) {
             best_val = cur;
             best = communities;
             iterations_since_best = 0;
+            cout << "\e[92m" << cur << "\e[0m" << endl;
         }
-        else iterations_since_best++;
+        else {
+            iterations_since_best++;
+            cout << "\e[91m" << cur << "\e[0m" << endl;
+        }
     }
 
     communities = best;
@@ -744,7 +748,6 @@ Communities hte::Geometry::get_communities(Graph& graph, int n_communities) {
     canvas.add_outlines(to_outline(cs));
     canvas.draw_to_window();
     
-    cout << average(cs, get_compactness) << endl;
     optimize_compactness(cs, graph);
     // for (int i = 0; i < 10; i++) {
     //     cout << "optimizing pop" << endl;
