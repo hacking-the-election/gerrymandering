@@ -23,7 +23,8 @@
 #include "../include/util.hpp"        // array modification functions
 #include "../include/geometry.hpp"    // exterior border generation
 
-#define VERBOSE 1  // print progress
+#define VERBOSE 1        // print progress
+// #define TEXAS_COORDS 0   // absolute coordinates
 
 using namespace rapidjson;
 using namespace std;
@@ -37,7 +38,7 @@ const long int c = pow(2, 18);
 // identifications for files
 map<ID_TYPE, string> id_headers;
 map<POLITICAL_PARTY, string> election_headers;
-const vector<string> non_precinct = {"9999", "WV", "ZZZZZ", "LAKE", "WWWWWW", "1808904150", "1812700460", "39095123ZZZ", "39123123ZZZ", "39093093999", "39035007999", "3908500799", "3900700799"};
+const vector<string> non_precinct = {"9999", "WV", "ZZZZZ", "LAKE", "WWWWWW", "1808904150", "1812700460", "39095123ZZZ", "39043043ACN", "39123123ZZZ", "39043043ZZZ", "39093093999", "39035007999", "3908500799", "3900700799"};
 
 // parsing functions for tsv files
 vector<vector<string > > parse_sv(string, string);
@@ -205,8 +206,13 @@ Polygon string_to_vector(string str) {
 
     LinearRing hull;
     for (int i = 0; i < mp[0].Size(); i++) {
+        #ifndef TEXAS_COORDS
         double x = mp[0][i][0].GetDouble() * c;
         double y = mp[0][i][1].GetDouble() * c;
+        #else
+        double x = mp[0][i][0].GetDouble() * 20;
+        double y = mp[0][i][1].GetDouble() * 20;
+        #endif
 
         hull.border.push_back({(long int) x, (long int) y});
     }
@@ -221,7 +227,11 @@ Polygon string_to_vector(string str) {
     for (int i = 1; i < mp.Size(); i++) {
         LinearRing hole;
         for (int j = 0; j < mp[i].Size(); j++) {
+            #ifndef TEXAS_COORDS
             hole.border.push_back({(long int) mp[i][j][0].GetDouble() * c, (long int) mp[i][j][1].GetDouble() * c});
+            #else
+            hole.border.push_back({(long int) mp[i][j][0].GetDouble() * 2, (long int) mp[i][j][1].GetDouble() * 2});
+            #endif
         }
         if (mp[i][0][0] != mp[i][mp[i].Size() - 1][0] || 
             mp[i][0][1] != mp[i][mp[i].Size() - 1][1]) {       
@@ -318,8 +328,17 @@ vector<Precinct> parse_precinct_data(string geoJSON) {
         
 
         // get the population data from geodata
-        if (shapes["features"][i]["properties"].HasMember(id_headers[ID_TYPE::POPUID].c_str()))
-            pop = shapes["features"][i]["properties"][id_headers[ID_TYPE::POPUID].c_str()].GetInt();
+        if (shapes["features"][i]["properties"].HasMember(id_headers[ID_TYPE::POPUID].c_str())) {
+            if (shapes["features"][i]["properties"][id_headers[ID_TYPE::POPUID].c_str()].IsInt()) {
+                pop = shapes["features"][i]["properties"][id_headers[ID_TYPE::POPUID].c_str()].GetInt();
+            }
+            else if (shapes["features"][i]["properties"][id_headers[ID_TYPE::POPUID].c_str()].IsString()) {
+                string test = shapes["features"][i]["properties"][id_headers[ID_TYPE::POPUID].c_str()].GetString();
+                if (test != "" && test != "NA") {
+                    pop = stoi(test);
+                }
+            }
+        }
         else cout << "\e[31merror: \e[0mNo population data" << endl;
 
 
@@ -362,6 +381,7 @@ vector<Precinct> parse_precinct_data(string geoJSON) {
         else {
             Multi_Polygon geo = multi_string_to_vector(coords);
             geo.shape_id = id;
+
             // calculate area of multipolygon
             double total_area = geo.get_area();
             int append = 0;
@@ -392,6 +412,12 @@ vector<Precinct> parse_precinct_data(string geoJSON) {
                 Precinct precinct(s.hull, pop, (id + "_s" + std::to_string(append)));
                 precinct.holes = s.holes;
                 precinct.voter_data = adjusted;
+                if (precinct.shape_id == "560051901_s1"){
+                    for (auto& p : precinct.voter_data) {
+                        cout << p.second << ", " << endl;
+                    }
+                }
+
                 shapes_vector.push_back(precinct);
                 append++;
             }
@@ -656,6 +682,12 @@ Precinct_Group combine_holes(Precinct_Group pg) {
     vector<Precinct> precincts;
     vector<int> precincts_to_ignore;
 
+    vector<bounding_box> bounds;
+    for (Precinct p : pg.precincts) {
+        bounds.push_back(p.get_bounding_box());
+    }
+
+
     for (int x = 0; x < pg.precincts.size(); x++) {
         // for each precinct in the pg array
         Precinct p = pg.precincts[x];
@@ -673,20 +705,23 @@ Precinct_Group combine_holes(Precinct_Group pg) {
             for (int j = 0; j < pg.precincts.size(); j++) {
                 // check all other precincts for if they're inside
                 Precinct p_c = pg.precincts[j];
-                if (j != x && get_inside(p_c.hull, p.hull)) {
-                    // precinct j is inside precinct x,
-                    // add the appropriate data from j to x
-                    for (auto const& x : pg.precincts[j].voter_data) {
-                        voter[x.first] += x.second;
+
+                if (bound_overlap(bounds[x], bounds[j])) {
+                    if (j != x && get_inside(p_c.hull, p.hull)) {
+                        // precinct j is inside precinct x,
+                        // add the appropriate data from j to x
+                        for (auto const& x : pg.precincts[j].voter_data) {
+                            voter[x.first] += x.second;
+                        }
+
+                        // demv += pg.precincts[j].dem;
+                        // repv += pg.precincts[j].rep;
+                        pop += pg.precincts[j].pop;
+
+                        // this precinct will not be returned
+                        precincts_to_ignore.push_back(j);
+                        interior_pre++;
                     }
-
-                    // demv += pg.precincts[j].dem;
-                    // repv += pg.precincts[j].rep;
-                    pop += pg.precincts[j].pop;
-
-                    // this precinct will not be returned
-                    precincts_to_ignore.push_back(j);
-                    interior_pre++;
                 }
             }
         }
@@ -843,12 +878,10 @@ State State::generate_from_file(string precinct_geoJSON, string voter_data, stri
     for (int i = 0; i < precincts.size(); i++) {
         string id = precincts[i].shape_id;
         for (string str : non_precinct) {
-            if (id.size() >= str.size() + 1) {
-                if (id.find(str) != string::npos) {
-                    precincts.erase(precincts.begin() + i);
-                    i--;
-                    n_removed++;
-                }
+            if (id.find(str) != string::npos) {
+                precincts.erase(precincts.begin() + i);
+                i--;
+                n_removed++;
             }
         }
     }
@@ -907,12 +940,10 @@ State State::generate_from_file(string precinct_geoJSON, string district_geoJSON
     for (int i = 0; i < precinct_shapes.size(); i++) {
         string id = precinct_shapes[i].shape_id;
         for (string str : non_precinct) {
-            if (id.size() >= str.size() + 1) {
-                if (id.find(str) != string::npos) {
-                    precinct_shapes.erase(precinct_shapes.begin() + i);
-                    i--;
-                    n_removed++;
-                }
+            if (id.find(str) != string::npos) {
+                precinct_shapes.erase(precinct_shapes.begin() + i);
+                i--;
+                n_removed++;
             }
         }
     }

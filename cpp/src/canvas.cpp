@@ -89,9 +89,9 @@ vector<Outline> Graphics::to_outline(Communities& communities) {
             outlines.push_back(o);
         }
 
-        Outline border(generate_exterior_border(communities[i].shape).border[0].hull);
-        border.style().outline(RGB_Color(0,0,0)).thickness(1.4).fill(RGB_Color(-1, -1, -1));
-        outlines.push_back(border);
+        // Outline border(generate_exterior_border(communities[i].shape).border[0].hull);
+        // border.style().outline(RGB_Color(0,0,0)).thickness(1.4).fill(RGB_Color(-1, -1, -1));
+        // outlines.push_back(border);
     }
 
     return outlines;

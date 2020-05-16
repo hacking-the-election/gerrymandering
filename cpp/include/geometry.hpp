@@ -41,6 +41,7 @@ hte::Geometry::Polygon generate_gon(hte::Geometry::coordinate c, double radius, 
 
 // testing bounds and overlaps
 bool bound_overlap(hte::Geometry::bounding_box b1, hte::Geometry::bounding_box b2);
+bool bound_inside(hte::Geometry::bounding_box b1, hte::Geometry::bounding_box b2);
 bool point_in_ring(hte::Geometry::coordinate coord, hte::Geometry::LinearRing lr);
 bool get_inside(hte::Geometry::LinearRing s0, hte::Geometry::LinearRing s1);
 bool get_inside_first(hte::Geometry::LinearRing s0, hte::Geometry::LinearRing s1);

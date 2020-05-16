@@ -40,10 +40,10 @@ for (( i = 1; i <= "$(echo "$CMD" | tr ' ' '\n' | grep . | wc -l)"; i++)); do
     elif [ "$(echo "$ARG" | cut -d '=' -f 1)" == "--keys" ]; then
         # is a keys argument
         CMDSTR="${CMDSTR}$ARG "
-    elif [ "$END" == "dat" ]; then
+    elif [ "$END" == "state" ]; then
         # is an output argument
         CMDSTR="${CMDSTR}${DATA}${BIN}${ARG}"
     fi
 done
 
-exec $CMDSTR
+exec ${CMDSTR}
