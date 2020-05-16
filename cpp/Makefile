@@ -49,7 +49,7 @@ draw_communities: draw_community.bin
 */%.o: src/%.cpp
 	$(CC) $(CV) $< -c -o $@
 
-$(BUILD)/clipper.o: lib/Clipper/clipper.cpp
+$(BUILD)/clipper.o: lib/Clipper/cpp/clipper.cpp
 	$(CC) $< -c -o $(BUILD)/clipper.o
 
 

@@ -10,7 +10,7 @@
 
 #include "shape.hpp"
 #include "community.hpp"
-#include "../lib/Clipper/clipper.hpp"
+#include "../lib/Clipper/cpp/clipper.hpp"
 #include "../lib/Miniball.hpp"
 
 #define PI 3.14159265358979323846264338327950288
