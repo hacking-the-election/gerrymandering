@@ -82,16 +82,6 @@ class TestGraph(unittest.TestCase):
         G = Graph()
         G.add_node(0); G.add_node(1)
         self.assertEqual(len(graph.get_components(G)), 2)
-        
-
-    def test_get_node_number(self):
-        """Tests `hacking_the_election.utils.graph.get_node_number`
-        """
-
-        precinct_graph = Graph()
-        precinct = Precinct(0, Point(0, 0).buffer(1), "North Montana", "0", 0, 0)
-        precinct_graph.add_node(0, attrs=[precinct])
-        graph.get_node_number(precinct, precinct_graph)
 
     def test_get_induced_subgraph(self):
         """Tests `hacking_the_election.utils.graph.get_induced_subgraph`

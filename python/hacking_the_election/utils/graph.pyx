@@ -78,26 +78,6 @@ cpdef void contract(G, tuple t):
         G.add_edge((new_node, neighbor))
 
 
-cpdef int get_node_number(precinct, graph):
-    """Returns the node number of precinct that is in the node_attributes of a graph.
-
-    :param precinct: Precinct to find node number of.
-    :type precinct: `hacking_the_election.utils.precinct.Precinct`
-
-    :param graph: Graph that contains `precinct` in node_attributes.
-    :type graph: `pygraph.classes.graph.graph`
-
-    :return: The node that contains `precinct` as an attribute.
-    :rtype: int
-    """
-
-    cdef int node
-    for node in graph.nodes():
-        if precinct in graph.node_attributes(node):
-            return node
-    raise ValueError("Precinct not part of inputted graph.")
-
-
 cdef void _dfs(graph, set nodes, int v):
     """Finds all the nodes in a component of a graph containing a start node.
 
@@ -160,7 +140,7 @@ cpdef get_induced_subgraph(graph, list precincts):
     :rtype: `pygraph.classes.graph.graph`
     """
 
-    cdef list nodes = [get_node_number(precinct, graph) for precinct in precincts]
+    cdef list nodes = [precinct.node for precinct in precincts]
     cdef list edges = []
 
     cdef int node
