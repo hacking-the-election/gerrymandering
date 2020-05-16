@@ -42,7 +42,7 @@ using namespace chrono;
 
 #define VERBOSE 1
 #define DEBUG 0
-#define ITERATION_LIMIT 100
+#define ITERATION_LIMIT 40
 
 
 class EdgeWrapper {
@@ -377,7 +377,9 @@ void optimize_compactness(Communities& communities, Graph& graph) {
         if (community_to_modify == communities.size()) community_to_modify = 0;
 
         double cur = average(communities, get_compactness);
-        if (cur < best_val) {
+        cout << cur << endl;
+        
+        if (cur > best_val) {
             best_val = cur;
             best = communities;
             iterations_since_best = 0;
@@ -385,6 +387,8 @@ void optimize_compactness(Communities& communities, Graph& graph) {
         else iterations_since_best++;
     }
 
+    communities = best;
+    cout << best_val << endl;
     // cout << "drawing" << endl;
     // Canvas canvas(900, 900);
     // canvas.add_outlines(to_outline(communities));
@@ -740,14 +744,14 @@ Communities hte::Geometry::get_communities(Graph& graph, int n_communities) {
     canvas.add_outlines(to_outline(cs));
     canvas.draw_to_window();
     
-    cout << "init config: " << average(cs, get_partisanship_stdev) << endl;
+    cout << average(cs, get_compactness) << endl;
+    optimize_compactness(cs, graph);
     // for (int i = 0; i < 10; i++) {
     //     cout << "optimizing pop" << endl;
     //     optimize_population(cs, graph, 0.01);
     //     cout << "optimizing compactness" << endl;
     // optimize_compactness(cs, graph, get_compactness);
     // for (int i = 0; i < 40; i++) {
-        optimize_compactness(cs, graph);
         // optimize_population(cs, graph, 0.01);
         // maximize(cs, graph, get_partisanship_stdev, true);
         // maximize(cs, graph, get_population_stdev, true);

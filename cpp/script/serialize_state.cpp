@@ -117,10 +117,21 @@ int main(int argc, char* argv[]) {
 
     map<POLITICAL_PARTY, int> total_voter_data;
     int total_popu = 0;
+    for (auto& par : state.precincts[0].voter_data) {
+        total_voter_data[par.first] = 0;
+    }
+
     for (Precinct pre : state.precincts) {
         for (auto& par : pre.voter_data) {
             total_voter_data[par.first] += par.second;
         }
+
+        if (pre.shape_id == "560051901_s1") {
+            for (auto& par : pre.voter_data) {
+                cout << par.second << endl;
+            }
+        }
+
         total_popu += pre.pop;
     }
 

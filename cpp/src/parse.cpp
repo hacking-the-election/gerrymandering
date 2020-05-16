@@ -23,7 +23,8 @@
 #include "../include/util.hpp"        // array modification functions
 #include "../include/geometry.hpp"    // exterior border generation
 
-#define VERBOSE 1  // print progress
+#define VERBOSE 1        // print progress
+// #define TEXAS_COORDS 0   // absolute coordinates
 
 using namespace rapidjson;
 using namespace std;
@@ -205,8 +206,13 @@ Polygon string_to_vector(string str) {
 
     LinearRing hull;
     for (int i = 0; i < mp[0].Size(); i++) {
+        #ifndef TEXAS_COORDS
         double x = mp[0][i][0].GetDouble() * c;
         double y = mp[0][i][1].GetDouble() * c;
+        #else
+        double x = mp[0][i][0].GetDouble() * 20;
+        double y = mp[0][i][1].GetDouble() * 20;
+        #endif
 
         hull.border.push_back({(long int) x, (long int) y});
     }
@@ -221,7 +227,11 @@ Polygon string_to_vector(string str) {
     for (int i = 1; i < mp.Size(); i++) {
         LinearRing hole;
         for (int j = 0; j < mp[i].Size(); j++) {
+            #ifndef TEXAS_COORDS
             hole.border.push_back({(long int) mp[i][j][0].GetDouble() * c, (long int) mp[i][j][1].GetDouble() * c});
+            #else
+            hole.border.push_back({(long int) mp[i][j][0].GetDouble() * 2, (long int) mp[i][j][1].GetDouble() * 2});
+            #endif
         }
         if (mp[i][0][0] != mp[i][mp[i].Size() - 1][0] || 
             mp[i][0][1] != mp[i][mp[i].Size() - 1][1]) {       
@@ -371,6 +381,7 @@ vector<Precinct> parse_precinct_data(string geoJSON) {
         else {
             Multi_Polygon geo = multi_string_to_vector(coords);
             geo.shape_id = id;
+
             // calculate area of multipolygon
             double total_area = geo.get_area();
             int append = 0;
@@ -401,6 +412,12 @@ vector<Precinct> parse_precinct_data(string geoJSON) {
                 Precinct precinct(s.hull, pop, (id + "_s" + std::to_string(append)));
                 precinct.holes = s.holes;
                 precinct.voter_data = adjusted;
+                if (precinct.shape_id == "560051901_s1"){
+                    for (auto& p : precinct.voter_data) {
+                        cout << p.second << ", " << endl;
+                    }
+                }
+
                 shapes_vector.push_back(precinct);
                 append++;
             }
