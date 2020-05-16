@@ -35,11 +35,22 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    int iter = 10;
+    
     // read binary file from path
+    int read_average = 0;
     string read_path = string(argv[1]);
-    State state = State::from_binary(read_path);
-    int n_communities = stoi(string(argv[2]));
 
+    for (int i = 0; i < iter; i++) {
+        auto start = chrono::high_resolution_clock::now();
+        State state = State::from_binary(read_path);
+        auto stop = chrono::high_resolution_clock::now();
+        read_average += chrono::duration_cast<chrono::microseconds>(stop - start).count();
+    }
+    read_average /= iter;
+    cout << "file read in average: " << read_average << endl;
+    int n_communities = stoi(string(argv[2]));
+    State state = State::from_binary(read_path);
     Communities s = get_communities(state.network, n_communities);
     return 0;
 }

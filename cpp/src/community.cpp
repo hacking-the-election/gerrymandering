@@ -352,7 +352,7 @@ void optimize_compactness(Communities& communities, Graph& graph) {
     Communities best = communities;
     double best_val = average(best, get_compactness);
     int iterations_since_best = 0;
-    cout << "\e[92m" << best_val << endl;
+    // cout << "\e[92m" << best_val << endl;
 
     while (iterations_since_best < ITERATION_LIMIT) {
         coordinate center = communities[community_to_modify].shape.get_centroid();
@@ -383,82 +383,16 @@ void optimize_compactness(Communities& communities, Graph& graph) {
             best_val = cur;
             best = communities;
             iterations_since_best = 0;
-            cout << "\e[92m" << cur << "\e[0m" << endl;
+            // cout << "\e[92m" << cur << "\e[0m" << endl;
         }
         else {
             iterations_since_best++;
-            cout << "\e[91m" << cur << "\e[0m" << endl;
+            // cout << "\e[91m" << cur << "\e[0m" << endl;
         }
     }
 
     communities = best;
-    cout << best_val << endl;
-    // cout << "drawing" << endl;
-    // Canvas canvas(900, 900);
-    // canvas.add_outlines(to_outline(communities));
-    // canvas.add_outlines(to_outline(communities[community_to_modify]));
-    // canvas.draw_to_window();
-    // int n_communities = communities.size();
-    // int iterations_since_best = 0;
-    // Communities best = communities;
-    // double best_measure = average(communities, measure);
-
-    // while (iterations_since_best < ITERATION_LIMIT) {
-    //     int smallest_index = 0;//rand_num(0, communities.size() - 1);//0;
-    //     double smallest_measure = measure(communities[0]);
-
-    //     for (int i = 1; i < communities.size(); i++) {
-    //         double x = measure(communities[i]);
-    //         if (x < smallest_measure) {
-    //             smallest_measure = x;
-    //             smallest_index = i;
-    //         }
-    //     }
-
-
-    //     coordinate center = communities[smallest_index].shape.get_centroid();
-    //     double radius = sqrt(communities[smallest_index].shape.get_area() / 3.141592653);
-
-    //     int num_exchanged = 0;
-    //     vector<array<int, 2> > giveable = get_giveable_precincts(graph, communities, smallest_index);
-
-    //     for (array<int, 2> g : giveable) {
-    //         if (!point_in_circle(center, radius, graph.vertices[g[0]].precinct->get_centroid())) {
-    //             if (exchange_precinct(graph, communities, g[0], g[1])) {
-    //                 num_exchanged++;
-    //             }
-    //         }
-    //     }
-
-    //     vector<int> takeable = get_takeable_precincts(graph, communities, smallest_index);
-
-    //     for (int t : takeable) {
-    //         if (point_in_circle(center, radius, graph.vertices[t].precinct->get_centroid())) {
-    //             if (exchange_precinct(graph, communities, t, smallest_index)) {
-    //                 num_exchanged++;
-    //             }
-    //         }
-    //     }
-
-    //     double cur_measure = average(communities, measure);
-    //     cout << cur_measure << endl;
-
-    //     if (cur_measure > best_measure) {
-    //         best = communities;
-    //         best_measure = cur_measure;
-    //         iterations_since_best = 0;
-    //     }
-    //     else {
-    //         iterations_since_best++;
-    //     }
-
-    //     if (num_exchanged == 0) {
-    //         break;
-    //     }
-    // }
-
-    // communities = best;
-    // cout << average(communities, measure) << endl;
+    // cout << best_val << endl;
 }
 
 
@@ -736,19 +670,40 @@ Communities hte::Geometry::get_communities(Graph& graph, int n_communities) {
     */
 
     srand(time(NULL));
-    // Communities cs = load("config.txt", graph);
+    int iter = 10;
+    int init_average = 0;
+
+    for (int i = 0; i < iter; i++) {
+        auto start = chrono::high_resolution_clock::now();
+        karger_stein(graph, n_communities);
+        auto stop = chrono::high_resolution_clock::now();
+        init_average += chrono::duration_cast<chrono::microseconds>(stop - start).count();
+    }
+
+    init_average /= iter;
+    cout << "init config completed in average " << init_average << endl;
+ 
     Communities cs = karger_stein(graph, n_communities);
-    cout << "got karger stein" << endl;
     for (int i = 0; i < cs.size(); i++) {
         cs[i].update_shape(graph);
     }
 
-    // cout << "updated, drawing" << endl;
-    Canvas canvas(900, 900);
-    canvas.add_outlines(to_outline(cs));
-    canvas.draw_to_window();
-    
-    optimize_compactness(cs, graph);
+    int compactness_optimization = 0;
+    Communities before = cs;
+    Graph before_g = graph;
+
+    for (int i = 0; i < iter; i++) {
+        auto start = chrono::high_resolution_clock::now();
+        optimize_compactness(cs, graph);
+        auto stop = chrono::high_resolution_clock::now();
+        graph = before_g;
+        cs = before;
+        compactness_optimization += chrono::duration_cast<chrono::microseconds>(stop - start).count();
+    }
+
+    compactness_optimization /= iter;
+    cout << "compactness finished in " << compactness_optimization << endl;
+
     // for (int i = 0; i < 10; i++) {
     //     cout << "optimizing pop" << endl;
     //     optimize_population(cs, graph, 0.01);
@@ -760,10 +715,6 @@ Communities hte::Geometry::get_communities(Graph& graph, int n_communities) {
         // maximize(cs, graph, get_population_stdev, true);
     // }
 
-    canvas.clear();
-    canvas.add_outlines(to_outline(cs));
-    canvas.draw_to_window();
-    
     // maximize(cs, graph, get_partisanship_stdev, true);
     // maximize(cs, graph, get_population_stdev, true);
     // optimize_compactness(cs, graph, get_compactness);
