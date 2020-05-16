@@ -232,33 +232,9 @@ bool exchange_precinct(Graph& g, Communities& cs, int node_to_take, int communit
         return false;
     }
     
-    // cout << "moving " << node_to_take << " from " << g.vertices[node_to_take].community << " to community " << community_to_take << endl;
-    // cout << (cs[g.vertices[node_to_take].community].vertices.find(node_to_take) != cs[g.vertices[node_to_take].community].vertices.end()) << endl;
-    // if (cs[g.vertices[node_to_take].community].vertices.find(node_to_take) == cs[g.vertices[node_to_take].community].vertices.end()) {
-    //     cout << node_to_take << " not in " << g.vertices[node_to_take].community << endl;
-
-    //     for (int i = 0; i < cs.size(); i++) {
-    //         for (auto& n : cs[i].vertices) {
-    //             if (n.second.id == node_to_take) {
-    //                 cout << "actually in " << i << endl;
-    //                 Canvas canvas(900, 900);
-    //                 canvas.add_outlines(to_outline(cs));
-    //                 Outline o(n.second.precinct->hull);
-    //                 o.style().fill(RGB_Color(-1,-1,-1)).thickness(4).outline(RGB_Color(0,0,0));
-    //                 canvas.add_outline(o);
-    //                 canvas.add_outlines(to_outline(cs[i]));
-    //                 canvas.add_outlines(to_outline(cs[g.vertices[node_to_take].community]));
-    //                 canvas.draw_to_window();
-    //             }
-    //         }
-    //     }
-    // }
-
-    // cout << node_to_take << " community: " << cs[community_to_take].vertices[node_to_take].community << endl;
     cs[g.vertices[node_to_take].community].remove_node(node_to_take);
     cs[community_to_take].add_node(g.vertices[node_to_take]);
     g.vertices[node_to_take].community = community_to_take;
-    // cs[community_to_take].vertices[node_to_take].community = community_to_take;
     return true;
 }
 
@@ -429,7 +405,6 @@ void optimize_population(Communities& communities, Graph& g, double range) {
                     std::shuffle(take.begin(), take.end(), std::random_device());
                 }
 
-                cout << "taking precinct " << take[x] << " for community " << worst_index << endl;
                 exchange_precinct(g, communities, take[x], worst_index);
                 x++;
             }
@@ -444,7 +419,6 @@ void optimize_population(Communities& communities, Graph& g, double range) {
                     std::shuffle(give.begin(), give.end(), std::random_device());
                 }
 
-                cout << "giving precinct " << give[x][0] << " to community " << give[x][1] << endl;
                 exchange_precinct(g, communities, give[x][0], give[x][1]);
                 x++;
             }
@@ -464,16 +438,7 @@ void optimize_population(Communities& communities, Graph& g, double range) {
             }
         }
 
-
-        // cout << worst_difference << ", " << range * (double)ideal_pop << endl;
-        // Canvas canvas(900, 900);
-        // canvas.add_outlines(to_outline(communities));
-        // canvas.draw_to_window();
-
         if (worst_difference < (int)(range * (double)ideal_pop)) {
-            // Canvas canvas(900, 900);
-            // canvas.add_outlines(to_outline(communities));
-            // canvas.draw_to_window();
             break;
         }
     }
@@ -573,10 +538,6 @@ void maximize(Communities& communities, Graph& graph, double (*measure)(Communit
     }
 
     communities = best;
-    // Canvas canvas(900, 900);
-    // canvas.add_outlines(to_outline(communities));
-    // canvas.draw_to_window();
-    
     // cout << "did not improve after " << ITERATION_LIMIT << " iterations, returning..." << endl;
 }
 
@@ -704,16 +665,18 @@ Communities hte::Geometry::get_communities(Graph& graph, int n_communities) {
     compactness_optimization /= iter;
     cout << "compactness finished in " << compactness_optimization << endl;
 
-    // for (int i = 0; i < 10; i++) {
-    //     cout << "optimizing pop" << endl;
-    //     optimize_population(cs, graph, 0.01);
-    //     cout << "optimizing compactness" << endl;
-    // optimize_compactness(cs, graph, get_compactness);
-    // for (int i = 0; i < 40; i++) {
-        // optimize_population(cs, graph, 0.01);
-        // maximize(cs, graph, get_partisanship_stdev, true);
-        // maximize(cs, graph, get_population_stdev, true);
-    // }
+    int pop_opt = 0;
+    for (int i = 0; i < iter; i++) {
+        auto start = chrono::high_resolution_clock::now();
+        optimize_population(cs, graph, 0.01);
+        auto stop = chrono::high_resolution_clock::now();
+        graph = before_g;
+        cs = before;
+        pop_opt += chrono::duration_cast<chrono::microseconds>(stop - start).count();
+    }
+
+    pop_opt /= iter;
+    cout << "pop finished in " << pop_opt << endl;
 
     // maximize(cs, graph, get_partisanship_stdev, true);
     // maximize(cs, graph, get_population_stdev, true);
