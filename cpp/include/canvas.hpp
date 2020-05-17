@@ -46,9 +46,11 @@ namespace Graphics {
     std::vector<RGB_Color> generate_n_colors(int n);
 
     // convert geometry shapes into styled outlines
+    Outline to_outline(Geometry::LinearRing r);
     std::vector<Outline> to_outline(Geometry::State state);
     std::vector<Outline> to_outline(Geometry::Graph& graph);
     std::vector<Outline> to_outline(Geometry::Communities& communities);
+
 
 
     class EdgeBucket {

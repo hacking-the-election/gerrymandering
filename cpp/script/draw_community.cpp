@@ -19,6 +19,7 @@
 
 using namespace std::chrono; 
 
+
 using namespace std;
 using namespace hte::Geometry;
 using namespace hte::Graphics;
@@ -31,9 +32,10 @@ int main(int argc, char* argv[]) {
         See community.cpp for the implementation of the algorithm
     */
 
-    Canvas canvas(700, 700);
+    Canvas canvas(900, 900);
     State state = State::from_binary(argv[1]);
     canvas.add_outlines(to_outline(state.network));
+    canvas.add_outline(to_outline(generate_exterior_border(state).border[0].hull));
     canvas.draw_to_window();
     // path p ("../../data/bin/cpp");
     // directory_iterator end_itr;
