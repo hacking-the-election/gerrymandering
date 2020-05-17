@@ -326,6 +326,7 @@ void optimize_compactness(Communities& communities, Graph& graph) {
     int sub_modifications = 20;
 
     Communities best = communities;
+    Graph best_g = graph;
     double best_val = average(best, get_compactness);
     int iterations_since_best = 0;
     // cout << "\e[92m" << best_val << endl;
@@ -358,6 +359,7 @@ void optimize_compactness(Communities& communities, Graph& graph) {
         if (cur > best_val) {
             best_val = cur;
             best = communities;
+            best_g = graph;
             iterations_since_best = 0;
             // cout << "\e[92m" << cur << "\e[0m" << endl;
         }
@@ -368,6 +370,7 @@ void optimize_compactness(Communities& communities, Graph& graph) {
     }
 
     communities = best;
+    graph = best_g;
     // cout << best_val << endl;
 }
 
@@ -619,6 +622,13 @@ Communities karger_stein(Graph& g1, int n_communities) {
 }
 
 
+void drawc(Communities& cs) {
+    Canvas canvas(900, 900);
+    canvas.add_outlines(to_outline(cs));
+    canvas.draw_to_window();
+}
+
+
 Communities hte::Geometry::get_communities(Graph& graph, int n_communities) {
     /*
         @desc: determines a random list of community objects
@@ -631,55 +641,74 @@ Communities hte::Geometry::get_communities(Graph& graph, int n_communities) {
     */
 
     srand(time(NULL));
-    int iter = 10;
-    int init_average = 0;
+    // int iter = 10;
+    // int init_average = 0;
 
-    for (int i = 0; i < iter; i++) {
-        auto start = chrono::high_resolution_clock::now();
-        karger_stein(graph, n_communities);
-        auto stop = chrono::high_resolution_clock::now();
-        init_average += chrono::duration_cast<chrono::microseconds>(stop - start).count();
-    }
+    // for (int i = 0; i < iter; i++) {
+    //     auto start = chrono::high_resolution_clock::now();
+    //     karger_stein(graph, n_communities);
+    //     auto stop = chrono::high_resolution_clock::now();
+    //     init_average += chrono::duration_cast<chrono::microseconds>(stop - start).count();
+    // }
 
-    init_average /= iter;
-    cout << "init config completed in average " << init_average << endl;
+    // init_average /= iter;
+    // cout << "init config completed in average " << init_average << endl;
  
+    // Communities cs = karger_stein(graph, n_communities);
+
+    // int compactness_optimization = 0;
+    // Communities before = cs;
+    // Graph before_g = graph;
+
+    // for (int i = 0; i < iter; i++) {
+    //     auto start = chrono::high_resolution_clock::now();
+    //     optimize_compactness(cs, graph);
+    //     auto stop = chrono::high_resolution_clock::now();
+    //     graph = before_g;
+    //     cs = before;
+    //     compactness_optimization += chrono::duration_cast<chrono::microseconds>(stop - start).count();
+    // }
+
+    // compactness_optimization /= iter;
+    // cout << "compactness finished in " << compactness_optimization << endl;
+
+    // int pop_opt = 0;
+    // for (int i = 0; i < iter; i++) {
+    //     auto start = chrono::high_resolution_clock::now();
+    //     optimize_population(cs, graph, 0.01);
+    //     auto stop = chrono::high_resolution_clock::now();
+    //     graph = before_g;
+    //     cs = before;
+    //     pop_opt += chrono::duration_cast<chrono::microseconds>(stop - start).count();
+    // }
+
+    // pop_opt /= iter;
+    // cout << "pop finished in " << pop_opt << endl;
+
+    // maximize(cs, graph, get_partisanship_stdev, true);
+    // maximize(cs, graph, get_population_stdev, true);
+    // optimize_compactness(cs, graph, get_compactness);
     Communities cs = karger_stein(graph, n_communities);
     for (int i = 0; i < cs.size(); i++) {
         cs[i].update_shape(graph);
     }
 
-    int compactness_optimization = 0;
-    Communities before = cs;
-    Graph before_g = graph;
-
-    for (int i = 0; i < iter; i++) {
-        auto start = chrono::high_resolution_clock::now();
+    // while (true) {
+        // auto start = chrono::high_resolution_clock::now();
         optimize_compactness(cs, graph);
-        auto stop = chrono::high_resolution_clock::now();
-        graph = before_g;
-        cs = before;
-        compactness_optimization += chrono::duration_cast<chrono::microseconds>(stop - start).count();
-    }
+        // auto stop = chrono::high_resolution_clock::now();
+        // cout << chrono::duration_cast<microseconds>(stop - start).count() << endl;
+        // drawc(cs);
+        // optimize_population(cs, graph, 0.01);
+        drawc(cs);
+    //     optimize_population(cs, graph, 0.1);
+    //     drawc(cs);
+    //     maximize(cs, graph, get_partisanship_stdev, true);
+    //     drawc(cs);
+    //     maximize(cs, graph, get_population_stdev, true);
+    //     drawc(cs);
+    // }
 
-    compactness_optimization /= iter;
-    cout << "compactness finished in " << compactness_optimization << endl;
 
-    int pop_opt = 0;
-    for (int i = 0; i < iter; i++) {
-        auto start = chrono::high_resolution_clock::now();
-        optimize_population(cs, graph, 0.01);
-        auto stop = chrono::high_resolution_clock::now();
-        graph = before_g;
-        cs = before;
-        pop_opt += chrono::duration_cast<chrono::microseconds>(stop - start).count();
-    }
-
-    pop_opt /= iter;
-    cout << "pop finished in " << pop_opt << endl;
-
-    // maximize(cs, graph, get_partisanship_stdev, true);
-    // maximize(cs, graph, get_population_stdev, true);
-    // optimize_compactness(cs, graph, get_compactness);
     return cs;
 }
