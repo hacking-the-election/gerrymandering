@@ -694,13 +694,13 @@ Communities hte::Geometry::get_communities(Graph& graph, int n_communities) {
     }
 
     // while (true) {
-        // auto start = chrono::high_resolution_clock::now();
-        optimize_compactness(cs, graph);
-        // auto stop = chrono::high_resolution_clock::now();
-        // cout << chrono::duration_cast<microseconds>(stop - start).count() << endl;
+    auto start = chrono::high_resolution_clock::now();
+    optimize_compactness(cs, graph);
+    auto stop = chrono::high_resolution_clock::now();
+    cout << chrono::duration_cast<microseconds>(stop - start).count() << endl;
         // drawc(cs);
         // optimize_population(cs, graph, 0.01);
-        drawc(cs);
+    drawc(cs);
     //     optimize_population(cs, graph, 0.1);
     //     drawc(cs);
     //     maximize(cs, graph, get_partisanship_stdev, true);
