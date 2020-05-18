@@ -71,7 +71,7 @@ def optimize_compactness(communities, graph, animation_dir=None):
                 for c in communities:
                     for bc in best_communities:
                         if c.id == bc.id:
-                            c.precincts = bc.precincts
+                            c = bc
                 
                 rounded_compactnesses = [round(c.compactness, 3) for c in communities]
                 print(rounded_compactnesses, min(rounded_compactnesses))
@@ -92,7 +92,7 @@ def optimize_compactness(communities, graph, animation_dir=None):
                     for c in communities:
                         for bc in best_communities:
                             if c.id == bc.id:
-                                c.precincts = bc.precincts
+                                c = bc
                 
                     rounded_compactnesses = [round(c.compactness, 3) for c in communities]
                     print(rounded_compactnesses, min(rounded_compactnesses))
