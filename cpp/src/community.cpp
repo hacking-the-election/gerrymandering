@@ -42,7 +42,7 @@ using namespace chrono;
 
 #define VERBOSE 1
 #define DEBUG 0
-#define ITERATION_LIMIT 40
+#define ITERATION_LIMIT 25
 
 
 class EdgeWrapper {
@@ -330,22 +330,25 @@ void optimize_compactness(Communities& communities, Graph& graph) {
     double best_val = average(best, get_compactness);
     int iterations_since_best = 0;
     // cout << "\e[92m" << best_val << endl;
+    vector<coordinate> centers;
+    vector<double> radius;
+    for (Community c : communities) {
+        centers.push_back(c.shape.get_centroid());
+        radius.push_back(sqrt(c.shape.get_area() / PI));
+    }
 
     while (iterations_since_best < ITERATION_LIMIT) {
-        coordinate center = communities[community_to_modify].shape.get_centroid();
-        double radius = sqrt(communities[community_to_modify].shape.get_area() / PI);
-
         for (int i = 0; i < sub_modifications; i++) {
             vector<array<int, 2> > giveable = get_giveable_precincts(graph, communities, community_to_modify);
             for (array<int, 2> g : giveable) {
-                if (!point_in_circle(center, radius, graph.vertices[g[0]].precinct->get_centroid())) {
+                if (!point_in_circle(centers[community_to_modify], radius[community_to_modify], graph.vertices[g[0]].precinct->get_centroid())) {
                     exchange_precinct(graph, communities, g[0], g[1]);
                 }
             }
 
             vector<int> takeable = get_takeable_precincts(graph, communities, community_to_modify);
             for (int t : takeable) {
-                if (point_in_circle(center, radius, graph.vertices[t].precinct->get_centroid())) {
+                if (point_in_circle(centers[community_to_modify], radius[community_to_modify], graph.vertices[t].precinct->get_centroid())) {
                     exchange_precinct(graph, communities, t, community_to_modify);
                 }
             }
@@ -376,50 +379,55 @@ void optimize_compactness(Communities& communities, Graph& graph) {
 
 
 void optimize_population(Communities& communities, Graph& g, double range) {
-
     // find optimal populations
     range /= 2.0;
     int ideal_pop = get_population(communities) / communities.size();
+    int smallest_diff_possible = (int)(range * (double)ideal_pop);
 
-    vector<int> pops = {communities[0].get_population()};
     int worst_index = 0;
-    int worst_difference = abs(ideal_pop - pops[0]);
-
+    int worst_difference = 0;
+    int worst_pop = 0;
     for (int i = 1; i < communities.size(); i++) {
-        pops.push_back(communities[i].get_population());
-        if (abs(ideal_pop - pops[i]) > worst_difference) {
-            worst_difference = abs(ideal_pop - pops[i]);
+        int pop = communities[i].get_population();
+        int diff = abs(ideal_pop - pop);
+        if (diff > worst_difference) {
+            worst_difference = diff;
+            worst_pop = pop;
             worst_index = i;
         }
     }
+    
+
+    auto rng = std::default_random_engine {};
+
 
     while (true) {
+        cout << "modifying " << worst_index << endl;
         // determine populations
         int x = 0;
 
-        if (pops[worst_index] < ideal_pop) {
+        if (communities[worst_index].get_population() < ideal_pop) {
             vector<int> take = get_takeable_precincts(g, communities, worst_index);
-            std::shuffle(take.begin(), take.end(), std::random_device());
-
-            while (communities[worst_index].get_population() < (ideal_pop - ((double)ideal_pop * range))) {
+            std::shuffle(std::begin(take), std::end(take), rng);
+            while (communities[worst_index].get_population() < ideal_pop - smallest_diff_possible) {
                 if (x == take.size()) {
                     x = 0;
                     take = get_takeable_precincts(g, communities, worst_index);
-                    std::shuffle(take.begin(), take.end(), std::random_device());
+                    std::shuffle(std::begin(take), std::end(take), rng);
                 }
-
+                
                 exchange_precinct(g, communities, take[x], worst_index);
                 x++;
             }
         }
         else {
             vector<array<int, 2> > give = get_giveable_precincts(g, communities, worst_index);
-            std::shuffle(give.begin(), give.end(), std::random_device());
-            while (communities[worst_index].get_population() > (ideal_pop + ((double)ideal_pop * range))) {
+            std::shuffle(std::begin(give), std::end(give), rng);
+            while (communities[worst_index].get_population() > ideal_pop + smallest_diff_possible) {
                 if (x == give.size()) {
                     x = 0;
                     give = get_giveable_precincts(g, communities, worst_index);
-                    std::shuffle(give.begin(), give.end(), std::random_device());
+                    std::shuffle(std::begin(give), std::end(give), rng);
                 }
 
                 exchange_precinct(g, communities, give[x][0], give[x][1]);
@@ -427,36 +435,41 @@ void optimize_population(Communities& communities, Graph& g, double range) {
             }
         }
 
-        pops.clear();
-        pops = {communities[0].get_population()};
+        // Canvas canvas(900, 900);
+        // canvas.add_outlines(to_outline(communities));
+        // canvas.add_outlines(to_outline(communities[worst_index]));
+        // canvas.save_img_to_anim(ImageFmt::BMP, "output");
         worst_index = 0;
-        worst_difference = abs(ideal_pop - pops[0]);
-
+        worst_difference = 0;
+        worst_pop = 0;
 
         for (int i = 1; i < communities.size(); i++) {
-            pops.push_back(communities[i].get_population());
-            if (abs(ideal_pop - pops[i]) > worst_difference) {
-                worst_difference = abs(ideal_pop - pops[i]);
+            int pop = communities[i].get_population();
+            int diff = abs(ideal_pop - pop);
+            if (diff > worst_difference) {
+                worst_difference = diff;
+                worst_pop = pop;
                 worst_index = i;
             }
         }
 
-        if (worst_difference < (int)(range * (double)ideal_pop)) {
+        if (worst_difference < smallest_diff_possible) {
             break;
         }
+
     }
 }
+
 
 void maximize(Communities& communities, Graph& graph, double (*measure)(Community&), bool minimize = false);
 
 void maximize(Communities& communities, Graph& graph, double (*measure)(Community&), bool minimize) {
-    int n_communities = communities.size();
     int iterations_since_best = 0;
+    double before_average = average(communities, measure);
     Communities best = communities;
 
     while (iterations_since_best < ITERATION_LIMIT) {
         // choose worst community to modify
-
         int smallest_index = 0;
         double smallest_measure = measure(communities[0]);
         
@@ -467,28 +480,36 @@ void maximize(Communities& communities, Graph& graph, double (*measure)(Communit
                 smallest_index = i;
             }
         }
-
+        int num_exchanged = 0;
         vector<array<int, 2> > giveable = get_giveable_precincts(graph, communities, smallest_index);
         
         for (array<int, 2> g : giveable) {
-            double before = average(communities, measure);
             Communities before_c = communities;
             Graph before_g = graph;
 
             if (exchange_precinct(graph, communities, g[0], g[1])) {
-                // num_exchanged++;
+                double after_average = average(communities, measure);
+
                 if (minimize) {
-                    if (average(communities, measure) > before) {
+                    if (after_average > before_average) {
+                        // undo the exchange
+                        communities = before_c;
+                        graph = before_g;
+                    } 
+                    else {
+                        num_exchanged++;
+                        before_average = after_average;
+                    }
+                }
+                else {
+                    if (after_average < before_average) {
                         // undo the exchange
                         communities = before_c;
                         graph = before_g;
                     }
-                }
-                else {
-                    if (average(communities, measure) < before) {
-                        // undo the exchange
-                        communities = before_c;
-                        graph = before_g;
+                    else {
+                        num_exchanged++;
+                        before_average = after_average;
                     }
                 }
             }
@@ -496,52 +517,38 @@ void maximize(Communities& communities, Graph& graph, double (*measure)(Communit
 
         vector<int> takeable = get_takeable_precincts(graph, communities, smallest_index);
         for (int t : takeable) {
-            double before = average(communities, measure);
             Communities before_c = communities;
             Graph before_g = graph;
 
             if (exchange_precinct(graph, communities, t, smallest_index)) {
+                double after_average = average(communities, measure);
                 if (minimize) {
-                    if (average(communities, measure) > before) {
+                    if (after_average > before_average) {
                         // undo the exchange
                         communities = before_c;
                         graph = before_g;
+                    }
+                    else {
+                        num_exchanged++;
+                        before_average = after_average;
                     }
                 }
                 else {
-                    if (average(communities, measure) < before) {
+                    if (after_average < before_average) {
                         // undo the exchange
                         communities = before_c;
                         graph = before_g;
+                    }
+                    else {
+                        num_exchanged++;
+                        before_average = after_average;
                     }
                 }
             }
         }
 
-        if (minimize) {
-            if (average(communities, measure) < average(best, measure)) {
-                best = communities;
-                // cout << average(best, measure) << endl;
-                iterations_since_best = 0;
-            }
-            else {
-                iterations_since_best++;
-            }
-        }
-        else {
-            if (average(communities, measure) > average(best, measure)) {
-                // cout << "found a better solution" << endl;
-                best = communities;
-                iterations_since_best = 0;
-            }
-            else {
-                iterations_since_best++;
-            }
-        }
+        if (num_exchanged == 0) return;
     }
-
-    communities = best;
-    // cout << "did not improve after " << ITERATION_LIMIT << " iterations, returning..." << endl;
 }
 
 
@@ -628,6 +635,36 @@ void drawc(Communities& cs) {
     canvas.draw_to_window();
 }
 
+void printstats(Communities& cs, double pop_tolerance) {
+    cout << average(cs, get_compactness) << ", " << average(cs, get_partisanship_stdev) << ", " << average(cs, get_population_stdev);
+    bool pop_compliant = true;
+    
+    int ideal = 0;
+    for (Community c : cs) ideal += c.get_population();
+    ideal /= cs.size();
+    int threshold = ideal * pop_tolerance;
+
+    for (Community c : cs) {
+        if (abs(c.get_population() - ideal) > threshold) {
+            pop_compliant = false;
+        }
+    }
+
+    if (pop_compliant) cout << ", pop compliant" << endl;
+    else cout << ", non pop compliant" << endl;
+}
+
+
+int get_num_communities_changed(Graph& before, Graph& after) {
+    int tot = 0;
+    for (int i = 0; i < before.vertices.size(); i++) {
+        if ((before.vertices.begin() + i).value().community != (after.vertices.begin() + i).value().community) {
+            tot++;
+        }
+    }
+    return tot;
+}
+
 
 Communities hte::Geometry::get_communities(Graph& graph, int n_communities) {
     /*
@@ -641,74 +678,30 @@ Communities hte::Geometry::get_communities(Graph& graph, int n_communities) {
     */
 
     srand(time(NULL));
-    // int iter = 10;
-    // int init_average = 0;
 
-    // for (int i = 0; i < iter; i++) {
-    //     auto start = chrono::high_resolution_clock::now();
-    //     karger_stein(graph, n_communities);
-    //     auto stop = chrono::high_resolution_clock::now();
-    //     init_average += chrono::duration_cast<chrono::microseconds>(stop - start).count();
-    // }
-
-    // init_average /= iter;
-    // cout << "init config completed in average " << init_average << endl;
- 
-    // Communities cs = karger_stein(graph, n_communities);
-
-    // int compactness_optimization = 0;
-    // Communities before = cs;
-    // Graph before_g = graph;
-
-    // for (int i = 0; i < iter; i++) {
-    //     auto start = chrono::high_resolution_clock::now();
-    //     optimize_compactness(cs, graph);
-    //     auto stop = chrono::high_resolution_clock::now();
-    //     graph = before_g;
-    //     cs = before;
-    //     compactness_optimization += chrono::duration_cast<chrono::microseconds>(stop - start).count();
-    // }
-
-    // compactness_optimization /= iter;
-    // cout << "compactness finished in " << compactness_optimization << endl;
-
-    // int pop_opt = 0;
-    // for (int i = 0; i < iter; i++) {
-    //     auto start = chrono::high_resolution_clock::now();
-    //     optimize_population(cs, graph, 0.01);
-    //     auto stop = chrono::high_resolution_clock::now();
-    //     graph = before_g;
-    //     cs = before;
-    //     pop_opt += chrono::duration_cast<chrono::microseconds>(stop - start).count();
-    // }
-
-    // pop_opt /= iter;
-    // cout << "pop finished in " << pop_opt << endl;
-
-    // maximize(cs, graph, get_partisanship_stdev, true);
-    // maximize(cs, graph, get_population_stdev, true);
-    // optimize_compactness(cs, graph, get_compactness);
     Communities cs = karger_stein(graph, n_communities);
-    for (int i = 0; i < cs.size(); i++) {
+    for (int i = 0; i < cs.size(); i++)
         cs[i].update_shape(graph);
+
+    // save(cs, "random_penn.txt");
+    drawc(cs);
+    printstats(cs, 0.1);
+
+    for (int i = 0; i < 30; i++) {
+    //     Graph before = graph;
+    //     // cout << "optimizing com" << endl;
+        cout << "optimizing com" << endl;
+        optimize_compactness(cs, graph);
+        cout << "optimizing pop" << endl;
+        optimize_population(cs, graph, 0.1);
+        // maximize(cs, graph, get_population_stdev, true);
+    //     // cout << "optimizing part dev" << endl;
+    //     // maximize(cs, graph, get_partisanship_stdev, true);
+    //     cout << get_num_communities_changed(before, graph) << endl;
     }
 
-    // while (true) {
-    auto start = chrono::high_resolution_clock::now();
-    optimize_compactness(cs, graph);
-    auto stop = chrono::high_resolution_clock::now();
-    cout << chrono::duration_cast<microseconds>(stop - start).count() << endl;
-        // drawc(cs);
-        // optimize_population(cs, graph, 0.01);
     drawc(cs);
-    //     optimize_population(cs, graph, 0.1);
-    //     drawc(cs);
-    //     maximize(cs, graph, get_partisanship_stdev, true);
-    //     drawc(cs);
-    //     maximize(cs, graph, get_population_stdev, true);
-    //     drawc(cs);
-    // }
-
+    printstats(cs, 0.1);
 
     return cs;
 }
