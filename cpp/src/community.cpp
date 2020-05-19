@@ -44,6 +44,7 @@ using namespace chrono;
 #define DEBUG 0
 #define ITERATION_LIMIT 25
 
+void drawc(Communities&);
 
 class EdgeWrapper {
     // a class that defines an edge and an attr, for sorting by 
@@ -242,18 +243,27 @@ bool exchange_precinct(Graph& g, Communities& cs, int node_to_take, int communit
 vector<int> get_takeable_precincts(Graph& g, Communities& c, int in) {
     vector<int> takeable;
 
-    for (int i = 0; i < g.vertices.size(); i++) {
-        if (g.vertices[i].community != in) {
-            for (Edge e : g.vertices[i].edges) {
-                if (g.vertices[e[1]].community == in) {
-                    takeable.push_back(i);
-                    break;
+    for (auto& pair : c[in].vertices) {
+        for (Edge& e : g.vertices[pair.first].edges) {
+            if (g.vertices[e[1]].community != in) {
+                // @WARN: chek takeable here
+                if (std::find(takeable.begin(), takeable.end(), e[1]) == takeable.end()) {
+                    takeable.push_back(e[1]);
                 }
             }
         }
     }
+    // for (int i = 0; i < g.vertices.size(); i++) {
+    //     if (g.vertices[i].community != in) {
+    //         for (Edge e : g.vertices[i].edges) {
+    //             if (g.vertices[e[1]].community == in) {
+    //                 takeable.push_back(i);
+    //                 break;
+    //             }
+    //         }
+    //     }
+    // }
 
-    // sort takeable by respective xcoord
     return takeable;
 }
 
@@ -269,15 +279,16 @@ vector<array<int, 2> > get_giveable_precincts(Graph& g, Communities& c, int in) 
         @return: `vector<array<int, 2>` giveable precincts, and the community to give to
     */
 
-    vector<array<int, 2> > giveable;
+    vector<array<int, 2> > giveable = {};
 
-    for (int i = 0; i < c[in].vertices.size(); i++) {
-        for (Edge edge : g.vertices[(c[in].vertices.begin() + i).key()].edges) {
+    for (auto& pair : c[in].vertices) {
+        for (Edge& edge : g.vertices[pair.first].edges) {
             // if the node borders a precinct not in the community
             if (g.vertices[edge[1]].community != in) {
                 giveable.push_back({
-                    (c[in].vertices.begin() + i).key(), g.vertices[edge[1]].community
+                    pair.first, g.vertices[edge[1]].community
                 });
+                break;
             }
         }
     }
@@ -322,59 +333,78 @@ double worst(Communities& communities, double (*measure)(Community&)) {
 
 void optimize_compactness(Communities& communities, Graph& graph) {
 
-    int community_to_modify = 0;
-    int sub_modifications = 20;
+    int iterations_since_best = 0;
+    auto community_to_modify = communities.begin();
+    int community_to_modify_ind = 0;
 
+    const int SUB_MODIFICATIONS = 12;
+
+    // set the best solution
     Communities best = communities;
     Graph best_g = graph;
     double best_val = average(best, get_compactness);
-    int iterations_since_best = 0;
-    // cout << "\e[92m" << best_val << endl;
+    cout << "\e[92m" << best_val << endl;
+
+    // pre-determine locations and areas
     vector<coordinate> centers;
     vector<double> radius;
     for (Community c : communities) {
         centers.push_back(c.shape.get_centroid());
         radius.push_back(sqrt(c.shape.get_area() / PI));
     }
-
+ 
+    cout << "starting gives" << endl;
     while (iterations_since_best < ITERATION_LIMIT) {
-        for (int i = 0; i < sub_modifications; i++) {
-            vector<array<int, 2> > giveable = get_giveable_precincts(graph, communities, community_to_modify);
+        cout << "giving" << endl;
+        int give = 0;
+        for (int i = 0; i < SUB_MODIFICATIONS; i++) {
+            vector<array<int, 2> > giveable = get_giveable_precincts(graph, communities, community_to_modify_ind);
             for (array<int, 2> g : giveable) {
-                if (!point_in_circle(centers[community_to_modify], radius[community_to_modify], graph.vertices[g[0]].precinct->get_centroid())) {
+                if (!point_in_circle(centers[community_to_modify_ind], radius[community_to_modify_ind], graph.vertices[g[0]].precinct->get_centroid())) {
                     exchange_precinct(graph, communities, g[0], g[1]);
-                }
-            }
-
-            vector<int> takeable = get_takeable_precincts(graph, communities, community_to_modify);
-            for (int t : takeable) {
-                if (point_in_circle(centers[community_to_modify], radius[community_to_modify], graph.vertices[t].precinct->get_centroid())) {
-                    exchange_precinct(graph, communities, t, community_to_modify);
+                    give++;
                 }
             }
         }
 
-        community_to_modify++;
-        if (community_to_modify == communities.size()) community_to_modify = 0;
+        cout << "gave " << give << " taking" << endl;
+        int take = 0;
+        for (int i = 0; i < SUB_MODIFICATIONS; i++) {
+            vector<int> takeable = get_takeable_precincts(graph, communities, community_to_modify_ind);
+            for (int t : takeable) {
+                if (point_in_circle(centers[community_to_modify_ind], radius[community_to_modify_ind], graph.vertices[t].precinct->get_centroid())) {
+                    exchange_precinct(graph, communities, t, community_to_modify_ind);
+                    take++;
+                }
+            }
+        }
 
-        double cur = average(communities, get_compactness);
+        cout << "taked " << take << " gooved" << endl;
+        community_to_modify++;
+        community_to_modify_ind++;
+        if (community_to_modify == communities.end()) {
+            community_to_modify = communities.begin();
+            community_to_modify_ind = 0;
+        }
         
+        double cur = average(communities, get_compactness);
+
         if (cur > best_val) {
             best_val = cur;
             best = communities;
             best_g = graph;
             iterations_since_best = 0;
-            // cout << "\e[92m" << cur << "\e[0m" << endl;
+            cout << "\e[92m" << cur << "\e[0m" << endl;
         }
         else {
             iterations_since_best++;
-            // cout << "\e[91m" << cur << "\e[0m" << endl;
+            cout << "\e[91m" << cur << "\e[0m" << endl;
         }
     }
 
     communities = best;
     graph = best_g;
-    // cout << best_val << endl;
+    cout << best_val << endl;
 }
 
 
@@ -402,7 +432,6 @@ void optimize_population(Communities& communities, Graph& g, double range) {
 
 
     while (true) {
-        cout << "modifying " << worst_index << endl;
         // determine populations
         int x = 0;
 
@@ -683,25 +712,29 @@ Communities hte::Geometry::get_communities(Graph& graph, int n_communities) {
     for (int i = 0; i < cs.size(); i++)
         cs[i].update_shape(graph);
 
-    // save(cs, "random_penn.txt");
     drawc(cs);
     printstats(cs, 0.1);
 
-    for (int i = 0; i < 30; i++) {
+    // for (int i = 0; i < 200; i++) {
     //     Graph before = graph;
-    //     // cout << "optimizing com" << endl;
-        cout << "optimizing com" << endl;
-        optimize_compactness(cs, graph);
-        cout << "optimizing pop" << endl;
-        optimize_population(cs, graph, 0.1);
-        // maximize(cs, graph, get_population_stdev, true);
-    //     // cout << "optimizing part dev" << endl;
-    //     // maximize(cs, graph, get_partisanship_stdev, true);
+    // //     // cout << "optimizing com" << endl;
+    //     optimize_compactness(cs, graph);
+    //     optimize_population(cs, graph, 0.1);
+    //     // maximize(cs, graph, get_population_stdev, true);
+    // //     // cout << "optimizing part dev" << endl;
+    // //     // maximize(cs, graph, get_partisanship_stdev, true);
     //     cout << get_num_communities_changed(before, graph) << endl;
-    }
+    //     if (get_num_communities_changed(before, graph) == 0) break;
 
+    // }
+
+    
+    optimize_compactness(cs, graph);
+    // optimize_population(cs, graph, 0.01);
+    // maximize(cs, graph, get_compactness, false);
+    // maximize(cs, graph, get_population_stdev, true);
     drawc(cs);
-    printstats(cs, 0.1);
+    printstats(cs, 0.01);
 
     return cs;
 }
