@@ -10,7 +10,7 @@ from pygraph.classes.graph import graph as Graph
 from shapely.geometry import MultiPolygon, Polygon
 from shapely.ops import unary_union
 
-from hacking_the_election.utils.geometry import get_compactne
+from hacking_the_election.utils.geometry import get_compactness
 from hacking_the_election.utils.stats import average, standard_deviation
 
 
@@ -189,6 +189,18 @@ class Community:
                 exec(f"self.update_{attr}()")
             except AttributeError:
                 raise ValueError(f"No such attribute as {attr} in Community instance.")
+
+    @property
+    def centroid(self):
+        """The average centroid of the community's precincts.
+        """
+        precinct_X = []
+        precinct_Y = []
+        for precinct in self.precincts.values():
+            precinct_X.append(precinct.centroid[0])
+            precinct_Y.append(precinct.centroid[1])
+        return [average(precinct_X), average(precinct_Y)]
+
 
     @property
     def dem_rep_partisanship(self):

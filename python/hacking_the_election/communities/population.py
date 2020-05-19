@@ -12,6 +12,7 @@ import time
 
 from hacking_the_election.communities.initial_configuration import \
     create_initial_configuration
+from hacking_the_election.utils.geometry import get_distance
 from hacking_the_election.utils.graph import (
     get_giveable_precincts,
     get_takeable_precincts,
@@ -76,16 +77,38 @@ def optimize_population(communities, graph, percentage, animation_dir=None):
 
             giveable_precincts = get_giveable_precincts(
                 graph, communities, community.id)
-            random.shuffle(giveable_precincts)
+            
+            # Weight random choice by distance from community centroid.
+            community_centroid = community.centroid
+            giveable_precinct_weights = [
+                get_distance(pair[0].centroid, community_centroid)
+                for pair in giveable_precincts
+            ]
+            max_distance = max(giveable_precinct_weights)
+            giveable_precinct_weights = \
+                [max_distance - weight for weight in giveable_precinct_weights]
 
             while community.population > ideal_population:
                 
                 if giveable_precincts == []:
                     giveable_precincts = get_giveable_precincts(
                         graph, communities, community.id)
-                    random.shuffle(giveable_precincts)
+                    # Weight random choice by distance from community centroid.
+                    community_centroid = community.centroid
+                    giveable_precinct_weights = [
+                        get_distance(pair[0].centroid, community_centroid)
+                        for pair in giveable_precincts
+                    ]
+                    max_distance = max(giveable_precinct_weights)
+                    giveable_precinct_weights = \
+                        [max_distance - weight for weight in giveable_precinct_weights]
 
-                precinct, other_community = giveable_precincts.pop(0)
+                # Choose random precinct and community and remove from lists.
+                precinct, other_community = random.choices(
+                    giveable_precincts, weights=giveable_precinct_weights)[0]
+                giveable_precinct_weights.pop(
+                    giveable_precincts.index((precinct, other_community)))
+                giveable_precincts.remove((precinct, other_community))
 
                 community.give_precinct(
                     other_community, precinct.id, update={"population"})
@@ -98,16 +121,32 @@ def optimize_population(communities, graph, percentage, animation_dir=None):
 
             takeable_precincts = get_takeable_precincts(
                 graph, communities, community.id)
-            random.shuffle(takeable_precincts)
+            
+            # Weight random choice by distance from community centroid.
+            community_centroid = community.centroid
+            takeable_precinct_weights = [
+                get_distance(pair[0].centroid, community_centroid)
+                for pair in takeable_precincts
+            ]
 
             while community.population < ideal_population:
 
                 if takeable_precincts == []:
                     takeable_precincts = get_takeable_precincts(
                         graph, communities, community.id)
-                    random.shuffle(takeable_precincts)
+                    
+                    # Weight random choice by distance from community centroid.
+                    community_centroid = community.centroid
+                    takeable_precinct_weights = [
+                        get_distance(pair[0].centroid, community_centroid)
+                        for pair in takeable_precincts
+                    ]
 
-                precinct, other_community = takeable_precincts.pop(0)
+                precinct, other_community = random.choices(
+                    takeable_precincts, weights=takeable_precinct_weights)[0]
+                takeable_precinct_weights.pop(
+                    takeable_precincts.index((precinct, other_community)))
+                takeable_precincts.remove((precinct, other_community))
 
                 other_community.give_precinct(
                     community, precinct.id, update={"population"})

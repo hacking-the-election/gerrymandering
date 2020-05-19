@@ -17,7 +17,7 @@ BINARIES := $(BIN)/serialize_state $(BIN)/generate_communities
 STATE_OBJECTS := $(BUILD)/parse.o $(BUILD)/canvas.o $(BUILD)/geometry.o $(BUILD)/util.o $(BUILD)/shape.o $(BUILD)/graph.o $(BUILD)/community.o
 
 # libraries
-BOOST := -lboost_serialization -lboost_filesystem
+BOOST := -L/usr/local/boost/lib -lboost_serialization -lboost_filesystem -lboost_system
 SDL := -lSDL2 -lSDL2main
 LIBS := $(BOOST) $(SDL)
 

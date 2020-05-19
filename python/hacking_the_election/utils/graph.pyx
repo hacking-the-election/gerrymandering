@@ -227,7 +227,7 @@ cpdef list get_giveable_precincts(state_graph, list communities, int community):
                 neighbor_community_id = \
                     state_graph.node_attributes(neighbor)[0].community
                 if neighbor_community_id != community:
-                    other_community = community
+                    other_community = community_dict[neighbor_community_id]
 
             giveable_precincts.append((node_precinct, other_community))
     
