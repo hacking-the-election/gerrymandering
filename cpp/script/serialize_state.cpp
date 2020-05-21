@@ -79,6 +79,7 @@ int main(int argc, char* argv[]) {
                 else if (key == "IND") voter_heads[POLITICAL_PARTY::INDEPENDENT] = val;                
                 else if (key == "OTH") voter_heads[POLITICAL_PARTY::OTHER] = val;
                 else if (key == "TOT") voter_heads[POLITICAL_PARTY::TOTAL] = val;
+                else cout << "unrecognized key " << key << endl;
 
                 if (!done) arg = rem.substr(rem.find(","), rem.size() - rem.find(","));
             }
