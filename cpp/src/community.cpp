@@ -42,7 +42,7 @@ using namespace chrono;
 
 #define VERBOSE 1
 #define DEBUG 0
-#define ITERATION_LIMIT 25
+#define ITERATION_LIMIT 40
 
 void drawc(Communities&);
 
@@ -337,7 +337,7 @@ void optimize_compactness(Communities& communities, Graph& graph) {
     auto community_to_modify = communities.begin();
     int community_to_modify_ind = 0;
 
-    const int SUB_MODIFICATIONS = 12;
+    const int SUB_MODIFICATIONS = 20;
 
     // set the best solution
     Communities best = communities;
@@ -728,7 +728,6 @@ Communities hte::Geometry::get_communities(Graph& graph, int n_communities) {
 
     // }
 
-    
     optimize_compactness(cs, graph);
     // optimize_population(cs, graph, 0.01);
     // maximize(cs, graph, get_compactness, false);
