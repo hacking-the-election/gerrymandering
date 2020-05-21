@@ -4,6 +4,7 @@ A class representing political communities
 
 import copy
 import json
+import pickle
 import os
 
 from pygraph.classes.graph import graph as Graph
@@ -215,6 +216,37 @@ class Community:
             return percent_rep
         elif percent_rep <= 0.5:
             return - (1 - percent_rep)
+
+    @classmethod
+    def from_text_file(cls, text_file, precinct_graph):
+        """Generates a list communities from a text file containing grouped precinct ids.
+
+        :param text_file: Path to the text file containing a list of lists, each containing precinct ids for the community it represents.
+        :type text_file: str
+
+        :param precinct_graph: A graph of the whole state with precincts as node attributes.
+        :type precinct_graph_file: `pygraph.classes.graph.graph` with `hacking_the_election.utils.precinct.Precinct` as node attributes.
+        """
+
+        with open(text_file, "r") as f:
+            precinct_id_list = eval(f.read())
+        
+        precincts = [precinct_graph.node_attributes(node)[0]
+                     for node in precinct_graph.nodes()]
+        precinct_dict = {p.id: p for p in precincts}
+
+        community_precinct_groups = [[precinct_dict[id_] for id_ in community_ids]
+                                     for community_ids in precinct_id_list]
+        
+        communities = []
+        for i, precinct_group in enumerate(community_precinct_groups):
+            community = cls(i, precinct_graph)
+            for precinct in precinct_group:
+                community.take_precinct(precinct)
+            communities.append(community)
+        
+        return communities
+
 
     def __copy__(self):
         """Creates a shallow copy, to the point that precinct object instances are not copied. All attributes are unique references.
