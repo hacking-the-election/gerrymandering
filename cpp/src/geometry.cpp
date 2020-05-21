@@ -252,27 +252,45 @@ coordinate Geometry::LinearRing::get_centroid() {
         @return: coordinate of centroid
     */
 
-    if (centroid[0] == NULL) {
-        long int Cx = 0, Cy = 0;
+    // if (centroid[0] == NULL) {
+    //     long int Cx = 0, Cy = 0;
 
-        if (border[0] != border[border.size() - 1])
-            border.push_back(border[0]);
+    //     if (border[0] != border[border.size() - 1])
+    //         border.push_back(border[0]);
 
-        for (int i = 0; i < border.size() - 1; i++) {
-            long int x1 = border[i][0];
-            long int y1 = border[i][1];
-            long int x2 = border[i + 1][0];
-            long int y2 = border[i + 1][1];
+    //     for (int i = 0; i < border.size() - 1; i++) {
+    //         long int x1 = border[i][0];
+    //         long int y1 = border[i][1];
+    //         long int x2 = border[i + 1][0];
+    //         long int y2 = border[i + 1][1];
 
-            Cx += (x1 + x2) * ((x1 * y2) - (x2 * y1));
-            Cy += (y1 + y2) * ((x1 * y2) - (x2 * y1));
-        }
+    //         Cx += (x1 + x2) * ((x1 * y2) - (x2 * y1));
+    //         Cy += (y1 + y2) * ((x1 * y2) - (x2 * y1));
+    //     }
 
-        centroid[0] = (long int) round(1.0 / (6.0 * this->get_area()) * (double) Cx);
-        centroid[1] = (long int) round(1.0 / (6.0 * this->get_area()) * (double) Cy);
-    }
+    //     centroid[0] = (long int) round(1.0 / (6.0 * this->get_area()) * (double) Cx);
+    //     centroid[1] = (long int) round(1.0 / (6.0 * this->get_area()) * (double) Cy);
+    // }
 
     return centroid;
+}
+
+
+boost_polygon ring_to_boost_poly(LinearRing shape) {
+    /*
+        Converts a shape object into a boost polygon object
+        by looping over each point and manually adding it to a 
+        boost polygon using assign_points and vectors
+    */
+
+    boost_polygon poly;
+    // create vector of boost points
+    std::vector<boost_point> points;
+    for (coordinate c : shape.border) 
+        points.push_back(boost_point(c[0],c[1])),
+
+    assign_points(poly, points);
+    return poly;
 }
 
 

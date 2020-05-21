@@ -320,6 +320,7 @@ namespace boost {
         template<class Archive>
         void serialize(Archive & ar, Geometry::LinearRing& s, const unsigned int version) {
             ar & s.border;
+            ar & s.centroid;
         }
 
 

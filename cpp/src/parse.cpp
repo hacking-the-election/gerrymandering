@@ -900,9 +900,15 @@ State State::generate_from_file(string precinct_geoJSON, string voter_data, stri
     Multi_Polygon sborder = generate_exterior_border(state);
     state.border = sborder.border;
 
+    for (int i = 0; i < state.precincts.size(); i++) {
+        boost_point center;
+        boost::geometry::centroid(ring_to_boost_poly(state.precincts[i].hull), center);
+        state.precincts[i].hull.centroid = {center.x(), center.y()};
+    }
+
     Canvas canvas(900, 900);
     canvas.add_outlines(to_outline(state));
-    canvas.draw_to_window();
+    // canvas.draw_to_window();
 
     state.network = generate_graph(pre_group);
     cout << "complete!" << endl;
@@ -965,10 +971,16 @@ State State::generate_from_file(string precinct_geoJSON, string district_geoJSON
     State state = State(district_shapes, pre_group.precincts, state_shape_v);
     Multi_Polygon sborder = generate_exterior_border(state);
     state.border = sborder.border;
+    for (int i = 0; i < state.precincts.size(); i++) {
+        boost_point center;
+        boost::geometry::centroid(ring_to_boost_poly(state.precincts[i].hull), center);
+        state.precincts[i].hull.centroid = {center.x(), center.y()};
+    }
+
 
     Canvas canvas(900, 900);
     canvas.add_outlines(to_outline(state));
-    canvas.draw_to_window();
+    // canvas.draw_to_window();
 
     state.network = generate_graph(pre_group);
     if (VERBOSE) cout << "state serialized!" << endl;
