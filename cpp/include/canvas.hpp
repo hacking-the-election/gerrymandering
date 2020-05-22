@@ -50,6 +50,7 @@ namespace Graphics {
     std::vector<Outline> to_outline(Geometry::State state);
     std::vector<Outline> to_outline(Geometry::Graph& graph);
     std::vector<Outline> to_outline(Geometry::Communities& communities);
+    std::vector<Outline> to_outline(Geometry::Multi_Polygon&, double);
 
 
 

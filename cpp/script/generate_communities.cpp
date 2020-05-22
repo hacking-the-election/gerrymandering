@@ -41,11 +41,13 @@ int main(int argc, char* argv[]) {
     State state = State::from_binary(read_path);
     int n_communities = stoi(string(argv[2]));
     Communities cs = get_communities(state.network, n_communities);
-    
+    Canvas canvas(900, 900);
     for (Multi_Polygon district : state.districts) {
         array<double, 2> q = get_quantification(state.network, cs, district);
         cout << collapse_vals(q[0], q[1]) << endl;
+        canvas.add_outlines(to_outline(district, collapse_vals(q[0], q[1])));
     }
 
+    canvas.draw_to_window();
     return 0;
 }

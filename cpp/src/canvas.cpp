@@ -59,6 +59,25 @@ vector<Outline> Graphics::to_outline(Geometry::State state) {
 }
 
 
+std::vector<Outline> Graphics::to_outline(Geometry::Multi_Polygon& mp, double v) {
+    vector<Outline> os;
+    RGB_Color fill;
+    if (v < 0) {
+        fill = interpolate_rgb(RGB_Color(255,255,255), RGB_Color(255, 0, 0), abs(v));
+    }
+    else {
+        fill = interpolate_rgb(RGB_Color(255,255,255), RGB_Color(0, 0, 255), v);
+    }
+
+    for (Polygon p : mp.border) {
+        Outline o = to_outline(p.hull);
+        o.style().fill(fill);
+        os.push_back(o);
+    }
+    return os;
+}
+
+
 vector<Outline> Graphics::to_outline(Geometry::Graph& graph) {
     vector<Outline> outlines;
 
