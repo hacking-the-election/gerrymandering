@@ -5,6 +5,10 @@ Data is serialized into:
  - .pickle file containing graph with nodes containing Precinct objects
 Usage:
 python3 serialize.py [election_file] [geo_file] [pop_file] [state] [output.pickle]
+
+
+Note: 
+state may need to have an underscore and the year attached, e.g. "georgia_2008" if applicable
 """
 
 
@@ -188,7 +192,7 @@ def create_graph(election_file, geo_file, pop_file, state):
                 # Convert election data id to geodata id
                 try:
                     precinct_id1 = election_data_to_geodata[
-                        tostring("".join(properties1[ele_id] for ele_id in ele_ids))
+                        tostring(str("".join(properties1[ele_id]) for ele_id in ele_ids))
                     ]
                 except KeyError:
                     continue
@@ -239,7 +243,7 @@ def create_graph(election_file, geo_file, pop_file, state):
                 # convert election data id to geodata id
                 try:
                     election_data_id = election_data_to_geodata[
-                        tostring("".join([precinct[ele_id_col_index] for ele_id_col_index in ele_id_col_indices]))
+                        tostring("".join([str(precinct[ele_id_col_index]) for ele_id_col_index in ele_id_col_indices]))
                     ]
                 except KeyError:
                     continue
@@ -294,7 +298,7 @@ def create_graph(election_file, geo_file, pop_file, state):
         # Fill precinct_election_data
         for precinct in geodata["features"]:
             properties = precinct["properties"]
-            precinct_id = tostring("".join(properties[json_id] for json_id in json_ids))
+            precinct_id = tostring("".join(str(properties[json_id]) for json_id in json_ids))
             party_data = [
                 {'dem': convert_to_float(properties[dem_key])},
                 {'rep': convert_to_float(properties[rep_key])}
@@ -329,24 +333,24 @@ def create_graph(election_file, geo_file, pop_file, state):
             for pop_precinct in popdata["features"]:
                 pop_properties = pop_precinct["properties"]
                 # Assumes the same Ids are used in geodata as in population data
-                pop_precinct_id = tostring("".join(pop_properties[json_id] for json_id in json_ids))
+                pop_precinct_id = tostring("".join(str(pop_properties[json_id]) for json_id in json_ids))
                 pop[pop_precinct_id] = sum([pop_properties[key] for key in json_pops])
         # individual conditionals for states, they should go here
-        elif pop_data_type == "tab":
+        # elif pop_data_type == "tab":
             # In these condtionals, pop should have keys that match geodata. this is done here. 
             # compare_ids() from the serialization file in utils can be used for population
-            if state == "south carolina":
-                for precinct in geodata["features"]:
-                    precinct_id = tostring("".join(precinct["properties"][json_id] for json_id in json_ids)) 
-                    pop_dict = {row.split("\t")[0] :
-                        row.split("\t")[1]
-                        for row in popdata.split("\n")}
-                    try:
-                        pop[precinct_id] = pop_dict[precinct_id]
-                    except KeyError:
-                        print(f"Failed to find value of {precinct_id}")
-        else:
-            raise AttributeError
+        #     if state == "south carolina":
+        #         for precinct in geodata["features"]:
+        #             precinct_id = tostring("".join(str(precinct["properties"][json_id]) for json_id in json_ids)) 
+        #             pop_dict = {row.split("\t")[0] :
+        #                 row.split("\t")[1]
+        #                 for row in popdata.split("\n")}
+        #             try:
+        #                 pop[precinct_id] = pop_dict[precinct_id]
+        #             except KeyError:
+        #                 print(f"Failed to find value of {precinct_id}")
+        # else:
+            # raise AttributeError
     else:
         # find where population is stored, either election or geodata
         try:
@@ -358,7 +362,7 @@ def create_graph(election_file, geo_file, pop_file, state):
             # find which indexes have population data
             for row in election_data[1:]:
                 pop_precinct_id = election_data_to_geodata[
-                    tostring("".join([row[ele_id_col_index] for ele_id_col_index in ele_id_col_indices]))
+                    tostring("".join([str(row[ele_id_col_index]) for ele_id_col_index in ele_id_col_indices]))
                 ]
                 precinct_populations = [convert_to_float(row[i]) for i in pop_col_indices]
                 pop[pop_precinct_id] = sum(precinct_populations)
@@ -366,17 +370,17 @@ def create_graph(election_file, geo_file, pop_file, state):
             # population is in geodata
             for geodata_pop_precinct in geodata["features"]:
                 geodata_pop_properties = geodata_pop_precinct["properties"]
-                geodata_pop_precinct_id = tostring("".join(geodata_pop_properties[json_id] for json_id in json_ids))
+                geodata_pop_precinct_id = tostring("".join(str(geodata_pop_properties[json_id]) for json_id in json_ids))
                 precinct_populations = [convert_to_float(geodata_pop_properties[key]) for key in json_pops]
                 pop[geodata_pop_precinct_id] = sum(precinct_populations)
 
     # Create a geodata dictionary
     geodata_dict = {
-        tostring("".join(precinct["properties"][json_id] for json_id in json_ids)) :
+        tostring("".join(str(precinct["properties"][json_id]) for json_id in json_ids)) :
         precinct["geometry"]["coordinates"]
         for precinct in geodata["features"]
         if not any([non_precinct_id in 
-        tostring("".join(precinct["properties"][json_id] for json_id in json_ids))
+        tostring("".join(str(precinct["properties"][json_id]) for json_id in json_ids))
         for non_precinct_id in non_precinct_ids])
     }
 
