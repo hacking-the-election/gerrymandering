@@ -255,7 +255,8 @@ namespace Geometry {
         coordinate get_centroid();              // total perimeter of border array
         virtual segments get_segments();      // return a segment list with shape's segments
         virtual std::string to_json();       
-
+        bounding_box get_bounding_box();
+        
         std::vector<Polygon> border;
 
         // add operator overloading for object equality

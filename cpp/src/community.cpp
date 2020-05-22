@@ -686,8 +686,8 @@ Communities hte::Geometry::get_communities(Graph& graph, int n_communities) {
     for (int i = 0; i < cs.size(); i++)
         cs[i].update_shape(graph);
 
-    cout << "optimizing compactness" << endl;
-    optimize_compactness(cs, graph);
+    // cout << "optimizing compactness" << endl;
+    // optimize_compactness(cs, graph);
     
     // optimize_population(cs, graph, 0.01);
     // maximize(cs, graph, get_compactness, false);
