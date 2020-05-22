@@ -17,14 +17,19 @@ from itertools import combinations
 
 sys.path.append(dirname(dirname(abspath(__file__))))
 from pygraph.classes.graph import graph
-from pygraph.readwrite.markup import write
+from pygraph.classes.exceptions import AdditionError
 from shapely.geometry import Polygon, MultiPolygon
 
 from hacking_the_election.utils.precinct import Precinct
-from hacking_the_election.utils.serialization import compare_ids, split_multipolygons, combine_holypolygons
 from hacking_the_election.utils.geometry import geojson_to_shapely, get_if_bordering
 from hacking_the_election.utils.graph import get_components
 from hacking_the_election.visualization.graph_visualization import visualize_graph
+from hacking_the_election.utils.serialization import (
+    compare_ids, 
+    split_multipolygons, 
+    combine_holypolygons, 
+    remove_ring_intersections
+)
 
 
 SOURCE_DIR = abspath(dirname(__file__))
@@ -116,7 +121,7 @@ def create_graph(election_file, geo_file, pop_file, state):
     if election_file != "none":
         # Find election precincts not in geodata and vice versa
 
-        if election_file[-4:] == ".json":
+        if election_file[-5:] == ".json":
             election_data_type = "json"
             with open(election_file, "r") as f:
                 election_data = json.load(f)
@@ -377,8 +382,11 @@ def create_graph(election_file, geo_file, pop_file, state):
 
     # Remove multipolygons from our dictionaries. (This is so our districts/communities stay contiguous)
     split_multipolygons(geodata_dict, pop, precinct_election_data)
-
+    # Combine precincts with holes in them
     combine_holypolygons(geodata_dict, pop, precinct_election_data)
+    # Change geometry to prevent invalid Shapely polygons
+    remove_ring_intersections(geodata_dict)
+
     # Modify geodata_dict to use 'shapely.geometry.Polygon's
     geodata_dict = {
         precinct :
@@ -452,17 +460,32 @@ def create_graph(election_file, geo_file, pop_file, state):
             if unordered_precinct_graph.has_edge((node, check_node)):
                 continue
             check_coordinate_data = unordered_precinct_graph.node_attributes(check_node)[0].coords
-            for point in check_coordinate_data.exterior.coords:
-                if min_x <= point[0] <= max_x:
-                    if min_y <= point[1] <= max_y:
-                        precincts_to_check.append(check_node)
-                        break
+            try:
+                for point in check_coordinate_data.exterior.coords:
+                    if min_x <= point[0] <= max_x:
+                        if min_y <= point[1] <= max_y:
+                            precincts_to_check.append(check_node)
+                            break
+            except:
+                for geom in check_coordinate_data:
+                    for point in geom.exterior.coords:
+                        if min_x <= point[0] <= max_x:
+                            if min_y <= point[1] <= max_y:
+                                precincts_to_check.append(check_node)
+                                break
         sys.stdout.write("\r                                ")
         sys.stdout.write(f"\rAdding edges progress: {round(100 * node/node_num, 2)}%")
         sys.stdout.flush()
-        for precinct10 in precincts_to_check:         
-            if get_if_bordering(coordinate_data, unordered_precinct_graph.node_attributes(precinct10)[0].coords):
-                unordered_precinct_graph.add_edge((node, precinct10))
+        for precinct10 in precincts_to_check: 
+            try:        
+                if get_if_bordering(coordinate_data, unordered_precinct_graph.node_attributes(precinct10)[0].coords):
+                    unordered_precinct_graph.add_edge((node, precinct10))
+            except AdditionError:
+                pass
+            except:
+                node_precinct_id = unordered_precinct_graph.node_attributes(node)[0].id
+                precinct10_precinct_id = unordered_precinct_graph.node_attributes(precinct10)[0].id
+                raise Exception(f'Failed intersection check, precincts being checked were {node_precinct_id}, {precinct10_precinct_id} of nodes {node} and {precinct10}, respectively')
         completed_precincts.append(node)
 
     print(time() - start_time)

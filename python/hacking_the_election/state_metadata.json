@@ -31,7 +31,7 @@
     "wyoming": {"party_data":{"dem_keys":["USP_D08"],"rep_keys":["USP_R08"]},"ele_id":["none"],"geo_id":["GEOID10"],"pop_key":["VAP"], "non_precinct_ids":["none"]},
     "new hampshire": {"party_data":{"dem_keys":["PRES_DEM08"],"rep_keys":["PRES_REP08"], "total_keys":["PRES_TOT08"]},"ele_id":["none"],"geo_id":["GEOID10"],"pop_key":["POP100"], "non_precinct_ids":["ZZZZZZ"]},
     "georgia": {"party_data":{"dem_keys":["PRES16D"], "rep_keys":["PRES16R"]}, "ele_id":["none"], "geo_id":["ID"],"pop_key":["POPULATION"]},
-    "maryland":{"party_data":{"dem_keys":["PRES_DVOTE"], "rep_keys":["PRES_RVOTE"]}, "ele_id": ["none"], "geo_id":["COUNTY", "VTDST10"], "pop_key":["TOTAL_ELIGIBLE_VOTERS"]},
+    "maryland":{"party_data":{"dem_keys":["PRES_DVOTE"], "rep_keys":["PRES_RVOTE"], "total_keys":["PRES_TOT_0"]}, "ele_id": ["GEOID10"], "geo_id":["VTD"], "pop_key":["TOTPOP"], "non_precinct_ids":["none"]},
     "new york": {"party_data":{"dem_keys":["g2008_USP_dv"],"rep_keys":["g2008_USP_rv"], "total_keys":["g2008_USP_tv"]},"ele_id":["vtdid"], "geo_id":["GEOID10"],"pop_key":["POP100"], "non_precinct_id":["9999", "9998", "9997", "9996", "9995", "9994", "9993", "36029443"]},
     "minnesota": {"party_data":{"dem_keys":["PRES_DVOTE"], "rep_keys":["PRES_RVOTE"], "other_keys":["PRESOTHER"]}, "ele_id":["none"], "geo_id":["GEOID10"], "pop_key":["REGISTERED"], "non_precinct_ids":["ZZZZZZ"]},
     "ohio": {"party_data":{"dem_keys":["PRES_DVOTE"], "rep_keys":["PRES_RVOTE"], "total_keys":["PRES_TVOTE"]}, "ele_id":["none"], "geo_id":["GEOID10"], "pop_key":["REG_08"], "non_precinct_ids":["39095123ZZZ", "39123123ZZZ", "39043043ZZZ", "39093093999", "39035007999", "39085007999", "39007007999"]},
