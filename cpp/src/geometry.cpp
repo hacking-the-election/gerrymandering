@@ -61,17 +61,6 @@ double get_distance(segment s) {
 }
 
 
-double get_distance(std::array<long long int, 2> c1, std::array<long long int, 2> c2) {
-    /* 
-        @desc: Distance formula on a segment array
-        @params: `c1`, `c2`: coordinates to get the distance of
-        @return: `double` the distance of the segment
-    */
-
-    return sqrt(pow((c2[0] - c1[0]), 2) + pow((c2[1] - c1[1]), 2));
-}
-
-
 double get_distance(coordinate c0, coordinate c1) {
     /*
         @desc: Distance formula on two separate points
@@ -252,27 +241,45 @@ coordinate Geometry::LinearRing::get_centroid() {
         @return: coordinate of centroid
     */
 
-    if (centroid[0] == NULL) {
-        long int Cx = 0, Cy = 0;
+    // if (centroid[0] == NULL) {
+    //     long int Cx = 0, Cy = 0;
 
-        if (border[0] != border[border.size() - 1])
-            border.push_back(border[0]);
+    //     if (border[0] != border[border.size() - 1])
+    //         border.push_back(border[0]);
 
-        for (int i = 0; i < border.size() - 1; i++) {
-            long int x1 = border[i][0];
-            long int y1 = border[i][1];
-            long int x2 = border[i + 1][0];
-            long int y2 = border[i + 1][1];
+    //     for (int i = 0; i < border.size() - 1; i++) {
+    //         long int x1 = border[i][0];
+    //         long int y1 = border[i][1];
+    //         long int x2 = border[i + 1][0];
+    //         long int y2 = border[i + 1][1];
 
-            Cx += (x1 + x2) * ((x1 * y2) - (x2 * y1));
-            Cy += (y1 + y2) * ((x1 * y2) - (x2 * y1));
-        }
+    //         Cx += (x1 + x2) * ((x1 * y2) - (x2 * y1));
+    //         Cy += (y1 + y2) * ((x1 * y2) - (x2 * y1));
+    //     }
 
-        centroid[0] = (long int) round(1.0 / (6.0 * this->get_area()) * (double) Cx);
-        centroid[1] = (long int) round(1.0 / (6.0 * this->get_area()) * (double) Cy);
-    }
+    //     centroid[0] = (long int) round(1.0 / (6.0 * this->get_area()) * (double) Cx);
+    //     centroid[1] = (long int) round(1.0 / (6.0 * this->get_area()) * (double) Cy);
+    // }
 
     return centroid;
+}
+
+
+boost_polygon ring_to_boost_poly(LinearRing shape) {
+    /*
+        Converts a shape object into a boost polygon object
+        by looping over each point and manually adding it to a 
+        boost polygon using assign_points and vectors
+    */
+
+    boost_polygon poly;
+    // create vector of boost points
+    std::vector<boost_point> points;
+    for (coordinate c : shape.border) 
+        points.push_back(boost_point(c[0],c[1])),
+
+    assign_points(poly, points);
+    return poly;
 }
 
 
@@ -827,6 +834,27 @@ Geometry::bounding_box Geometry::Polygon::get_bounding_box() {
         if (coord[1] < bottom) bottom = coord[1];
         if (coord[0] < left) left = coord[0];
         if (coord[0] > right) right = coord[0];
+    }
+
+    return {top, bottom, left, right}; // return bounding box
+}
+
+
+Geometry::bounding_box Geometry::Multi_Polygon::get_bounding_box() {
+    // set dummy extremes
+    int top = border[0].hull.border[0][1], 
+        bottom = border[0].hull.border[0][1], 
+        left = border[0].hull.border[0][0], 
+        right = border[0].hull.border[0][0];
+
+    for (Polygon p : border) {
+        // loop through and find actual corner using ternary assignment
+        for (Geometry::coordinate coord : p.hull.border) {
+            if (coord[1] > top) top = coord[1];
+            if (coord[1] < bottom) bottom = coord[1];
+            if (coord[0] < left) left = coord[0];
+            if (coord[0] > right) right = coord[0];
+        }
     }
 
     return {top, bottom, left, right}; // return bounding box

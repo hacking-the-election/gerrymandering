@@ -64,35 +64,30 @@ vector<Outline> Graphics::to_outline(Geometry::Graph& graph) {
 
     for (int i = 0; i < graph.vertices.size(); i++) {
         Node node = (graph.vertices.begin() + i).value();
-        Outline node_b(generate_gon(node.precinct->get_centroid(), 100000, 3).hull);
-        node_b.style().fill(RGB_Color(255, 100, 100)).thickness(1).outline(RGB_Color(0,0,0));
-        if (i == graph.vertices.size() - 1) {
-            Canvas canvas(900, 900);
-            canvas.add_outline(to_outline(node.precinct->hull));
-            canvas.add_outline(node_b);
-            canvas.draw_to_window();
+        Outline node_b(generate_gon(node.precinct->get_centroid(), 2000, 50).hull);
+
+        float ratio;
+        int sum = node.precinct->voter_data[POLITICAL_PARTY::DEMOCRAT] + node.precinct->voter_data[POLITICAL_PARTY::REPUBLICAN];
+        if (sum <= 0) {
+            ratio = 0.5;
+        }
+        else {
+            ratio = (float)node.precinct->voter_data[POLITICAL_PARTY::REPUBLICAN] / (float)sum;
         }
 
-        // outlines.push_back(to_outline(node.precinct->hull));
+        node_b.style().fill(interpolate_rgb(RGB_Color(0, 0, 255), RGB_Color(255,0,0), (double)ratio)).thickness(1).outline(interpolate_rgb(RGB_Color(0, 0, 255), RGB_Color(255,0,0), (double)ratio));
         outlines.push_back(node_b);
 
         
-        // for (Edge edge : node.edges) {
-            // if (graph.vertices.find(edge[1]) != graph.vertices.end()) {
-                // coordinate start = graph.vertices[edge[0]].precinct->get_centroid();
-                // coordinate end = graph.vertices[edge[1]].precinct->get_centroid();
-                // Outline o(LinearRing({start, end}));
-                // o.style().outline(RGB_Color(0,0,0)).thickness(1.0);
-                // Canvas canvas(900, 900);
-                // canvas.add_outline(to_outline(node.precinct->hull));
-                // canvas.add_outline(to_outline(generate_gon(node.precinct->get_centroid(), 4000, 50).hull));
-                // canvas.add_outline(to_outline(graph.vertices[edge[1]].precinct->hull));
-                // canvas.add_outline(to_outline(generate_gon(graph.vertices[edge[1]].precinct->get_centroid(), 4000, 50).hull));
-                // canvas.add_outline(o);
-                // canvas.draw_to_window();
-                // outlines.push_back(o);
-            // }
-        // }
+        for (Edge edge : node.edges) {
+            if (graph.vertices.find(edge[1]) != graph.vertices.end()) {
+                coordinate start = graph.vertices[edge[0]].precinct->get_centroid();
+                coordinate end = graph.vertices[edge[1]].precinct->get_centroid();
+                Outline o(LinearRing({start, end}));
+                o.style().outline(RGB_Color(0,0,0)).thickness(1.0);
+                outlines.push_back(o);
+            }
+        }
     }
 
     return outlines;
@@ -111,9 +106,11 @@ vector<Outline> Graphics::to_outline(Communities& communities) {
             outlines.push_back(o);
         }
 
-        // Outline border(generate_exterior_border(communities[i].shape).border[0].hull);
-        // border.style().outline(RGB_Color(0,0,0)).thickness(1.4).fill(RGB_Color(-1, -1, -1));
-        // outlines.push_back(border);
+        for (Polygon x : generate_exterior_border(communities[i].shape).border) {
+            Outline border(x.hull);
+            border.style().outline(RGB_Color(0,0,0)).thickness(2).fill(RGB_Color(-1, -1, -1));
+            outlines.push_back(border);
+        }
     }
 
     return outlines;
@@ -267,8 +264,8 @@ std::vector<RGB_Color> Graphics::generate_n_colors(int n) {
             hsl_to_rgb(
                 HSL_Color(
                     ((double)i / 360.0),
-                    ((double)(95) / 100.0),
-                    ((double)(60) / 100.0)
+                    (85.0 / 100.0),
+                    (60.0 / 100.0)
                 )
             )
         );
@@ -767,8 +764,6 @@ void Canvas::rasterize() {
     pixel_buffer = PixelBuffer(width, height);
     // @warn may be doing extra computation here
     get_bounding_box();
-
-    cout << box[0] << ", " << box[1] << ", " << box[2] << ", " << box[3] << endl;
 
     // translate into first quadrant
     translate(-box[2], -box[1], true);

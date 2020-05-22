@@ -33,7 +33,7 @@
 "new hampshire": new_hampshire/geodata.json new_hampshire/district.json --keys='{"DEM":"PRES_DEM08","REP":"PRES_REP08","GEO":"GEOID10","POP":"POP100","TOT":"PRES_TOT08"}' new_hampshire.state
 "new jersey": new_jersey/geodata.json new_jersey/district.json --keys='{"DEM":"USP_DV_08","REP":"USP_RV_08","GEO":"GEOID10","POP":"POP100"}' new_jersey.state
 "new mexico": new_mexico/geodata.json new_mexico/district.json --keys='{"DEM":"PRES_DEM_0","REP":"PRES_REP_0","GEO":"GEOID10","POP":"POP100"}' new_mexico.state
-"north carolina": north_carolina/geodata.json north_carolina/election_data_2.tab north_carolina/district.json --keys='{"DEM":"ndv","REP":"nrv","ELE":"vtd_key","GEO":"GEOID10","POP":"PL10AA_TOT"}' north_carolina.state
+"north carolina": north_carolina/geodata.json north_carolina/district.json --keys='{"DEM":"EL08G_PR_D","REP":"EL08G_PR_R","GEO":"GEOID10","POP":"PL10AA_TOT","LIB":"EL08G_PR_L","OTH":"EL08G_PR_W"}' north_carolina.state
 "north dakota": north_dakota/geodata.json north_dakota/district.json --keys='{"DEM":"USP_D_08","REP":"USP_R_08","GEO":"GEOID10","POP":"TOTPOP"}' north_dakota.state
 "ohio": ohio/geodata.json ohio/district.json --keys='{"DEM":"PRES_DVOTE","REP":"PRES_RVOTE","GEO":"GEOID10","POP":"REG_08","TOT":"PRES_TVOTE"}' ohio.state
 "oklahoma": oklahoma/geodata.json oklahoma/district.json --keys='{"DEM":"PRES_DVOTE","REP":"PRES_RVOTE","GEO":"GEOID10","POP":"VAP","TOT":"PRES_TOT_0"}' oklahoma.state

@@ -12,18 +12,26 @@
 #include "community.hpp"
 #include "../lib/Clipper/cpp/clipper.hpp"
 #include "../lib/Miniball.hpp"
+#include <boost/geometry.hpp>
+#include <boost/geometry/geometries/point_xy.hpp>
+#include <boost/geometry/geometries/polygon.hpp>
+
+typedef boost::geometry::model::d2::point_xy<long long int> boost_point;
+typedef boost::geometry::model::polygon<boost_point> boost_polygon;
+using namespace boost::geometry;
 
 #define PI 3.14159265358979323846264338327950288
+enum clip_type {UNION, INTERSECTION, DIFFERENCE, XOR};
 
 // typedefs for using miniball (which is not very fast)
-typedef std::vector<std::vector<double> >::const_iterator PointIterator; 
-typedef std::vector<double>::const_iterator CoordIterator;
+typedef std::vector<std::array<long, 2> >::const_iterator PointIterator; 
+typedef std::array<long, 2>::const_iterator CoordIterator;
 typedef Miniball::Miniball <Miniball::CoordAccessor<PointIterator, CoordIterator> > MB;
+boost_polygon ring_to_boost_poly(hte::Geometry::LinearRing);
 
 // segment and coordiante manipulation
 hte::Geometry::segment coords_to_seg(hte::Geometry::coordinate c1, hte::Geometry::coordinate c2);
 double get_distance(hte::Geometry::coordinate c1, hte::Geometry::coordinate c2);
-double get_distance(std::array<long long int, 2> c1, std::array<long long int, 2> c2);
 double get_distance(hte::Geometry::segment s);
 
 // two shapes have adjacent and colinear segments
