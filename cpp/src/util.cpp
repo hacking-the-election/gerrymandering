@@ -9,9 +9,8 @@
 #include <regex>
 #include <random>
 #include <iostream>
-#include <numeric>
-
 #include "../include/util.hpp"
+
 using namespace std;
 
 
@@ -109,8 +108,22 @@ int rand_num(int start, int end) {
     // return distr(eng);
 }
 
+double get_stdev(std::vector<int>& data) {
+    /*
+        Determine standard deviation of a list of numbers.
+    */
 
-double get_stdev(vector<double>& data) {
+    int sum = std::accumulate(data.begin(), data.end(), 0.0);
+    double mean = sum / (double)data.size();
+
+    std::vector<double> diff(data.size());
+    std::transform(data.begin(), data.end(), diff.begin(), [mean](int x) { return x - mean; });
+    double sq_sum = std::inner_product(diff.begin(), diff.end(), diff.begin(), 0.0);
+    return (std::sqrt(sq_sum / (double)data.size()));
+}
+
+
+double get_stdev(std::vector<double>& data) {
     /*
         Determine standard deviation of a list of numbers.
     */

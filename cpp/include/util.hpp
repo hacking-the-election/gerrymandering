@@ -12,6 +12,8 @@
 #include <string>
 #include <fstream>
 #include <vector>
+#include <numeric>
+#include <cmath>
 
 // file manipulation
 std::string readf(std::string path);
@@ -25,4 +27,5 @@ std::string join(std::vector<std::string> str, std::string del);
 bool is_number(std::string token);
 int rand_num(int start, int end);
 
+double get_stdev(std::vector<int>& data);
 double get_stdev(std::vector<double>& data);

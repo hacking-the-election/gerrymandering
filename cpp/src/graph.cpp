@@ -7,8 +7,11 @@
  searches and component counts.
 ========================================*/
 
+#include <unordered_map>
 #include <iostream>
 #include <algorithm>
+#include <numeric>
+#include <chrono>
 
 #include "../include/shape.hpp"
 #include "../include/canvas.hpp"
@@ -18,7 +21,7 @@
 using namespace hte::Graphics;
 using namespace hte::Geometry;
 using namespace std;
-
+using namespace chrono;
 
 void Graph::remove_node(int id) {
     remove_edges_to(id);
@@ -57,7 +60,8 @@ std::vector<Graph> Graph::get_components() {
         @return: `vector<Geometry::Graph>` components subgraphs
     */
 
-    map<int, bool> visited;
+    unordered_map<int, bool> visited;
+    visited.reserve(vertices.size());
     for (int i = 0; i < vertices.size(); i++) {
         visited[(vertices.begin() + i).key()] = false;
     }
@@ -82,7 +86,7 @@ std::vector<Graph> Graph::get_components() {
 }
 
 
-void Graph::dfs_recursor(int v, std::map<int, bool>& visited, std::vector<int>* nodes) {
+void Graph::dfs_recursor(int v, std::unordered_map<int, bool>& visited, std::vector<int>* nodes) {
     /*
         @desc: recur seach for each adjacent node to index v
         
@@ -95,11 +99,10 @@ void Graph::dfs_recursor(int v, std::map<int, bool>& visited, std::vector<int>* 
     */
  
     visited[v] = true; 
-    Node node = vertices[v];
     nodes->push_back(v);
 
-    for (int i = 0; i < node.edges.size(); i++) {
-        int t_id = node.edges[i][1];
+    for (Edge e : vertices[v].edges) {
+        int t_id = e[1];
         if (!visited[t_id]) { 
             dfs_recursor(t_id, visited, nodes);
         }
@@ -114,13 +117,12 @@ int Graph::get_num_components() {
         @return: `int` number of components
     */
 
-    map<int, bool> visited;
-    for (int i = 0; i < vertices.size(); i++) {
-        visited.insert({(vertices.begin() + i).key(), false});
-    }
+    unordered_map<int, bool> visited;
+    visited.reserve(vertices.size());
+    for (int i = 0; i < vertices.size(); i++)
+        visited[(vertices.begin() + i).key()] = false;
 
     int x = 0;
-
     for (int i = 0; i < vertices.size(); i++) {
         if (!visited[(vertices.begin() + i).key()]) {
             dfs_recursor((vertices.begin() + i).key(), visited); 
@@ -132,7 +134,7 @@ int Graph::get_num_components() {
 }
 
 
-void Graph::dfs_recursor(int v, std::map<int, bool>& visited) { 
+void Graph::dfs_recursor(int v, std::unordered_map<int, bool>& visited) { 
     /*
         @desc: recur seach for each adjacent node to index v
         
@@ -145,14 +147,10 @@ void Graph::dfs_recursor(int v, std::map<int, bool>& visited) {
     */
 
     visited[v] = true; 
-    Node node = vertices[v];
 
-    for (Edge edge : node.edges) {
-        int t_id = edge[1];
-        if (visited.find(t_id) != visited.end()) {
-            if (!visited[t_id]) { 
-                dfs_recursor(t_id, visited);
-            }
+    for (Edge& edge : vertices[v].edges) {
+        if (!visited[edge[1]]) { 
+            dfs_recursor(edge[1], visited);
         }
     }
 } 

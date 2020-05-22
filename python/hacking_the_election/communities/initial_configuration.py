@@ -29,10 +29,9 @@ def create_initial_configuration(precinct_graph, n_communities):
 
     while len(G.nodes()) > n_communities:
         attr_lengths = {}  # Links edges to the number of nodes they contain.
-        edges = G.edges()
+        edges = set(G.edges())
         for i in range(min(100, len(edges))):
-            e = random.choice(edges)
-            edges.remove(e)
+            e = edges.pop()
             attr_lengths[e] = (len(G.node_attributes(e[0]))
                              + len(G.node_attributes(e[1])))
         contract(G, min(attr_lengths))
@@ -42,7 +41,7 @@ def create_initial_configuration(precinct_graph, n_communities):
         for precinct_node in G.node_attributes(node):
             communities[i].take_precinct(
                 precinct_graph.node_attributes(precinct_node)[0])
-    
+
     return communities
 
 
@@ -59,4 +58,5 @@ if __name__ == "__main__":
 
     # Display and/or save image.
     image_output = sys.argv[4] if sys.argv[4] != "none" else None
-    draw_state(precinct_graph, None, fpath=image_output)
+    if image_output is not None:
+        draw_state(precinct_graph, None, fpath=image_output)

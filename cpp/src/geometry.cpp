@@ -61,17 +61,6 @@ double get_distance(segment s) {
 }
 
 
-double get_distance(std::array<long long int, 2> c1, std::array<long long int, 2> c2) {
-    /* 
-        @desc: Distance formula on a segment array
-        @params: `c1`, `c2`: coordinates to get the distance of
-        @return: `double` the distance of the segment
-    */
-
-    return sqrt(pow((c2[0] - c1[0]), 2) + pow((c2[1] - c1[1]), 2));
-}
-
-
 double get_distance(coordinate c0, coordinate c1) {
     /*
         @desc: Distance formula on two separate points
@@ -848,6 +837,53 @@ Geometry::bounding_box Geometry::Polygon::get_bounding_box() {
     }
 
     return {top, bottom, left, right}; // return bounding box
+}
+
+
+Geometry::bounding_box Geometry::Multi_Polygon::get_bounding_box() {
+    // set dummy extremes
+    int top = border[0].hull.border[0][1], 
+        bottom = border[0].hull.border[0][1], 
+        left = border[0].hull.border[0][0], 
+        right = border[0].hull.border[0][0];
+
+    for (Polygon p : border) {
+        // loop through and find actual corner using ternary assignment
+        for (Geometry::coordinate coord : p.hull.border) {
+            if (coord[1] > top) top = coord[1];
+            if (coord[1] < bottom) bottom = coord[1];
+            if (coord[0] < left) left = coord[0];
+            if (coord[0] > right) right = coord[0];
+        }
+    }
+
+    return {top, bottom, left, right}; // return bounding box
+}
+
+
+Geometry::bounding_box Geometry::Precinct_Group::get_bounding_box() {
+    // set dummy extremes
+    if (precincts.size() != 0) {
+        int top = precincts[0].hull.border[0][1], 
+            bottom = precincts[0].hull.border[0][1], 
+            left = precincts[0].hull.border[0][0], 
+            right = precincts[0].hull.border[0][0];
+
+        for (Precinct p : precincts) {
+            // loop through and find actual corner using ternary assignment
+            for (Geometry::coordinate coord : p.hull.border) {
+                if (coord[1] > top) top = coord[1];
+                if (coord[1] < bottom) bottom = coord[1];
+                if (coord[0] < left) left = coord[0];
+                if (coord[0] > right) right = coord[0];
+            }
+        }
+        return {top, bottom, left, right}; // return bounding box
+    }
+    else {
+        cout  << "lol no precincts here bro" << endl;
+        return {0,0,0,0};
+    }
 }
 
 
