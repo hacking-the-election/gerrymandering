@@ -840,6 +840,27 @@ Geometry::bounding_box Geometry::Polygon::get_bounding_box() {
 }
 
 
+Geometry::bounding_box Geometry::Multi_Polygon::get_bounding_box() {
+    // set dummy extremes
+    int top = border[0].hull.border[0][1], 
+        bottom = border[0].hull.border[0][1], 
+        left = border[0].hull.border[0][0], 
+        right = border[0].hull.border[0][0];
+
+    for (Polygon p : border) {
+        // loop through and find actual corner using ternary assignment
+        for (Geometry::coordinate coord : p.hull.border) {
+            if (coord[1] > top) top = coord[1];
+            if (coord[1] < bottom) bottom = coord[1];
+            if (coord[0] < left) left = coord[0];
+            if (coord[0] > right) right = coord[0];
+        }
+    }
+
+    return {top, bottom, left, right}; // return bounding box
+}
+
+
 bool bound_overlap(Geometry::bounding_box b1, Geometry::bounding_box b2) {
     /*
         @desc: Determines whether or not two rects overlap
