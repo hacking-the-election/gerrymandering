@@ -108,9 +108,10 @@ void hte::Geometry::save(Communities cs, std::string out) {
         for (Precinct p : c.shape.precincts)
             file += "'" + p.shape_id + "', ";
         file.pop_back(); file.pop_back();
-        file += "]";
+        file += "], ";
     }
 
+    file.pop_back(); file.pop_back();
     file += "]";
     writef(file, out);
 }
@@ -164,43 +165,27 @@ double get_compactness(Community& community) {
         @ref: https://fisherzachary.github.io/public/r-output.html
     */
 
-    coordinate_set lp;
-    vector<vector<double> > p;
+    // coordinate_set lp;
+    // for (Precinct pre : community.shape.precincts) {
+    //     lp.insert(lp.end(), pre.hull.border.begin(), pre.hull.border.end());
+    // }
 
-    for (Precinct pre : community.shape.precincts) {
-        lp.insert(lp.end(), pre.hull.border.begin(), pre.hull.border.end());
-    }
-
-    p.reserve(lp.size());
-
-    for (int i = 0; i < lp.size(); i++)
-        p.emplace_back(lp[i].begin(), lp[i].end());
-
-    lp.clear();
-
-    MB mb (2, p.begin(), p.end());
-
-    // cout << mb.squared_radius() << ", " << (double)community.shape.get_area() << endl;
-    double t = (double)community.shape.get_area() / (mb.squared_radius() * PI);
-    return t;
+    // MB mb(2, lp.begin(), lp.end());
+    // return (community.shape.get_area() / (mb.squared_radius() * PI));
+    return 0.4;
 } 
 
 
 double get_partisanship_stdev(Community& community) {
     double average = 0;
-    map<POLITICAL_PARTY, vector<double> > total_data;
+    map<POLITICAL_PARTY, vector<int> > total_data;
 
     for (auto& pair : community.vertices) {
-        int total = 0;
+        // for each vertex
         for (auto& p2 : pair.second.precinct->voter_data) {
-            if (p2.first != POLITICAL_PARTY::TOTAL && p2.second >= 0) total += p2.second;
-        }
-
-        for (auto& p2 : pair.second.precinct->voter_data) {
+            // for each party
             if (p2.first != POLITICAL_PARTY::TOTAL && p2.second >= 0) {
-                if (total != 0) {
-                    total_data[p2.first].push_back(((double)p2.second / (double)total));
-                }
+                total_data[p2.first].push_back(p2.second);
             }
         }
     }
@@ -213,27 +198,16 @@ double get_partisanship_stdev(Community& community) {
 }
 
 
-double get_population_stdev(Community& community) {
-    vector<double> pops;
-    for (auto& pair : community.vertices) {
-        pops.push_back(pair.second.precinct->pop);
-    }
-
-    return get_stdev(pops);
-}
-
-
 bool exchange_precinct(Graph& g, Communities& cs, int node_to_take, int community_to_take) {
     // moves a node from its community into `community_to_take`
     
-    if (cs[g.vertices[node_to_take].community].vertices.size() == 1) {
-        return false;
-    }
-    else if (remove_edges_to(cs[g.vertices[node_to_take].community], node_to_take).get_num_components() > 2) {
-        return false;
-    }
+    int nttc = g.vertices[node_to_take].community;
     
-    cs[g.vertices[node_to_take].community].remove_node(node_to_take);
+    if (cs[nttc].vertices.size() == 1 || remove_edges_to(cs[nttc], node_to_take).get_num_components() < 2) {
+        return false;
+    }
+
+    cs[nttc].remove_node(node_to_take);
     cs[community_to_take].add_node(g.vertices[node_to_take]);
     g.vertices[node_to_take].community = community_to_take;
     return true;
@@ -268,7 +242,7 @@ vector<int> get_takeable_precincts(Graph& g, Communities& c, int in) {
 }
 
 
-vector<array<int, 2> > get_giveable_precincts(Graph& g, Communities& c, int in) {
+vector<vector<int> > get_giveable_precincts(Graph& g, Communities& c, int in) {
     /*
         @desc: Find precincts bordering another community
         @params:
@@ -279,7 +253,7 @@ vector<array<int, 2> > get_giveable_precincts(Graph& g, Communities& c, int in) 
         @return: `vector<array<int, 2>` giveable precincts, and the community to give to
     */
 
-    vector<array<int, 2> > giveable = {};
+    vector<vector<int> > giveable = {};
 
     for (auto& pair : c[in].vertices) {
         for (Edge& edge : g.vertices[pair.first].edges) {
@@ -309,9 +283,8 @@ double average(Communities& communities, double (*measure)(Community&)) {
     */
 
     double sum = 0;
-    for (Community& c : communities) sum += measure(c);
-    // cout << "sum " << sum << endl;
-    return (sum / (double) communities.size());
+    for (int i = 0; i < communities.size(); i++) sum += measure(communities[i]);
+    return (sum / communities.size());
 }
 
 
@@ -358,8 +331,8 @@ void optimize_compactness(Communities& communities, Graph& graph) {
         cout << "giving" << endl;
         int give = 0;
         for (int i = 0; i < SUB_MODIFICATIONS; i++) {
-            vector<array<int, 2> > giveable = get_giveable_precincts(graph, communities, community_to_modify_ind);
-            for (array<int, 2> g : giveable) {
+            vector<vector<int> > giveable = get_giveable_precincts(graph, communities, community_to_modify_ind);
+            for (vector<int> g : giveable) {
                 if (!point_in_circle(centers[community_to_modify_ind], radius[community_to_modify_ind], graph.vertices[g[0]].precinct->get_centroid())) {
                     exchange_precinct(graph, communities, g[0], g[1]);
                     give++;
@@ -450,7 +423,7 @@ void optimize_population(Communities& communities, Graph& g, double range) {
             }
         }
         else {
-            vector<array<int, 2> > give = get_giveable_precincts(g, communities, worst_index);
+            vector<vector<int> > give = get_giveable_precincts(g, communities, worst_index);
             std::shuffle(std::begin(give), std::end(give), rng);
             while (communities[worst_index].get_population() > ideal_pop + smallest_diff_possible) {
                 if (x == give.size()) {
@@ -510,9 +483,9 @@ void maximize(Communities& communities, Graph& graph, double (*measure)(Communit
             }
         }
         int num_exchanged = 0;
-        vector<array<int, 2> > giveable = get_giveable_precincts(graph, communities, smallest_index);
+        vector<vector<int> > giveable = get_giveable_precincts(graph, communities, smallest_index);
         
-        for (array<int, 2> g : giveable) {
+        for (vector<int> g : giveable) {
             Communities before_c = communities;
             Graph before_g = graph;
 
@@ -665,7 +638,7 @@ void drawc(Communities& cs) {
 }
 
 void printstats(Communities& cs, double pop_tolerance) {
-    cout << average(cs, get_compactness) << ", " << average(cs, get_partisanship_stdev) << ", " << average(cs, get_population_stdev);
+    cout << average(cs, get_compactness) << ", " << average(cs, get_partisanship_stdev);
     bool pop_compliant = true;
     
     int ideal = 0;
@@ -708,32 +681,17 @@ Communities hte::Geometry::get_communities(Graph& graph, int n_communities) {
 
     srand(time(NULL));
 
-    Communities cs = karger_stein(graph, n_communities);
+    cout << "getting init" << endl;
+    Communities cs = load("ia_init.txt", graph);
     for (int i = 0; i < cs.size(); i++)
         cs[i].update_shape(graph);
 
-    drawc(cs);
-    printstats(cs, 0.1);
-
-    // for (int i = 0; i < 200; i++) {
-    //     Graph before = graph;
-    // //     // cout << "optimizing com" << endl;
-    //     optimize_compactness(cs, graph);
-    //     optimize_population(cs, graph, 0.1);
-    //     // maximize(cs, graph, get_population_stdev, true);
-    // //     // cout << "optimizing part dev" << endl;
-    // //     // maximize(cs, graph, get_partisanship_stdev, true);
-    //     cout << get_num_communities_changed(before, graph) << endl;
-    //     if (get_num_communities_changed(before, graph) == 0) break;
-
-    // }
-
+    cout << "optimizing compactness" << endl;
     optimize_compactness(cs, graph);
+    
     // optimize_population(cs, graph, 0.01);
     // maximize(cs, graph, get_compactness, false);
-    // maximize(cs, graph, get_population_stdev, true);
-    drawc(cs);
-    printstats(cs, 0.01);
+    // drawc(cs);
 
     return cs;
 }
