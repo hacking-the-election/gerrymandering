@@ -25,6 +25,14 @@ double get_pop(Precinct& pre) {
     return pre.pop;
 }
 
+double get_dem(Precinct& pre) {
+    return pre.voter_data[POLITICAL_PARTY::DEMOCRAT];
+}
+
+double get_rep(Precinct& pre) {
+    return pre.voter_data[POLITICAL_PARTY::REPUBLICAN];
+}
+
 
 double hte::Geometry::get_attr_from_mask(Precinct_Group pg, Multi_Polygon mp, double (*measure)(Precinct&)) {
     double pop = 0;
@@ -63,7 +71,9 @@ std::array<double, 2> Geometry::get_quantification(Graph& graph, Communities& co
     double val = 0.0;
     bounding_box db = district.get_bounding_box();
     // get all communities that overlap the current district
-    double district_population = get_attr_from_mask(Precinct_Group::from_graph(graph), district, get_pop);
+    Precinct_Group state = Precinct_Group::from_graph(graph);
+
+    double district_population = get_attr_from_mask(state, district, get_pop);
     int largest_index = -1;
     int largest_pop = -1;
 
@@ -79,5 +89,35 @@ std::array<double, 2> Geometry::get_quantification(Graph& graph, Communities& co
         }
     }
 
-    return {1 - (largest_pop / district_population), 0.8};
+    // get the difference of the two shapes
+    ClipperLib::Paths subj;
+    for (Precinct p : communities[largest_index].shape.precincts) {
+        subj.push_back(ring_to_path(p.hull));
+    }
+
+    ClipperLib::Paths clip;
+    for (Polygon p : district.border)
+        clip.push_back(ring_to_path(p.hull));
+
+    ClipperLib::Paths solutions;
+    ClipperLib::Clipper c; // the executor
+
+    // execute union on paths array
+    c.AddPaths(subj, ClipperLib::ptSubject, true);
+    c.AddPaths(clip, ClipperLib::ptClip, true);
+    c.Execute(ClipperLib::ctDifference, solutions, ClipperLib::pftNonZero);
+    Multi_Polygon difference = paths_to_multi_shape(solutions);
+    
+    double dem = get_attr_from_mask(state, difference, get_dem);
+    double rep = get_attr_from_mask(state, difference, get_rep);
+    double partisanship = 0.5;
+
+    if (dem + rep == 0) {
+        std::cout << "if gerry score is not 0 here something has gone horrible wrong i think (or maybe not because there can be precincts outside with 0 dem and 0 rep" << std::endl;
+    }
+    else {
+        partisanship = rep / (dem + rep);
+    }
+
+    return {1 - (largest_pop / district_population), partisanship};
 }
