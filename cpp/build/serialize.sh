@@ -4,11 +4,13 @@
 # just useful for minor testing where I want to run `serialize.sh "wyoming"`
 # and not worry about actual keys or files
 
+export DYLD_LIBRARY_PATH=/usr/local/boost/lib/:$DYLD_LIBRARY_PATH
+
 #==================================
 # hardcoded paths for serialization
 #==================================
 BINARY="bin/serialize_state"
-DATA="../../data/"
+DATA="../data/"
 RAW="raw/"
 BIN="bin/cpp/"
 BUILDFILE="build/build_data.list"

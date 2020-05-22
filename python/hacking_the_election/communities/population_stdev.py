@@ -78,8 +78,7 @@ def optimize_population_stdev(communities, graph, animation_dir=None):
                 for c in best_communities:
                     for c2 in communities:
                         if c.id == c2.id:
-                            c2.precincts = c.precincts
-                            c2.update_population_stdev()
+                            c2 = c
                 for c in communities:
                     for precinct in c.precincts.values():
                         precinct.community = c.id
