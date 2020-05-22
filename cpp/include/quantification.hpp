@@ -16,7 +16,7 @@
 namespace hte {
     namespace Geometry {
         std::array<double, 2> get_quantification(Graph&, Communities&, Multi_Polygon);
-        double get_population(Precinct_Group, Multi_Polygon);
+        double get_attr_from_mask(Precinct_Group, Multi_Polygon, double (*)(Precinct&));
         double collapse_vals(double a, double b);
     }
 }

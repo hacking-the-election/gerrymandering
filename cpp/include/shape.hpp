@@ -256,7 +256,7 @@ namespace Geometry {
         virtual segments get_segments();      // return a segment list with shape's segments
         virtual std::string to_json();       
         bounding_box get_bounding_box();
-        
+
         std::vector<Polygon> border;
 
         // add operator overloading for object equality
@@ -288,7 +288,7 @@ namespace Geometry {
             virtual void remove_precinct(Precinct);
             virtual void add_precinct(Precinct);
             Precinct get_precinct_from_id(std::string);
-
+            bounding_box get_bounding_box();
             double get_area();
             coordinate get_centroid();
 

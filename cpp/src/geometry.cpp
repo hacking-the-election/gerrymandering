@@ -861,6 +861,32 @@ Geometry::bounding_box Geometry::Multi_Polygon::get_bounding_box() {
 }
 
 
+Geometry::bounding_box Geometry::Precinct_Group::get_bounding_box() {
+    // set dummy extremes
+    if (precincts.size() != 0) {
+        int top = precincts[0].hull.border[0][1], 
+            bottom = precincts[0].hull.border[0][1], 
+            left = precincts[0].hull.border[0][0], 
+            right = precincts[0].hull.border[0][0];
+
+        for (Precinct p : precincts) {
+            // loop through and find actual corner using ternary assignment
+            for (Geometry::coordinate coord : p.hull.border) {
+                if (coord[1] > top) top = coord[1];
+                if (coord[1] < bottom) bottom = coord[1];
+                if (coord[0] < left) left = coord[0];
+                if (coord[0] > right) right = coord[0];
+            }
+        }
+        return {top, bottom, left, right}; // return bounding box
+    }
+    else {
+        cout  << "lol no precincts here bro" << endl;
+        return {0,0,0,0};
+    }
+}
+
+
 bool bound_overlap(Geometry::bounding_box b1, Geometry::bounding_box b2) {
     /*
         @desc: Determines whether or not two rects overlap
