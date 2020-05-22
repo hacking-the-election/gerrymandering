@@ -15,6 +15,7 @@ import sys
 from time import time
 from itertools import combinations
 
+sys.path.append(dirname(dirname(abspath(__file__))))
 from pygraph.classes.graph import graph
 from pygraph.readwrite.markup import write
 from shapely.geometry import Polygon, MultiPolygon
@@ -458,15 +459,12 @@ def create_graph(election_file, geo_file, pop_file, state):
                         break
         sys.stdout.write("\r                                ")
         sys.stdout.write(f"\rAdding edges progress: {round(100 * node/node_num, 2)}%")
-        print(unordered_precinct_graph.node_attributes(node)[0].id, "original")
         sys.stdout.flush()
-        for precinct10 in precincts_to_check:
-            print(precinct10)            
+        for precinct10 in precincts_to_check:         
             if get_if_bordering(coordinate_data, unordered_precinct_graph.node_attributes(precinct10)[0].coords):
                 unordered_precinct_graph.add_edge((node, precinct10))
         completed_precincts.append(node)
 
-    print()
     print(time() - start_time)
 
     # The graph will have multiple representations, i.e. an "edge" going both ways, 
