@@ -61,17 +61,6 @@ double get_distance(segment s) {
 }
 
 
-double get_distance(std::array<long long int, 2> c1, std::array<long long int, 2> c2) {
-    /* 
-        @desc: Distance formula on a segment array
-        @params: `c1`, `c2`: coordinates to get the distance of
-        @return: `double` the distance of the segment
-    */
-
-    return sqrt(pow((c2[0] - c1[0]), 2) + pow((c2[1] - c1[1]), 2));
-}
-
-
 double get_distance(coordinate c0, coordinate c1) {
     /*
         @desc: Distance formula on two separate points

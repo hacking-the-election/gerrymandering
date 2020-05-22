@@ -62,8 +62,9 @@ void Geometry::Precinct_Group::remove_precinct(Geometry::Precinct pre) {
             probably a better way with id's or ptrs or something
     */
 
-    if (std::find(precincts.begin(), precincts.end(), pre) != precincts.end()) {
-        precincts.erase(std::remove(precincts.begin(), precincts.end(), pre), precincts.end());
+    auto it = std::find(precincts.begin(), precincts.end(), pre);
+    if (it != precincts.end()) {
+        precincts.erase(it);
     }
     else {
         throw Geometry::Exceptions::PrecinctNotInGroup();
@@ -125,12 +126,12 @@ bool Geometry::operator!= (const Geometry::Polygon& p1, const Geometry::Polygon&
 
 
 bool Geometry::operator== (const Geometry::Precinct& p1, const Geometry::Precinct& p2) {
-    return (p1.hull == p2.hull && p1.holes == p2.holes && p1.voter_data == p2.voter_data && p1.pop == p2.pop);
+    return (p1.shape_id == p2.shape_id);
 }
 
 
 bool Geometry::operator!= (const Geometry::Precinct& p1, const Geometry::Precinct& p2) {
-    return (p1.hull != p2.hull || p1.holes != p2.holes || p1.voter_data != p2.voter_data || p1.pop != p2.pop);
+    return (p1.shape_id != p2.shape_id);
 }
 
 
@@ -364,4 +365,12 @@ namespace boost {
             ar & boost::serialization::base_object<Geometry::Polygon>(s);
         }
     }
+}
+
+Geometry::Precinct_Group Geometry::Precinct_Group::from_graph(Geometry::Graph& graph) {
+    Precinct_Group pre;
+    for (auto& pair : graph.vertices) {
+        pre.add_precinct(*(pair.second.precinct));
+    }
+    return pre;
 }

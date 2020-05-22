@@ -15,6 +15,7 @@
 #include <vector>
 #include <map>
 #include <array>
+#include <unordered_map>
 
 // for boost binary serialization
 #include <boost/archive/binary_oarchive.hpp>
@@ -57,10 +58,10 @@ namespace Geometry {
     // for any error to be thrown
     class Exceptions;
     
-    typedef std::array<long int, 2> coordinate;         // list in the form {x1, y1};
+    typedef std::array<long, 2> coordinate;         // list in the form {x1, y1};
     typedef std::vector<coordinate> coordinate_set;     // list of coordinates: {{x1, y1} ... {xn, yn}};
-    typedef std::array<long int, 4> bounding_box;       // an array of 4 max/mins: {top, bottom, left, right};
-    typedef std::array<long int, 4> segment;            // a set of two coordinates:
+    typedef std::array<long, 4> bounding_box;       // an array of 4 max/mins: {top, bottom, left, right};
+    typedef std::array<long, 4> segment;            // a set of two coordinates:
     typedef std::vector<segment> segments;              // list of multiple segments
     typedef double unit_interval;                       // for values between [0, 1]
 
@@ -292,6 +293,8 @@ namespace Geometry {
 
             int get_population();
             std::string to_json();
+
+            static Precinct_Group from_graph(Graph& g);
     };
 
 
@@ -336,8 +339,8 @@ namespace Geometry {
         std::vector<Graph> get_components();
 
         // recursors for getting different data
-        void dfs_recursor(int v, std::map<int, bool>& visited);
-        void dfs_recursor(int v, std::map<int, bool>& visited, std::vector<int>* nodes);
+        void dfs_recursor(int v, std::unordered_map<int, bool>& visited);
+        void dfs_recursor(int v, std::unordered_map<int, bool>& visited, std::vector<int>* nodes);
 
         void add_node(Node node);
         void remove_node(int id);

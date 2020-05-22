@@ -16,6 +16,7 @@
 #include "../include/geometry.hpp"
 #include "../include/canvas.hpp"
 #include "../include/community.hpp"
+#include "../include/quantification.hpp"
 
 using namespace boost::filesystem;
 using namespace std;
@@ -35,13 +36,16 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    int iter = 10;
-    
     // read binary file from path
     string read_path = string(argv[1]);
     State state = State::from_binary(read_path);
     int n_communities = stoi(string(argv[2]));
-    Communities s = get_communities(state.network, n_communities);
+    Communities cs = get_communities(state.network, n_communities);
+    
+    for (Multi_Polygon district : state.districts) {
+        array<double, 2> q = get_quantification(state.network, cs, district);
+        cout << collapse_vals(q[0], q[1]) << endl;
+    }
 
     return 0;
 }
