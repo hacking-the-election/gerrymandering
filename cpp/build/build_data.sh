@@ -26,8 +26,10 @@ echo "all data present"
 IFS=$'\n'
 
 for i in "${states[@]}"; do
-    echo "serializing ${i}..."
-    build/serialize.sh "$i"
+    if [[ "$(echo "${i}" | cut -c 1)" == [u-z] ]]; then
+        echo "serializing ${i}..."
+        build/serialize.sh "$i"
+    fi
     # printf "\nbuilding $(echo "$i" | cut -d ' ' -f 2 | rev | cut -d '/' -f2 | rev)\n\n"
     # eval "$i"
 done

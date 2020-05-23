@@ -39,6 +39,7 @@ int main(int argc, char* argv[]) {
     // read binary file from path
     string read_path = string(argv[1]);
     State state = State::from_binary(read_path);
+
     int n_communities = stoi(string(argv[2]));
     Communities cs = get_communities(state.network, n_communities);
     Canvas canvas(900, 900);

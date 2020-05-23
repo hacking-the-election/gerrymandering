@@ -125,11 +125,11 @@ vector<Outline> Graphics::to_outline(Communities& communities) {
             outlines.push_back(o);
         }
 
-        for (Polygon x : generate_exterior_border(communities[i].shape).border) {
-            Outline border(x.hull);
-            border.style().outline(RGB_Color(0,0,0)).thickness(2).fill(RGB_Color(-1, -1, -1));
-            outlines.push_back(border);
-        }
+        // for (Polygon x : generate_exterior_border(communities[i].shape).border) {
+        //     Outline border(x.hull);
+        //     border.style().outline(RGB_Color(0,0,0)).thickness(2).fill(RGB_Color(-1, -1, -1));
+        //     outlines.push_back(border);
+        // }
     }
 
     return outlines;
