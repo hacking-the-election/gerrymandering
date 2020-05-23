@@ -165,15 +165,21 @@ double get_compactness(Community& community) {
         @ref: https://fisherzachary.github.io/public/r-output.html
     */
 
-    // coordinate_set lp;
-    // for (Precinct pre : community.shape.precincts) {
-    //     lp.insert(lp.end(), pre.hull.border.begin(), pre.hull.border.end());
-    // }
+// With center, you can do a distance squared check to each poly point. Track the furthest from center. When done, furthest point is a radius from center of a circle that will contain the poly. That should be really, really fast. Just multiplies, adds, and one square root at the very end to get the final radius from the radius squared
 
-    // MB mb(2, lp.begin(), lp.end());
-    // return (community.shape.get_area() / (mb.squared_radius() * PI));
-    return 0.4;
-} 
+    coordinate center = community.shape.get_centroid();
+    double farthest = 0;
+
+    for (Precinct& p : community.shape.precincts) {
+        for (coordinate& c : p.hull.border) {
+            if ((center[0] - c[0]) * (center[0] - c[0]) + (center[1] - c[1]) * (center[1] - c[1]) > farthest) {
+                farthest = (center[0] - c[0]) * (center[0] - c[0]) + (center[1] - c[1]) * (center[1] - c[1]);
+            }
+        }
+    }
+
+    return (community.shape.get_area() / (farthest * PI));
+}
 
 
 double get_partisanship_stdev(Community& community) {
@@ -309,7 +315,7 @@ void optimize_compactness(Communities& communities, Graph& graph) {
     Communities best = communities;
     Graph best_g = graph;
     double best_val = average(best, get_compactness);
-    cout << "\e[92m" << best_val << endl;
+    // cout << "\e[92m" << best_val << endl;
 
     // pre-determine locations and areas
     vector<coordinate> centers;
@@ -319,9 +325,9 @@ void optimize_compactness(Communities& communities, Graph& graph) {
         radius.push_back(sqrt(c.shape.get_area() / PI));
     }
  
-    cout << "starting gives" << endl;
+    // cout << "starting gives" << endl;
     while (iterations_since_best < ITERATION_LIMIT) {
-        cout << "giving" << endl;
+        // cout << "giving" << endl;
         int give = 0;
         for (int i = 0; i < SUB_MODIFICATIONS; i++) {
             vector<vector<int> > giveable = get_giveable_precincts(graph, communities, community_to_modify_ind);
@@ -333,7 +339,7 @@ void optimize_compactness(Communities& communities, Graph& graph) {
             }
         }
 
-        cout << "gave " << give << " taking" << endl;
+        // cout << "gave " << give << " taking" << endl;
         int take = 0;
         for (int i = 0; i < SUB_MODIFICATIONS; i++) {
             vector<int> takeable = get_takeable_precincts(graph, communities, community_to_modify_ind);
@@ -345,7 +351,7 @@ void optimize_compactness(Communities& communities, Graph& graph) {
             }
         }
 
-        cout << "taked " << take << " gooved" << endl;
+        // cout << "taked " << take << " gooved" << endl;
         community_to_modify++;
         community_to_modify_ind++;
         if (community_to_modify == communities.end()) {
@@ -360,17 +366,17 @@ void optimize_compactness(Communities& communities, Graph& graph) {
             best = communities;
             best_g = graph;
             iterations_since_best = 0;
-            cout << "\e[92m" << cur << "\e[0m" << endl;
+            // cout << "\e[92m" << cur << "\e[0m" << endl;
         }
         else {
             iterations_since_best++;
-            cout << "\e[91m" << cur << "\e[0m" << endl;
+            // cout << "\e[91m" << cur << "\e[0m" << endl;
         }
     }
 
     communities = best;
     graph = best_g;
-    cout << best_val << endl;
+    // cout << best_val << endl;
 }
 
 
@@ -465,7 +471,7 @@ void minimize_stdev(Communities& communities, Graph& graph) {
         double first = before_average;
         array<double, 2> worst_c = worst(communities, get_partisanship_stdev);
         int community_to_modify_ind = worst_c[1];
-        cout << worst_c[0] << endl;
+        // cout << worst_c[0] << endl;
 
         // choose worst community to modify
         vector<vector<int> > giveable = get_giveable_precincts(graph, communities, community_to_modify_ind);
@@ -593,7 +599,7 @@ void drawc(Communities& cs) {
 }
 
 void printstats(Communities& cs, double pop_tolerance) {
-    cout << average(cs, get_compactness) << ", " << average(cs, get_partisanship_stdev);
+    // cout << average(cs, get_compactness) << ", " << average(cs, get_partisanship_stdev);
     bool pop_compliant = true;
     
     int ideal = 0;
@@ -607,8 +613,8 @@ void printstats(Communities& cs, double pop_tolerance) {
         }
     }
 
-    if (pop_compliant) cout << ", pop compliant" << endl;
-    else cout << ", non pop compliant" << endl;
+    // if (pop_compliant) cout << ", pop compliant" << endl;
+    // else cout << ", non pop compliant" << endl;
 }
 
 
@@ -637,19 +643,36 @@ Communities hte::Geometry::get_communities(Graph& graph, int n_communities) {
     srand(time(NULL));
 
     cout << "getting init" << endl;
-    Communities cs = karger_stein(graph, n_communities); // load("ia_init.txt", graph);
+    Communities cs = karger_stein(graph, n_communities);//load("ia_init.txt", graph);
     for (int i = 0; i < cs.size(); i++)
         cs[i].update_shape(graph);
 
+    Community state;
+    for (int i = 0; i < graph.vertices.size(); i++) {
+        state.add_node(graph.vertices[i]);
+    }
+    cout << get_compactness(state) << endl;
+
     // cout << "optimizing compactness" << endl;
-    for (int i = 0; i < 400; i++) {
+    for (int i = 0; i < 300; i++) {
+        Canvas canvas(900, 900);
+        canvas.add_outlines(to_outline(cs));
+        canvas.save_img_to_anim(ImageFmt::BMP, "output");
+
+        Graph before = graph;
+        Graph first = graph;
+        cout << "new iteration" << endl;
         minimize_stdev(cs, graph);
+        cout << get_num_communities_changed(before, graph) << endl;
+        before = graph;
         optimize_compactness(cs, graph);
+        cout << get_num_communities_changed(before, graph) << endl;
+        before = graph;
         optimize_population(cs, graph, 0.01);
+        cout << get_num_communities_changed(before, graph) << endl;
+        if (get_num_communities_changed(first, graph) == 0) break;
     }
 
     drawc(cs);
-    
-
     return cs;
 }

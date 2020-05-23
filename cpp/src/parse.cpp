@@ -908,7 +908,7 @@ State State::generate_from_file(string precinct_geoJSON, string voter_data, stri
 
     Canvas canvas(900, 900);
     canvas.add_outlines(to_outline(state));
-    // canvas.draw_to_window();
+    canvas.draw_to_window();
 
     state.network = generate_graph(pre_group);
     cout << "complete!" << endl;
@@ -980,7 +980,7 @@ State State::generate_from_file(string precinct_geoJSON, string district_geoJSON
 
     Canvas canvas(900, 900);
     canvas.add_outlines(to_outline(state));
-    // canvas.draw_to_window();
+    canvas.draw_to_window();
 
     state.network = generate_graph(pre_group);
     if (VERBOSE) cout << "state serialized!" << endl;
