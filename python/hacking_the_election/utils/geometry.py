@@ -11,14 +11,15 @@ from shapely.geometry import (
     MultiPolygon,
     MultiLineString,
     LineString,
-    Polygon
+    Polygon,
+    GeometryCollection
 )
 
 def _float_to_int(float_arg):
     """
     Converts float integer for geojson_to_shapely, if int_coords is True.
     """
-    return int(float_arg * (2 ** 18))
+    return round(float_arg * (2 ** 18))
 
 
 def geojson_to_shapely(geojson, int_coords=False):
@@ -42,20 +43,16 @@ def geojson_to_shapely(geojson, int_coords=False):
         return LinearRing(point_list)
     elif isinstance(geojson[0][0][0], list):
         if int_coords:
-            polygons = [[[(_float_to_int(coord[0]), _float_to_int(coord[1])) for coord in linear_ring]
-                        for linear_ring in polygon] for polygon in geojson]
+            polygons = [geojson_to_shapely(polygon, int_coords=True) for polygon in geojson]
         else:
-            polygon_coords = [([[tuple(coord) for coord in linear_ring]
-                        for linear_ring in polygon]) for polygon in geojson]
-            polygons = [Polygon(polygon[0], polygon[1:]) for polygon in polygon_coords]
+            polygons = [geojson_to_shapely(polygon) for polygon in geojson]
+        print(polygons)
         return MultiPolygon(polygons)
     elif isinstance(geojson[0][0][0], float):
         if int_coords:
-            polygon_list = [[(_float_to_int(coord[0]), _float_to_int(coord[1])) for coord in linear_ring]
-                            for linear_ring in geojson]
+            polygon_list = [geojson_to_shapely(ring, int_coords=True) for ring in geojson]
         else:
-            polygon_list = [[tuple(coord) for coord in linear_ring]
-                            for linear_ring in geojson]
+            polygon_list = [geojson_to_shapely(ring) for ring in geojson]
         return Polygon(polygon_list[0], polygon_list[1:])
     else:
         raise ValueError("invalid geojson")
@@ -148,8 +145,14 @@ def get_if_bordering(shape1, shape2, inside=False):
         # always return false because their intersection would be a
         # Polygon, but they may still be bordering.
         intersection = shape1.intersection(shape2)
-        return (isinstance(intersection, MultiLineString)
-             or isinstance(intersection, LineString))
+        if isinstance(intersection, MultiLineString):
+            return True
+        elif isinstance(intersection, LineString):
+            return True
+        elif isinstance(intersection, GeometryCollection):
+            if any([isinstance(intersection_member, LineString) for intersection_member in intersection.geoms]):
+                return True
+        return False
 
 
 def get_compactness(district):

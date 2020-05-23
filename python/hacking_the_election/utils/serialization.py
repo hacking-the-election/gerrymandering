@@ -25,8 +25,9 @@ def compare_ids(non_geodata_ids, geodata_ids):
                                     if precinct_id not in geodata_ids]
     missing_geodata_precincts = [precinct_id for precinct_id in geodata_ids
                                     if precinct_id not in non_geodata_ids]
-    print("Missing from Geodata: ", len(missing_election_precincts))
-    print("Missing from Non-geodata: ", len(missing_geodata_precincts))
+    print(f"Geodata is missing  {len(missing_election_precincts)} precincts")
+    print(f"Election Data is missing  {len(missing_geodata_precincts)} precincts")
+
 
     # Create dictionary to convert election data ids to geodata ids.
     # {election_data_id : geodata_id}
@@ -191,8 +192,29 @@ def combine_holypolygons(geodata, pop_data, election_data):
     print(f"Precincts with holes Found: {len(already_checked_holes)}")
     print(f"Precincts in holes Found {len(holes)}")
 
+def remove_ring_intersections(geodata):
+    """
+    Checks to make sure invalid shapely geometries aren't created.
 
+    :param geodata: Geodata of precincts
+    :type geodata: dictionary with id keys and json 'Polygon' coordinates values
 
+    """
+    for precinct in geodata.values():
+        ring_checked = []
+        for ring in precinct:
+            for num in range(len(ring) - 1):
+                to_check_coord = ring[num]
+                for previous_num in range(num - 1):
+                    if to_check_coord == ring[previous_num]:
+                        outside_ring = [ring[number] for number in range(len(ring) - 1) if (number < previous_num or number > num)]
+                        inside_ring = [ring[number] for number in range(len(ring) - 1) if (number > previous_num and number < num)]
+                        # make sure to add conincidental point
+                        outside_ring.append(ring[num])
+                        inside_ring.append(ring[num])
+                        precinct.append(outside_ring)
+                        ring_checked.append(inside_ring)
+    precinct.extend(ring_checked)
 
 
 
