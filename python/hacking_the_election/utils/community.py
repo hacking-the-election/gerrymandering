@@ -202,6 +202,11 @@ class Community:
             precinct_Y.append(precinct.centroid[1])
         return [average(precinct_X), average(precinct_Y)]
 
+    @property
+    def area(self):
+        """The area of the district.
+        """
+        return sum([p.coords.area for p in self.precincts.values()])
 
     @property
     def dem_rep_partisanship(self):
