@@ -149,9 +149,11 @@ void Graph::dfs_recursor(int v, std::unordered_map<int, bool>& visited) {
     visited[v] = true; 
 
     for (Edge& edge : vertices[v].edges) {
-        if (!visited[edge[1]]) { 
-            dfs_recursor(edge[1], visited);
-        }
+        // if (vertices.find(edge[1]) != vertices.end()) {
+            if (!visited[edge[1]]) { 
+                dfs_recursor(edge[1], visited);
+            }
+        // }
     }
 } 
 

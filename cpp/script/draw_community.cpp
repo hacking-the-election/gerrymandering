@@ -34,7 +34,8 @@ int main(int argc, char* argv[]) {
 
     if (argc < 2) cout << "get more argcs plz" << endl;
     State state = State::from_binary(argv[1]);
-    Canvas canvas(900, 900);
+    cout << state.precincts.size() << endl;
+    // Canvas canvas(900, 900);
     // for (Precinct p : state.precincts) {
     //     cout << p.get_centroid()[0] << ", " << p.get_centroid()[1] << endl;
     //     if (p.shape_id == "16049049005") {
@@ -57,9 +58,9 @@ int main(int argc, char* argv[]) {
     //     // }
     // }
 
-    cout << state.precincts[0].get_centroid()[0] << ", " << state.precincts[0].get_centroid()[1] << endl;
-    canvas.add_outlines(to_outline(state.network));
-    canvas.draw_to_window();
+    // cout << state.precincts[0].get_centroid()[0] << ", " << state.precincts[0].get_centroid()[1] << endl;
+    // canvas.add_outlines(to_outline(state.network));
+    // canvas.draw_to_window();
     // path p ("../../data/bin/cpp");
     // directory_iterator end_itr;
 
