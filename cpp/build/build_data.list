@@ -17,7 +17,7 @@
 "connecticut":  connecticut/geodata.json connecticut/district.json --keys='{"DEM":"DEMOCRAT","REP":"REPUBLICAN","GEO":"GEOID10","POP":"POP100","GRE":"GREEN","IND":"INDEPENDEN","LIB":"LIBERTARIA","REF":"REFORM","TOT":"TOTAL"}' connecticut.state
 "delaware": delaware/geodata.json delaware/district.json --keys='{"DEM":"USP_D_08","REP":"USP_R_08","ELE":"geoid10","GEO":"GEOID10","POP":"POP100","TOT":"USP_08_TOT"}' delaware.state
 "georgia": georgia/election_data_and_geodata.json georgia/district.json --keys='{"DEM":"OBAMA08","REP":"MCCAIN08","GEO":"ID","POP":"POPULATION","LIB":"BARR08"}' georgia.state
-"hawaii": hawaii/geodata.json hawaii/district.json --keys='{"DEM":"USP_D_08","REP":"USP_R_08","GEO":"GEOID10","POP":"POP100","TOT":"USP_08_TOT"}' hawaii.state
+"hawaii": hawaii/geodata.json hawaii/district.json --keys='{"DEM":"USP_D_08","REP":"USP_R_08","GEO":"GEOID10","POP":"POP100"}' hawaii.state
 "idaho": idaho/geodata.json idaho/district.json --keys='{"DEM":"USP_D_08","REP":"USP_R_08","GEO":"GEOID10","POP":"POP100","OTH":"USP_O_08"}' idaho.state
 "illinois": illinois/geodata.json illinois/district.json --keys='{"DEM":"OBAMA","REP":"MCCAIN","GEO":"GEOID10","POP":"TOTAL_POPU","OTH":"OTHER"}' illinois.state
 "indiana": indiana/geodata.json indiana/district.json --keys='{"DEM":"OBAMA","REP":"MCCAIN","GEO":"GEOID10","POP":"POP10","LIB":"BARR"}' indiana.state
