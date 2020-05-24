@@ -191,7 +191,7 @@ def get_compactness(district):
     return district.area / circle_area
 
 
-def get_imprecise_compactness(district):
+cpdef float get_imprecise_compactness(district):
     """Calculates a rough estimate of the Reock compactness score of a district.
 
     :param district: District to find compactness of.
@@ -201,15 +201,17 @@ def get_imprecise_compactness(district):
     :rtype: float
     """
 
-    center = district.centroid
+    cdef list center = district.centroid
 
-    distances = []
+    cdef list distances = []
+    cpdef precinct
+    cdef list centroid
     for precinct in district.precincts.values():
-        for point in list(precinct.coords.exterior.coords):
-            distances.append(get_distance(center, point))
+        centroid = precinct.centroid
+        distances.append(get_distance(center, centroid))
 
-    circle_area = max(distances) * math.pi
-    return district.area / circle_area    
+    cdef float circle_area = max(distances) * math.pi
+    return district.area / circle_area
 
 def area(ring):
     """Calculates the area of a json ring
@@ -234,16 +236,20 @@ def area(ring):
     return abs(left_area - right_area) / 2
 
 
-def get_distance(p1, p2):
+cpdef float get_distance(list p1, list p2):
     """Finds the distance between two points.
 
     :param p1: A point in format [x, y]
-    :type p1: list of int
+    :type p1: list of float
 
     :param p2: A point in format [x, y]
-    :type p2: list of int
+    :type p2: list of float
 
     :return: The euclidean distance between p1 and p2.
     :rtype: float
     """
-    return (p1[0] - p2[0])**2 + (p1[1] - p2[1])**2
+    cdef float x1 = p1[0]
+    cdef float x2 = p2[0]
+    cdef float y1 = p1[1]
+    cdef float y2 = p2[1]
+    return (x1 - x2)**2 + (y1 - y2)**2
