@@ -46,7 +46,6 @@ def geojson_to_shapely(geojson, int_coords=False):
             polygons = [geojson_to_shapely(polygon, int_coords=True) for polygon in geojson]
         else:
             polygons = [geojson_to_shapely(polygon) for polygon in geojson]
-        print(polygons)
         return MultiPolygon(polygons)
     elif isinstance(geojson[0][0][0], float):
         if int_coords:
@@ -192,6 +191,28 @@ def get_compactness(district):
     return district.area / circle_area
 
 
+cpdef float get_imprecise_compactness(district):
+    """Calculates a rough estimate of the Reock compactness score of a district.
+
+    :param district: District to find compactness of.
+    :type district: `hacking_the_election.utils.community.Community`
+
+    :return: A rough estimate of the Reock compactness of `district`
+    :rtype: float
+    """
+
+    cdef list center = district.centroid
+
+    cdef list distances = []
+    cpdef precinct
+    cdef list centroid
+    for precinct in district.precincts.values():
+        centroid = precinct.centroid
+        distances.append(get_distance(center, centroid))
+
+    cdef float circle_area = max(distances) * math.pi
+    return district.area / circle_area
+
 def area(ring):
     """Calculates the area of a json ring
 
@@ -215,16 +236,20 @@ def area(ring):
     return abs(left_area - right_area) / 2
 
 
-def get_distance(p1, p2):
+cpdef float get_distance(list p1, list p2):
     """Finds the distance between two points.
 
     :param p1: A point in format [x, y]
-    :type p1: list of int
+    :type p1: list of float
 
     :param p2: A point in format [x, y]
-    :type p2: list of int
+    :type p2: list of float
 
     :return: The euclidean distance between p1 and p2.
     :rtype: float
     """
-    return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
+    cdef float x1 = p1[0]
+    cdef float x2 = p2[0]
+    cdef float y1 = p1[1]
+    cdef float y2 = p2[1]
+    return (x1 - x2)**2 + (y1 - y2)**2

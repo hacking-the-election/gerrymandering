@@ -59,7 +59,7 @@ def draw_gradient():
     image.show()
 
 
-def draw_communities(communities, output_path=None):
+def draw_communities(communities, output_path=None, show=True):
     """Creates a state map of a list of communities. Colored by partisanship.
 
     :param communities: A list of communities.
@@ -67,6 +67,9 @@ def draw_communities(communities, output_path=None):
 
     :param output_path: Path to the file the communities should be saved to, defaults to None
     :type output_path: str or NoneType
+
+    :param show: Whether or not the drawing should be showed, defaults to True
+    :type show: bool
     """
 
     for community in communities:
@@ -75,4 +78,4 @@ def draw_communities(communities, output_path=None):
     color_dict = get_partisanship_colors(communities, lambda c: c.dem_rep_partisanship)
 
     visualize_map(communities, output_path, coords=lambda c: c.coords,
-        color=lambda c: color_dict[c], show=True)
+        color=lambda c: color_dict[c], show=show)

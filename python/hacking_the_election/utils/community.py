@@ -11,7 +11,10 @@ from pygraph.classes.graph import graph as Graph
 from shapely.geometry import MultiPolygon, Polygon
 from shapely.ops import unary_union
 
-from hacking_the_election.utils.geometry import get_compactness
+from hacking_the_election.utils.geometry import (
+    get_compactness,
+    get_imprecise_compactness
+)
 from hacking_the_election.utils.stats import average, standard_deviation
 
 
@@ -34,6 +37,7 @@ class Community:
         self.partisanship = []
         self.partisanship_stdev = 0
         self.compactness = 0
+        self.imprecise_compactness = 0
         self.population = 0
         self.population_stdev = 0
 
@@ -101,6 +105,13 @@ class Community:
         precinct_multipolygon = \
             MultiPolygon([p.coords for p in self.precincts.values()])
         self.compactness = get_compactness(precinct_multipolygon)
+    
+    def update_imprecise_compactness(self):
+        """Update the imprecise_compactness attribute for this community.
+
+        Uses individual precinct coords. Does not require `coords` attribute to be updated.
+        """
+        self.imprecise_compactness = get_imprecise_compactness(self)
 
     def update_population(self):
         """Update the population attribute for this community.
@@ -202,6 +213,11 @@ class Community:
             precinct_Y.append(precinct.centroid[1])
         return [average(precinct_X), average(precinct_Y)]
 
+    @property
+    def area(self):
+        """The area of the district.
+        """
+        return sum([p.coords.area for p in self.precincts.values()])
 
     @property
     def dem_rep_partisanship(self):
@@ -260,6 +276,7 @@ class Community:
         new.partisanship = copy.copy(self.partisanship)
         new.partisanship_stdev = copy.copy(self.partisanship_stdev)
         new.compactness = copy.copy(self.compactness)
+        new.imprecise_compactness = copy.copy(self.imprecise_compactness)
         new.population = copy.copy(self.population)
         new.population_stdev = copy.copy(self.population_stdev)
 
