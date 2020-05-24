@@ -23,6 +23,8 @@ using namespace std;
 using namespace hte::Geometry;
 using namespace hte::Graphics;
 
+#define MAX_TIME 40000
+
 
 int main(int argc, char* argv[]) {
     
@@ -31,24 +33,33 @@ int main(int argc, char* argv[]) {
         See community.cpp for the implementation of the algorithm
     */
 
-    if (argc != 3) {
-        cerr << "generate_communities: usage: <state.dat> num_communities" << endl;
+    if (argc != 2) {
+        cerr << "generate_communities: usage: <state.dat>" << endl;
         return 1;
     }
 
     // read binary file from path
     string read_path = string(argv[1]);
     State state = State::from_binary(read_path);
+    int n_communities = state.districts.size();
 
-    int n_communities = stoi(string(argv[2]));
-    Communities cs = get_communities(state.network, n_communities);
+    Graph network = state.network;
+    Communities init_config = karger_stein(network, n_communities);
+    cout << "got initial configuration" << endl;
+
+    // get random configuration
+    Communities communities = get_communities(network, init_config, 0.1);
+
     Canvas canvas(900, 900);
-    for (Multi_Polygon district : state.districts) {
-        array<double, 2> q = get_quantification(state.network, cs, district);
-        cout << collapse_vals(q[0], q[1]) << endl;
-        canvas.add_outlines(to_outline(district, collapse_vals(q[0], q[1])));
-    }
-
+    canvas.add_outlines(to_outline(communities));
     canvas.draw_to_window();
+
+    // // get districts, save to district output
+    // Communities districts = get_communities(state.network, communities, 0.01);
+    // canvas.clear();
+    // canvas.add_outlines(to_outline(districts));
+    // canvas.draw_to_window();
+    
+    // // using 
     return 0;
 }
