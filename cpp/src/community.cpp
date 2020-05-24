@@ -42,7 +42,10 @@ using namespace chrono;
 
 #define VERBOSE 1
 #define DEBUG 0
+
+#define MAX_TIME
 #define ITERATION_LIMIT 40
+
 
 void drawc(Communities&);
 
@@ -629,7 +632,7 @@ int get_num_communities_changed(Graph& before, Graph& after) {
 }
 
 
-Communities hte::Geometry::get_communities(Graph& graph, int n_communities) {
+Communities hte::Geometry::get_communities(Graph& graph, Communities cs, double pop_constraint) {
     /*
         @desc: determines a random list of community objects
 
@@ -641,37 +644,13 @@ Communities hte::Geometry::get_communities(Graph& graph, int n_communities) {
     */
 
     srand(time(NULL));
+    int TIME = 0;
 
-    cout << "getting init" << endl;
-    Communities cs = karger_stein(graph, n_communities);//load("ia_init.txt", graph);
-    for (int i = 0; i < cs.size(); i++)
-        cs[i].update_shape(graph);
-
-    Community state;
-    for (int i = 0; i < graph.vertices.size(); i++) {
-        state.add_node(graph.vertices[i]);
-    }
-    cout << get_compactness(state) << endl;
-
-    // cout << "optimizing compactness" << endl;
-    for (int i = 0; i < 300; i++) {
-        Canvas canvas(900, 900);
-        canvas.add_outlines(to_outline(cs));
-        canvas.save_img_to_anim(ImageFmt::BMP, "output");
-
-        Graph before = graph;
-        Graph first = graph;
-        cout << "new iteration" << endl;
-        minimize_stdev(cs, graph);
-        cout << get_num_communities_changed(before, graph) << endl;
-        before = graph;
+    // do {
+        // minimize_stdev(cs, graph);
         optimize_compactness(cs, graph);
-        cout << get_num_communities_changed(before, graph) << endl;
-        before = graph;
-        optimize_population(cs, graph, 0.01);
-        cout << get_num_communities_changed(before, graph) << endl;
-        if (get_num_communities_changed(first, graph) == 0) break;
-    }
+        // optimize_population(cs, graph, pop_constraint);
+    // } while (TIME < MAX_TIME);
 
     drawc(cs);
     return cs;
