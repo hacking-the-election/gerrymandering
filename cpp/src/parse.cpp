@@ -24,7 +24,7 @@
 #include "../include/geometry.hpp"    // exterior border generation
 
 #define VERBOSE 1        // print progress
-#define TEXAS_COORDS 0   // absolute coordinates
+// #define TEXAS_COORDS 0   // absolute coordinates
 
 using namespace rapidjson;
 using namespace std;
@@ -154,12 +154,6 @@ map<string, map<POLITICAL_PARTY, int> > parse_voter_data(string voter_data) {
         }
     }
 
-    cout << "ID COLUMN: " << precinct_id_col << endl;
-    cout << "PARTY COLUMNS: ";
-    for  (auto& pair : election_columns) {
-        cout << pair.second << " ";
-    }
-    cout << endl;
 
     map<string, map<POLITICAL_PARTY, int> > parsed_data;
 
@@ -213,14 +207,14 @@ Polygon string_to_vector(string str, bool texas_coordinates) {
 
     LinearRing hull;
     for (int i = 0; i < mp[0].Size(); i++) {
-        double x, double y;
+        double x, y;
         if (!texas_coordinates) {
             x = mp[0][i][0].GetDouble() * c;
             y = mp[0][i][1].GetDouble() * c;
         }
         else {
-            x = mp[0][i][0].GetDouble() * 20;
-            y = mp[0][i][1].GetDouble() * 20;
+            x = mp[0][i][0].GetDouble();
+            y = mp[0][i][1].GetDouble();
         }
 
         hull.border.push_back({(long int) x, (long int) y});
@@ -240,7 +234,7 @@ Polygon string_to_vector(string str, bool texas_coordinates) {
                 hole.border.push_back({(long int) mp[i][j][0].GetDouble() * c, (long int) mp[i][j][1].GetDouble() * c});
             }
             else {
-                hole.border.push_back({(long int) mp[i][j][0].GetDouble() * 2, (long int) mp[i][j][1].GetDouble() * 2});
+                hole.border.push_back({(long int) mp[i][j][0].GetDouble(), (long int) mp[i][j][1].GetDouble()});
             }
         }
         if (mp[i][0][0] != mp[i][mp[i].Size() - 1][0] || 
@@ -893,46 +887,27 @@ void scale_precincts_to_district(Geometry::State& state) {
         if (t[3] > precinct_b[3]) precinct_b[3] = t[3];
     }
 
-    cout << "need to translate " << precinct_b[1] << ", " << precinct_b[2] << " to " << district_b[1] << ", " << district_b[2] << endl;
      // translate lower left of bounding box of precinct to district
-    int tu = district_b[1] - precinct_b[1]; // how much to translate up
-    int tr = district_b[2] - precinct_b[2]; // how much to translate right
-    cout << "going up " << tu << ", going right " << tr << endl;
-
+    
+    // top distance of district / top distance of precinct
     double scale_top = (double)(district_b[3] - district_b[2]) / (double)(precinct_b[3] - precinct_b[2]);
     double scale_right = (double)(district_b[0] - district_b[1]) / (double)(precinct_b[0] - precinct_b[1]);
+    precinct_b[0] *= scale_right;
+    precinct_b[1] *= scale_right;
+    precinct_b[2] *= scale_top;
+    precinct_b[3] *= scale_top;
     
+    int tu = district_b[1] - precinct_b[1]; // how much to translate up
+    int tr = district_b[2] - precinct_b[2]; // how much to translate right
+
     for (int i = 0; i < state.precincts.size(); i++) {
         for (int j = 0; j < state.precincts[i].hull.border.size(); j++) {
+            state.precincts[i].hull.border[j][1] *= scale_right;
+            state.precincts[i].hull.border[j][0] *= scale_top;
             state.precincts[i].hull.border[j][0] += tr;
             state.precincts[i].hull.border[j][1] += tu;
-
-            state.precincts[i].hull.border[j][0] *= scale_right;
-            state.precincts[i].hull.border[j][1] *= scale_top;
         }
     }
-
-    precinct_b[0] += tu;
-    precinct_b[0] *= scale_top;
-    precinct_b[1] += tu;
-    precinct_b[1] *= scale_top;
-    precinct_b[2] += tr;
-    precinct_b[2] *= scale_right;
-    precinct_b[3] += tr;
-    precinct_b[3] *= scale_right;
-
-
-    cout << precinct_b[0] << ", " << precinct_b[1] << ", " << precinct_b[2] << precinct_b[3] << endl;
-    Canvas canvas(900, 900);
-    canvas.add_outlines(to_outline(state));
-    canvas.add_outline(to_outline(bound_to_shape(district_b)));
-    canvas.add_outline(to_outline(bound_to_shape(precinct_b)));
-    for (Multi_Polygon p : state.districts) {
-        Outline o = to_outline(p.border[0].hull);
-        o.style().thickness(1).outline(RGB_Color(0,0,0)).fill(RGB_Color(0,0,0));
-        canvas.add_outline(o);
-    }
-    canvas.draw_to_window();
 }
 
 
@@ -994,15 +969,17 @@ State State::generate_from_file(string precinct_geoJSON, string voter_data, stri
     if (VERBOSE) cout << "generating state with precinct and district arrays..." << endl;
     State state = State(district_shapes, pre_group.precincts, state_shape_v);
 
-    scale_precincts_to_district(state);
-    Canvas canvas(900, 900);
-    canvas.add_outlines(to_outline(state));
-    for (Multi_Polygon p : state.districts) {
-        Outline o = to_outline(p.border[0].hull);
-        o.style().thickness(1).outline(RGB_Color(0,0,0)).fill(RGB_Color(0,0,0));
-        canvas.add_outline(o);
-    }
-    canvas.draw_to_window();
+    #ifdef TEXAS_COORDS
+        scale_precincts_to_district(state);
+        Canvas canvas(900, 900);
+        canvas.add_outlines(to_outline(state));
+        for (Multi_Polygon p : state.districts) {
+            Outline o = to_outline(p.border[0].hull);
+            o.style().thickness(1).outline(RGB_Color(0,0,0)).fill(RGB_Color(0,0,0));
+            canvas.add_outline(o);
+        }
+        canvas.draw_to_window();
+    #endif
 
     cout << "getting precinct centroids with boost" << endl;
     for (int i = 0; i < state.precincts.size(); i++) {
@@ -1072,14 +1049,19 @@ State State::generate_from_file(string precinct_geoJSON, string district_geoJSON
     if (VERBOSE) cout << "generating state with precinct and district arrays..." << endl;
     State state = State(district_shapes, pre_group.precincts, state_shape_v);
     
-    Canvas canvas(900, 900);
-    canvas.add_outlines(to_outline(state));
-    for (Multi_Polygon p : state.districts) {
-        Outline o = to_outline(p.border[0].hull);
-        o.style().thickness(1).outline(RGB_Color(0,0,0)).fill(RGB_Color(0,0,0));
-        canvas.add_outline(o);
-    }
-    canvas.draw_to_window();
+    #ifdef TEXAS_COORDS
+        scale_precincts_to_district(state);
+        Canvas canvas(900, 900);
+        canvas.add_outlines(to_outline(state));
+        for (Multi_Polygon p : state.districts) {
+            for (Polygon poly : p.border) {
+                Outline o = to_outline(poly.hull);
+                o.style().thickness(1).outline(RGB_Color(0,0,0)).fill(RGB_Color(0,0,0));
+                canvas.add_outline(o);
+            }
+        }
+        canvas.draw_to_window();
+    #endif
 
     cout << "getting centroids of precincst" << endl; 
 
