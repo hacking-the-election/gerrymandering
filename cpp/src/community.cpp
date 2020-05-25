@@ -209,9 +209,7 @@ double get_partisanship_stdev(Community& community) {
 
 bool exchange_precinct(Graph& g, Communities& cs, int node_to_take, int community_to_take) {
     // moves a node from its community into `community_to_take`
-    
     int nttc = g.vertices[node_to_take].community;
-    
     if (cs[nttc].vertices.size() == 1) {
         return false;
     }
@@ -307,7 +305,6 @@ array<double, 2> worst(Communities& communities, double (*measure)(Community&)) 
 
 
 void optimize_compactness(Communities& communities, Graph& graph) {
-
     int iterations_since_best = 0;
     auto community_to_modify = communities.begin();
     int community_to_modify_ind = 0;
@@ -327,7 +324,7 @@ void optimize_compactness(Communities& communities, Graph& graph) {
         centers.push_back(c.shape.get_centroid());
         radius.push_back(sqrt(c.shape.get_area() / PI));
     }
- 
+
     // cout << "starting gives" << endl;
     while (iterations_since_best < ITERATION_LIMIT) {
         // cout << "giving" << endl;
@@ -518,7 +515,7 @@ void minimize_stdev(Communities& communities, Graph& graph) {
 }
 
 
-Communities karger_stein(Graph& g1, int n_communities) {
+Communities hte::Geometry::karger_stein(Graph& g1, int n_communities) {
     /*
         @desc: Partitions a graph according to the Karger-Stein algorithm
 
@@ -632,6 +629,21 @@ int get_num_communities_changed(Graph& before, Graph& after) {
 }
 
 
+void update_community_attr(Graph& graph, Communities& cs) {
+    for (int i = 0; i < cs.size(); i++) {
+        cout << cs[i].vertices.size() << " ";
+        for (int j = 0; j < cs[j].vertices.size(); j++) {
+            (cs[i].vertices.begin() + j).value().community = i;
+            graph.vertices[(cs[i].vertices.begin() + j).key()].community = i;
+            if ((cs[i].vertices.begin() + j).key() == 274) {
+                cout << "aloha " << graph.vertices[(cs[i].vertices.begin() + j).key()].community << endl;
+            }
+        }
+    }
+    cout << endl;
+}
+
+
 Communities hte::Geometry::get_communities(Graph& graph, Communities cs, double pop_constraint) {
     /*
         @desc: determines a random list of community objects
@@ -644,14 +656,12 @@ Communities hte::Geometry::get_communities(Graph& graph, Communities cs, double 
     */
 
     srand(time(NULL));
-    int TIME = 0;
+    int TIME_ELAPSED = 0;
 
-    // do {
-        // minimize_stdev(cs, graph);
-        optimize_compactness(cs, graph);
-        // optimize_population(cs, graph, pop_constraint);
-    // } while (TIME < MAX_TIME);
+    for (int i = 0; i < cs.size(); i++) {
+        cs[i].update_shape(graph);
+    }
 
-    drawc(cs);
+    optimize_compactness(cs, graph);
     return cs;
 }

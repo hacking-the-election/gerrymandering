@@ -26,7 +26,7 @@ from hacking_the_election.utils.stats import average
 from hacking_the_election.visualization.misc import draw_state
 
 
-M = 20
+M = 10
 N = 20
 
 
@@ -44,7 +44,7 @@ def optimize_compactness(communities, graph, animation_dir=None):
     """
 
     for community in communities:
-        community.update_compactness()
+        community.update_imprecise_compactness()
 
     if animation_dir is not None:
         draw_state(graph, animation_dir)
@@ -59,8 +59,8 @@ def optimize_compactness(communities, graph, animation_dir=None):
 
         # Stop if number of iterations since the best 
         # communities so far is more than N.
-        if min([c.compactness for c in communities]) \
-                > min([c.compactness for c in best_communities]):
+        if min([c.imprecise_compactness for c in communities]) \
+                > min([c.imprecise_compactness for c in best_communities]):
             # Current communities are new best.
             best_communities = [copy.copy(c) for c in communities]
             iterations_since_best = 0
@@ -73,7 +73,7 @@ def optimize_compactness(communities, graph, animation_dir=None):
                         if c.id == bc.id:
                             c = bc
                 
-                rounded_compactnesses = [round(c.compactness, 3) for c in communities]
+                rounded_compactnesses = [round(c.imprecise_compactness, 3) for c in communities]
                 print(rounded_compactnesses, min(rounded_compactnesses))
                 return
 
@@ -94,7 +94,7 @@ def optimize_compactness(communities, graph, animation_dir=None):
                             if c.id == bc.id:
                                 c = bc
                 
-                    rounded_compactnesses = [round(c.compactness, 3) for c in communities]
+                    rounded_compactnesses = [round(c.imprecise_compactness, 3) for c in communities]
                     print(rounded_compactnesses, min(rounded_compactnesses))
                     return
             except LoopBreakException:
@@ -115,9 +115,6 @@ def optimize_compactness(communities, graph, animation_dir=None):
         radius = math.sqrt(sum(precinct_areas) / math.pi)
 
         for _ in range(M):
-
-            rounded_compactnesses = [round(c.compactness, 3) for c in communities]
-            print(rounded_compactnesses, min(rounded_compactnesses))
 
             # Communities that have exchanged precincts with `community`
             other_communities = set()
@@ -151,8 +148,11 @@ def optimize_compactness(communities, graph, animation_dir=None):
                         other_communities.add(other_community)
                 
             for other_community in other_communities:
-                other_community.update_compactness()
-            community.update_compactness()
+                other_community.update_imprecise_compactness()
+            other_community.update_imprecise_compactness()
+
+        rounded_compactnesses = [round(c.imprecise_compactness, 3) for c in communities]
+        print(rounded_compactnesses, min(rounded_compactnesses))
 
         n += 1
         if n == len(communities):
