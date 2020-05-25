@@ -355,7 +355,7 @@ def create_graph(election_file, geo_file, pop_file, state):
         # find where population is stored, either election or geodata
         try:
             _ = geodata["features"][0]["properties"][json_pops[0]]
-        except KeyError:
+        except (ValueError or KeyError):
             pop_data_type = "tab"
             # population is in election data
             pop_col_indices = [i for i, header in enumerate(election_data[0]) if header in json_pops]
