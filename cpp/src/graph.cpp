@@ -61,10 +61,10 @@ std::vector<Graph> Graph::get_components() {
     */
 
     unordered_map<int, bool> visited;
-    visited.reserve(vertices.size());
-    for (int i = 0; i < vertices.size(); i++) {
-        visited[(vertices.begin() + i).key()] = false;
-    }
+    // visited.reserve(vertices.size());
+    // for (int i = 0; i < vertices.size(); i++) {
+    //     visited[(vertices.begin() + i).key()] = false;
+    // }
 
     vector<Graph> components;
 
@@ -117,10 +117,11 @@ int Graph::get_num_components() {
         @return: `int` number of components
     */
 
+
     unordered_map<int, bool> visited;
-    visited.reserve(vertices.size());
-    for (int i = 0; i < vertices.size(); i++)
-        visited[(vertices.begin() + i).key()] = false;
+
+    // for (int i = 0; i < vertices.size(); i++)
+    //     visited.insert({i, false}); //[i] = false;
 
     int x = 0;
     for (int i = 0; i < vertices.size(); i++) {

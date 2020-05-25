@@ -275,8 +275,9 @@ boost_polygon ring_to_boost_poly(LinearRing shape) {
     boost_polygon poly;
     // create vector of boost points
     std::vector<boost_point> points;
+    points.reserve(shape.border.size());
     for (coordinate c : shape.border) 
-        points.push_back(boost_point(c[0],c[1])),
+        points.emplace_back(boost_point(c[0],c[1])),
 
     assign_points(poly, points);
     return poly;

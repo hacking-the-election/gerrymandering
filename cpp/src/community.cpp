@@ -168,16 +168,14 @@ double get_compactness(Community& community) {
         @ref: https://fisherzachary.github.io/public/r-output.html
     */
 
-// With center, you can do a distance squared check to each poly point. Track the furthest from center. When done, furthest point is a radius from center of a circle that will contain the poly. That should be really, really fast. Just multiplies, adds, and one square root at the very end to get the final radius from the radius squared
-
+    
+    // return (0.4);
     coordinate center = community.shape.get_centroid();
     double farthest = 0;
 
     for (Precinct& p : community.shape.precincts) {
-        for (coordinate& c : p.hull.border) {
-            if ((center[0] - c[0]) * (center[0] - c[0]) + (center[1] - c[1]) * (center[1] - c[1]) > farthest) {
-                farthest = (center[0] - c[0]) * (center[0] - c[0]) + (center[1] - c[1]) * (center[1] - c[1]);
-            }
+        if ((center[0] - p.get_centroid()[0]) * (center[0] - p.get_centroid()[0]) + (center[1] - p.get_centroid()[1]) * (center[1] - p.get_centroid()[1]) > farthest) {
+            farthest = (center[0] - p.get_centroid()[0]) * (center[0] - p.get_centroid()[0]) + (center[1] - p.get_centroid()[1]) * (center[1] - p.get_centroid()[1]);
         }
     }
 
@@ -213,6 +211,13 @@ bool exchange_precinct(Graph& g, Communities& cs, int node_to_take, int communit
     if (cs[nttc].vertices.size() == 1) {
         return false;
     }
+
+    // get a subgraph of cs[nttc].vertices[node_to_take] neighbors
+    // vector<int> neighbors;
+    // for (Edge& e : cs[nttc].vertices[node_to_take].edges) {
+    //     neighbors.push_back(e[1]);
+    // }
+
     if (remove_edges_to(cs[nttc], node_to_take).get_num_components() > 2) {
         return false;
     }
@@ -325,9 +330,9 @@ void optimize_compactness(Communities& communities, Graph& graph) {
         radius.push_back(sqrt(c.shape.get_area() / PI));
     }
 
-    // cout << "starting gives" << endl;
+    cout << "starting gives" << endl;
     while (iterations_since_best < ITERATION_LIMIT) {
-        // cout << "giving" << endl;
+        cout << "giving" << endl;
         int give = 0;
         for (int i = 0; i < SUB_MODIFICATIONS; i++) {
             vector<vector<int> > giveable = get_giveable_precincts(graph, communities, community_to_modify_ind);
@@ -339,7 +344,7 @@ void optimize_compactness(Communities& communities, Graph& graph) {
             }
         }
 
-        // cout << "gave " << give << " taking" << endl;
+        cout << "gave " << give << " taking" << endl;
         int take = 0;
         for (int i = 0; i < SUB_MODIFICATIONS; i++) {
             vector<int> takeable = get_takeable_precincts(graph, communities, community_to_modify_ind);
@@ -351,7 +356,7 @@ void optimize_compactness(Communities& communities, Graph& graph) {
             }
         }
 
-        // cout << "taked " << take << " gooved" << endl;
+        cout << "taked " << take << " gooved" << endl;
         community_to_modify++;
         community_to_modify_ind++;
         if (community_to_modify == communities.end()) {
@@ -655,13 +660,15 @@ Communities hte::Geometry::get_communities(Graph& graph, Communities cs, double 
         @return: `Communities` init config
     */
 
-    srand(time(NULL));
     int TIME_ELAPSED = 0;
 
     for (int i = 0; i < cs.size(); i++) {
         cs[i].update_shape(graph);
     }
 
+    auto start = high_resolution_clock::now();
     optimize_compactness(cs, graph);
+    auto stop = high_resolution_clock::now();
+    cout << duration_cast<microseconds>(stop - start).count() << endl;
     return cs;
 }
