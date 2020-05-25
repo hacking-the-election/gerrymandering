@@ -88,9 +88,9 @@ std::map<POLITICAL_PARTY, double> hte::Geometry::get_partisanship_from_mask(Prec
     return partisanships;
 }
 
-LinearRing bound_to_shape(bounding_box box) {
-    return (LinearRing({{box[3], box[0]}, {box[3], box[1]}, {box[2], box[1]}, {box[2], box[0]}}));
-}
+// LinearRing bound_to_shape(bounding_box box) {
+//     return (LinearRing({{box[3], box[0]}, {box[3], box[1]}, {box[2], box[1]}, {box[2], box[0]}}));
+// }
 
 
 std::array<double, 2> Geometry::get_quantification(Graph& graph, Communities& communities, Multi_Polygon district) {
