@@ -321,6 +321,12 @@ vector<Precinct> parse_precinct_data(string geoJSON) {
                 else if (shapes["features"][i]["properties"][party_header.second.c_str()].IsDouble()) {
                     vote = (int) shapes["features"][i]["properties"][party_header.second.c_str()].GetDouble();
                 }
+                else if (shapes["features"][i]["properties"][party_header.second.c_str()].IsString()) {
+                    string str = shapes["features"][i]["properties"][party_header.second.c_str()].GetString();
+                    if (str != "NA" && str != "" && str != " ")
+                        vote = stoi(shapes["features"][i]["properties"][party_header.second.c_str()].GetString());
+                }
+                else cout << "VOTER DATA IN UNRECOGNIZED OR UNPARSABLE TYPE." << endl;
             }
             else cout << "\e[31merror: \e[0mNo voter data near parse.cpp:314 " << party_header.second << endl;
             voter_data[party_header.first] = vote;
@@ -922,7 +928,7 @@ State State::generate_from_file(string precinct_geoJSON, string district_geoJSON
         @desc:
             Parse precinct and district geojson, along with
             precinct voter data, into a State object.
-    
+
         @params:
             `string` precinct_geoJSON: A string file with geodata for precincts
             `string` voter_data: A string file with tab separated voter data
