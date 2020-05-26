@@ -45,10 +45,10 @@ using namespace chrono;
 #define SPEED_OPT 0
 // #define WRITE_OUTPUT
 
-#define MAX_TIME 14400
+#define MAX_TIME 13500
 #define ITERATION_LIMIT 20
 #define MIN_PERCENT_PRECINCTS 0.04
-#define MIN_PERCENT_PRECINCTS_STDEV 0.35
+#define MIN_PERCENT_PRECINCTS_STDEV 0.5
 
 void drawc(Communities&);
 
@@ -620,6 +620,48 @@ void save_data_to_csv(string output_file, vector<string> data) {
 }
 
 
+string get_progress_bar(double progress) {
+    int length = 30;
+    string bar = "[";
+    int num = ceil(progress * (double) length);
+    for (int i = 0; i < num; i++) bar += "\e[32m=\e[0m";
+    for (int i = num; i < length; i++) bar += " ";
+    return bar + "]";
+}
+
+
+void save_voter_counts(string output, Communities& cs) {
+    string file = "";
+    for (Community c : cs) {
+        map<POLITICAL_PARTY, int> total_voter_data;
+        for (Precinct p : c.shape.precincts) {
+            for (auto& pair : p.voter_data) {
+                if (pair.second != -1)
+                total_voter_data[pair.first] += pair.second;
+            }
+        }
+
+        file += "[";
+        for (auto& pair : total_voter_data) {
+            if (pair.first == POLITICAL_PARTY::DEMOCRAT) file += "\"DEM\":";
+            else if (pair.first == POLITICAL_PARTY::REPUBLICAN) file += "\"REP\":";
+            else if (pair.first == POLITICAL_PARTY::GREEN) file += "\"GRE\":";
+            else if (pair.first == POLITICAL_PARTY::INDEPENDENT) file += "\"IND\":";
+            else if (pair.first == POLITICAL_PARTY::LIBERTARIAN) file += "\"LIB\":";
+            else if (pair.first == POLITICAL_PARTY::REFORM) file += "\"REF\":";
+            else if (pair.first == POLITICAL_PARTY::OTHER) file += "\"OTH\":";
+            else break;
+            file += to_string(pair.second) + ",";
+        }
+
+        file.pop_back();
+        file += "]\n";
+    }
+
+    writef(file, output);
+}
+
+
 Communities hte::Geometry::get_communities(Graph& graph, Communities cs, double pop_constraint, string output_dir, bool communities_run) {
     /*
         @desc: determines a random list of community objects
@@ -633,14 +675,18 @@ Communities hte::Geometry::get_communities(Graph& graph, Communities cs, double 
 
     int TIME_ELAPSED = 0;
     int PRECINCTS_EXCHANGED = 0;
-
+    int iteration = 0;
     for (int i = 0; i < cs.size(); i++) {
         cs[i].update_shape(graph);
     }
 
     string anim_out = output_dir + "/anim/";
+    string voter_out = output_dir + "/stats/";
     if (communities_run) anim_out += "communities/";
-    else anim_out += "redistricts/"/
+    else anim_out += "redistricts/";
+    if (communities_run) voter_out += "communities/";
+    else voter_out += "redistricts/";
+    voter_out += "voter_counts.txt";
 
     do {
         // start time for max_time and initialize first graph
@@ -651,20 +697,22 @@ Communities hte::Geometry::get_communities(Graph& graph, Communities cs, double 
         minimize_stdev(cs, graph);
         optimize_compactness(cs, graph); 
         optimize_population(cs, graph, pop_constraint);
-
         PRECINCTS_EXCHANGED = get_num_communities_changed(before, graph);
 
         // stop timer for max_time
         auto stop = high_resolution_clock::now();
         TIME_ELAPSED += duration_cast<seconds>(stop - start).count();
 
-        Canvas canvas(900, 900);
+        Canvas canvas(450, 450);
         canvas.add_outlines(to_outline(cs));
         canvas.save_img_to_anim(ImageFmt::BMP, anim_out);
+        cout << "\r" << get_progress_bar(((double)TIME_ELAPSED / (double)MAX_TIME)) << "  " << PRECINCTS_EXCHANGED << " exchanges last iter";
+        cout.flush();
+        iteration++;
     } while ((TIME_ELAPSED < MAX_TIME) && (PRECINCTS_EXCHANGED > (int)(MIN_PERCENT_PRECINCTS * (double)graph.vertices.size())));
-
-
-    cout << "completed communities algorithm run with optimized communities" << endl;
     // the communities are fully optimized
+    cout << "\r" << get_progress_bar(1) << endl;
+    save_voter_counts(voter_out, cs);
+
     return cs;
 }
