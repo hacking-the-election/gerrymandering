@@ -30,3 +30,7 @@ cpp/test_data/
 # cpp/build/*.o
 *.o
 *.bmp
+
+
+# output data
+output/

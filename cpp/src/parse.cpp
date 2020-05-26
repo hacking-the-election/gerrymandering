@@ -829,6 +829,7 @@ Graph generate_graph(Precinct_Group pg) {
             for (size_t i = 0; i < components.size(); i++) {
                 for (size_t j = i + 1; j < components.size(); j++) {
                     // for each distinct combination of islands
+
                     for (size_t p = 0; p < components[i].vertices.size(); p++) {
                         for (size_t q = 0; q < components[j].vertices.size(); q++) {
                             // for each distinct precinct combination of the
@@ -848,6 +849,7 @@ Graph generate_graph(Precinct_Group pg) {
 
             // find the shortest link between any two precincts on any two islands islands
             array<int, 2> me = std::min_element(dists.begin(), dists.end())->node_ids;
+            cout << me[0] << ", " << me[1] << endl;
             graph.add_edge({me[0], me[1]});
         }
     } // else the graph is linked already
