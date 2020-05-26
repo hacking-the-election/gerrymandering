@@ -24,7 +24,7 @@
 #include "../include/geometry.hpp"    // exterior border generation
 
 #define VERBOSE 1        // print progress
-// #define TEXAS_COORDS 0   // absolute coordinates
+//#define TEXAS_COORDS 0   // absolute coordinates
 
 using namespace rapidjson;
 using namespace std;
@@ -143,7 +143,6 @@ map<string, map<POLITICAL_PARTY, int> > parse_voter_data(string voter_data) {
     for ( int i = 0; i < data_list[0].size(); i++) {
         // val holds header string
         string val = data_list[0][i];
-
         if (val == id_headers[ID_TYPE::ELECTIONID])
             precinct_id_col = i;
 
@@ -153,7 +152,6 @@ map<string, map<POLITICAL_PARTY, int> > parse_voter_data(string voter_data) {
             }
         }
     }
-
 
     map<string, map<POLITICAL_PARTY, int> > parsed_data;
 

@@ -236,12 +236,11 @@ bool exchange_precinct(Graph& g, Communities& cs, int node_to_take, int communit
 
 
 vector<int> get_takeable_precincts(Graph& g, Communities& c, int in) {
-    vector<int> takeable;
+    vector<int> takeable = {};
 
     for (auto& pair : c[in].vertices) {
         for (Edge& e : g.vertices[pair.first].edges) {
             if (g.vertices[e[1]].community != in) {
-                // @WARN: chek takeable here
                 if (std::find(takeable.begin(), takeable.end(), e[1]) == takeable.end()) {
                     takeable.push_back(e[1]);
                 }
@@ -418,30 +417,39 @@ void optimize_population(Communities& communities, Graph& g, double range) {
         if (communities[worst_index].get_population() < ideal_pop) {
             vector<int> take = get_takeable_precincts(g, communities, worst_index);
             std::shuffle(std::begin(take), std::end(take), rng);
+            cout << "taking to get within the range" << endl;
             while (communities[worst_index].get_population() < ideal_pop - smallest_diff_possible) {
                 if (x == take.size()) {
                     x = 0;
+                    cout << "updating takeable" << endl;
                     take = get_takeable_precincts(g, communities, worst_index);
                     std::shuffle(std::begin(take), std::end(take), rng);
                 }
-                
+                cout << x << ", " << take.size() << endl;
+                cout << "taking " << take[x] << " for " << worst_index << endl;
                 exchange_precinct(g, communities, take[x], worst_index);
+                cout << communities[worst_index].get_population() << endl;
                 x++;
             }
+            cout << "took" << endl;
         }
         else {
             vector<vector<int> > give = get_giveable_precincts(g, communities, worst_index);
             std::shuffle(std::begin(give), std::end(give), rng);
+            cout << "giving to get in range" << endl;
             while (communities[worst_index].get_population() > ideal_pop + smallest_diff_possible) {
                 if (x == give.size()) {
                     x = 0;
+                    cout << "updating giveable" << endl;
                     give = get_giveable_precincts(g, communities, worst_index);
                     std::shuffle(std::begin(give), std::end(give), rng);
                 }
-
+                cout << "give " << give.size() << endl;
+                cout << "exchanging " << give[x][0] << endl;
                 exchange_precinct(g, communities, give[x][0], give[x][1]);
                 x++;
             }
+            cout << "got in range" << endl;
         }
 
         // Canvas canvas(900, 900);
@@ -462,6 +470,7 @@ void optimize_population(Communities& communities, Graph& g, double range) {
             }
         }
 
+        cout << worst_pop << ", " << worst_index << endl;
         if (worst_difference < smallest_diff_possible) {
             break;
         }
@@ -478,12 +487,11 @@ void minimize_stdev(Communities& communities, Graph& graph) {
     int precincts_to_die = 0;
 
     while (true) {
+	int num_exchanges = 0;
         double first = before_average;
-        Graph first_g = graph;
         array<double, 2> worst_c = worst(communities, get_partisanship_stdev);
         int community_to_modify_ind = worst_c[1];
         // cout << worst_c[0] << endl;
-
         // choose worst community to modify
         vector<vector<int> > giveable = get_giveable_precincts(graph, communities, community_to_modify_ind);
         for (vector<int> g : giveable) {
@@ -500,6 +508,7 @@ void minimize_stdev(Communities& communities, Graph& graph) {
                 else {
                     // keep the exchange, set a new best
                     before_average = after_average;
+		    num_exchanges++;
                 }
             }
         }
@@ -518,12 +527,13 @@ void minimize_stdev(Communities& communities, Graph& graph) {
                 }
                 else {
                     before_average = after_average;
+                    num_exchanges++;
                 }
             }
         }
 
-        if (iteration == 0) precincts_to_die = MIN_PERCENT_PRECINCTS_STDEV * get_num_communities_changed(first_g, graph);
-        else if (get_num_communities_changed(first_g, graph) < precincts_to_die) break;
+	    if (iteration == 0) precincts_to_die = MIN_PERCENT_PRECINCTS_STDEV * (double)num_exchanges;
+        else if (num_exchanges <= precincts_to_die) break;
         iteration++;
     }
 }
@@ -720,11 +730,15 @@ Communities hte::Geometry::get_communities(Graph& graph, Communities cs, double 
         Graph before = graph;
 
         // perform optimization passes
-        minimize_stdev(cs, graph);
-        optimize_compactness(cs, graph); 
+        cout << "stdev" << endl;
+	minimize_stdev(cs, graph);
+	cout << "compactnes" << endl;
+        optimize_compactness(cs, graph);
+	cout << "population" << endl; 
         optimize_population(cs, graph, pop_constraint);
-        PRECINCTS_EXCHANGED = get_num_communities_changed(before, graph);
-
+        cout << "done iteration" << endl;
+	PRECINCTS_EXCHANGED = get_num_communities_changed(before, graph);
+	cout << "exchanged " << PRECINCTS_EXCHANGED << endl;
         // stop timer for max_time
         auto stop = high_resolution_clock::now();
         TIME_ELAPSED += duration_cast<seconds>(stop - start).count();
@@ -735,15 +749,16 @@ Communities hte::Geometry::get_communities(Graph& graph, Communities cs, double 
             canvas.save_img_to_anim(ImageFmt::BMP, anim_out);
         }
 
-        cout << "\r" << get_progress_bar(((double)TIME_ELAPSED / (double)MAX_TIME)) << "  " << PRECINCTS_EXCHANGED << " exchanges last iter";
-        cout.flush();
+	
+//        cout << "\r" << get_progress_bar(((double)TIME_ELAPSED / (double)MAX_TIME)) << "  " << PRECINCTS_EXCHANGED << " exchanges last iter";
+//        cout.flush();
         iteration++;
         save_iteration_data(data_out, cs, PRECINCTS_EXCHANGED);
 
     } while ((TIME_ELAPSED < MAX_TIME) && (PRECINCTS_EXCHANGED > (int)(MIN_PERCENT_PRECINCTS * (double)graph.vertices.size())));
 
     // the communities are fully optimized
-    cout << "\r" << get_progress_bar(1) << endl;
+//    cout << "\r" << get_progress_bar(1) << endl;
     save_voter_counts(voter_out, cs);
 
     return cs;
