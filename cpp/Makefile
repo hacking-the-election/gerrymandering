@@ -33,6 +33,7 @@ all: generate_communities
 serialize_state: serialize_state.bin
 generate_communities: generate_communities.bin
 draw_communities: draw_community.bin
+state_dump: state_dump.bin
 
 #====================================
 # binary recipe for script dir files

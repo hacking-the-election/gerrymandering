@@ -653,12 +653,35 @@ void save_voter_counts(string output, Communities& cs) {
             else break;
             file += to_string(pair.second) + ",";
         }
-
-        file.pop_back();
+        
+        file += "\"POP\":";
+        file += to_string(c.get_population());
         file += "]\n";
     }
 
     writef(file, output);
+}
+
+
+void save_iteration_data(string write_path, Communities& cs, int num_exchanges) {
+    string file = readf(write_path);
+    file += "[";
+    // add compactness fo file
+    for (Community c : cs) {
+        file += to_string(get_compactness(c));
+        file += ",";
+    }
+    file.pop_back();
+    file += "]\t[";
+    for (Community c : cs) {
+        file += to_string(get_partisanship_stdev(c));
+        file += ",";
+    }
+    file.pop_back();
+    file += "]\t";
+    file += to_string(num_exchanges);
+    file += "\n";
+    writef(file, write_path);
 }
 
 
@@ -682,11 +705,14 @@ Communities hte::Geometry::get_communities(Graph& graph, Communities cs, double 
 
     string anim_out = output_dir + "/anim/";
     string voter_out = output_dir + "/stats/";
+    string data_out = output_dir + "/stats/";
     if (communities_run) anim_out += "communities/";
     else anim_out += "redistricts/";
     if (communities_run) voter_out += "communities/";
-    else voter_out += "redistricts/";
-    voter_out += "voter_counts.txt";
+    else voter_out += "redistricts/";    
+    if (communities_run) data_out += "communities/";
+    else data_out += "redistricts/";
+    data_out += "data.csv";
 
     do {
         // start time for max_time and initialize first graph
@@ -703,13 +729,19 @@ Communities hte::Geometry::get_communities(Graph& graph, Communities cs, double 
         auto stop = high_resolution_clock::now();
         TIME_ELAPSED += duration_cast<seconds>(stop - start).count();
 
-        Canvas canvas(450, 450);
-        canvas.add_outlines(to_outline(cs));
-        canvas.save_img_to_anim(ImageFmt::BMP, anim_out);
+        if (iteration % 5 == 3) {
+            Canvas canvas(450, 450);
+            canvas.add_outlines(to_outline(cs));
+            canvas.save_img_to_anim(ImageFmt::BMP, anim_out);
+        }
+        
         cout << "\r" << get_progress_bar(((double)TIME_ELAPSED / (double)MAX_TIME)) << "  " << PRECINCTS_EXCHANGED << " exchanges last iter";
         cout.flush();
         iteration++;
+        save_iteration_data(data_out, cs, PRECINCTS_EXCHANGED);
+
     } while ((TIME_ELAPSED < MAX_TIME) && (PRECINCTS_EXCHANGED > (int)(MIN_PERCENT_PRECINCTS * (double)graph.vertices.size())));
+
     // the communities are fully optimized
     cout << "\r" << get_progress_bar(1) << endl;
     save_voter_counts(voter_out, cs);

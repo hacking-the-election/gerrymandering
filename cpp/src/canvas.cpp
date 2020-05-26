@@ -62,7 +62,7 @@ vector<Outline> Graphics::to_outline(Geometry::State state) {
 std::vector<Outline> Graphics::to_outline(Geometry::Multi_Polygon& mp, double v, bool abs_quant) {
     vector<Outline> os;
     RGB_Color fill;
-    if (!absolute_quant) {
+    if (!abs_quant) {
         if (v < 0) {
             fill = interpolate_rgb(RGB_Color(255,255,255), RGB_Color(255, 0, 0), abs(v));
         }
