@@ -712,7 +712,7 @@ Communities hte::Geometry::get_communities(Graph& graph, Communities cs, double 
     else voter_out += "redistricts/";    
     if (communities_run) data_out += "communities/";
     else data_out += "redistricts/";
-    data_out += "data.csv";
+    data_out += "data.tsv";
 
     do {
         // start time for max_time and initialize first graph
@@ -729,12 +729,12 @@ Communities hte::Geometry::get_communities(Graph& graph, Communities cs, double 
         auto stop = high_resolution_clock::now();
         TIME_ELAPSED += duration_cast<seconds>(stop - start).count();
 
-        if (iteration % 5 == 3) {
+        if (iteration % 3 == 0) {
             Canvas canvas(450, 450);
             canvas.add_outlines(to_outline(cs));
             canvas.save_img_to_anim(ImageFmt::BMP, anim_out);
         }
-        
+
         cout << "\r" << get_progress_bar(((double)TIME_ELAPSED / (double)MAX_TIME)) << "  " << PRECINCTS_EXCHANGED << " exchanges last iter";
         cout.flush();
         iteration++;
