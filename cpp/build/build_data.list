@@ -41,7 +41,7 @@
 "oklahoma": oklahoma/geodata.json oklahoma/district.json --keys='{"DEM":"PRES_DVOTE","REP":"PRES_RVOTE","GEO":"GEOID10","POP":"VAP","TOT":"PRES_TOT_0"}' oklahoma.state
 "pennsylvania": pennsylvania/geodata.json pennsylvania/district.json --keys='{"DEM":"USPDV2008","REP":"USPRV2008","GEO":"GEOID10","POP":"POP100"}' pennsylvania.state
 "south dakota": south_dakota/geodata.json south_dakota/district.json --keys='{"DEM":"USP_D_08","REP":"USP_R_08","GEO":"GEOID10","POP":"TOTPOP","TOT":"USP_TOT_08"}' south_dakota.state
-"tennesse": tennesse/geodata.json tennesse/district.json --keys='{"DEM":"PRES_DVOTE","REP":"PRES_RVOTE","GEO":"GEOID10","POP":"POP100"}' tennesse.state
+"tennessee": tennessee/geodata.json tennessee/district.json --keys='{"DEM":"PRES_DVOTE","REP":"PRES_RVOTE","GEO":"GEOID10","POP":"POP100"}' tennessee.state
 "texas": texas/geodata.json texas/district.json --keys='{"DEM":"Pres_D_08","REP":"Pres_R_08","GEO":"CNTYVTD","POP":"vap"}' texas.state
 "vermont": vermont/geodata.json vermont/election_data.tab vermont/district.json --keys={"POP":"POP100","GEO":"GEOID10","ELE":"geoid10","DEM":"usp_d_08","REP":"usp_r_08","TOT":"usp_tot_08"} vermont.state
 "washington": washington/geodata.json washington/district.json --keys='{"DEM":"PRES_DVOTE","REP":"PRES_RVOTE","GEO":"GEOID10","POP":"POP100"}' washington.state
