@@ -192,7 +192,7 @@ def create_graph(election_file, geo_file, pop_file, state):
                 # Convert election data id to geodata id
                 try:
                     precinct_id1 = election_data_to_geodata[
-                        tostring(str("".join(properties1[ele_id]) for ele_id in ele_ids))
+                        tostring("".join(properties1[ele_id] for ele_id in ele_ids))
                     ]
                 except KeyError:
                     continue
@@ -243,7 +243,7 @@ def create_graph(election_file, geo_file, pop_file, state):
                 # convert election data id to geodata id
                 try:
                     election_data_id = election_data_to_geodata[
-                        tostring("".join([str(precinct[ele_id_col_index]) for ele_id_col_index in ele_id_col_indices]))
+                        tostring("".join([precinct[ele_id_col_index] for ele_id_col_index in ele_id_col_indices]))
                     ]
                 except KeyError:
                     continue
@@ -298,7 +298,7 @@ def create_graph(election_file, geo_file, pop_file, state):
         # Fill precinct_election_data
         for precinct in geodata["features"]:
             properties = precinct["properties"]
-            precinct_id = tostring("".join(str(properties[json_id]) for json_id in json_ids))
+            precinct_id = tostring("".join(properties[json_id] for json_id in json_ids))
             party_data = [
                 {'dem': convert_to_float(properties[dem_key])},
                 {'rep': convert_to_float(properties[rep_key])}
@@ -333,7 +333,7 @@ def create_graph(election_file, geo_file, pop_file, state):
             for pop_precinct in popdata["features"]:
                 pop_properties = pop_precinct["properties"]
                 # Assumes the same Ids are used in geodata as in population data
-                pop_precinct_id = tostring("".join(str(pop_properties[json_id]) for json_id in json_ids))
+                pop_precinct_id = tostring("".join(pop_properties[json_id] for json_id in json_ids))
                 pop[pop_precinct_id] = sum([pop_properties[key] for key in json_pops])
         # individual conditionals for states, they should go here
         # elif pop_data_type == "tab":
@@ -355,14 +355,14 @@ def create_graph(election_file, geo_file, pop_file, state):
         # find where population is stored, either election or geodata
         try:
             _ = geodata["features"][0]["properties"][json_pops[0]]
-        except ValueError:
+        except (ValueError or KeyError):
             pop_data_type = "tab"
             # population is in election data
             pop_col_indices = [i for i, header in enumerate(election_data[0]) if header in json_pops]
             # find which indexes have population data
             for row in election_data[1:]:
                 pop_precinct_id = election_data_to_geodata[
-                    tostring("".join([str(row[ele_id_col_index]) for ele_id_col_index in ele_id_col_indices]))
+                    tostring("".join([row[ele_id_col_index] for ele_id_col_index in ele_id_col_indices]))
                 ]
                 precinct_populations = [convert_to_float(row[i]) for i in pop_col_indices]
                 pop[pop_precinct_id] = sum(precinct_populations)
@@ -380,17 +380,22 @@ def create_graph(election_file, geo_file, pop_file, state):
         precinct["geometry"]["coordinates"]
         for precinct in geodata["features"]
         if not any([non_precinct_id in 
-        tostring("".join(str(precinct["properties"][json_id]) for json_id in json_ids))
+        tostring("".join(precinct["properties"][json_id] for json_id in json_ids))
         for non_precinct_id in non_precinct_ids])
     }
-
+    with open('./maryland_election_data.tab', 'a') as f:
+        for precinct_id, data in precinct_election_data.items():
+            f.write(str(precinct_id))
+            for party in data:
+                f.write('\t')
+                f.write(str(list(party.values())[0]))
+            f.write('\n')
     # Remove multipolygons from our dictionaries. (This is so our districts/communities stay contiguous)
     split_multipolygons(geodata_dict, pop, precinct_election_data)
     # Combine precincts with holes in them
     combine_holypolygons(geodata_dict, pop, precinct_election_data)
     # Change geometry to prevent invalid Shapely polygons
     remove_ring_intersections(geodata_dict)
-
     # Modify geodata_dict to use 'shapely.geometry.Polygon's
     geodata_dict = {
         precinct :
