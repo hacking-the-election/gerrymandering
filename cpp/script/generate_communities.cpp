@@ -43,16 +43,14 @@ int main(int argc, char* argv[]) {
     State state = State::from_binary(read_path);
     int n_communities = state.districts.size();
 
-    Graph network = state.network;
-    Communities init_config = karger_stein(network, n_communities);
-    cout << "got initial configuration" << endl;
-
+    srand(time(NULL));
+    Communities init_config = karger_stein(state.network, n_communities);
+    // Communities init_config = load("ia_init.txt", state.network);
     // get random configuration
-    Communities communities = get_communities(network, init_config, 0.1);
-
+    Communities communities = get_communities(state.network, init_config, 0.1);
     Canvas canvas(900, 900);
     canvas.add_outlines(to_outline(communities));
-    canvas.draw_to_window();
+    canvas.save_image(ImageFmt::SVG, "test");
 
     // // get districts, save to district output
     // Communities districts = get_communities(state.network, communities, 0.01);

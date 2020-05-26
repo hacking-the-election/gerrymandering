@@ -35,7 +35,7 @@ def compare_ids(non_geodata_ids, geodata_ids):
     non_geodata_to_geodata = {}
     for precinct_id in non_geodata_ids:
         if precinct_id in geodata_ids:
-            non_geodata_to_geodata[precinct_id] = precinct_id
+            non_geodata_to_geodata[str(precinct_id)] = str(precinct_id)
     return non_geodata_to_geodata
 
 def split_multipolygons(geodata, pop_data, election_data):

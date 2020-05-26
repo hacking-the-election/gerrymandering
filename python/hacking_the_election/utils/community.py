@@ -242,6 +242,9 @@ class Community:
 
         :param precinct_graph: A graph of the whole state with precincts as node attributes.
         :type precinct_graph_file: `pygraph.classes.graph.graph` with `hacking_the_election.utils.precinct.Precinct` as node attributes.
+
+        :return communities: List of `hacking_the_election.utils.community.Community` objects
+        :rtype communities: list    
         """
 
         with open(text_file, "r") as f:

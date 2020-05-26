@@ -154,6 +154,7 @@ map<string, map<POLITICAL_PARTY, int> > parse_voter_data(string voter_data) {
         }
     }
 
+
     map<string, map<POLITICAL_PARTY, int> > parsed_data;
 
     // iterate over each precinct, skipping header
@@ -182,7 +183,7 @@ map<string, map<POLITICAL_PARTY, int> > parse_voter_data(string voter_data) {
 }
 
 
-Polygon string_to_vector(string str) {
+Polygon string_to_vector(string str, bool texas_coordinates) {
     /*
         @desc: takes a json array string and returns a parsed shape object
         @params: `string` str: data to be parsed
@@ -206,13 +207,15 @@ Polygon string_to_vector(string str) {
 
     LinearRing hull;
     for (int i = 0; i < mp[0].Size(); i++) {
-        #ifndef TEXAS_COORDS
-        double x = mp[0][i][0].GetDouble() * c;
-        double y = mp[0][i][1].GetDouble() * c;
-        #else
-        double x = mp[0][i][0].GetDouble() * 20;
-        double y = mp[0][i][1].GetDouble() * 20;
-        #endif
+        double x, y;
+        if (!texas_coordinates) {
+            x = mp[0][i][0].GetDouble() * c;
+            y = mp[0][i][1].GetDouble() * c;
+        }
+        else {
+            x = mp[0][i][0].GetDouble();
+            y = mp[0][i][1].GetDouble();
+        }
 
         hull.border.push_back({(long int) x, (long int) y});
     }
@@ -227,11 +230,12 @@ Polygon string_to_vector(string str) {
     for (int i = 1; i < mp.Size(); i++) {
         LinearRing hole;
         for (int j = 0; j < mp[i].Size(); j++) {
-            #ifndef TEXAS_COORDS
-            hole.border.push_back({(long int) mp[i][j][0].GetDouble() * c, (long int) mp[i][j][1].GetDouble() * c});
-            #else
-            hole.border.push_back({(long int) mp[i][j][0].GetDouble() * 2, (long int) mp[i][j][1].GetDouble() * 2});
-            #endif
+            if (!texas_coordinates) {
+                hole.border.push_back({(long int) mp[i][j][0].GetDouble() * c, (long int) mp[i][j][1].GetDouble() * c});
+            }
+            else {
+                hole.border.push_back({(long int) mp[i][j][0].GetDouble(), (long int) mp[i][j][1].GetDouble()});
+            }
         }
         if (mp[i][0][0] != mp[i][mp[i].Size() - 1][0] || 
             mp[i][0][1] != mp[i][mp[i].Size() - 1][1]) {       
@@ -245,7 +249,7 @@ Polygon string_to_vector(string str) {
 }
 
 
-Multi_Polygon multi_string_to_vector(string str) {
+Multi_Polygon multi_string_to_vector(string str, bool texas_coordinates) {
     /*
         @desc: takes a json array string and returns a parsed multishape
         @params: `string` str: data to be parsed
@@ -264,7 +268,7 @@ Multi_Polygon multi_string_to_vector(string str) {
         Writer<rapidjson::StringBuffer> writer(buffer);
         mp[i].Accept(writer);
 
-        Polygon polygon = string_to_vector(buffer.GetString());
+        Polygon polygon = string_to_vector(buffer.GetString(), texas_coordinates);
         v.border.push_back(polygon);
     }
 
@@ -347,6 +351,10 @@ vector<Precinct> parse_precinct_data(string geoJSON) {
         }
         else cout << "\e[31merror: \e[0mNo population data" << endl;
 
+        bool texas_coordinates = false;
+        #ifdef TEXAS_COORDS
+            texas_coordinates = true;
+        #endif
 
         // create empty string buffer
         StringBuffer buffer;
@@ -359,7 +367,7 @@ vector<Precinct> parse_precinct_data(string geoJSON) {
 
         if (shapes["features"][i]["geometry"]["type"] == "Polygon") {
             // vector parsed from coordinate string
-            Polygon geo = string_to_vector(coords);
+            Polygon geo = string_to_vector(coords, texas_coordinates);
             Precinct precinct(geo.hull, pop, id);
             precinct.shape_id = id;
 
@@ -385,7 +393,7 @@ vector<Precinct> parse_precinct_data(string geoJSON) {
             shapes_vector.push_back(precinct);
         }
         else {
-            Multi_Polygon geo = multi_string_to_vector(coords);
+            Multi_Polygon geo = multi_string_to_vector(coords, texas_coordinates);
             geo.shape_id = id;
 
             // calculate area of multipolygon
@@ -489,6 +497,11 @@ vector<Polygon> parse_precinct_coordinates(string geoJSON) {
             cerr << "\e[31merror: \e[0mNo population data" << endl;
         }
 
+        bool texas_coordinates = false;
+        #ifdef TEXAS_COORDS
+            texas_coordinates = true;
+        #endif
+        
         // create empty string buffer
         StringBuffer buffer;
         buffer.Clear();
@@ -500,7 +513,7 @@ vector<Polygon> parse_precinct_coordinates(string geoJSON) {
 
         if (shapes["features"][i]["geometry"]["type"] == "Polygon") {
             // vector parsed from coordinate string
-            Polygon geo = string_to_vector(coords);
+            Polygon geo = string_to_vector(coords, texas_coordinates);
             LinearRing border = geo.hull;
 
             Polygon shape(border, id);
@@ -513,7 +526,7 @@ vector<Polygon> parse_precinct_coordinates(string geoJSON) {
             shapes_vector.push_back(shape);
         }
         else {
-            Multi_Polygon geo = multi_string_to_vector(coords);
+            Multi_Polygon geo = multi_string_to_vector(coords, texas_coordinates);
             geo.shape_id = id;
             // calculate area of multipolygon
             double total_area = geo.get_area();
@@ -564,12 +577,12 @@ vector<Multi_Polygon> parse_district_coordinates(string geoJSON) {
 
         if (shapes["features"][i]["geometry"]["type"] == "Polygon") {
             // vector parsed from coordinate string
-            Polygon border = string_to_vector(coords);
+            Polygon border = string_to_vector(coords, false);
             Multi_Polygon ms({border});
             shapes_vector.push_back(ms);
         }
         else {
-            Multi_Polygon borders = multi_string_to_vector(coords);
+            Multi_Polygon borders = multi_string_to_vector(coords, false);
             shapes_vector.push_back(borders);
         }
     }
@@ -846,6 +859,58 @@ Graph generate_graph(Precinct_Group pg) {
 }
 
 
+LinearRing bound_to_shape(bounding_box box) {
+    return (LinearRing({{box[3], box[0]}, {box[3], box[1]}, {box[2], box[1]}, {box[2], box[0]}}));
+}
+
+
+void scale_precincts_to_district(Geometry::State& state) {
+    // determine bounding box of districts
+    if (VERBOSE) cout << "scaling precincts to district bounds..." << endl;
+
+    bounding_box district_b {-214748364, 214748364, 214748364, -214748364};
+    bounding_box precinct_b {-214748364, 214748364, 214748364, -214748364};
+
+    for (Multi_Polygon p : state.districts) {
+        bounding_box t = p.get_bounding_box();
+        if (t[0] > district_b[0]) district_b[0] = t[0];
+        if (t[1] < district_b[1]) district_b[1] = t[1];
+        if (t[2] < district_b[2]) district_b[2] = t[2];
+        if (t[3] > district_b[3]) district_b[3] = t[3];
+    }
+
+    for (Precinct p : state.precincts) {
+        bounding_box t = p.get_bounding_box();
+        if (t[0] > precinct_b[0]) precinct_b[0] = t[0];
+        if (t[1] < precinct_b[1]) precinct_b[1] = t[1];
+        if (t[2] < precinct_b[2]) precinct_b[2] = t[2];
+        if (t[3] > precinct_b[3]) precinct_b[3] = t[3];
+    }
+
+     // translate lower left of bounding box of precinct to district
+    
+    // top distance of district / top distance of precinct
+    double scale_top = (double)(district_b[3] - district_b[2]) / (double)(precinct_b[3] - precinct_b[2]);
+    double scale_right = (double)(district_b[0] - district_b[1]) / (double)(precinct_b[0] - precinct_b[1]);
+    precinct_b[0] *= scale_right;
+    precinct_b[1] *= scale_right;
+    precinct_b[2] *= scale_top;
+    precinct_b[3] *= scale_top;
+    
+    int tu = district_b[1] - precinct_b[1]; // how much to translate up
+    int tr = district_b[2] - precinct_b[2]; // how much to translate right
+
+    for (int i = 0; i < state.precincts.size(); i++) {
+        for (int j = 0; j < state.precincts[i].hull.border.size(); j++) {
+            state.precincts[i].hull.border[j][1] *= scale_right;
+            state.precincts[i].hull.border[j][0] *= scale_top;
+            state.precincts[i].hull.border[j][0] += tr;
+            state.precincts[i].hull.border[j][1] += tu;
+        }
+    }
+}
+
+
 State State::generate_from_file(string precinct_geoJSON, string voter_data, string district_geoJSON, map<POLITICAL_PARTY, string> pid, map<ID_TYPE, string> tid) {
     /*
         @desc:
@@ -903,18 +968,26 @@ State State::generate_from_file(string precinct_geoJSON, string voter_data, stri
     // generate state data from files
     if (VERBOSE) cout << "generating state with precinct and district arrays..." << endl;
     State state = State(district_shapes, pre_group.precincts, state_shape_v);
-    Multi_Polygon sborder = generate_exterior_border(state);
-    state.border = sborder.border;
 
+    #ifdef TEXAS_COORDS
+        scale_precincts_to_district(state);
+        Canvas canvas(900, 900);
+        canvas.add_outlines(to_outline(state));
+        for (Multi_Polygon p : state.districts) {
+            Outline o = to_outline(p.border[0].hull);
+            o.style().thickness(1).outline(RGB_Color(0,0,0)).fill(RGB_Color(0,0,0));
+            canvas.add_outline(o);
+        }
+        canvas.draw_to_window();
+    #endif
+
+    cout << "getting precinct centroids with boost" << endl;
     for (int i = 0; i < state.precincts.size(); i++) {
         boost_point center;
         boost::geometry::centroid(ring_to_boost_poly(state.precincts[i].hull), center);
         state.precincts[i].hull.centroid = {center.x(), center.y()};
     }
 
-    Canvas canvas(900, 900);
-    canvas.add_outlines(to_outline(state));
-    canvas.draw_to_window();
 
     state.network = generate_graph(pre_group);
     cout << "complete!" << endl;
@@ -975,21 +1048,30 @@ State State::generate_from_file(string precinct_geoJSON, string district_geoJSON
     // generate state data from files
     if (VERBOSE) cout << "generating state with precinct and district arrays..." << endl;
     State state = State(district_shapes, pre_group.precincts, state_shape_v);
-    Multi_Polygon sborder = generate_exterior_border(state);
-    state.border = sborder.border;
+    
+    #ifdef TEXAS_COORDS
+        scale_precincts_to_district(state);
+        Canvas canvas(900, 900);
+        canvas.add_outlines(to_outline(state));
+        for (Multi_Polygon p : state.districts) {
+            for (Polygon poly : p.border) {
+                Outline o = to_outline(poly.hull);
+                o.style().thickness(1).outline(RGB_Color(0,0,0)).fill(RGB_Color(0,0,0));
+                canvas.add_outline(o);
+            }
+        }
+        canvas.draw_to_window();
+    #endif
+
+    cout << "getting centroids of precincst" << endl; 
+
     for (int i = 0; i < state.precincts.size(); i++) {
         boost_point center;
         boost::geometry::centroid(ring_to_boost_poly(state.precincts[i].hull), center);
         state.precincts[i].hull.centroid = {center.x(), center.y()};
     }
 
-
-    Canvas canvas(900, 900);
-    canvas.add_outlines(to_outline(state));
-    canvas.draw_to_window();
-
     state.network = generate_graph(pre_group);
     if (VERBOSE) cout << "state serialized!" << endl;
-
     return state; // return the state object
 }
