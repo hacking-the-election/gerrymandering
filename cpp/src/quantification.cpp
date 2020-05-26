@@ -88,12 +88,8 @@ std::map<POLITICAL_PARTY, double> hte::Geometry::get_partisanship_from_mask(Prec
     return partisanships;
 }
 
-// LinearRing bound_to_shape(bounding_box box) {
-//     return (LinearRing({{box[3], box[0]}, {box[3], box[1]}, {box[2], box[1]}, {box[2], box[0]}}));
-// }
 
-
-std::array<double, 2> Geometry::get_quantification(Graph& graph, Communities& communities, Multi_Polygon district) {
+std::map<POLITICAL_PARTY, double> Geometry::get_quantification(Graph& graph, Communities& communities, Multi_Polygon district) {
     // determines how gerrymandered `district` is with the `communities` map.
     // communities had better already be updated.
     double val = 0.0;
@@ -136,14 +132,15 @@ std::array<double, 2> Geometry::get_quantification(Graph& graph, Communities& co
     c.Execute(ClipperLib::ctDifference, solutions, ClipperLib::pftNonZero);
     Multi_Polygon difference = paths_to_multi_shape(solutions);
     std::map<POLITICAL_PARTY, double> partisanships = get_partisanship_from_mask(communities[largest_index].shape, difference);
-    double partisanship = 0.5;
-
-    if (partisanships[POLITICAL_PARTY::DEMOCRAT] + partisanships[POLITICAL_PARTY::REPUBLICAN] <= 0) {
-        std::cout << "if gerry score is not 0 here something has gone horrible wrong i think (or maybe not because there can be precincts outside with 0 dem and 0 rep" << std::endl;
+    
+    double sum = 0;
+    for (auto& pair : partisanships) {
+        sum += pair.second;
     }
-    else {
-        partisanship = partisanships[POLITICAL_PARTY::REPUBLICAN] / (partisanships[POLITICAL_PARTY::DEMOCRAT] + partisanships[POLITICAL_PARTY::REPUBLICAN]);
+    for (auto& pair : partisanships) {
+        partisanships[pair.first] /= sum;
     }
 
-    return {1 - (largest_pop / district_population), partisanship};
+    partisanships[POLITICAL_PARTY::ABSOLUTE_QUANTIFICATION] = 1 - (largest_pop / district_population);
+    return partisanships;
 }
