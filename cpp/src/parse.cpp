@@ -463,7 +463,7 @@ vector<Polygon> parse_precinct_coordinates(string geoJSON) {
         string coords;
         string id = "";
         int pop = 0;
-
+ 
         // see if the geoJSON contains the shape id
         if (shapes["features"][i]["properties"].HasMember(id_headers[ID_TYPE::GEOID].c_str())) {
             if (shapes["features"][i]["properties"][id_headers[ID_TYPE::GEOID].c_str()].IsInt()) {
@@ -478,7 +478,6 @@ vector<Polygon> parse_precinct_coordinates(string geoJSON) {
             cout << "\e[31merror: \e[0mYou have no precinct id." << endl;
             cout << "If future k-vernooy runs into this error, it means that GEOID10 in your geoJSON in your voter data is missing. To fix... maybe try a loose comparison of the names?" << endl;
         }
-
         // get the population from geodata
         
         if (shapes["features"][i]["properties"].HasMember(id_headers[ID_TYPE::POPUID].c_str())) {

@@ -7,7 +7,8 @@
 
 # compiler options
 CC := g++
-CFLAGS := -Ofast -Wall -pedantic -Wextra
+OFLAGS := -O3
+CFLAGS := $(OFLAGS) -Wall -pedantic -Wextra
 CV := -std=c++14
 
 # filepaths
@@ -47,7 +48,7 @@ draw_communities: draw_community.bin
 #=================================
 
 */%.o: src/%.cpp
-	$(CC) $(CV) $< -c -o $@
+	$(CC) $(OFLAGS) $(CV) $< -c -o $@
 
 $(BUILD)/clipper.o: lib/Clipper/cpp/clipper.cpp
 	$(CC) $< -c -o $(BUILD)/clipper.o

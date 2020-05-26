@@ -59,14 +59,19 @@ vector<Outline> Graphics::to_outline(Geometry::State state) {
 }
 
 
-std::vector<Outline> Graphics::to_outline(Geometry::Multi_Polygon& mp, double v) {
+std::vector<Outline> Graphics::to_outline(Geometry::Multi_Polygon& mp, double v, bool abs_quant) {
     vector<Outline> os;
     RGB_Color fill;
-    if (v < 0) {
-        fill = interpolate_rgb(RGB_Color(255,255,255), RGB_Color(255, 0, 0), abs(v));
+    if (!absolute_quant) {
+        if (v < 0) {
+            fill = interpolate_rgb(RGB_Color(255,255,255), RGB_Color(255, 0, 0), abs(v));
+        }
+        else {
+            fill = interpolate_rgb(RGB_Color(255,255,255), RGB_Color(0, 0, 255), v);
+        }
     }
     else {
-        fill = interpolate_rgb(RGB_Color(255,255,255), RGB_Color(0, 0, 255), v);
+        fill = interpolate_rgb(RGB_Color(0,0,0), RGB_Color(255,255,255), v);
     }
 
     for (Polygon p : mp.border) {
@@ -750,7 +755,7 @@ void Canvas::save_img_to_anim(ImageFmt fmt, std::string anim_dir) {
 
     if (!fs::is_directory(fs::path(anim_dir))) {
         cout << "creating dir " << anim_dir << endl;
-        boost::filesystem::create_directory(fs::path(anim_dir));
+        fs::create_directory(fs::path(anim_dir));
     }
 
     std::string filename = anim_dir + "/";

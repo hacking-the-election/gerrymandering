@@ -47,7 +47,7 @@
 "tennesse": tennesse/geodata.json tennesse/district.json --keys='{"DEM":"PRES_DVOTE","REP":"PRES_RVOTE","GEO":"GEOID10","POP":"POP100"}' tennesse.state
 "texas": texas/geodata.json texas/district.json --keys='{"DEM":"Pres_D_08","REP":"Pres_R_08","GEO":"CNTYVTD","POP":"vap"}' texas.state
 "vermont": vermont/geodata.json vermont/election_data.tab vermont/district.json --keys={"POP":"POP100","GEO":"GEOID10","ELE":"geoid10","DEM":"usp_d_08","REP":"usp_r_08","TOT":"usp_tot_08"} vermont.state
-"virginia": virginia/geodata.json virginia/election_data.tab virginia/district.json --keys='{"GEO":"GEOID10","DEM":"PRES_DVOTE","REP":"PRES_RVOTE","OTH":"PRES_OVOTE"}' virginia.state
+"virginia": virginia/geodata.json virginia/election_data.tab virginia/district.json --keys='{"ELE":"GEOID10","GEO":"GEOID10","DEM":"PRES_DVOTE","REP":"PRES_RVOTE","OTH":"PRES_OVOTE","POP":"POP_TOT_00"}' virginia.state
 "washington": washington/geodata.json washington/district.json --keys='{"DEM":"PRES_DVOTE","REP":"PRES_RVOTE","GEO":"GEOID10","POP":"POP100"}' washington.state
 "wyoming": wyoming/geodata.json wyoming/district.json --keys='{"DEM":"USP_D08","REP":"USP_R08","GEO":"GEOID10","POP":"VAP"}' wyoming.state
 "wisconsin": wisconsin/geodata.json wisconsin/district.json --keys='{"DEM":"PRESDEM08","REP":"PRESREP08","GEO":"JID","POP":"PERSONS","GRE":"PRESGRN08","LIB":"PRESLBR08","IND":"PRESIND108"}' wisconsin.state
