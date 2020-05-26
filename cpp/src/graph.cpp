@@ -110,6 +110,25 @@ void Graph::dfs_recursor(int v, std::unordered_map<int, bool>& visited, std::vec
 }
 
 
+bool Graph::is_connected() {
+    unordered_map<int, bool> v;
+    int visited = 0;
+    dfs_recursor(vertices.begin().key(), visited, v);
+    return (visited == vertices.size());
+}
+
+
+void Graph::dfs_recursor(int v, int& visited, unordered_map<int, bool>& visited_b) {
+    visited++;
+    visited_b[v] = true;
+    for (Edge& e : vertices[v].edges) {
+        if (!visited_b[e[1]]) {
+            dfs_recursor(e[1], visited, visited_b);
+        }
+    }
+}
+
+
 int Graph::get_num_components() {
     /*
         @desc: get number of components of a graph
@@ -119,11 +138,8 @@ int Graph::get_num_components() {
 
 
     unordered_map<int, bool> visited;
-
-    // for (int i = 0; i < vertices.size(); i++)
-    //     visited.insert({i, false}); //[i] = false;
-
     int x = 0;
+
     for (int i = 0; i < vertices.size(); i++) {
         if (!visited[(vertices.begin() + i).key()]) {
             dfs_recursor((vertices.begin() + i).key(), visited); 
@@ -133,6 +149,7 @@ int Graph::get_num_components() {
 
     return x;
 }
+
 
 
 void Graph::dfs_recursor(int v, std::unordered_map<int, bool>& visited) { 
@@ -148,13 +165,10 @@ void Graph::dfs_recursor(int v, std::unordered_map<int, bool>& visited) {
     */
 
     visited[v] = true; 
-
     for (Edge& edge : vertices[v].edges) {
-        // if (vertices.find(edge[1]) != vertices.end()) {
-            if (!visited[edge[1]]) { 
-                dfs_recursor(edge[1], visited);
-            }
-        // }
+        if (!visited[edge[1]]) { 
+            dfs_recursor(edge[1], visited);
+        }
     }
 } 
 
@@ -220,7 +234,8 @@ Graph hte::Geometry::remove_edges_to(Graph g, int id) {
         }
     }
 
-    g.vertices[id].edges.clear();
+    // g.vertices[id].edges.clear();
+    g.vertices.erase(id);
     return g;
 }
 

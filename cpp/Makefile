@@ -7,7 +7,8 @@
 
 # compiler options
 CC := g++
-CFLAGS := -Ofast -Wall -pedantic -Wextra
+OFLAGS := -O3
+CFLAGS := $(OFLAGS) -Wall -pedantic -Wextra
 CV := -std=c++14
 
 # filepaths
@@ -32,6 +33,7 @@ all: generate_communities
 serialize_state: serialize_state.bin
 generate_communities: generate_communities.bin
 draw_communities: draw_community.bin
+state_dump: state_dump.bin
 
 #====================================
 # binary recipe for script dir files
@@ -47,7 +49,7 @@ draw_communities: draw_community.bin
 #=================================
 
 */%.o: src/%.cpp
-	$(CC) $(CV) $< -c -o $@
+	$(CC) $(OFLAGS) $(CV) $< -c -o $@
 
 $(BUILD)/clipper.o: lib/Clipper/cpp/clipper.cpp
 	$(CC) $< -c -o $(BUILD)/clipper.o

@@ -45,6 +45,6 @@ namespace Geometry {
     };
 
     Communities karger_stein(Graph& graph, int n_communities);
-    Communities get_communities(Graph& graph, Communities init_config, double pop_constraint);
+    Communities get_communities(Graph& graph, Communities init_config, double pop_constraint, std::string output_dir, bool communities_run);
 }
 }

@@ -66,7 +66,7 @@ namespace Geometry {
     typedef double unit_interval;                       // for values between [0, 1]
 
     // for parsing and storing data
-    enum class POLITICAL_PARTY {DEMOCRAT, REPUBLICAN, GREEN, INDEPENDENT, LIBERTARIAN, REFORM, OTHER, TOTAL};
+    enum class POLITICAL_PARTY {DEMOCRAT, REPUBLICAN, GREEN, INDEPENDENT, LIBERTARIAN, REFORM, OTHER, TOTAL, ABSOLUTE_QUANTIFICATION};
     enum class ID_TYPE {GEOID, ELECTIONID, POPUID};
 
 
@@ -338,16 +338,19 @@ namespace Geometry {
         // drivers for component algorithm
         int get_num_components();
         std::vector<Graph> get_components();
-
-        // recursors for getting different data
-        void dfs_recursor(int v, std::unordered_map<int, bool>& visited);
-        void dfs_recursor(int v, std::unordered_map<int, bool>& visited, std::vector<int>* nodes);
+        bool is_connected();
 
         void add_node(Node node);
         void remove_node(int id);
         void add_edge(Edge);
         void remove_edge(Edge);
         void remove_edges_to(int id);
+
+        protected:
+        // recursors for getting different data
+        void dfs_recursor(int v, std::unordered_map<int, bool>& visited);
+        void dfs_recursor(int v, std::unordered_map<int, bool>& visited, std::vector<int>* nodes);
+        void dfs_recursor(int v, int& visited, std::unordered_map<int, bool>& visited_b);
     };
 
 
