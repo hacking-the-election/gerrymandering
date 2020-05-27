@@ -143,7 +143,6 @@ map<string, map<POLITICAL_PARTY, int> > parse_voter_data(string voter_data) {
     for ( int i = 0; i < data_list[0].size(); i++) {
         // val holds header string
         string val = data_list[0][i];
-
         if (val == id_headers[ID_TYPE::ELECTIONID])
             precinct_id_col = i;
 
@@ -153,7 +152,6 @@ map<string, map<POLITICAL_PARTY, int> > parse_voter_data(string voter_data) {
             }
         }
     }
-
 
     map<string, map<POLITICAL_PARTY, int> > parsed_data;
 
@@ -293,7 +291,7 @@ vector<Precinct> parse_precinct_data(string geoJSON) {
     // vector of shapes to be returned
     vector<Precinct> shapes_vector;
 
-    for ( int i = 0; i < shapes["features"].Size(); i++ ) {
+    for (int i = 0; i < shapes["features"].Size(); i++) {
         string coords;
         string id = "";
         int pop = 0;
@@ -397,11 +395,11 @@ vector<Precinct> parse_precinct_data(string geoJSON) {
             geo.shape_id = id;
 
             // calculate area of multipolygon
-            double total_area = geo.get_area();
+            double total_area = abs(geo.get_area());
             int append = 0;
 
             for (Polygon s : geo.border) {
-                double fract = s.get_area() / total_area;
+                double fract = abs(s.get_area()) / total_area;
                 pop = round((double)pop * (double)fract);
 
                 map<POLITICAL_PARTY, int> adjusted;
@@ -528,7 +526,7 @@ vector<Polygon> parse_precinct_coordinates(string geoJSON) {
             Multi_Polygon geo = multi_string_to_vector(coords, texas_coordinates);
             geo.shape_id = id;
             // calculate area of multipolygon
-            double total_area = geo.get_area();
+            double total_area = abs(geo.get_area());
 
             // create many shapes with the same ID, add them to the array
             
@@ -536,7 +534,7 @@ vector<Polygon> parse_precinct_coordinates(string geoJSON) {
             for (Polygon s : geo.border) {
                 Polygon shape(s.hull, s.holes, id);
                 shape.is_part_of_multi_polygon = append;
-                double fract = shape.get_area() / total_area;
+                double fract = abs(shape.get_area()) / total_area;
                 shape.pop = (int) round(pop * fract);
                 shapes_vector.push_back(shape);
                 append++;
@@ -622,15 +620,15 @@ vector<Precinct> merge_data(vector<Polygon> precinct_shapes, map<string, map<POL
 
         // create a precinct object and add it to the array
         if (precinct_shape.is_part_of_multi_polygon != -1) {
-            double total_area = precinct_shape.get_area();
+            double total_area = abs(precinct_shape.get_area());
 
             for (int i = 0; i < precinct_shapes.size(); i++) {
                 if (i != x && precinct_shapes[i].shape_id == p_id) {
-                    total_area += precinct_shapes[i].get_area();
+                    total_area += abs(precinct_shapes[i].get_area());
                 }
             }
 
-            double ratio = precinct_shape.get_area() / total_area;
+            double ratio = abs(precinct_shape.get_area()) / total_area;
 
             Precinct precinct =
                 Precinct(
@@ -782,7 +780,6 @@ Graph generate_graph(Precinct_Group pg) {
         graph.vertices[n.id] = n;
     }
 
-
     // get bounding boxes for border-checks
     cout << "determining bounding boxes..." << endl;
     vector<bounding_box> bounding_boxes;
@@ -805,13 +802,12 @@ Graph generate_graph(Precinct_Group pg) {
         }
     }
 
+
     cout << "linking components" << endl;
     // link components with closest precincts
     if (graph.get_num_components() > 1) {
         // determine all centers of precincts
-        cout << graph.get_num_components() << endl;
         std::map<int, coordinate> centers;
-
         for (int i = 0; i < graph.vertices.size(); i++) {
             // add center of precinct to the map
             int key = (graph.vertices.begin() + i).key();
@@ -820,11 +816,9 @@ Graph generate_graph(Precinct_Group pg) {
             centers.insert({key, center});
         }
 
-
-        while (graph.get_num_components() > 1) {
+        while (!graph.is_connected()) {
             // add edges between two precincts on two islands
             // until `graph` is connected
-
             vector<Graph> components = graph.get_components();
             vector<NodePair> dists;
 
@@ -927,7 +921,6 @@ State State::generate_from_file(string precinct_geoJSON, string voter_data, stri
     election_headers = pid;
     id_headers = tid;
 
-
     // generate shapes from coordinates
     if (VERBOSE) cout << "generating coordinate arrays..." << endl;
     vector<Polygon> precinct_shapes = parse_precinct_coordinates(precinct_geoJSON);
@@ -970,14 +963,6 @@ State State::generate_from_file(string precinct_geoJSON, string voter_data, stri
 
     #ifdef TEXAS_COORDS
         scale_precincts_to_district(state);
-        Canvas canvas(900, 900);
-        canvas.add_outlines(to_outline(state));
-        for (Multi_Polygon p : state.districts) {
-            Outline o = to_outline(p.border[0].hull);
-            o.style().thickness(1).outline(RGB_Color(0,0,0)).fill(RGB_Color(0,0,0));
-            canvas.add_outline(o);
-        }
-        canvas.draw_to_window();
     #endif
 
     cout << "getting precinct centroids with boost" << endl;
@@ -987,8 +972,7 @@ State State::generate_from_file(string precinct_geoJSON, string voter_data, stri
         state.precincts[i].hull.centroid = {center.x(), center.y()};
     }
 
-
-    state.network = generate_graph(pre_group);
+    state.network = generate_graph(state);
     cout << "complete!" << endl;
     return state; // return the state object
 }
@@ -1050,16 +1034,6 @@ State State::generate_from_file(string precinct_geoJSON, string district_geoJSON
     
     #ifdef TEXAS_COORDS
         scale_precincts_to_district(state);
-        Canvas canvas(900, 900);
-        canvas.add_outlines(to_outline(state));
-        for (Multi_Polygon p : state.districts) {
-            for (Polygon poly : p.border) {
-                Outline o = to_outline(poly.hull);
-                o.style().thickness(1).outline(RGB_Color(0,0,0)).fill(RGB_Color(0,0,0));
-                canvas.add_outline(o);
-            }
-        }
-        canvas.draw_to_window();
     #endif
 
     cout << "getting centroids of precincst" << endl; 
@@ -1070,7 +1044,7 @@ State State::generate_from_file(string precinct_geoJSON, string district_geoJSON
         state.precincts[i].hull.centroid = {center.x(), center.y()};
     }
 
-    state.network = generate_graph(pre_group);
+    state.network = generate_graph(state);
     if (VERBOSE) cout << "state serialized!" << endl;
     return state; // return the state object
 }

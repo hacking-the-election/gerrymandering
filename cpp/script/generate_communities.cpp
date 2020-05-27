@@ -64,6 +64,7 @@ int main(int argc, char* argv[]) {
     int n_communities = state.districts.size();
     
     // get initial random configuration
+    // Communities init_config = load("../output/maryland/init_config_shape.txt", state.network);
     Communities init_config = karger_stein(state.network, n_communities);
     for (int i = 0; i < init_config.size(); i++) {
         init_config[i].update_shape(state.network);
@@ -75,14 +76,6 @@ int main(int argc, char* argv[]) {
     save(communities, output_dir + "/communities_shape.txt");
     canvas.add_outlines(to_outline(communities));
     canvas.save_image(ImageFmt::BMP, output_dir + "/img/communities");
-
-    cout << "optimizing for better districts..." << endl;
-    // get districts, save to district output
-    Communities redistricts = get_communities(state.network, communities, 0.01, output_dir, false);
-    save(redistricts, output_dir + "/redistricts_shape.txt");
-    canvas.clear();
-    canvas.add_outlines(to_outline(redistricts));
-    canvas.save_image(ImageFmt::BMP, output_dir + "/img/redistricts");
 
     cout << "quantifying current districts..." << endl;
     string abs_line;
@@ -134,8 +127,17 @@ int main(int argc, char* argv[]) {
 
     absolute_q.save_image(ImageFmt::BMP, output_dir + "/img/current_abs_quant");
     collapsed_q.save_image(ImageFmt::BMP, output_dir + "/img/current_0_1");
-    cout << "quantifying redistricted districts..." << endl;
     writef(abs_line + "\n" + coll_line + "\n" + part_line + "\n", output_dir + "/stats/districts/quantification.tsv");
+
+    // get districts, save to district output
+    cout << "optimizing for better districts..." << endl;
+    Communities redistricts = get_communities(state.network, communities, 0.01, output_dir, false);
+    save(redistricts, output_dir + "/redistricts_shape.txt");
+    canvas.clear();
+    canvas.add_outlines(to_outline(redistricts));
+    canvas.save_image(ImageFmt::BMP, output_dir + "/img/redistricts");
+
+    cout << "quantifying redistricted districts..." << endl;
     absolute_q.clear();
     collapsed_q.clear();
     abs_line.clear();

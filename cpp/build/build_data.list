@@ -23,7 +23,7 @@
 "idaho": idaho/geodata.json idaho/district.json --keys='{"DEM":"USP_D_08","REP":"USP_R_08","GEO":"GEOID10","POP":"POP100","OTH":"USP_O_08"}' idaho.state
 "illinois": illinois/geodata.json illinois/district.json --keys='{"DEM":"OBAMA","REP":"MCCAIN","GEO":"GEOID10","POP":"TOTAL_POPU","OTH":"OTHER"}' illinois.state
 "indiana": indiana/geodata.json indiana/district.json --keys='{"DEM":"OBAMA","REP":"MCCAIN","GEO":"GEOID10","POP":"POP10","LIB":"BARR"}' indiana.state
-"iowa": iowa/geodata.json iowa/district.json --keys='{"DEM":"PRES_D_08","REP":"PRES_R_08","GEO":"GEOID10","POP":"POP100","TOT":"PRES_TOT"}' iowa.state
+"iowa": iowa/geodata.json iowa/district.json --keys='{"DEM":"PRES_D_08","REP":"PRES_R_08","GEO":"GEOID10","POP":"POP100"}' iowa.state
 "kansas": kansas/geodata.json kansas/district.json --keys='{"DEM":"PRES_D_08","REP":"PRES_R_08","GEO":"GEOID10","POP":"POP100"}' kansas.state
 "louisiana": louisiana/geodata.json louisiana/district.json --keys='{"DEM":"USP_D_08_V","REP":"USP_R_08_V","GEO":"GEOID10","POP":"POP100"}' louisiana.state
 "maryland": maryland/geodata.json maryland/election_data.tab maryland/district.json.tab --keys='{"DEM":"PRES_DVOTE","REP":"PRES_RVOTE","GEO":"VTD","ELE":"GEOID10","POP":"TOTPOP","OTH":"PRES_OVOTE"}' maryland.state
