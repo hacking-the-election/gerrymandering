@@ -30,6 +30,7 @@ namespace fs = boost::filesystem;
 int RECURSION_STATE = 0;
 double PADDING = (15.0/16.0);
 
+vector<RGB_Color> COLORS = {RGB_Color(79,161,154),RGB_Color(220,65,182),RGB_Color(83,206,83),RGB_Color(92,79,210),RGB_Color(159,212,68),RGB_Color(185,87,218),RGB_Color(210,198,52),RGB_Color(138,49,146),RGB_Color(106,164,49),RGB_Color(164,122,223),RGB_Color(103,213,137),RGB_Color(227,54,102),RGB_Color(86,213,187),RGB_Color(224,71,48),RGB_Color(110,207,226),RGB_Color(163,53,37),RGB_Color(91,126,219),RGB_Color(230,157,47),RGB_Color(91,73,156),RGB_Color(215,185,92),RGB_Color(73,111,171),RGB_Color(199,101,39),RGB_Color(111,170,232),RGB_Color(144,143,44),RGB_Color(211,78,147),RGB_Color(72,145,66),RGB_Color(184,106,175),RGB_Color(66,102,30),RGB_Color(226,157,227),RGB_Color(68,152,108),RGB_Color(162,48,72),RGB_Color(178,200,121),RGB_Color(139,69,112),RGB_Color(158,201,160),RGB_Color(222,108,115),RGB_Color(34,106,107),RGB_Color(225,131,94),RGB_Color(76,157,190),RGB_Color(174,118,44),RGB_Color(193,182,235),RGB_Color(108,99,36),RGB_Color(80,80,126),RGB_Color(226,183,135),RGB_Color(56,108,139),RGB_Color(123,80,39),RGB_Color(146,128,175),RGB_Color(64,105,70),RGB_Color(221,155,187),RGB_Color(126,142,92),RGB_Color(134,71,59),RGB_Color(226,158,149),RGB_Color(174,136,89),RGB_Color(176,110,107)};
 
 Outline Graphics::to_outline(Geometry::LinearRing r) {
     Outline o(r);
@@ -85,23 +86,17 @@ std::vector<Outline> Graphics::to_outline(Geometry::Multi_Polygon& mp, double v,
 
 vector<Outline> Graphics::to_outline(Geometry::Graph& graph) {
     vector<Outline> outlines;
-
     for (int i = 0; i < graph.vertices.size(); i++) {
         Node node = (graph.vertices.begin() + i).value();
-        Outline node_b(generate_gon(node.precinct->get_centroid(), 2000, 50).hull);
+        Outline node_b(generate_gon(node.precinct->get_centroid(), 500, 50).hull);
 
-        float ratio;
+        float ratio = 0.5;
         int sum = node.precinct->voter_data[POLITICAL_PARTY::DEMOCRAT] + node.precinct->voter_data[POLITICAL_PARTY::REPUBLICAN];
-        if (sum <= 0) {
-            ratio = 0.5;
-        }
-        else {
-            ratio = (float)node.precinct->voter_data[POLITICAL_PARTY::REPUBLICAN] / (float)sum;
-        }
+        if (sum <= 0) ratio = 0.5;
+        else ratio = (float)node.precinct->voter_data[POLITICAL_PARTY::REPUBLICAN] / (float)sum;
 
         node_b.style().fill(interpolate_rgb(RGB_Color(0, 0, 255), RGB_Color(255,0,0), (double)ratio)).thickness(1).outline(interpolate_rgb(RGB_Color(0, 0, 255), RGB_Color(255,0,0), (double)ratio));
         outlines.push_back(node_b);
-
         
         for (Edge edge : node.edges) {
             if (graph.vertices.find(edge[1]) != graph.vertices.end()) {
@@ -282,18 +277,18 @@ std::vector<RGB_Color> Graphics::generate_n_colors(int n) {
 
     std::vector<RGB_Color> colors;
 
-    for (int i = 0; i < 360; i += 360 / n) {
+    int shift = 310;
+    for (int i = shift; i < 360 + shift; i += 360 / n) {
         // create and add colors
         colors.push_back(
             hsl_to_rgb(
                 HSL_Color(
-                    ((double)i / 360.0),
-                    (85.0 / 100.0),
-                    (60.0 / 100.0)
+                    ((double)(i % 360) / 360.0),
+                    (67.0 / 100.0),
+                    (75.0 / 100.0)
                 )
             )
         );
-
     }
 
     return colors;
@@ -499,22 +494,22 @@ void Graphics::draw_line(PixelBuffer& buffer, Geometry::coordinate start, Geomet
     
     for (t = (t + 1) / 2; ;) {
         // if cval is 0, we want to draw pure color
-        double cval = std::max(0.0, 255 * (abs(err - dx + dy) / ed - t + 1));
-        buffer.set_from_position(start[0], start[1], interpolate_rgb(color, RGB_Color::from_uint(buffer.get_from_position(start[0], start[1])), (cval / 255.0)).to_uint());
+        double cval = std::max(0.0, 255 * (abs(err - dx + dy) / ed - t + 1)) / 255.0;
+        buffer.set_from_position(start[0], start[1], interpolate_rgb(color, RGB_Color::from_uint(buffer.get_from_position(start[0], start[1])), cval).to_uint());
         e2 = err; x2 = start[0];
 
         if (2 * e2 >= -dx) {
             for (e2 += dy, y2 = start[1]; e2 < ed*t && (end[1] != y2 || dx > dy); e2 += dx) {
-                double cval = std::max(0.0, 255 * (abs(e2) / ed - t + 1));
-                buffer.set_from_position(start[0], y2 += sy, interpolate_rgb(color, RGB_Color::from_uint(buffer.get_from_position(start[0], start[1])), (cval / 255.0)).to_uint());
+                double cval = std::max(0.0, 255 * (abs(e2) / ed - t + 1)) / 255.0;
+                buffer.set_from_position(start[0], y2 += sy, interpolate_rgb(color, RGB_Color::from_uint(buffer.get_from_position(start[0], start[1])), cval).to_uint());
             }
             if (start[0] == end[0]) break;
             e2 = err; err -= dy; start[0] += sx; 
         } 
         if (2 * e2 <= dy) {
             for (e2 = dx - e2; e2 < ed * t && (end[0] != x2 || dx < dy); e2 += dy) {
-                int cval = std::max(0.0, 255 * (abs(e2) / ed - t + 1));
-                buffer.set_from_position(x2 += sx, start[1], interpolate_rgb(color, RGB_Color::from_uint(buffer.get_from_position(start[0], start[1])), (cval / 255.0)).to_uint());
+                int cval = std::max(0.0, 255 * (abs(e2) / ed - t + 1)) / 255.0;
+                buffer.set_from_position(x2 += sx, start[1], interpolate_rgb(color, RGB_Color::from_uint(buffer.get_from_position(start[0], start[1])), cval).to_uint());
             }
             if (start[1] == end[1]) break;
             err += dx; start[1] += sy; 
