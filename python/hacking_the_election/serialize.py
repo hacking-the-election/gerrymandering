@@ -41,7 +41,7 @@ SOURCE_DIR = abspath(dirname(__file__))
 
 def convert_to_float(string):
     """
-    Wrapped error handling for int().
+    Wrapped error handling for float().
     """
     try:
         return float(string)
@@ -50,6 +50,7 @@ def convert_to_float(string):
             try:
                 return float(string[:string.index(".")])
             except ValueError:
+                print('Float Conversion Faliure:', string)
                 return 0
         else:
             return 0
@@ -149,7 +150,6 @@ def create_graph(election_file, geo_file, pop_file, state):
                                  for election_data_row in election_data[1:]]
             geodata_ids = [tostring("".join([precinct["properties"][json_id] for json_id in json_ids])) 
                            for precinct in geodata["features"]]
-
             election_data_to_geodata = compare_ids(election_data_ids, geodata_ids)
         else:
             # Election Data can only be .tab or .json files
@@ -174,7 +174,6 @@ def create_graph(election_file, geo_file, pop_file, state):
     else:
         pop_data_type = False
 
-    precincts = []
     unordered_precinct_graph = graph()
 
 
@@ -201,9 +200,16 @@ def create_graph(election_file, geo_file, pop_file, state):
                     {'rep': convert_to_float(properties1[rep_key])}
                 ]
                 if total_key:
-                    party_data.append({'other': convert_to_float(properties1[total_key]) - sum(
+                    remainder = {'other': convert_to_float(properties1[total_key]) - sum(
                         [properties1[key] for key in [dem_key, rep_key, green_key, lib_key, reform_key, ind_key, const_key] if key != None]
-                    )})
+                    )}
+                    if list(remainder.values())[0] < 0:
+                        if list(remainder.values())[0] < -1:
+                            raise Exception(f'Negative other votes: {list(remainder.values())[0]} from precinct {precinct_id1}')
+                        else:
+                            print(f'Note: Negative other votes: {list(remainder.values())[0]} from precinct {precinct_id1}, rounded up to 0')
+                    else:
+                        party_data.append(remainder)
                 # If there is already a total_key, the other_key id is not needed.
                 elif other_key:
                     party_data.append({'other': convert_to_float(properties1[other_key])})
@@ -226,7 +232,7 @@ def create_graph(election_file, geo_file, pop_file, state):
             total_sum = 0
             # headers for different categories
             election_column_names = election_data[0]
-
+            print(election_column_names)
             # Get the index of each of the relevant columns.
             dem_key_col_index = \
                 [i for i, col in enumerate(election_column_names)
@@ -260,10 +266,17 @@ def create_graph(election_file, geo_file, pop_file, state):
                         [i for i, col in enumerate(election_column_names)
                         if col == total_key][0]
                     total_sum += convert_to_float(precinct[total_key_col_index])
-                    party_data.append({'other': convert_to_float(precinct[total_key_col_index]) 
+                    remainder = {'other': convert_to_float(precinct[total_key_col_index]) 
                         - sum([convert_to_float(precinct[[i for i, col in enumerate(election_column_names) if col == key][0]]) 
                         for key in [dem_key, rep_key, green_key, lib_key, reform_key, ind_key, const_key] if key != None]
-                    )})
+                    )}
+                    if list(remainder.values())[0] < 0:
+                        if list(remainder.values())[0] < -1:
+                            raise Exception(f'Negative other votes: {list(remainder.values())[0]} from precinct {election_data_id}')
+                        else:
+                            print(f'Note: Negative other votes: {list(remainder.values())[0]} from precinct {election_data_id}, rounded up to 0')
+                    else:
+                        party_data.append(remainder)
                 # If there is already a total_key, the other_key id is not needed.
                 elif other_key:
                     other_key_col_index = \
@@ -304,9 +317,17 @@ def create_graph(election_file, geo_file, pop_file, state):
                 {'rep': convert_to_float(properties[rep_key])}
             ]
             if total_key:
-                party_data.append({'other': convert_to_float(properties[total_key]) - sum(
+                remainder = {'other': convert_to_float(properties[total_key]) - sum(
                         [properties[key] for key in [dem_key, rep_key, green_key, lib_key, reform_key, ind_key, const_key] if key != None]
-                    )})
+                    )}
+                if list(remainder.values())[0] < 0:
+                    if list(remainder.values())[0] < -1:
+                        pass
+                        # raise Exception(f'Negative other votes: {list(remainder.values())[0]} from precinct {precinct_id}')
+                    else:
+                        print(f'Note: Negative other votes: {list(remainder.values())[0]} from precinct {precinct_id}, rounded up to 0')
+                else:
+                    party_data.append(remainder)
             # If there is already a total_key, the other_key id is not needed.
             elif other_key:
                 party_data.append({'other': convert_to_float(properties[other_key])})
@@ -334,6 +355,8 @@ def create_graph(election_file, geo_file, pop_file, state):
                 pop_properties = pop_precinct["properties"]
                 # Assumes the same Ids are used in geodata as in population data
                 pop_precinct_id = tostring("".join(pop_properties[json_id] for json_id in json_ids))
+                if sum([pop_properties[key] for key in json_pops]) < 0:
+                    raise Exception(f'Negative population: {sum([pop_properties[key] for key in json_pops])} from precinct {pop_precinct_id}')
                 pop[pop_precinct_id] = sum([pop_properties[key] for key in json_pops])
         # individual conditionals for states, they should go here
         # elif pop_data_type == "tab":
@@ -365,6 +388,8 @@ def create_graph(election_file, geo_file, pop_file, state):
                     tostring("".join([row[ele_id_col_index] for ele_id_col_index in ele_id_col_indices]))
                 ]
                 precinct_populations = [convert_to_float(row[i]) for i in pop_col_indices]
+                if sum(precinct_populations) < 0:
+                    raise Exception(f'Negative population: {precinct_populations} from precinct {pop_precinct_id}')
                 pop[pop_precinct_id] = sum(precinct_populations)
         else:
             # population is in geodata
@@ -372,6 +397,8 @@ def create_graph(election_file, geo_file, pop_file, state):
                 geodata_pop_properties = geodata_pop_precinct["properties"]
                 geodata_pop_precinct_id = tostring("".join(str(geodata_pop_properties[json_id]) for json_id in json_ids))
                 precinct_populations = [convert_to_float(geodata_pop_properties[key]) for key in json_pops]
+                if sum(precinct_populations) < 0:
+                    raise Exception(f'Negative population: {precinct_populations} from precinct {pop_precinct_id}')
                 pop[geodata_pop_precinct_id] = sum(precinct_populations)
 
     # Create a geodata dictionary
@@ -430,9 +457,9 @@ def create_graph(election_file, geo_file, pop_file, state):
         print(f"{state} reform votes: {sum([precinct.total_reform for precinct in precinct_list])}")
     if precinct_list[0].total_const != 0:
         print(f"{state} constitution votes: {sum([precinct.total_const for precinct in precinct_list])}")
-    if precinct_list[0].total_green != 0:
+    if precinct_list[0].total_ind != 0:
         print(f"{state} independent votes: {sum([precinct.total_ind for precinct in precinct_list])}")
-    if precinct_list[0].total_green != 0:
+    if precinct_list[0].total_other != 0:
         print(f"{state} other votes: {sum([precinct.total_other for precinct in precinct_list])}")
 
 
@@ -572,6 +599,7 @@ def create_graph(election_file, geo_file, pop_file, state):
                 break
             print(f"\rConnecting islands progress: {100 - round(100 * len(graph_components)/original_graph_components_num, 2)}%")
             unordered_precinct_graph.add_edge(edge_to_add)
+            print('yo', unordered_precinct_graph.node_attributes(edge_to_add[0])[0].id, unordered_precinct_graph.node_attributes(edge_to_add[1])[0].id)
     print(f'Number of islands (including mainland if applicable): {original_graph_components_num}')
     print('Edges after island linking: ', round(len(unordered_precinct_graph.edges())/2))
 
