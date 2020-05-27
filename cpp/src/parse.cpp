@@ -24,7 +24,7 @@
 #include "../include/geometry.hpp"    // exterior border generation
 
 #define VERBOSE 1        // print progress
-//#define TEXAS_COORDS 0   // absolute coordinates
+#define TEXAS_COORDS 0   // absolute coordinates
 
 using namespace rapidjson;
 using namespace std;
@@ -780,7 +780,6 @@ Graph generate_graph(Precinct_Group pg) {
         graph.vertices[n.id] = n;
     }
 
-
     // get bounding boxes for border-checks
     cout << "determining bounding boxes..." << endl;
     vector<bounding_box> bounding_boxes;
@@ -803,13 +802,12 @@ Graph generate_graph(Precinct_Group pg) {
         }
     }
 
+
     cout << "linking components" << endl;
     // link components with closest precincts
     if (graph.get_num_components() > 1) {
         // determine all centers of precincts
-        cout << graph.get_num_components() << endl;
         std::map<int, coordinate> centers;
-
         for (int i = 0; i < graph.vertices.size(); i++) {
             // add center of precinct to the map
             int key = (graph.vertices.begin() + i).key();
@@ -818,18 +816,16 @@ Graph generate_graph(Precinct_Group pg) {
             centers.insert({key, center});
         }
 
-
-        while (graph.get_num_components() > 1) {
+        while (!graph.is_connected()) {
+            cout << "b" << endl;
             // add edges between two precincts on two islands
             // until `graph` is connected
-
             vector<Graph> components = graph.get_components();
             vector<NodePair> dists;
 
             for (size_t i = 0; i < components.size(); i++) {
                 for (size_t j = i + 1; j < components.size(); j++) {
                     // for each distinct combination of islands
-
                     for (size_t p = 0; p < components[i].vertices.size(); p++) {
                         for (size_t q = 0; q < components[j].vertices.size(); q++) {
                             // for each distinct precinct combination of the
@@ -849,7 +845,6 @@ Graph generate_graph(Precinct_Group pg) {
 
             // find the shortest link between any two precincts on any two islands islands
             array<int, 2> me = std::min_element(dists.begin(), dists.end())->node_ids;
-            cout << me[0] << ", " << me[1] << endl;
             graph.add_edge({me[0], me[1]});
         }
     } // else the graph is linked already
@@ -927,7 +922,6 @@ State State::generate_from_file(string precinct_geoJSON, string voter_data, stri
     election_headers = pid;
     id_headers = tid;
 
-
     // generate shapes from coordinates
     if (VERBOSE) cout << "generating coordinate arrays..." << endl;
     vector<Polygon> precinct_shapes = parse_precinct_coordinates(precinct_geoJSON);
@@ -970,14 +964,6 @@ State State::generate_from_file(string precinct_geoJSON, string voter_data, stri
 
     #ifdef TEXAS_COORDS
         scale_precincts_to_district(state);
-        Canvas canvas(900, 900);
-        canvas.add_outlines(to_outline(state));
-        for (Multi_Polygon p : state.districts) {
-            Outline o = to_outline(p.border[0].hull);
-            o.style().thickness(1).outline(RGB_Color(0,0,0)).fill(RGB_Color(0,0,0));
-            canvas.add_outline(o);
-        }
-        canvas.draw_to_window();
     #endif
 
     cout << "getting precinct centroids with boost" << endl;
@@ -987,8 +973,7 @@ State State::generate_from_file(string precinct_geoJSON, string voter_data, stri
         state.precincts[i].hull.centroid = {center.x(), center.y()};
     }
 
-
-    state.network = generate_graph(pre_group);
+    state.network = generate_graph(state);
     cout << "complete!" << endl;
     return state; // return the state object
 }
@@ -1050,16 +1035,6 @@ State State::generate_from_file(string precinct_geoJSON, string district_geoJSON
     
     #ifdef TEXAS_COORDS
         scale_precincts_to_district(state);
-        Canvas canvas(900, 900);
-        canvas.add_outlines(to_outline(state));
-        for (Multi_Polygon p : state.districts) {
-            for (Polygon poly : p.border) {
-                Outline o = to_outline(poly.hull);
-                o.style().thickness(1).outline(RGB_Color(0,0,0)).fill(RGB_Color(0,0,0));
-                canvas.add_outline(o);
-            }
-        }
-        canvas.draw_to_window();
     #endif
 
     cout << "getting centroids of precincst" << endl; 
@@ -1070,7 +1045,7 @@ State State::generate_from_file(string precinct_geoJSON, string district_geoJSON
         state.precincts[i].hull.centroid = {center.x(), center.y()};
     }
 
-    state.network = generate_graph(pre_group);
+    state.network = generate_graph(state);
     if (VERBOSE) cout << "state serialized!" << endl;
     return state; // return the state object
 }

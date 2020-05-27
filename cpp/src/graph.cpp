@@ -61,21 +61,16 @@ std::vector<Graph> Graph::get_components() {
     */
 
     unordered_map<int, bool> visited;
-    // visited.reserve(vertices.size());
-    // for (int i = 0; i < vertices.size(); i++) {
-    //     visited[(vertices.begin() + i).key()] = false;
-    // }
-
     vector<Graph> components;
 
     for (int i = 0; i < vertices.size(); i++) {
         if (!visited[(vertices.begin() + i).key()]) {
             Graph component;
-            vector<int> graph(0);
+            vector<int> graph = {};
             dfs_recursor((vertices.begin() + i).key(), visited, &graph);
 
             for (int i = 0; i < graph.size(); i++) {
-                component.vertices.insert({graph[i], this->vertices[graph[i]]});
+                component.add_node(this->vertices[graph[i]]);
             }
 
             components.push_back(component);
@@ -101,7 +96,7 @@ void Graph::dfs_recursor(int v, std::unordered_map<int, bool>& visited, std::vec
     visited[v] = true; 
     nodes->push_back(v);
 
-    for (Edge e : vertices[v].edges) {
+    for (Edge& e : vertices[v].edges) {
         int t_id = e[1];
         if (!visited[t_id]) { 
             dfs_recursor(t_id, visited, nodes);

@@ -47,7 +47,7 @@ using namespace chrono;
 
 #define MAX_TIME 13500
 #define ITERATION_LIMIT 20
-#define MIN_PERCENT_PRECINCTS 0.04
+#define MIN_PERCENT_PRECINCTS 0.03
 #define MIN_PERCENT_PRECINCTS_STDEV 0.5
 
 void drawc(Communities&);
@@ -745,8 +745,11 @@ Communities hte::Geometry::get_communities(Graph& graph, Communities cs, double 
         Graph before = graph;
 
         // perform optimization passes
+        cout << "stdev" << endl;
         minimize_stdev(cs, graph);
+        cout << "comp" << endl;
         optimize_compactness(cs, graph);
+        cout << "pop" << endl;
         optimize_population(cs, graph, pop_constraint);
         PRECINCTS_EXCHANGED = get_num_communities_changed(before, graph);
         // stop timer for max_time

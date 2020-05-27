@@ -86,23 +86,17 @@ std::vector<Outline> Graphics::to_outline(Geometry::Multi_Polygon& mp, double v,
 
 vector<Outline> Graphics::to_outline(Geometry::Graph& graph) {
     vector<Outline> outlines;
-
     for (int i = 0; i < graph.vertices.size(); i++) {
         Node node = (graph.vertices.begin() + i).value();
-        Outline node_b(generate_gon(node.precinct->get_centroid(), 2000, 50).hull);
+        Outline node_b(generate_gon(node.precinct->get_centroid(), 500, 50).hull);
 
-        float ratio;
+        float ratio = 0.5;
         int sum = node.precinct->voter_data[POLITICAL_PARTY::DEMOCRAT] + node.precinct->voter_data[POLITICAL_PARTY::REPUBLICAN];
-        if (sum <= 0) {
-            ratio = 0.5;
-        }
-        else {
-            ratio = (float)node.precinct->voter_data[POLITICAL_PARTY::REPUBLICAN] / (float)sum;
-        }
+        if (sum <= 0) ratio = 0.5;
+        else ratio = (float)node.precinct->voter_data[POLITICAL_PARTY::REPUBLICAN] / (float)sum;
 
         node_b.style().fill(interpolate_rgb(RGB_Color(0, 0, 255), RGB_Color(255,0,0), (double)ratio)).thickness(1).outline(interpolate_rgb(RGB_Color(0, 0, 255), RGB_Color(255,0,0), (double)ratio));
         outlines.push_back(node_b);
-
         
         for (Edge edge : node.edges) {
             if (graph.vertices.find(edge[1]) != graph.vertices.end()) {
@@ -290,8 +284,8 @@ std::vector<RGB_Color> Graphics::generate_n_colors(int n) {
             hsl_to_rgb(
                 HSL_Color(
                     ((double)(i % 360) / 360.0),
-                    (65.0 / 100.0),
-                    (65.0 / 100.0)
+                    (67.0 / 100.0),
+                    (75.0 / 100.0)
                 )
             )
         );
