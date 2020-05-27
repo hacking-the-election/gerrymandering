@@ -91,9 +91,7 @@ int get_num_communities_changed(Graph& before, Graph& after) {
 
 int Community::get_population() {
     int sum = 0;
-    for (Precinct p : shape.precincts) {
-        sum += p.pop;
-    }
+    for (Precinct p : shape.precincts) sum += p.pop;
     return sum;
 }
 
@@ -424,6 +422,7 @@ void optimize_population(Communities& communities, Graph& g, double range) {
                     x = 0;
                     if (exchanged_list == 0) {
                         quit_from_no_ex = true;
+                        cout << "COULD NOT TAKE ANY PRECINCTS" << endl;
                         break;
                     }
                     exchanged_list = 0;
@@ -448,6 +447,7 @@ void optimize_population(Communities& communities, Graph& g, double range) {
                     x = 0;
                     if (exchanged_list == 0) {
                         quit_from_no_ex = true;
+                        cout << "COULD NOT GIVE ANY PRECINCTS" << endl;
                         break;
                     }
                     exchanged_list = 0;
@@ -463,14 +463,23 @@ void optimize_population(Communities& communities, Graph& g, double range) {
             }
         }
 
-        if (quit_from_no_ex) {
-            worst_index = rand_num(0, communities.size() - 1);
 
+        int real_worst_index = 0;
+
+
+        if (quit_from_no_ex) {
+            int first_index = worst_index;
+            do {
+                worst_index = rand_num(0, communities.size() - 1);
+            } while (worst_index == first_index);
+
+            
             worst_difference = abs(ideal_pop - communities[0].get_population());
             for (int i = 1; i < communities.size(); i++) {
                 int diff = abs(ideal_pop - communities[i].get_population());
                 if (diff > worst_difference) {
                     worst_difference = diff;
+                    real_worst_index = i;
                 }
             }
         }
@@ -482,8 +491,23 @@ void optimize_population(Communities& communities, Graph& g, double range) {
                 if (diff > worst_difference) {
                     worst_difference = diff;
                     worst_index = i;
+                    real_worst_index = i;
                 }
             }
+        }
+
+        cout << communities[worst_index].get_population() << endl;
+        // cout << iteration << endl;
+        if (iteration == 300) {
+            Canvas canvas(900, 900);
+            canvas.add_outlines(to_outline(communities));
+            cout << "FIN POP " << communities[real_worst_index].get_population() << endl;
+            for (Polygon p : generate_exterior_border(communities[real_worst_index].shape).border) {
+                Outline o = to_outline(p.hull);
+                o.style().fill(RGB_Color(0,0,0));
+                canvas.add_outline(o);
+            }
+            canvas.draw_to_window();
         }
 
         if (worst_difference < smallest_diff_possible) {
@@ -503,9 +527,8 @@ void minimize_stdev(Communities& communities, Graph& graph) {
     while (true) {
 	int num_exchanges = 0;
         double first = before_average;
-        array<double, 2> worst_c = worst(communities, get_partisanship_stdev);
-        int community_to_modify_ind = worst_c[1];
-        // cout << worst_c[0] << endl;
+        int community_to_modify_ind = rand_num(0, communities.size() - 1);
+
         // choose worst community to modify
         vector<vector<int> > giveable = get_giveable_precincts(graph, communities, community_to_modify_ind);
         for (vector<int> g : giveable) {
@@ -522,7 +545,7 @@ void minimize_stdev(Communities& communities, Graph& graph) {
                 else {
                     // keep the exchange, set a new best
                     before_average = after_average;
-		    num_exchanges++;
+                    num_exchanges++;
                 }
             }
         }
@@ -546,9 +569,12 @@ void minimize_stdev(Communities& communities, Graph& graph) {
             }
         }
 
-	    if (iteration == 0) precincts_to_die = MIN_PERCENT_PRECINCTS_STDEV * (double)num_exchanges;
+        if (iteration == 0) precincts_to_die = MIN_PERCENT_PRECINCTS_STDEV * (double)num_exchanges;
         else if (num_exchanges <= precincts_to_die) break;
         iteration++;
+
+        cout << num_exchanges << ", " << precincts_to_die << endl;
+        cout << average(communities, get_partisanship_stdev) << endl;
     }
 }
 
@@ -720,6 +746,9 @@ Communities hte::Geometry::get_communities(Graph& graph, Communities cs, double 
         @return: `Communities` init config
     */
 
+    optimize_population(cs, graph, pop_constraint);
+    return cs;
+    
     int TIME_ELAPSED = 0;
     int PRECINCTS_EXCHANGED = 0;
     int iteration = 0;

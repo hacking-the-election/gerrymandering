@@ -121,7 +121,7 @@ vector<Outline> Graphics::to_outline(Communities& communities) {
 
         for (auto& j : communities[i].vertices) {
             Outline o(j.second.precinct->hull);
-            o.style().fill(colors[i]).outline(colors[i]).thickness(1);
+            o.style().fill(colors[i]).outline(RGB_Color(0,0,0)).thickness(1);
             outlines.push_back(o);
         }
 
@@ -284,7 +284,7 @@ std::vector<RGB_Color> Graphics::generate_n_colors(int n) {
             hsl_to_rgb(
                 HSL_Color(
                     ((double)(i % 360) / 360.0),
-                    (67.0 / 100.0),
+                    (80.0 / 100.0),
                     (75.0 / 100.0)
                 )
             )
