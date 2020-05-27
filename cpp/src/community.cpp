@@ -413,13 +413,8 @@ void optimize_population(Communities& communities, Graph& g, double range) {
         int x = 0;
         bool quit_from_no_ex = false;
 
-        cout << "currently modifying community " << worst_index << " of pop " << communities[worst_index].get_population() << endl;
-        cout << "the attempted ideal pop is " << ideal_pop << endl;
-
         if (communities[worst_index].get_population() < ideal_pop) {
-            cout << "taking precincts for community " << worst_index << endl;
             vector<int> take = get_takeable_precincts(g, communities, worst_index);
-            cout << "initially " << take.size() << " available" << endl;
             std::shuffle(std::begin(take), std::end(take), rng);
             int exchanged_list = 0;
             while (communities[worst_index].get_population() < ideal_pop - smallest_diff_possible) {
@@ -442,7 +437,6 @@ void optimize_population(Communities& communities, Graph& g, double range) {
             }
         }
         else {
-            cout << "giving precincts from community " << worst_index << endl;
             vector<vector<int> > give = get_giveable_precincts(g, communities, worst_index);
             std::shuffle(std::begin(give), std::end(give), rng);
             int exchanged_list = 0;
@@ -467,11 +461,7 @@ void optimize_population(Communities& communities, Graph& g, double range) {
             }
         }
 
-        cout << "after modification, the population is now " << communities[worst_index].get_population() << endl << endl;
-
         int real_worst_index = 0;
-
-
         if (quit_from_no_ex) {
             int first_index = worst_index;
             do {
@@ -501,17 +491,15 @@ void optimize_population(Communities& communities, Graph& g, double range) {
             }
         }
 
-        cout << iteration << endl;
-        if (iteration == 300) {
+        if (iteration == 4000) {
             Canvas canvas(900, 900);
             canvas.add_outlines(to_outline(communities));
-            cout << "FIN POP " << communities[real_worst_index].get_population() << endl;
+            cout << endl << "POP GONE 4000 ITERATION... " << endl;
             for (Polygon p : generate_exterior_border(communities[real_worst_index].shape).border) {
                 Outline o = to_outline(p.hull);
                 o.style().fill(RGB_Color(0,0,0));
                 canvas.add_outline(o);
             }
-
             canvas.add_outlines(to_outline(g));
             canvas.draw_to_window();
         }
@@ -578,9 +566,6 @@ void minimize_stdev(Communities& communities, Graph& graph) {
         if (iteration == 0) precincts_to_die = MIN_PERCENT_PRECINCTS_STDEV * (double)num_exchanges;
         else if (num_exchanges <= precincts_to_die) break;
         iteration++;
-
-        cout << num_exchanges << ", " << precincts_to_die << endl;
-        cout << average(communities, get_partisanship_stdev) << endl;
     }
 }
 
@@ -752,14 +737,6 @@ Communities hte::Geometry::get_communities(Graph& graph, Communities cs, double 
         @return: `Communities` init config
     */
 
-    Canvas canvas(900, 900);
-    canvas.add_outlines(to_outline(graph));
-    cout << "d" << endl;
-    canvas.draw_to_window();
-    cout << "d" << endl;
-
-    optimize_population(cs, graph, pop_constraint);
-    return cs;
 
     int TIME_ELAPSED = 0;
     int PRECINCTS_EXCHANGED = 0;
@@ -784,28 +761,34 @@ Communities hte::Geometry::get_communities(Graph& graph, Communities cs, double 
         // start time for max_time and initialize first graph
         auto start = high_resolution_clock::now();
         Graph before = graph;
+        cout << "\e[2K\r" << get_progress_bar(((double)TIME_ELAPSED / (double)MAX_TIME)) << "  " << PRECINCTS_EXCHANGED << " exchanges last iter, on stdev";
+        cout.flush();
 
         // perform optimization passes
-        cout << "stdev" << endl;
         minimize_stdev(cs, graph);
-        cout << "comp" << endl;
-        optimize_compactness(cs, graph);
-        cout << "pop" << endl;
-        optimize_population(cs, graph, pop_constraint);
-        PRECINCTS_EXCHANGED = get_num_communities_changed(before, graph);
-        // stop timer for max_time
         auto stop = high_resolution_clock::now();
         TIME_ELAPSED += duration_cast<seconds>(stop - start).count();
+        cout << "\e[2K\r" << get_progress_bar(((double)TIME_ELAPSED / (double)MAX_TIME)) << "  " << PRECINCTS_EXCHANGED << " exchanges last iter, on compactness";
+        cout.flush();
+
+        start = high_resolution_clock::now();
+        optimize_compactness(cs, graph);
+        stop = high_resolution_clock::now();
+        TIME_ELAPSED += duration_cast<seconds>(stop - start).count();
+        cout << "\e[2K\r" << get_progress_bar(((double)TIME_ELAPSED / (double)MAX_TIME)) << "  " << PRECINCTS_EXCHANGED << " exchanges last iter, on population";
+        cout.flush();
+        start = high_resolution_clock::now();
+        optimize_population(cs, graph, pop_constraint);
+        stop = high_resolution_clock::now();
+        TIME_ELAPSED += duration_cast<seconds>(stop - start).count();
+        PRECINCTS_EXCHANGED = get_num_communities_changed(before, graph);
+        // stop timer for max_time
 
         Canvas canvas(450, 450);
         canvas.add_outlines(to_outline(cs));
         canvas.save_img_to_anim(ImageFmt::BMP, anim_out);
-
-        cout << "\e[2K\r" << get_progress_bar(((double)TIME_ELAPSED / (double)MAX_TIME)) << "  " << PRECINCTS_EXCHANGED << " exchanges last iter";
-        cout.flush();
         iteration++;
         save_iteration_data(data_out, cs, PRECINCTS_EXCHANGED);
-
     } while ((TIME_ELAPSED < MAX_TIME) && (PRECINCTS_EXCHANGED > (int)(MIN_PERCENT_PRECINCTS * (double)graph.vertices.size())));
 
     // the communities are fully optimized
