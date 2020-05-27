@@ -85,6 +85,7 @@ std::vector<Outline> Graphics::to_outline(Geometry::Multi_Polygon& mp, double v,
 
 
 vector<Outline> Graphics::to_outline(Geometry::Graph& graph) {
+    cout << "a" << endl; 
     vector<Outline> outlines;
     for (int i = 0; i < graph.vertices.size(); i++) {
         Node node = (graph.vertices.begin() + i).value();
@@ -103,12 +104,13 @@ vector<Outline> Graphics::to_outline(Geometry::Graph& graph) {
                 coordinate start = graph.vertices[edge[0]].precinct->get_centroid();
                 coordinate end = graph.vertices[edge[1]].precinct->get_centroid();
                 Outline o(LinearRing({start, end}));
-                o.style().outline(RGB_Color(0,0,0)).thickness(1.0);
+                o.style().outline(RGB_Color(0,0,0)).thickness(1.0).fill(RGB_Color(-1,-1,-1));
                 outlines.push_back(o);
             }
         }
     }
 
+    cout << "b" << endl;
     return outlines;
 }
 
@@ -284,8 +286,8 @@ std::vector<RGB_Color> Graphics::generate_n_colors(int n) {
             hsl_to_rgb(
                 HSL_Color(
                     ((double)(i % 360) / 360.0),
-                    (67.0 / 100.0),
-                    (75.0 / 100.0)
+                    (86.0 / 100.0),
+                    (72.0 / 100.0)
                 )
             )
         );
@@ -296,7 +298,9 @@ std::vector<RGB_Color> Graphics::generate_n_colors(int n) {
 
 
 int PixelBuffer::index_from_position(int a, int b) {
-    return ((x * (b - 1)) + a - 1);
+    if (a >= 0 && b >= 0)
+        return ((x * (b - 1)) + a - 1);
+    else return (1);
 }
 
 
@@ -491,7 +495,7 @@ void Graphics::draw_line(PixelBuffer& buffer, Geometry::coordinate start, Geomet
     int dy = abs(end[1] - start[1]), sy = start[1] < end[1] ? 1 : -1;
     int err = dx - dy, e2, x2, y2;
     float ed = dx + dy == 0 ? 1 : sqrt((float)dx * dx + (float)dy * dy);
-    
+
     for (t = (t + 1) / 2; ;) {
         // if cval is 0, we want to draw pure color
         double cval = std::max(0.0, 255 * (abs(err - dx + dy) / ed - t + 1)) / 255.0;
@@ -531,7 +535,6 @@ void Graphics::draw_polygon(PixelBuffer& buffer, Geometry::LinearRing ring, Styl
 
         @return: void
     */
-
 
     // fill polygon
     if (style.fill_.r != -1) {
@@ -786,7 +789,7 @@ void Canvas::rasterize() {
 
     // translate into first quadrant
     translate(-box[2], -box[1], true);
-
+    
     // determine smaller side/side ratio for scaling
     double ratio_top = ceil((double) this->box[0]) / (double) (width);
     double ratio_right = ceil((double) this->box[3]) / (double) (height);
@@ -806,12 +809,12 @@ void Canvas::rasterize() {
         int t = (int)((((double)width - ((double)px * 2.0)) - (double)this->box[3] * scale_factor) / 2.0);
         translate(t, 0, false);
     }
-
+    
 
     for (Outline o : outlines) {
         draw_polygon(pixel_buffer, o.border, o.style());
     }
-
+    
     to_date = true;
     // draw_to_window();
 }

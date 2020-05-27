@@ -24,7 +24,7 @@
 #include "../include/geometry.hpp"    // exterior border generation
 
 #define VERBOSE 1        // print progress
-#define TEXAS_COORDS 0   // absolute coordinates
+// #define TEXAS_COORDS 0   // absolute coordinates
 
 using namespace rapidjson;
 using namespace std;
@@ -291,7 +291,7 @@ vector<Precinct> parse_precinct_data(string geoJSON) {
     // vector of shapes to be returned
     vector<Precinct> shapes_vector;
 
-    for ( int i = 0; i < shapes["features"].Size(); i++ ) {
+    for (int i = 0; i < shapes["features"].Size(); i++) {
         string coords;
         string id = "";
         int pop = 0;
@@ -395,11 +395,11 @@ vector<Precinct> parse_precinct_data(string geoJSON) {
             geo.shape_id = id;
 
             // calculate area of multipolygon
-            double total_area = geo.get_area();
+            double total_area = abs(geo.get_area());
             int append = 0;
 
             for (Polygon s : geo.border) {
-                double fract = s.get_area() / total_area;
+                double fract = abs(s.get_area()) / total_area;
                 pop = round((double)pop * (double)fract);
 
                 map<POLITICAL_PARTY, int> adjusted;
@@ -526,7 +526,7 @@ vector<Polygon> parse_precinct_coordinates(string geoJSON) {
             Multi_Polygon geo = multi_string_to_vector(coords, texas_coordinates);
             geo.shape_id = id;
             // calculate area of multipolygon
-            double total_area = geo.get_area();
+            double total_area = abs(geo.get_area());
 
             // create many shapes with the same ID, add them to the array
             
@@ -534,7 +534,7 @@ vector<Polygon> parse_precinct_coordinates(string geoJSON) {
             for (Polygon s : geo.border) {
                 Polygon shape(s.hull, s.holes, id);
                 shape.is_part_of_multi_polygon = append;
-                double fract = shape.get_area() / total_area;
+                double fract = abs(shape.get_area()) / total_area;
                 shape.pop = (int) round(pop * fract);
                 shapes_vector.push_back(shape);
                 append++;
@@ -620,15 +620,15 @@ vector<Precinct> merge_data(vector<Polygon> precinct_shapes, map<string, map<POL
 
         // create a precinct object and add it to the array
         if (precinct_shape.is_part_of_multi_polygon != -1) {
-            double total_area = precinct_shape.get_area();
+            double total_area = abs(precinct_shape.get_area());
 
             for (int i = 0; i < precinct_shapes.size(); i++) {
                 if (i != x && precinct_shapes[i].shape_id == p_id) {
-                    total_area += precinct_shapes[i].get_area();
+                    total_area += abs(precinct_shapes[i].get_area());
                 }
             }
 
-            double ratio = precinct_shape.get_area() / total_area;
+            double ratio = abs(precinct_shape.get_area()) / total_area;
 
             Precinct precinct =
                 Precinct(
@@ -817,7 +817,6 @@ Graph generate_graph(Precinct_Group pg) {
         }
 
         while (!graph.is_connected()) {
-            cout << "b" << endl;
             // add edges between two precincts on two islands
             // until `graph` is connected
             vector<Graph> components = graph.get_components();

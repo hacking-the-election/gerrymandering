@@ -91,9 +91,7 @@ int get_num_communities_changed(Graph& before, Graph& after) {
 
 int Community::get_population() {
     int sum = 0;
-    for (Precinct p : shape.precincts) {
-        sum += p.pop;
-    }
+    for (Precinct p : shape.precincts) sum += p.pop;
     return sum;
 }
 
@@ -463,14 +461,20 @@ void optimize_population(Communities& communities, Graph& g, double range) {
             }
         }
 
+        int real_worst_index = 0;
         if (quit_from_no_ex) {
-            worst_index = rand_num(0, communities.size() - 1);
+            int first_index = worst_index;
+            do {
+                worst_index = rand_num(0, communities.size() - 1);
+            } while (worst_index == first_index);
 
+            
             worst_difference = abs(ideal_pop - communities[0].get_population());
             for (int i = 1; i < communities.size(); i++) {
                 int diff = abs(ideal_pop - communities[i].get_population());
                 if (diff > worst_difference) {
                     worst_difference = diff;
+                    real_worst_index = i;
                 }
             }
         }
@@ -482,8 +486,22 @@ void optimize_population(Communities& communities, Graph& g, double range) {
                 if (diff > worst_difference) {
                     worst_difference = diff;
                     worst_index = i;
+                    real_worst_index = i;
                 }
             }
+        }
+
+        if (iteration == 4000) {
+            Canvas canvas(900, 900);
+            canvas.add_outlines(to_outline(communities));
+            cout << endl << "POP GONE 4000 ITERATION... " << endl;
+            for (Polygon p : generate_exterior_border(communities[real_worst_index].shape).border) {
+                Outline o = to_outline(p.hull);
+                o.style().fill(RGB_Color(0,0,0));
+                canvas.add_outline(o);
+            }
+            canvas.add_outlines(to_outline(g));
+            canvas.draw_to_window();
         }
 
         if (worst_difference < smallest_diff_possible) {
@@ -503,9 +521,8 @@ void minimize_stdev(Communities& communities, Graph& graph) {
     while (true) {
 	int num_exchanges = 0;
         double first = before_average;
-        array<double, 2> worst_c = worst(communities, get_partisanship_stdev);
-        int community_to_modify_ind = worst_c[1];
-        // cout << worst_c[0] << endl;
+        int community_to_modify_ind = rand_num(0, communities.size() - 1);
+
         // choose worst community to modify
         vector<vector<int> > giveable = get_giveable_precincts(graph, communities, community_to_modify_ind);
         for (vector<int> g : giveable) {
@@ -522,7 +539,7 @@ void minimize_stdev(Communities& communities, Graph& graph) {
                 else {
                     // keep the exchange, set a new best
                     before_average = after_average;
-		    num_exchanges++;
+                    num_exchanges++;
                 }
             }
         }
@@ -546,7 +563,7 @@ void minimize_stdev(Communities& communities, Graph& graph) {
             }
         }
 
-	    if (iteration == 0) precincts_to_die = MIN_PERCENT_PRECINCTS_STDEV * (double)num_exchanges;
+        if (iteration == 0) precincts_to_die = MIN_PERCENT_PRECINCTS_STDEV * (double)num_exchanges;
         else if (num_exchanges <= precincts_to_die) break;
         iteration++;
     }
@@ -720,6 +737,7 @@ Communities hte::Geometry::get_communities(Graph& graph, Communities cs, double 
         @return: `Communities` init config
     */
 
+
     int TIME_ELAPSED = 0;
     int PRECINCTS_EXCHANGED = 0;
     int iteration = 0;
@@ -743,32 +761,38 @@ Communities hte::Geometry::get_communities(Graph& graph, Communities cs, double 
         // start time for max_time and initialize first graph
         auto start = high_resolution_clock::now();
         Graph before = graph;
+        cout << "\e[2K\r" << get_progress_bar(((double)TIME_ELAPSED / (double)MAX_TIME)) << "  " << PRECINCTS_EXCHANGED << " exchanges last iter, on stdev";
+        cout.flush();
 
         // perform optimization passes
-        cout << "stdev" << endl;
         minimize_stdev(cs, graph);
-        cout << "comp" << endl;
-        optimize_compactness(cs, graph);
-        cout << "pop" << endl;
-        optimize_population(cs, graph, pop_constraint);
-        PRECINCTS_EXCHANGED = get_num_communities_changed(before, graph);
-        // stop timer for max_time
         auto stop = high_resolution_clock::now();
         TIME_ELAPSED += duration_cast<seconds>(stop - start).count();
+        cout << "\e[2K\r" << get_progress_bar(((double)TIME_ELAPSED / (double)MAX_TIME)) << "  " << PRECINCTS_EXCHANGED << " exchanges last iter, on compactness";
+        cout.flush();
+
+        start = high_resolution_clock::now();
+        optimize_compactness(cs, graph);
+        stop = high_resolution_clock::now();
+        TIME_ELAPSED += duration_cast<seconds>(stop - start).count();
+        cout << "\e[2K\r" << get_progress_bar(((double)TIME_ELAPSED / (double)MAX_TIME)) << "  " << PRECINCTS_EXCHANGED << " exchanges last iter, on population";
+        cout.flush();
+        start = high_resolution_clock::now();
+        optimize_population(cs, graph, pop_constraint);
+        stop = high_resolution_clock::now();
+        TIME_ELAPSED += duration_cast<seconds>(stop - start).count();
+        PRECINCTS_EXCHANGED = get_num_communities_changed(before, graph);
+        // stop timer for max_time
 
         Canvas canvas(450, 450);
         canvas.add_outlines(to_outline(cs));
         canvas.save_img_to_anim(ImageFmt::BMP, anim_out);
-
-        cout << "\r" << get_progress_bar(((double)TIME_ELAPSED / (double)MAX_TIME)) << "  " << PRECINCTS_EXCHANGED << " exchanges last iter";
-        cout.flush();
         iteration++;
         save_iteration_data(data_out, cs, PRECINCTS_EXCHANGED);
-
     } while ((TIME_ELAPSED < MAX_TIME) && (PRECINCTS_EXCHANGED > (int)(MIN_PERCENT_PRECINCTS * (double)graph.vertices.size())));
 
     // the communities are fully optimized
-    cout << "\r" << get_progress_bar(1) << endl;
+    cout << "\e[2K\r" << get_progress_bar(1) << endl;
     save_voter_counts(voter_out, cs);
     return cs;
 }
