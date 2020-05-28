@@ -541,17 +541,11 @@ void optimize_population(Communities& communities, Graph& g, double range) {
         }
 
         if (iteration == 20000) {
-            Canvas canvas(900, 900);
-            canvas.add_outlines(to_outline(communities));
-            cout << endl << "POP GONE 20000 ITERATION... " << endl;
-            for (Polygon p : generate_exterior_border(communities[real_worst_index].shape).border) {
-                Outline o = to_outline(p.hull);
-                o.style().fill(RGB_Color(0,0,0));
-                canvas.add_outline(o);
-            }
-            canvas.draw_to_window();
+            cout << endl << "POP GONE 20000 ITERATION, EXITING... " << endl;
+            exit(1);
         }
 
+        iteration++;
         if (worst_difference < smallest_diff_possible) {
             break;
         }
