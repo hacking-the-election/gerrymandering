@@ -9,6 +9,7 @@
 #include "../include/quantification.hpp"
 #include <iostream>
 
+using namespace std;
 using namespace hte;
 using namespace Geometry;
 using namespace Graphics;
@@ -137,8 +138,14 @@ std::map<POLITICAL_PARTY, double> Geometry::get_quantification(Graph& graph, Com
     for (auto& pair : partisanships) {
         sum += pair.second;
     }
+
     for (auto& pair : partisanships) {
-        partisanships[pair.first] /= sum;
+        if (sum != 0) {
+            partisanships[pair.first] /= sum;
+	}
+        else {
+            partisanships[pair.first] = 0.5;   
+        }
     }
 
     partisanships[POLITICAL_PARTY::ABSOLUTE_QUANTIFICATION] = 1 - (largest_pop / district_population);
