@@ -28,7 +28,8 @@ import pickle
 import json
 import sys
 from os.path import dirname, abspath
-from math import ceil
+from math import ceil, pi
+import numpy as np
 from copy import deepcopy
 sys.path.append(dirname(dirname(abspath(__file__))))
 
@@ -92,12 +93,51 @@ def efficency_gap(community_list, districts=False):
 
 def declination(community_list):
     """
-    Calculates declination
+    Calculates declination, based on https://arxiv.org/pdf/1803.04799.pdfhttps://arxiv.org/pdf/1803.04799.pdf
 
     :param community_list: List of `hacking_the_election.utils.community.Community` objects
     :type community_list: list
     """
+    ratio_list = []
+    for community in community_list:
+        dem_votes = sum([precinct.total_dem for precinct in community.precincts.values()])
+        rep_votes = sum([precinct.total_rep for precinct in community.precincts.values()])
+        total = dem_votes + rep_votes
+        ratio_list.append(dem_votes/total)
+    rep_won = []
+    dem_won = []
+    mid_point = []
+    for i, ratio in enumerate(ratio_list):
+        if ratio == 0.5:
+            mid_point = [0.5]
+        if ratio < 0.5:
+            rep_won.append(ratio)
+        if ratio > 0.5:
+            dem_won.append(ratio)
+    rep_won = sorted(rep_won)
+    dem_won = sorted(dem_won)
+    rep_x = (len(rep_won)/2) - 0.5
+    rep_point = [rep_x, sum(rep_won)/len(rep_won)]
+    if mid_point == []:
+        dem_x = (len(dem_won)/2) - 0.5 + len(rep_won)
+        mid_x = len(rep_won) - 0.5
+        mid_point = [mid_x, 0.5]
+    else:
+        dem_x = (len(dem_won)/2) + 0.5 + len(rep_won)
+        mid_x = len(rep_won)
+        mid_point = (mid_x, 0.5)
+    dem_point = [dem_x, sum(dem_won)/len(dem_won)]
 
+    rep_angle = np.arctan((mid_point[1]-rep_point[1])/(mid_point[0]-rep_point[0]))
+    dem_angle = np.arctan((dem_point[1]-mid_point[1])/(dem_point[0]-mid_point[0]))
+    declination = 2 * (rep_angle - dem_angle) / pi 
+    if declination > 0:
+        print(f'Declination: {round(declination, 2)} towards Dems')
+    elif declination == 0:
+        print('Zero declination.')
+    else:
+        print(f'Declination: {round(abs(declination), 2)} towards Reps')
+        
 
 def votes_to_seats(community_list, districts=False):
     """
