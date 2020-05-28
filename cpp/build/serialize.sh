@@ -4,8 +4,6 @@
 # just useful for minor testing where I want to run `serialize.sh "wyoming"`
 # and not worry about actual keys or files
 
-# export DYLD_LIBRARY_PATH=/usr/local/boost/lib/:$DYLD_LIBRARY_PATH
-
 #==================================
 # hardcoded paths for serialization
 #==================================

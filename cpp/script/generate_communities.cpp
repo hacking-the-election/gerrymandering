@@ -64,7 +64,7 @@ int main(int argc, char* argv[]) {
     int n_communities = state.districts.size();
     
     // get initial random configuration
-    // Communities init_config = load("../output/maryland/init_config_shape.txt", state.network);
+    // Communities init_config = load("../output/louisiana/init_config_shape.txt", state.network);
     Communities init_config = karger_stein(state.network, n_communities);
     for (int i = 0; i < init_config.size(); i++) {
         init_config[i].update_shape(state.network);
