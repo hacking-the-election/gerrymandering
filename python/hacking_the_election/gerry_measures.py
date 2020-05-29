@@ -131,13 +131,14 @@ def declination(community_list):
     rep_angle = np.arctan((mid_point[1]-rep_point[1])/(mid_point[0]-rep_point[0]))
     dem_angle = np.arctan((dem_point[1]-mid_point[1])/(dem_point[0]-mid_point[0]))
     declination = 2 * (rep_angle - dem_angle) / pi 
+    print('\n')
     if declination > 0:
-        print(f'Declination: {round(declination, 2)} towards Dems')
+        print(f'Declination: {round(declination, 3)} towards Dems')
     elif declination == 0:
         print('Zero declination.')
     else:
-        print(f'Declination: {round(abs(declination), 2)} towards Reps')
-        
+        print(f'Declination: {round(abs(declination), 3)} towards Reps')
+    print(f'Misallocated Seats: {round(abs(declination) * len(community_list)/2, 3)}')
 
 def votes_to_seats(community_list, districts=False):
     """
