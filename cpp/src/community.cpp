@@ -433,7 +433,7 @@ void optimize_compactness(Communities& communities, Graph& graph) {
 }
 
 
-void optimize_population(Communities& communities, Graph& g, double range) {
+bool optimize_population(Communities& communities, Graph& g, double range) {
     // find optimal populations
     range /= 2.0;
     int ideal_pop = get_population(communities) / communities.size();
@@ -540,9 +540,8 @@ void optimize_population(Communities& communities, Graph& g, double range) {
             }
         }
 
-        if (iteration == 20000) {
-            cout << endl << "POP GONE 20000 ITERATION, EXITING... " << endl;
-            exit(1);
+        if (iteration == 10000) {
+            return false;
         }
 
         iteration++;
@@ -550,6 +549,8 @@ void optimize_population(Communities& communities, Graph& g, double range) {
             break;
         }
     }
+
+    return true;
 }
 
 
@@ -780,7 +781,7 @@ Communities hte::Geometry::get_communities(Graph& graph, Communities cs, double 
 
 
     int TIME_ELAPSED = 0;
-    int PRECINCTS_EXCHANGED = 0;
+    int PRECINCTS_EXCHANGED = -1;
     int iteration = 0;
     for (int i = 0; i < cs.size(); i++) {
         cs[i].update_shape(graph);
@@ -796,30 +797,35 @@ Communities hte::Geometry::get_communities(Graph& graph, Communities cs, double 
     if (communities_run) data_out += "communities/";
     else data_out += "redistricts/";
     data_out += "data.tsv";
-    
+
+    bool pop_compliant = false;
+    int non_compliant_iterations = 0;
 
     do {
         // start time for max_time and initialize first graph
         auto start = high_resolution_clock::now();
         Graph before = graph;
-        cout << "\e[2K\r" << get_progress_bar(((double)TIME_ELAPSED / (double)MAX_TIME)) << "  " << PRECINCTS_EXCHANGED << " exchanges last iter, on stdev";
+        cout << "\e[2K\r" << get_progress_bar(((double)TIME_ELAPSED / (double)MAX_TIME)) << "  " << PRECINCTS_EXCHANGED << " exchanges, on stdev, np: " << non_compliant_iterations;
         cout.flush();
 
         // perform optimization passes
         minimize_stdev(cs, graph);
         auto stop = high_resolution_clock::now();
         TIME_ELAPSED += duration_cast<seconds>(stop - start).count();
-        cout << "\e[2K\r" << get_progress_bar(((double)TIME_ELAPSED / (double)MAX_TIME)) << "  " << PRECINCTS_EXCHANGED << " exchanges last iter, on compactness";
+        cout << "\e[2K\r" << get_progress_bar(((double)TIME_ELAPSED / (double)MAX_TIME)) << "  " << PRECINCTS_EXCHANGED << " exchanges, on compactness, np: " << non_compliant_iterations;
         cout.flush();
 
         start = high_resolution_clock::now();
         optimize_compactness(cs, graph);
         stop = high_resolution_clock::now();
         TIME_ELAPSED += duration_cast<seconds>(stop - start).count();
-        cout << "\e[2K\r" << get_progress_bar(((double)TIME_ELAPSED / (double)MAX_TIME)) << "  " << PRECINCTS_EXCHANGED << " exchanges last iter, on population";
+        cout << "\e[2K\r" << get_progress_bar(((double)TIME_ELAPSED / (double)MAX_TIME)) << "  " << PRECINCTS_EXCHANGED << " exchanges, on population, np: " << non_compliant_iterations;
         cout.flush();
         start = high_resolution_clock::now();
-        optimize_population(cs, graph, pop_constraint);
+        pop_compliant = optimize_population(cs, graph, pop_constraint);
+        if (pop_compliant) non_compliant_iterations = 0;
+        else non_compliant_iterations++;
+
         PRECINCTS_EXCHANGED = get_num_communities_changed(before, graph);
         Canvas canvas(450, 450);
         canvas.add_outlines(to_outline(cs));
@@ -828,7 +834,7 @@ Communities hte::Geometry::get_communities(Graph& graph, Communities cs, double 
         save_iteration_data(data_out, cs, PRECINCTS_EXCHANGED);
         stop = high_resolution_clock::now();
         TIME_ELAPSED += duration_cast<seconds>(stop - start).count();
-    } while ((TIME_ELAPSED < MAX_TIME) && (PRECINCTS_EXCHANGED > (int)(MIN_PERCENT_PRECINCTS * (double)graph.vertices.size())));
+    } while (((TIME_ELAPSED < MAX_TIME) && (PRECINCTS_EXCHANGED > (int)(MIN_PERCENT_PRECINCTS * (double)graph.vertices.size()))) || !pop_compliant);
 
     // the communities are fully optimized
     cout << "\e[2K\r" << get_progress_bar(1) << endl;
