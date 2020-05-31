@@ -97,8 +97,9 @@ void sort_by_degree(Graph& g, Communities& cs, vector<int>& v) {
     for (int x : v) {
         NodePtr n;
         n.id = x;
+       
         n.degree = 0;
-        
+       //  n.degree = get_distance(g.vertices[x].precinct->get_centroid(), cs[g.vertices[x].community].shape.get_centroid());
         for (Edge e : cs[g.vertices[x].community].vertices[x].edges) {
             if (cs[g.vertices[x].community].vertices.find(e[1]) != cs[g.vertices[x].community].vertices.end()) {
                  n.degree++;
@@ -120,7 +121,12 @@ void sort_by_degree(Graph& g, Communities& cs, vector<vector<int> >& v) {
         NodePtr n;
         n.id = x[0];
         n.id_x = x[1];
-        n.degree = cs[g.vertices[x[0]].community].vertices[x[0]].edges.size();
+        n.degree = 0;//cs[g.vertices[x[0]].community].vertices[x[0]].edges.size();
+        for (Edge e : cs[g.vertices[x[0]].community].vertices[x[0]].edges) {
+            if (cs[g.vertices[x[0]].community].vertices.find(e[1]) != cs[g.vertices[x[0]].community].vertices.end()) {
+                n.degree++;
+            }
+        }
         nodes.push_back(n);
     }
 
