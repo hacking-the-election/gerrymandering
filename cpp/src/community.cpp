@@ -97,7 +97,13 @@ void sort_by_degree(Graph& g, Communities& cs, vector<int>& v) {
     for (int x : v) {
         NodePtr n;
         n.id = x;
-        n.degree = cs[g.vertices[x].community].vertices[x].edges.size();
+        n.degree = 0;
+        
+        for (Edge e : cs[g.vertices[x].community].vertices[x].edges) {
+            if (cs[g.vertices[x].community].vertices.find(e[1]) != cs[g.vertices[x].community].vertices.end()) {
+                 n.degree++;
+            }
+        }
         nodes.push_back(n);
     }
 
