@@ -176,7 +176,7 @@ namespace Graphics {
             // to be called by internal methods such as to_gui();
             std::string get_svg();
             bool get_bmp(std::string write_path);
-
+            bool get_pnm(std::string write_path);
         public:
 
             bool to_date = true;

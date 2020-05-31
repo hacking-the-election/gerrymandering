@@ -92,45 +92,35 @@ void Community::update_shape(Graph& graph) {
 }
 
 
-void sort_by_degree(Graph& g, Communities& cs, vector<int>& v) {
+void sort_by_degree(Graph& g, Communities& cs, vector<int>& v, bool giving) {
     vector<NodePtr> nodes;
     for (int x : v) {
         NodePtr n;
         n.id = x;
-       
-        n.degree = 0;
-       //  n.degree = get_distance(g.vertices[x].precinct->get_centroid(), cs[g.vertices[x].community].shape.get_centroid());
-        for (Edge e : cs[g.vertices[x].community].vertices[x].edges) {
-            if (cs[g.vertices[x].community].vertices.find(e[1]) != cs[g.vertices[x].community].vertices.end()) {
-                 n.degree++;
-            }
-        }
+        n.degree = get_distance(g.vertices[x].precinct->get_centroid(), cs[g.vertices[x].community].shape.get_centroid()); 
         nodes.push_back(n);
     }
 
     sort(nodes.begin(), nodes.end());
+    if (giving) reverse(nodes.begin(), nodes.end());
     for (int i = 0; i < nodes.size(); i++) {
         v[i] = nodes[i].id;
     }
 }
 
 
-void sort_by_degree(Graph& g, Communities& cs, vector<vector<int> >& v) {
+void sort_by_degree(Graph& g, Communities& cs, vector<vector<int> >& v, bool giving) {
     vector<NodePtr> nodes;
     for (vector<int> x : v) {
         NodePtr n;
         n.id = x[0];
         n.id_x = x[1];
-        n.degree = 0;//cs[g.vertices[x[0]].community].vertices[x[0]].edges.size();
-        for (Edge e : cs[g.vertices[x[0]].community].vertices[x[0]].edges) {
-            if (cs[g.vertices[x[0]].community].vertices.find(e[1]) != cs[g.vertices[x[0]].community].vertices.end()) {
-                n.degree++;
-            }
-        }
+        n.degree = get_distance(g.vertices[x[0]].precinct->get_centroid(), cs[g.vertices[x[0]].community].shape.get_centroid()); 
         nodes.push_back(n);
     }
 
     sort(nodes.begin(), nodes.end());
+    if (giving) reverse(nodes.begin(), nodes.end());
     for (int i = 0; i < nodes.size(); i++) {
         v[i][0] = nodes[i].id;
         v[i][1] = nodes[i].id_x;
@@ -474,7 +464,7 @@ bool optimize_population(Communities& communities, Graph& g, double range) {
 
         if (communities[worst_index].get_population() < ideal_pop) {
             vector<int> take = get_takeable_precincts(g, communities, worst_index);
-            sort_by_degree(g, communities, take);
+            sort_by_degree(g, communities, take, false);
             int exchanged_list = 0;
             while (communities[worst_index].get_population() < ideal_pop - smallest_diff_possible) {
                 if (x == take.size()) {
@@ -485,7 +475,7 @@ bool optimize_population(Communities& communities, Graph& g, double range) {
                     }
                     exchanged_list = 0;
                     take = get_takeable_precincts(g, communities, worst_index);
-                    sort_by_degree(g, communities, take);
+                    sort_by_degree(g, communities, take, false);
                 }
 
                 if ((g.vertices[take[x]].community != c_to_ignore) || communities.size() <= 2) {
@@ -498,7 +488,7 @@ bool optimize_population(Communities& communities, Graph& g, double range) {
         }
         else {
             vector<vector<int> > give = get_giveable_precincts(g, communities, worst_index);
-            sort_by_degree(g, communities, give);
+            sort_by_degree(g, communities, give, true);
             int exchanged_list = 0;
 
             while (communities[worst_index].get_population() > ideal_pop + smallest_diff_possible) {
@@ -510,7 +500,7 @@ bool optimize_population(Communities& communities, Graph& g, double range) {
                     }
                     exchanged_list = 0;
                     give = get_giveable_precincts(g, communities, worst_index);
-                    sort_by_degree(g, communities, give);
+                    sort_by_degree(g, communities, give, true);
                 }
 
                 if ((give[x][1] != c_to_ignore) || (communities.size() <= 2)) {
@@ -560,7 +550,7 @@ bool optimize_population(Communities& communities, Graph& g, double range) {
         if (worst_difference < smallest_diff_possible) {
             break;
         }
-    }
+   }
 
     return true;
 }

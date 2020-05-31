@@ -20,7 +20,7 @@
 using std::cout;
 using std::endl;
 using std::vector;
-
+using std::to_string;
 using namespace hte;
 using namespace Geometry;
 using namespace Graphics;
@@ -736,6 +736,22 @@ std::string Canvas::get_svg() {
 }
 
 
+bool Canvas::get_pnm(std::string write_path) {
+    std::string file = "P3 " + to_string(width) + " " + to_string(height) + " 255\n";
+    for (int i = 0; i < width; i++) {
+        for (int j = 0; j < height; j++) {
+            RGB_Color c = RGB_Color::from_uint(pixel_buffer.get_from_position(j, i));
+            file += to_string(c.r) + " " + to_string(c.g) + " " + to_string(c.b) + " ";
+        }
+        file.pop_back();
+        file += "\n";
+    }
+    //file.pop_back();
+    writef(file, write_path);
+    return true;
+}
+
+
 void Canvas::save_image(ImageFmt fmt, std::string path) {
     /*if (!to_date && fmt != ImageFmt::SVG)*/
     rasterize();
@@ -745,6 +761,9 @@ void Canvas::save_image(ImageFmt fmt, std::string path) {
     }
     else if (fmt == ImageFmt::SVG) {
         writef(get_svg(), path + ".svg");
+    }
+    else if (fmt == ImageFmt::PNM) {
+        get_pnm(path);
     }
 }
 
