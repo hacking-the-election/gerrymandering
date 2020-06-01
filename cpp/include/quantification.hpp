@@ -17,6 +17,8 @@ namespace hte {
     namespace Geometry {
         std::map<POLITICAL_PARTY, double> get_quantification(Graph&, Communities&, Multi_Polygon);
         std::map<POLITICAL_PARTY, double> get_partisanship_from_mask(Precinct_Group, Multi_Polygon);
+        std::array<double, 2> get_state_quantification(State& state, Communities& communities, std::vector<Multi_Polygon> districts);
+
         double get_population_from_mask(Precinct_Group, Multi_Polygon);
         double collapse_vals(double a, double b);
     }

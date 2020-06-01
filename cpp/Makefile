@@ -30,6 +30,7 @@ all: generate_communities
 # Binary targets for end compilations
 #====================================
 
+sandbox: sandbox.bin
 serialize_state: serialize_state.bin
 generate_communities: generate_communities.bin
 draw_communities: draw_community.bin

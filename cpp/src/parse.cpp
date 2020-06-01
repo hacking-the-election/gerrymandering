@@ -569,10 +569,10 @@ vector<Multi_Polygon> parse_district_coordinates(string geoJSON) {
         Writer<StringBuffer> writer(buffer);
 
         // write the coordinate array to a string
-        shapes["features"][i]["geometry"]["coordinates"].Accept(writer);
+        shapes["features"][i]["coordinates"].Accept(writer);
         coords = buffer.GetString();
 
-        if (shapes["features"][i]["geometry"]["type"] == "Polygon") {
+        if (shapes["features"][i]["type"] == "Polygon") {
             // vector parsed from coordinate string
             Polygon border = string_to_vector(coords, false);
             Multi_Polygon ms({border});

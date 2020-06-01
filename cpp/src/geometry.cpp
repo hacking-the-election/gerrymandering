@@ -349,19 +349,11 @@ coordinate Geometry::Multi_Polygon::get_centroid() {
     */
 
     coordinate average = {0,0};
-
-    for (Polygon s : border) {
-        coordinate center = s.hull.get_centroid();
-
-        for (Geometry::LinearRing lr : s.holes) {
-            coordinate nc = lr.get_centroid();
-            center[0] += nc[0];
-            center[1] += nc[1];
-        }
-
-        int size = 1 + s.holes.size();
-        average[0] += center[0] / size;
-        average[1] += center[1] / size;
+    for (Polygon p : border) {
+        boost_point center;
+        boost::geometry::centroid(ring_to_boost_poly(p.hull), center);
+        average[0] += center.x();
+        average[1] += center.y();
     }
 
     return {(int)(average[0] / border.size()), (int)(average[1] / border.size())};
