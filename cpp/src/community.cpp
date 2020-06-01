@@ -836,6 +836,11 @@ Communities hte::Geometry::get_communities(Graph& graph, Communities cs, double 
         save_iteration_data(data_out, cs, PRECINCTS_EXCHANGED);
         stop = high_resolution_clock::now();
         TIME_ELAPSED += duration_cast<seconds>(stop - start).count();
+
+        if (non_compliant_iterations == 50) {
+            cout << endl << "gone 50 consecutive non-compliant iterations, fully exiting state" << endl;
+            exit(1);
+        }
     } while (((TIME_ELAPSED < MAX_TIME) && (PRECINCTS_EXCHANGED > (int)(MIN_PERCENT_PRECINCTS * (double)graph.vertices.size()))) || !pop_compliant);
 
     // the communities are fully optimized

@@ -114,8 +114,6 @@ std::map<POLITICAL_PARTY, double> Geometry::get_quantification(Graph& graph, Com
         }
     }
 
-    cout << largest_index << endl;
-
     // get the difference of the two shapes
     ClipperLib::Paths subj;
     for (Precinct p : communities[largest_index].shape.precincts) {
