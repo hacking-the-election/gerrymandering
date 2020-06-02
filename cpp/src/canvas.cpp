@@ -677,10 +677,10 @@ std::string Outline_Group::get_svg() {
             svg += std::to_string(s[0]) + "," + std::to_string(s[1]) + "," 
                 + std::to_string(s[2]) + "," + std::to_string(s[3]);
         }
-        svg += "Z\" ";
+        svg += "Z ";
     }
     
-    svg += "stroke=\"rgb(" + std::to_string(outlines[0].style().outline_.r) + "," + std::to_string(outlines[0].style().outline_.g) + ","
+    svg += "\" stroke=\"rgb(" + std::to_string(outlines[0].style().outline_.r) + "," + std::to_string(outlines[0].style().outline_.g) + ","
         + std::to_string(outlines[0].style().outline_.b) + ")\" fill=\"rgb(" + std::to_string(outlines[0].style().fill_.r) + "," + std::to_string(outlines[0].style().fill_.g) + ","
         + std::to_string(outlines[0].style().fill_.b) + ")\" stroke-width=\"" + std::to_string(outlines[0].style().thickness_) + "\"></path>";
 
@@ -695,7 +695,7 @@ std::string Canvas::get_svg() {
         @return: string
     */
 
-    std::string svg = "<svg height=\"" + std::to_string(height) + "\" width=\"" + std::to_string(width) + "\">";
+    std::string svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"" + std::to_string(height) + "\" width=\"" + std::to_string(width) + "\">";
     
     for (Outline_Group o : outlines) {
         svg += o.get_svg();
