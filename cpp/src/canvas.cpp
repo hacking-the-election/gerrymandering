@@ -695,7 +695,7 @@ std::string Canvas::get_svg() {
         @return: string
     */
 
-    std::string svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"" + std::to_string(height) + "\" width=\"" + std::to_string(width) + "\">";
+    std::string svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"100%\" width=\"100%\" viewBox=\"0 0 " + std::to_string(width) + " " + std::to_string(height) + "\">";
     
     for (Outline_Group o : outlines) {
         svg += o.get_svg();

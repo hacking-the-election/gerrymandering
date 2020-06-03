@@ -44,6 +44,12 @@ namespace Geometry {
             Community() {}
     };
 
+    void optimize_compactness(Communities& communities, Graph& graph);
+    void minimize_stdev(Communities& communities, Graph& graph);
+    bool optimize_population(Communities& communities, Graph& g, double range);
+
+    int get_num_precincts_changed(Graph& before, Graph& after);
+    
     Communities karger_stein(Graph& graph, int n_communities);
     Communities get_communities(Graph& graph, Communities init_config, double pop_constraint, std::string output_dir, bool communities_run);
 }

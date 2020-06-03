@@ -121,8 +121,8 @@ int main(int argc, char* argv[]) {
 
         // save quantification values to file
         // create visualizations of the output
-        absolute_q.add_outlines(to_outline(state.districts[i], quantification[POLITICAL_PARTY::ABSOLUTE_QUANTIFICATION], true));
-        collapsed_q.add_outlines(to_outline(state.districts[i], collapsed, false));
+        absolute_q.add_outline_group(to_outline(state.districts[i], quantification[POLITICAL_PARTY::ABSOLUTE_QUANTIFICATION], true));
+        collapsed_q.add_outline_group(to_outline(state.districts[i], collapsed, false));
     }
 
     absolute_q.save_image(ImageFmt::BMP, output_dir + "/img/current_abs_quant");
@@ -180,8 +180,8 @@ int main(int argc, char* argv[]) {
         }
 
         // create visualizations of the output
-        absolute_q.add_outlines(to_outline(ext, quantification[POLITICAL_PARTY::ABSOLUTE_QUANTIFICATION], true));
-        collapsed_q.add_outlines(to_outline(ext, collapsed, false));
+        absolute_q.add_outline_group(to_outline(ext, quantification[POLITICAL_PARTY::ABSOLUTE_QUANTIFICATION], true));
+        collapsed_q.add_outline_group(to_outline(ext, collapsed, false));
     }
 
     writef(abs_line + "\n" + coll_line + "\n" + part_line + "\n", output_dir + "/stats/redistricts/quantification.tsv");
