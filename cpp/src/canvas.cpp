@@ -32,6 +32,7 @@ double PADDING = (15.0/16.0);
 
 vector<RGB_Color> COLORS = {RGB_Color(79,161,154),RGB_Color(220,65,182),RGB_Color(83,206,83),RGB_Color(92,79,210),RGB_Color(159,212,68),RGB_Color(185,87,218),RGB_Color(210,198,52),RGB_Color(138,49,146),RGB_Color(106,164,49),RGB_Color(164,122,223),RGB_Color(103,213,137),RGB_Color(227,54,102),RGB_Color(86,213,187),RGB_Color(224,71,48),RGB_Color(110,207,226),RGB_Color(163,53,37),RGB_Color(91,126,219),RGB_Color(230,157,47),RGB_Color(91,73,156),RGB_Color(215,185,92),RGB_Color(73,111,171),RGB_Color(199,101,39),RGB_Color(111,170,232),RGB_Color(144,143,44),RGB_Color(211,78,147),RGB_Color(72,145,66),RGB_Color(184,106,175),RGB_Color(66,102,30),RGB_Color(226,157,227),RGB_Color(68,152,108),RGB_Color(162,48,72),RGB_Color(178,200,121),RGB_Color(139,69,112),RGB_Color(158,201,160),RGB_Color(222,108,115),RGB_Color(34,106,107),RGB_Color(225,131,94),RGB_Color(76,157,190),RGB_Color(174,118,44),RGB_Color(193,182,235),RGB_Color(108,99,36),RGB_Color(80,80,126),RGB_Color(226,183,135),RGB_Color(56,108,139),RGB_Color(123,80,39),RGB_Color(146,128,175),RGB_Color(64,105,70),RGB_Color(221,155,187),RGB_Color(126,142,92),RGB_Color(134,71,59),RGB_Color(226,158,149),RGB_Color(174,136,89),RGB_Color(176,110,107)};
 
+
 Outline Graphics::to_outline(Geometry::LinearRing r) {
     Outline o(r);
     o.style().fill(RGB_Color(-1, -1, -1)).outline(RGB_Color(0,0,0)).thickness(1);
@@ -60,9 +61,10 @@ vector<Outline> Graphics::to_outline(Geometry::State state) {
 }
 
 
-std::vector<Outline> Graphics::to_outline(Geometry::Multi_Polygon& mp, double v, bool abs_quant) {
-    vector<Outline> os;
+Outline_Group Graphics::to_outline(Geometry::Multi_Polygon& mp, double v, bool abs_quant) {
+    Outline_Group os;
     RGB_Color fill;
+
     if (!abs_quant) {
         if (v < 0) {
             fill = interpolate_rgb(RGB_Color(255,255,255), RGB_Color(255, 0, 0), abs(v));
@@ -78,14 +80,13 @@ std::vector<Outline> Graphics::to_outline(Geometry::Multi_Polygon& mp, double v,
     for (Polygon p : mp.border) {
         Outline o = to_outline(p.hull);
         o.style().fill(fill);
-        os.push_back(o);
+        os.add_outline(o);
     }
     return os;
 }
 
 
 vector<Outline> Graphics::to_outline(Geometry::Graph& graph) {
-    cout << "a" << endl; 
     vector<Outline> outlines;
     for (int i = 0; i < graph.vertices.size(); i++) {
         Node node = (graph.vertices.begin() + i).value();
@@ -110,7 +111,6 @@ vector<Outline> Graphics::to_outline(Geometry::Graph& graph) {
         }
     }
 
-    cout << "b" << endl;
     return outlines;
 }
 
@@ -136,6 +136,14 @@ vector<Outline> Graphics::to_outline(Communities& communities) {
 
     return outlines;
 } 
+
+Outline_Group Graphics::to_outline(Geometry::Multi_Polygon& mp) {
+    Outline_Group o;
+    for (Polygon p : mp.border) {
+        o.add_outline(to_outline(p.hull));
+    }
+    return o;
+}
 
 
 Style& Style::outline(RGB_Color c) {
@@ -339,18 +347,20 @@ Geometry::bounding_box Canvas::get_bounding_box() {
 
     if (outlines.size() > 0) {
         // set dummy extremes
-        int top = outlines[0].border.border[0][1], 
-            bottom = outlines[0].border.border[0][1], 
-            left = outlines[0].border.border[0][0], 
-            right = outlines[0].border.border[0][0];
+        int top = outlines[0].outlines[0].border.border[0][1], 
+            bottom = outlines[0].outlines[0].border.border[0][1], 
+            left = outlines[0].outlines[0].border.border[0][0], 
+            right = outlines[0].outlines[0].border.border[0][0];
 
         // loop through and find actual corner using ternary assignment
-        for (Outline ring : outlines) {
-            Geometry::bounding_box x = ring.border.get_bounding_box();
-            if (x[0] > top) top = x[0];
-            if (x[1] < bottom) bottom = x[1];
-            if (x[2] < left) left = x[2];
-            if (x[3] > right) right = x[3];
+        for (Outline_Group og : outlines) {
+            for (Outline ring : og.outlines) {
+                Geometry::bounding_box x = ring.border.get_bounding_box();
+                if (x[0] > top) top = x[0];
+                if (x[1] < bottom) bottom = x[1];
+                if (x[2] < left) left = x[2];
+                if (x[3] > right) right = x[3];
+            }
         }
 
         box = {top, bottom, left, right};
@@ -377,19 +387,14 @@ void Canvas::translate(long int t_x, long int t_y, bool b) {
     */
 
     for (int i = 0; i < outlines.size(); i++) {
-        for (int j = 0; j < outlines[i].border.border.size(); j++) {
-            outlines[i].border.border[j][0] += t_x;
-            outlines[i].border.border[j][1] += t_y;
+        for (int o = 0; o < outlines[i].outlines.size(); o++) {
+            for (int j = 0; j < outlines[i].outlines[o].border.border.size(); j++) {
+                outlines[i].outlines[o].border.border[j][0] += t_x;
+                outlines[i].outlines[o].border.border[j][1] += t_y;
+            }
         }
     }
 
-    for (int i = 0; i < holes.size(); i++) {
-        for (int j = 0; j < holes[i].border.border.size(); j++) {
-            holes[i].border.border[j][0] += t_x;
-            holes[i].border.border[j][1] += t_y;
-        }
-    }
-    
     to_date = false;
     if (b) box = {box[0] + t_y, box[1] + t_y, box[2] + t_x, box[3] + t_x};
 }
@@ -407,16 +412,11 @@ void Canvas::scale(double scale_factor) {
     */
 
     for (int i = 0; i < outlines.size(); i++) {
-        for (int j = 0; j < outlines[i].border.border.size(); j++) {
-            outlines[i].border.border[j][0] *= scale_factor;
-            outlines[i].border.border[j][1] *= scale_factor;
-        }
-    }
-
-    for (int i = 0; i < holes.size(); i++) {
-        for (int j = 0; j < holes[i].border.border.size(); j++) {
-            holes[i].border.border[j][0] *= scale_factor;
-            holes[i].border.border[j][1] *= scale_factor;
+        for (int o = 0; o < outlines[i].outlines.size(); o++) {
+            for (int j = 0; j < outlines[i].outlines[o].border.border.size(); j++) {
+                outlines[i].outlines[o].border.border[j][0] *= scale_factor;
+                outlines[i].outlines[o].border.border[j][1] *= scale_factor;
+            }
         }
     }
 
@@ -426,56 +426,6 @@ void Canvas::scale(double scale_factor) {
 
 bool edge_bucket_null(EdgeBucket b) {
     return (b.slope == 0);
-}
-
-
-void print_separater_row(int width) {
-    cout << "├";
-    for (int i = 0; i < width - 2; i++) {
-        cout << "─";
-    }
-    cout << "┤" << endl;
-}
-
-
-void print_word(std::string word, int length) {
-    int leftover = length - word.size();
-    for (int i = 0; i < floor(leftover / 2.0); i++) cout << " ";
-    cout << word;
-    for (int i = 0; i < ceil(leftover / 2.0); i++) cout << " ";
-}
-
-
-void print_edge_table(vector<EdgeBucket> b, std::string title) {
-    int width = 42;
-
-    // print header
-    cout << "┌";
-    for (int i = 0; i < width - 2; i++) cout << "─";
-    cout << "┐" << endl;
-
-    cout << "│";
-    print_word(title, width - 2);
-    cout << "│" << endl;
-
-    for (EdgeBucket bucket : b) {
-        print_separater_row(width);
-        int num_available_chars = width - 2 - 3;
-        
-        cout << "│";
-        print_word(std::to_string(bucket.miny), floor(num_available_chars / 4.0));
-        cout << "│";
-        print_word(std::to_string(bucket.maxy), floor(num_available_chars / 4.0));
-        cout << "│";
-        print_word(std::to_string(bucket.miny_x), floor(num_available_chars / 4.0));
-        cout << "│";
-        print_word(std::to_string(bucket.slope), ceil(num_available_chars / 4.0));
-        cout << "│" << endl;
-    }
-
-    cout << "└";
-    for (int i = 0; i < width - 2; i++) cout << "─";
-    cout << "┘" << endl;
 }
 
 
@@ -635,10 +585,10 @@ RGB_Color RGB_Color::from_uint(Uint32 color) {
     return RGB_Color(t_r,t_g,t_b);
 }
 
+
 void Canvas::clear() {
     // @warn: reset background here
     this->outlines = {};
-    this->holes = {};
     this->pixel_buffer = PixelBuffer(width, height);
     to_date = true;
 }
@@ -658,12 +608,9 @@ bool Canvas::get_bmp(std::string write_path) {
     SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 0);
     SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STATIC, width, height);
 
-    // SDL_SetWindowResizable(window, SDL_TRUE);
     SDL_UpdateTexture(texture, NULL, pixel_buffer.ar, width * sizeof(Uint32));
-    // SDL_WaitEvent(&event);
     SDL_RenderClear(renderer);
     SDL_RenderCopy(renderer, texture, NULL, NULL);
-    // SDL_RenderPresent(renderer);
 
     // create empty RGB surface to hold window data
     SDL_Surface* pScreenShot = SDL_CreateRGBSurface(
@@ -677,7 +624,6 @@ bool Canvas::get_bmp(std::string write_path) {
     }
     
     if (pScreenShot) {
-
         // read pixels from render target, save to surface
         SDL_RenderReadPixels(
             renderer, NULL, SDL_GetWindowPixelFormat(window),
@@ -719,6 +665,29 @@ std::string Outline::get_svg() {
 }
 
 
+std::string Outline_Group::get_svg() {
+    if (outlines.size() == 0) cout << "NO OUTLINES, EXPECT SEGFAULT" << endl;
+
+    std::string svg = "<path d=\"";
+
+    for (Outline o : outlines) {
+        svg += "M " + std::to_string(o.border.border[0][0]) + "," + std::to_string(o.border.border[0][1]);
+        for (segment s : o.border.get_segments()) {
+            svg += "L";
+            svg += std::to_string(s[0]) + "," + std::to_string(s[1]) + "," 
+                + std::to_string(s[2]) + "," + std::to_string(s[3]);
+        }
+        svg += "Z ";
+    }
+    
+    svg += "\" stroke=\"rgb(" + std::to_string(outlines[0].style().outline_.r) + "," + std::to_string(outlines[0].style().outline_.g) + ","
+        + std::to_string(outlines[0].style().outline_.b) + ")\" fill=\"rgb(" + std::to_string(outlines[0].style().fill_.r) + "," + std::to_string(outlines[0].style().fill_.g) + ","
+        + std::to_string(outlines[0].style().fill_.b) + ")\" stroke-width=\"" + std::to_string(outlines[0].style().thickness_) + "\"></path>";
+
+    return svg;
+}
+
+
 std::string Canvas::get_svg() {
     /*
         @desc: gets a string representing an svg graphic from a canvas
@@ -726,9 +695,9 @@ std::string Canvas::get_svg() {
         @return: string
     */
 
-    std::string svg = "<svg height=\"" + std::to_string(height) + "\" width=\"" + std::to_string(width) + "\">";
+    std::string svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"" + std::to_string(height) + "\" width=\"" + std::to_string(width) + "\">";
     
-    for (Outline o : outlines) {
+    for (Outline_Group o : outlines) {
         svg += o.get_svg();
     }
 
@@ -746,7 +715,7 @@ bool Canvas::get_pnm(std::string write_path) {
         file.pop_back();
         file += "\n";
     }
-    //file.pop_back();
+
     writef(file, write_path);
     return true;
 }
@@ -830,8 +799,10 @@ void Canvas::rasterize() {
     }
     
 
-    for (Outline o : outlines) {
-        draw_polygon(pixel_buffer, o.border, o.style());
+    for (Outline_Group o : outlines) {
+        for (Outline outline : o.outlines) {
+            draw_polygon(pixel_buffer, outline.border, outline.style());
+        }
     }
     
     to_date = true;

@@ -181,7 +181,7 @@ map<string, map<POLITICAL_PARTY, int> > parse_voter_data(string voter_data) {
 }
 
 
-Polygon string_to_vector(string str, bool texas_coordinates) {
+Polygon hte::Geometry::string_to_vector(string str, bool texas_coordinates) {
     /*
         @desc: takes a json array string and returns a parsed shape object
         @params: `string` str: data to be parsed
@@ -247,7 +247,7 @@ Polygon string_to_vector(string str, bool texas_coordinates) {
 }
 
 
-Multi_Polygon multi_string_to_vector(string str, bool texas_coordinates) {
+Multi_Polygon hte::Geometry::multi_string_to_vector(string str, bool texas_coordinates) {
     /*
         @desc: takes a json array string and returns a parsed multishape
         @params: `string` str: data to be parsed
