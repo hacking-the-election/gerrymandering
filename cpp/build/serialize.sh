@@ -9,8 +9,8 @@
 #==================================
 BINARY="bin/serialize_state"
 DATA="../../data/"
-RAW="raw/"
-BIN="bin/cpp/"
+RAW=""
+BIN="bin/"
 BUILDFILE="build/build_data.list"
 
 CWD=$(pwd | rev | cut -d '/' -f -2 | rev)
@@ -29,8 +29,7 @@ CMD=$(cat "$BUILDFILE" | grep "\"$1\"" | cut -d ':' -f 2- | tr ' ' '\n' | grep .
 CMDSTR="$BINARY "
 
 # for each space-delimited argument
-for (( i = 1; i <= "$(echo "$CMD" | tr ' ' '\n' | grep . | wc -l)"; i++)); do
-    
+for i in $(seq 1 $(echo "$CMD" | tr ' ' '\n' | grep . | wc -l)); do    
     ARG=$(echo "$CMD" | cut -d ' ' -f "$i")
     END=$(echo "$ARG" | rev | cut -d '.' -f 1 | rev)
 

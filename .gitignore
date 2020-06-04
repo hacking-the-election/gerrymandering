@@ -9,7 +9,6 @@ test*.pickle
 test*.txt
 test*.png
 hacking_the_election.egg-info
-python/notebooks/.ipynb_checkpoints
 test.py
 
 # cython
@@ -29,4 +28,9 @@ cpp/test/test
 cpp/test_data/
 # cpp/build/*.o
 *.o
-*.bmp
+
+output/*/anim/
+output/*/img/*.png
+
+cpp/generate_communities
+cpp/generate_communities.sh

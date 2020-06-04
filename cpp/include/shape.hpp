@@ -69,6 +69,9 @@ namespace Geometry {
     enum class POLITICAL_PARTY {DEMOCRAT, REPUBLICAN, GREEN, INDEPENDENT, LIBERTARIAN, REFORM, OTHER, TOTAL, ABSOLUTE_QUANTIFICATION};
     enum class ID_TYPE {GEOID, ELECTIONID, POPUID};
 
+    Multi_Polygon multi_string_to_vector(std::string str, bool texas_coordinates);
+    Polygon string_to_vector(std::string str, bool texas_coordinates);
+
 
     class Exceptions {
     public:

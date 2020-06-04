@@ -26,9 +26,11 @@ namespace Graphics {
     class RGB_Color;
     class HSL_Color;
     
+    class Outline_Group;
     class Outline;
     class Style;
     class PixelBuffer;
+
     enum class ImageFmt { PNG, SVG, BMP, PNM };
 
 
@@ -50,8 +52,8 @@ namespace Graphics {
     std::vector<Outline> to_outline(Geometry::State state);
     std::vector<Outline> to_outline(Geometry::Graph& graph);
     std::vector<Outline> to_outline(Geometry::Communities& communities);
-    std::vector<Outline> to_outline(Geometry::Multi_Polygon&, double, bool abs_quant);
-
+    Outline_Group to_outline(Geometry::Multi_Polygon&, double, bool abs_quant);
+    Outline_Group to_outline(Geometry::Multi_Polygon&);
 
 
     class EdgeBucket {
@@ -165,6 +167,27 @@ namespace Graphics {
     };
 
 
+    class Outline_Group {
+        public:
+        
+            std::string get_svg();
+            Outline_Group() {};
+            Outline_Group(Outline o) {
+                outlines.push_back(o);
+            }
+
+            Outline_Group(std::vector<Outline> o) {
+                outlines.insert(outlines.end(), o.begin(), o.end());
+            }
+
+            void add_outline(Outline o) {
+                outlines.push_back(o);
+            }
+
+            std::vector<Outline> outlines;
+    };
+
+
     class Canvas {
         /*
             A class for storing information about a screen
@@ -177,14 +200,14 @@ namespace Graphics {
             std::string get_svg();
             bool get_bmp(std::string write_path);
             bool get_pnm(std::string write_path);
+
         public:
 
             bool to_date = true;
             void rasterize();
 
             // contents of the canvas
-            std::vector<Outline> outlines;     // shapes to be drawn individually
-            std::vector<Outline> holes;        // shapes to be drawn individually
+            std::vector<Outline_Group> outlines;     // shapes to be drawn individually
 
             // meta information
             PixelBuffer pixel_buffer;
@@ -208,24 +231,19 @@ namespace Graphics {
             Canvas(int width, int height) : width(width), height(height) {}
 
             // add shape to the canvas
-            void add_outline(Outline o) {outlines.push_back(o);};
-            void add_outlines(std::vector<Outline> os) {for (Outline o : os) outlines.push_back(o);}
+            void add_outline(Outline o) {outlines.push_back(Outline_Group(o));};
+            void add_outlines(std::vector<Outline> os) {for (Outline o : os) outlines.push_back(Outline_Group(o));}
+
+            void add_outline_group(Outline_Group og) {outlines.push_back(og);}
+            void add_outline_groups(std::vector<Outline_Group> ogs) {outlines.insert(outlines.end(), ogs.begin(), ogs.end());}
 
             void clear();
             void draw_to_window();
             void draw_to_window(SDL_Window* window);
     };
 
-    // class Anim {
-    //     public:
-    //     std::vector<Canvas> frames;
-    //     int delay;
 
-    //     void playback();
-    //     Anim(int d) : delay(d) {};
-    // };
-
-    // rasterizers for various shapes
+    // basic rasterizers
     void draw_line(
         PixelBuffer&, Geometry::coordinate, Geometry::coordinate,
         RGB_Color color = RGB_Color(0,0,0), double t = 1
