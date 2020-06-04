@@ -128,7 +128,7 @@ void sort_by_degree(Graph& g, Communities& cs, vector<vector<int> >& v, bool giv
 }
 
 
-int get_num_communities_changed(Graph& before, Graph& after) {
+int hte::Geometry::get_num_precincts_changed(Graph& before, Graph& after) {
     int tot = 0;
     for (int i = 0; i < before.vertices.size(); i++) {
         if ((before.vertices.begin() + i).value().community != (after.vertices.begin() + i).value().community) {
@@ -362,7 +362,7 @@ array<double, 2> worst(Communities& communities, double (*measure)(Community&)) 
 }
 
 
-void optimize_compactness(Communities& communities, Graph& graph) {
+void hte::Geometry::optimize_compactness(Communities& communities, Graph& graph) {
     int iterations_since_best = 0;
     auto community_to_modify = communities.begin();
     int community_to_modify_ind = 0;
@@ -383,9 +383,7 @@ void optimize_compactness(Communities& communities, Graph& graph) {
         radius.push_back(sqrt(c.shape.get_area() / PI));
     }
 
-    if (SPEED_OPT) cout << "starting gives" << endl;
     while (iterations_since_best < ITERATION_LIMIT) {
-        if (SPEED_OPT) cout << "giving" << endl;
         int give = 0;
         for (int i = 0; i < SUB_MODIFICATIONS; i++) {
             vector<vector<int> > giveable = get_giveable_precincts(graph, communities, community_to_modify_ind);
@@ -397,7 +395,6 @@ void optimize_compactness(Communities& communities, Graph& graph) {
             }
         }
 
-        if (SPEED_OPT) cout << "gave " << give << " taking" << endl;
         int take = 0;
         for (int i = 0; i < SUB_MODIFICATIONS; i++) {
             vector<int> takeable = get_takeable_precincts(graph, communities, community_to_modify_ind);
@@ -409,7 +406,6 @@ void optimize_compactness(Communities& communities, Graph& graph) {
             }
         }
 
-        if (SPEED_OPT) cout << "taked " << take << " gooved" << endl;
         community_to_modify++;
         community_to_modify_ind++;
         if (community_to_modify == communities.end()) {
@@ -435,7 +431,7 @@ void optimize_compactness(Communities& communities, Graph& graph) {
 }
 
 
-bool optimize_population(Communities& communities, Graph& g, double range) {
+bool hte::Geometry::optimize_population(Communities& communities, Graph& g, double range) {
     // find optimal populations
     range /= 2.0;
     int ideal_pop = get_population(communities) / communities.size();
@@ -556,7 +552,7 @@ bool optimize_population(Communities& communities, Graph& g, double range) {
 }
 
 
-void minimize_stdev(Communities& communities, Graph& graph) {
+void hte::Geometry::minimize_stdev(Communities& communities, Graph& graph) {
 
     double before_average = average(communities, get_partisanship_stdev);
     int iteration = 0;
@@ -828,7 +824,7 @@ Communities hte::Geometry::get_communities(Graph& graph, Communities cs, double 
         if (pop_compliant) non_compliant_iterations = 0;
         else non_compliant_iterations++;
 
-        PRECINCTS_EXCHANGED = get_num_communities_changed(before, graph);
+        PRECINCTS_EXCHANGED = get_num_precincts_changed(before, graph);
         Canvas canvas(450, 450);
         canvas.add_outlines(to_outline(cs));
         canvas.save_img_to_anim(ImageFmt::BMP, anim_out);
@@ -842,6 +838,9 @@ Communities hte::Geometry::get_communities(Graph& graph, Communities cs, double 
             exit(1);
         }
     } while (((TIME_ELAPSED < MAX_TIME) && (PRECINCTS_EXCHANGED > (int)(MIN_PERCENT_PRECINCTS * (double)graph.vertices.size()))) || !pop_compliant);
+
+    // while (we still have time we've exchanged too many precincts)
+
 
     // the communities are fully optimized
     cout << "\e[2K\r" << get_progress_bar(1) << endl;

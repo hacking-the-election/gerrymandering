@@ -6,9 +6,9 @@
  hacking-the-election library
 ========================================*/
 
-#include <boost/filesystem.hpp>
-#include <iostream>
 #include <chrono>
+#include <iostream>
+#include <boost/filesystem.hpp>
 
 #include "../include/util.hpp"
 #include "../include/shape.hpp"
@@ -16,12 +16,17 @@
 #include "../include/canvas.hpp"
 #include "../include/community.hpp"
 #include "../include/quantification.hpp"
-#include <boost/filesystem.hpp>
+
+// for the rapidjson parser
+#include "../lib/rapidjson/include/rapidjson/document.h"
+#include "../lib/rapidjson/include/rapidjson/writer.h"
+#include "../lib/rapidjson/include/rapidjson/stringbuffer.h"
 
 using namespace boost::filesystem;
 using namespace std;
 using namespace hte::Geometry;
 using namespace hte::Graphics;
+using namespace rapidjson;
 
 
 int main(int argc, char* argv[]) {
@@ -32,6 +37,10 @@ int main(int argc, char* argv[]) {
     */
 
     srand(time(NULL));
-    State state = State::from_binary(string(argv[1]));
+
+    State state = State::from_binary(argv[1]);
+    Canvas canvas(900, 900);
+    canvas.add_outlines(to_outline(state));
+    canvas.save_image(ImageFmt::SVG, argv[2]);
     return 0;
 }
