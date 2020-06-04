@@ -162,10 +162,67 @@ def mock_election(community_list, districts=False):
     :param districts: Whether indiviual district results should be printed
     :type districts: bool
     """
+    print('')
+    if districts:
+        print('Simulated Election Results\n')
+    party_list = [party[8:].capitalize() for party in community_list[0].parties]
+    print('\t\t', end='')
+    for party in party_list:
+        print('\t', end='')
+        print(party, end='')
+    if districts:
+        print('\t| Winner', end='')
+    else:
+        print('\t| Result', end='')
+    print('\n', end='')
+    state_party_votes = [0 for party in party_list]
+    state_total_votes = 0
+    state_seats_won = {party : 0 for party in party_list}
+    for community in community_list:
+        total_party_list = ["total_" + party.lower() for party in party_list]
+        party_votes = []
+        for num, party in enumerate(party_list):
+            exec('party_votes.append(sum([precinct. ' + total_party_list[num] + ' for precinct in community.precincts.values()]))')
+        total_votes = sum([precinct.total_votes for precinct in community.precincts.values()])
+        percentage_votes = {party_votes[num]/total_votes : party_list[num] for num, _ in enumerate(party_votes)}
+        for num, _ in enumerate(party_list):
+            state_party_votes[num] += party_votes[num]
+        state_total_votes += total_votes
+        max_percent = max(list(percentage_votes.keys()))
+        state_seats_won[percentage_votes[max_percent]] += 1
 
+        if districts:
+            print(f'Community/District {community.id}', end='')
+            for num, _ in enumerate(party_list):
+                print('\t', end='')
+                print(round(100 * list(percentage_votes.keys())[num], 3), end='')
+                print('%', end='')
+            print(' | ', end='')
+            print(percentage_votes[max_percent], end='')
+            print('')
+    state_percentage_votes = {state_party_votes[num]/state_total_votes : party_list[num] for num, _ in enumerate(party_list)}
+    print('State overall result', end='')
+    for percentage in state_percentage_votes:
+        print('\t', end='')
+        print(round(100 * percentage, 3), end='')
+        print('%', end='')
+    print(' | ', end='')
+    total_seats = sum(list(state_seats_won.values()))
+    for party, seats_won in state_seats_won.items():
+        if seats_won > 0:
+            print(f'{seats_won} {party.lower()} seat(s) ', end='')
+    print('(', end='')
+    for seats_won in state_seats_won.values():
+        if seats_won == list(state_seats_won.values())[-1]:
+            if seats_won > 0:
+                print(f'{round(100 * seats_won/total_seats)}%', end='')
+        else:    
+            if seats_won > 0:
+                print(f'{round(100 * seats_won/total_seats)}%-', end='')
+    print(' ratio)', end='')
+    print('')
 if __name__ == "__main__":
     args = sys.argv[1:]
-
     with open(args[1], 'rb') as f:
         state_graph = pickle.load(f)
 
@@ -197,7 +254,7 @@ if __name__ == "__main__":
             votes_to_seats(community_list)
         if "-m" in args[2]:
             mock_election(community_list)
-        if verbose == False:
+        elif verbose == False:
             efficency_gap(community_list, districts=True)
             declination(community_list)
             votes_to_seats(community_list, districts=True)
