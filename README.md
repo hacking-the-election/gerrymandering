@@ -1,24 +1,25 @@
 # Hacking the Election
 
-This repository represents all the code written for the research project *Hacking the Election: Measuring and Solving Gerrymandering in Today’s Political System*. It includes Python and C++ for parsing data, measuring gerrymandering, and an algorithm for redistricting.
+This repository represents all the code written for the research project *Hacking the Election: Measuring and Solving Gerrymandering in Today’s Political System*. It includes Python and C++ for parsing data, detecting Communities of Interest, measuring gerrymandering, and an algorithm for redistricting.
 
-Once it is completed, more information on this science fair project will be available on the website at [hacking-the-election.github.io](https://hacking-the-election.github.io)
+More information is available on the website at [hacking-the-election.github.io](https://hacking-the-election.github.io), along with an interactive tool for displaying our results.
 
 ---
 
 ## Installing Data
-All of our code is ran from raw data collected from the following sources:
-- [Harvard Election Data Archives](https://projects.iq.harvard.edu/eda/home)
-- [nvkelso/election-geodata](https://github.com/nvkelso/election-geodata)
-- [California Election Database](https://statewidedatabase.org/)
-- [mgg-states](https://github.com/mggg-states)
-- [Open Precincts](https://openprecincts.org)
-- wherever kai found the district data
 
-Our data is split into folders by state, each containing a .zip with some combination of 
+All of our code is ran from raw data collected from the following sources:
+- [@nvkelso/election-geodata](https://github.com/nvkelso/election-geodata)
+- [@unitedstates/districts](https://github.com/unitedstates/districts)
+- [@mgg-states](https://github.com/mggg-states)
+- [Open Precincts](https://openprecincts.org)
+- [Harvard Election Data Archives](https://projects.iq.harvard.edu/eda/home)
+- [California Election Database](https://statewidedatabase.org/)
+
+Our data is split into directories by state, each containing a .zip with some combination of 
 precinct geodata, election data, district geodata, and population data.
 
-To install *only* our selection of data, and not our code along with it, the individual data repository can be cloned:
+To install *only* our selection of data and not our code, the standalone data repository can be cloned:
 ```
 git clone 'https://github.com/hacking-the-election/data'
 ```
@@ -30,18 +31,26 @@ git clone --recursive https://github.com/hacking-the-election/gerrymandering
 ---
 
 ## C++
+Currently, the output for this project was run using the C++ implementation of our algorithm. It is being developed into a library with a much better API than it has currently. However, currently our programs and binaries can be installed as shown below.
 
 ### Installation
 ```bash
 git clone "https://github.com/hacking-the-election/gerrymandering"
 cd gerrymandering/cpp
 make all
+make install  # May need sudo privileges
 ```
 
+This will compile all available programs. If you want a selection, the following binaries are available and can be installed from the `gerrymandering/cpp` directory with `make <binary_name> && make install`.  
+
+- `serialize_state <geodata.json> <election_data.tab> <district.json> --keys='{keys}' <output.state>`: to be used in conjunction with `build/serialize.sh` - used to build state binary files. These state binaries are essential for all following programs.
+- `generate_communities <infile.state> output/directory`: Run the communities algorithm on a certain state, outputting images and quantification of current districts.
+- `state_dump <infile.state>`: dump information on a certian state file
+
+
 ### OS Compatability
-- All code will be compileable on macOS and Linux
+- All code will be compatible with macOS and Linux
 - Binary distributions will be available after completion of all code
-  
 ---  
   
 ## Python
