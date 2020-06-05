@@ -15,8 +15,8 @@ CV := -std=c++14
 BIN := bin
 BUILD = build
 BINARIES := $(BIN)/serialize_state $(BIN)/generate_communities
-STATE_OUTPUT := $(BUILD)/parse.o $(BUILD)/canvas.o $(BUILD)/geometry.o $(BUILD)/util.o $(BUILD)/shape.o $(BUILD)/graph.o $(BUILD)/community.o $(BUILD)/quantification.o
-STATE_OBJECTS := parse.o canvas.o geometry.o util.o shape.o graph.o community.o quantification.o
+STATE_OBJECTS := $(BUILD)/parse.o $(BUILD)/canvas.o $(BUILD)/geometry.o $(BUILD)/util.o $(BUILD)/shape.o $(BUILD)/graph.o $(BUILD)/community.o $(BUILD)/quantification.o
+
 # libraries
 BOOST := -lboost_serialization -lboost_filesystem -lboost_system
 SDL := -lSDL2 -lSDL2main
@@ -29,7 +29,7 @@ all: generate_communities
 #====================================
 # Binary targets for end compilations
 #====================================
-
+redistrict: redistrict.bin
 sandbox: sandbox.bin
 serialize_state: serialize_state.bin
 generate_communities: generate_communities.bin
@@ -42,15 +42,15 @@ state_dump: state_dump.bin
 
 %.bin: setup dependencies $(STATE_OBJECTS) $(BUILD)/clipper.o script/%.cpp
 	$(CC) $(CV) $(CFLAGS) script/$(shell echo $@ | cut -d '.' -f 1).cpp -c -o $(BUILD)/$(shell echo $@ | cut -d '.' -f 1).o
-	$(CC) $(CV) $(CFLAGS) $(BUILD)/$(shell echo $@ | cut -d '.' -f 1).o $(STATE_OUTPUT) $(BUILD)/clipper.o $(LIBS) -o $(BIN)/$(shell echo $@ | cut -d '.' -f 1)
+	$(CC) $(CV) $(CFLAGS) $(BUILD)/$(shell echo $@ | cut -d '.' -f 1).o $(STATE_OBJECTS) $(BUILD)/clipper.o $(LIBS) -o $(BIN)/$(shell echo $@ | cut -d '.' -f 1)
 
 
 #=================================
 # object file targets:
 #=================================
 
-%.o: src/%.cpp
-	$(CC) $(OFLAGS) $(CV) $< -c -o $(BUILD)/$@
+*/%.o: src/%.cpp
+	$(CC) $(OFLAGS) $(CV) $< -c -o $@
 
 $(BUILD)/clipper.o: lib/Clipper/cpp/clipper.cpp
 	$(CC) $< -c -o $(BUILD)/clipper.o

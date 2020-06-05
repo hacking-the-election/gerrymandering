@@ -711,39 +711,6 @@ string get_progress_bar(double progress) {
 }
 
 
-void save_voter_counts(string output, Communities& cs) {
-    string file = "";
-    for (Community c : cs) {
-        map<POLITICAL_PARTY, int> total_voter_data;
-        for (Precinct p : c.shape.precincts) {
-            for (auto& pair : p.voter_data) {
-                if (pair.second != -1)
-                total_voter_data[pair.first] += pair.second;
-            }
-        }
-
-        file += "[";
-        for (auto& pair : total_voter_data) {
-            if (pair.first == POLITICAL_PARTY::DEMOCRAT) file += "\"DEM\":";
-            else if (pair.first == POLITICAL_PARTY::REPUBLICAN) file += "\"REP\":";
-            else if (pair.first == POLITICAL_PARTY::GREEN) file += "\"GRE\":";
-            else if (pair.first == POLITICAL_PARTY::INDEPENDENT) file += "\"IND\":";
-            else if (pair.first == POLITICAL_PARTY::LIBERTARIAN) file += "\"LIB\":";
-            else if (pair.first == POLITICAL_PARTY::REFORM) file += "\"REF\":";
-            else if (pair.first == POLITICAL_PARTY::OTHER) file += "\"OTH\":";
-            else break;
-            file += to_string(pair.second) + ",";
-        }
-        
-        file += "\"POP\":";
-        file += to_string(c.get_population());
-        file += "]\n";
-    }
-
-    writef(file, output);
-}
-
-
 void save_iteration_data(string write_path, Communities& cs, int num_exchanges) {
     string file = readf(write_path);
     file += "[";
@@ -786,12 +753,9 @@ Communities hte::Geometry::get_communities(Graph& graph, Communities cs, double 
     }
 
     string anim_out = output_dir + "/anim/";
-    string voter_out = output_dir + "/stats/";
     string data_out = output_dir + "/stats/";
     if (communities_run) anim_out += "communities/";
     else anim_out += "redistricts/";
-    if (communities_run) voter_out += "communities/";
-    else voter_out += "redistricts/";    
     if (communities_run) data_out += "communities/";
     else data_out += "redistricts/";
     data_out += "data.tsv";
@@ -844,6 +808,5 @@ Communities hte::Geometry::get_communities(Graph& graph, Communities cs, double 
 
     // the communities are fully optimized
     cout << "\e[2K\r" << get_progress_bar(1) << endl;
-    save_voter_counts(voter_out, cs);
     return cs;
 }

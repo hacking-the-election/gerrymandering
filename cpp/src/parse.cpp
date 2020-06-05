@@ -24,7 +24,7 @@
 #include "../include/geometry.hpp"    // exterior border generation
 
 #define VERBOSE 1        // print progress
-// #define TEXAS_COORDS 0   // absolute coordinates
+ #define TEXAS_COORDS 0   // absolute coordinates
 
 using namespace rapidjson;
 using namespace std;

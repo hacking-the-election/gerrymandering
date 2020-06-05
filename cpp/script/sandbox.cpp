@@ -39,8 +39,10 @@ int main(int argc, char* argv[]) {
     srand(time(NULL));
 
     State state = State::from_binary(argv[1]);
+    Communities cs = load(argv[2], state.network);
     Canvas canvas(900, 900);
-    canvas.add_outlines(to_outline(state));
-    canvas.save_image(ImageFmt::SVG, argv[2]);
+    canvas.add_outlines(to_outline(cs));
+    canvas.save_image(ImageFmt::BMP, argv[3]);
     return 0;
+
 }

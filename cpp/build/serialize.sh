@@ -9,8 +9,8 @@
 #==================================
 BINARY="bin/serialize_state"
 DATA="../../data/"
-RAW=""
-BIN="bin/"
+RAW="raw/"
+BIN="bin/cpp/"
 BUILDFILE="build/build_data.list"
 
 CWD=$(pwd | rev | cut -d '/' -f -2 | rev)

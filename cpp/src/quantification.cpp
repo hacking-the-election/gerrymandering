@@ -43,7 +43,7 @@ double hte::Geometry::get_population_from_mask(Precinct_Group pg, Multi_Polygon 
             c.AddPaths(clip, ClipperLib::ptClip, true);
             c.Execute(ClipperLib::ctIntersection, solutions, ClipperLib::pftNonZero);
             Multi_Polygon intersection = paths_to_multi_shape(solutions);
-            double ratio = (intersection.get_area() / p.get_area());
+            double ratio = (abs(intersection.get_area()) / abs(p.get_area()));
             pop += ((double)p.pop * ratio);
         }
     }
@@ -78,7 +78,7 @@ std::map<POLITICAL_PARTY, double> hte::Geometry::get_partisanship_from_mask(Prec
             c.AddPaths(clip, ClipperLib::ptClip, true);
             c.Execute(ClipperLib::ctIntersection, solutions, ClipperLib::pftNonZero);
             Multi_Polygon intersection = paths_to_multi_shape(solutions);
-            double ratio = (intersection.get_area() / p.get_area());
+            double ratio = (abs(intersection.get_area()) / abs(p.get_area()));
 
             for (auto& pair : p.voter_data) {
                 partisanships[pair.first] += (pair.second * ratio);
@@ -168,6 +168,7 @@ std::map<POLITICAL_PARTY, double> Geometry::get_quantification(Graph& graph, Com
     }
 
     partisanships[POLITICAL_PARTY::ABSOLUTE_QUANTIFICATION] = get_population_from_mask(communities[largest_index].shape, pop_not_in_district) / communities[largest_index].get_population();
+    cout << get_population_from_mask(communities[largest_index].shape, pop_not_in_district) << ", " << communities[largest_index].get_population() << endl;
     return partisanships;
 }
 

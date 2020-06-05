@@ -137,6 +137,25 @@ vector<Outline> Graphics::to_outline(Communities& communities) {
     return outlines;
 } 
 
+
+vector<Outline_Group> Graphics::to_outline_group(Geometry::Communities& communities) {
+    vector<Outline_Group> districts;
+    vector<RGB_Color> colors = generate_n_colors(communities.size());
+
+    for (int i = 0; i < communities.size(); i++) {
+        Outline_Group og;
+        for (Polygon p : generate_exterior_border(communities[i].shape).border) {
+            Outline o(p.hull);
+            o.style().fill(colors[i]).outline(RGB_Color(0,0,0)).thickness(1);
+            og.add_outline(o);
+        }
+        districts.push_back(og);
+    }
+
+    return districts;
+}
+
+
 Outline_Group Graphics::to_outline(Geometry::Multi_Polygon& mp) {
     Outline_Group o;
     for (Polygon p : mp.border) {
