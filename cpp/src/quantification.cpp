@@ -155,7 +155,9 @@ std::map<POLITICAL_PARTY, double> Geometry::get_quantification(Graph& graph, Com
 
     double sum = 0;
     for (auto& pair : partisanships) {
-        sum += pair.second;
+        if (pair.first != POLITICAL_PARTY::TOTAL) {
+            sum += pair.second;
+        }
     }
 
     for (auto& pair : partisanships) {
@@ -168,7 +170,7 @@ std::map<POLITICAL_PARTY, double> Geometry::get_quantification(Graph& graph, Com
     }
 
     partisanships[POLITICAL_PARTY::ABSOLUTE_QUANTIFICATION] = get_population_from_mask(communities[largest_index].shape, pop_not_in_district) / communities[largest_index].get_population();
-    cout << get_population_from_mask(communities[largest_index].shape, pop_not_in_district) << ", " << communities[largest_index].get_population() << endl;
+    //cout << get_population_from_mask(communities[largest_index].shape, pop_not_in_district) << ", " << communities[largest_index].get_population() << endl;
     return partisanships;
 }
 

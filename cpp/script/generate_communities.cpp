@@ -87,9 +87,9 @@ int main(int argc, char* argv[]) {
 
     for (int i = 0; i < state.districts.size(); i++) {
         map<POLITICAL_PARTY, double> quantification = get_quantification(state.network, communities, state.districts[i]);
-        double partisanship = 0.5;
-        if (quantification[POLITICAL_PARTY::DEMOCRAT] + quantification[POLITICAL_PARTY::REPUBLICAN] != 0)
-            partisanship = quantification[POLITICAL_PARTY::REPUBLICAN] / (quantification[POLITICAL_PARTY::DEMOCRAT] + quantification[POLITICAL_PARTY::REPUBLICAN]);
+        double partisanship = quantification[POLITICAL_PARTY::REPUBLICAN];
+        //if (quantification[POLITICAL_PARTY::DEMOCRAT] + quantification[POLITICAL_PARTY::REPUBLICAN] != 0)
+            //partisanship = quantification[POLITICAL_PARTY::REPUBLICAN] / (quantification[POLITICAL_PARTY::DEMOCRAT] + quantification[POLITICAL_PARTY::REPUBLICAN]);
         double collapsed = collapse_vals(quantification[POLITICAL_PARTY::ABSOLUTE_QUANTIFICATION], partisanship);
 
         // save quantification values to file
