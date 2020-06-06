@@ -27,21 +27,11 @@ def get_quantification_values(table):
     """
 
     gerry_score = average(table[0])
-
-    total_rep = 0
-    total_votes = 0
-    for lst in table[-1]:
-        total_rep += lst[1]
-        total_votes += sum(lst)
+    avg_rep = average([d["REP"] for d in table[-1]])
     
-    partisanship_score = 2 * (0.5 - total_rep / total_votes) * gerry_score
+    partisanship_score = 2 * (0.5 - avg_rep) * gerry_score
 
     return gerry_score, partisanship_score
-
-
-def get_vals_from_half(half):
-    return (float(half.split(":")[-1][:-1]) if half[-1] == "]"
-            else float(half.split(":")[-1]))
 
 
 if __name__ == "__main__":
@@ -56,7 +46,8 @@ if __name__ == "__main__":
         for i, val in enumerate(row):
             table[r][i] = float(val)
 
-    for i, lst in enumerate(table[:][-1]):
-        table[-1][i] = [get_vals_from_half(half) for half in lst.split(",")]
+    for i, d in enumerate(table[:][-1]):
+        table[-1][i] = eval("{" + d[1:-1] + "}")
     
-    print(*get_quantification_values(table))
+    quant_values = get_quantification_values(table)
+    print(f"{quant_values[0]}\t{quant_values[1]}")
