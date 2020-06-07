@@ -232,7 +232,6 @@ def create_graph(election_file, geo_file, pop_file, state):
             total_sum = 0
             # headers for different categories
             election_column_names = election_data[0]
-            print(election_column_names)
             # Get the index of each of the relevant columns.
             dem_key_col_index = \
                 [i for i, col in enumerate(election_column_names)
@@ -271,10 +270,10 @@ def create_graph(election_file, geo_file, pop_file, state):
                         for key in [dem_key, rep_key, green_key, lib_key, reform_key, ind_key, const_key] if key != None]
                     )}
                     if list(remainder.values())[0] < 0:
-                        if list(remainder.values())[0] < -1:
-                            raise Exception(f'Negative other votes: {list(remainder.values())[0]} from precinct {election_data_id}')
-                        else:
-                            print(f'Note: Negative other votes: {list(remainder.values())[0]} from precinct {election_data_id}, rounded up to 0')
+                        # if list(remainder.values())[0] < -1:
+                        #     raise Exception(f'Negative other votes: {list(remainder.values())[0]} from precinct {election_data_id}')
+                        # else:
+                        print(f'Note: Negative other votes: {list(remainder.values())[0]} from precinct {election_data_id}, rounded up to 0')
                     else:
                         party_data.append(remainder)
                 # If there is already a total_key, the other_key id is not needed.
@@ -321,11 +320,10 @@ def create_graph(election_file, geo_file, pop_file, state):
                         [properties[key] for key in [dem_key, rep_key, green_key, lib_key, reform_key, ind_key, const_key] if key != None]
                     )}
                 if list(remainder.values())[0] < 0:
-                    if list(remainder.values())[0] < -1:
-                        pass
-                        # raise Exception(f'Negative other votes: {list(remainder.values())[0]} from precinct {precinct_id}')
-                    else:
-                        print(f'Note: Negative other votes: {list(remainder.values())[0]} from precinct {precinct_id}, rounded up to 0')
+                    # if list(remainder.values())[0] < -1:
+                    #     raise Exception(f'Negative other votes: {list(remainder.values())[0]} from precinct {precinct_id}')
+                    # else:
+                    print(f'Note: Negative other votes: {list(remainder.values())[0]} from precinct {precinct_id}, rounded up to 0')
                 else:
                     party_data.append(remainder)
             # If there is already a total_key, the other_key id is not needed.

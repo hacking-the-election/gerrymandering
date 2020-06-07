@@ -13,7 +13,7 @@ that we generate.
 
 
 Usage:
-python gerry_measures.py [generated communities/districts file.txt] [state.pickle] (-e/-d/-vts/-m) (-d)
+python gerry_measures.py [generated communities/districts file.txt/district.json] [state.pickle] (-e/-d/-vts/-m) (-d)
 
 Alternatively, [generated communities/districts file] can be switched out for district.json.
 
@@ -29,13 +29,79 @@ import json
 import sys
 from os.path import dirname, abspath
 from math import ceil, pi
-import numpy as np
+import matplotlib.pyplot as plt
 from copy import deepcopy
 sys.path.append(dirname(dirname(abspath(__file__))))
 
 from hacking_the_election.utils.precinct import Precinct
 from hacking_the_election.utils.community import Community
+from hacking_the_election.utils.geometry import area, shapely_to_geojson, geojson_to_shapely
 
+def _find_voter_data(geodata, state_graph, party_list):
+    """
+    Takes shapely coords from a district and returns election results.
+    """
+    precinct_list = []
+    votes_list = [0 for party in party_list]
+    total_party_list = ["total" + party[7:] for party in party_list]
+    for node in state_graph:
+        precinct_list.append(state_graph.node_attributes(node)[0])
+    shapely_district = geojson_to_shapely(geodata)
+    district_bounding_box = shapely_district.bounds
+    considerable_precincts = []
+    # Cull the list of precincts to only those worthy of consideration
+    for precinct in precinct_list:
+        bounding_box = precinct.coords.bounds
+        if not (bounding_box[0] < district_bounding_box[0] or bounding_box[1] < district_bounding_box[1]):
+            if not (bounding_box[2] > district_bounding_box[2] or bounding_box[3] > district_bounding_box[3]):
+                considerable_precincts.append(precinct)
+    for precinct in considerable_precincts:
+        intersection = shapely_district.intersection(precinct.coords).area
+        if intersection > 0:
+            percent_precinct = intersection/precinct.coords.area
+            if percent_precinct < 0:
+                print(f'Precinct {precinct.id} has negative area. That\'s extremely bad.')
+            for num, party in enumerate(total_party_list):
+                exec('votes_list[num] += (percent_precinct * precinct.' + party + ')')
+        elif intersection < 0:
+            raise Exception(f'Precinct {precinct.id} has negative intersection area with district. How did this happen?????')
+    # If total number of "other" votes is negative (possible), round to 0 as long as it's not too bad.
+    if votes_list[0] < 0:
+        if votes_list[0] > -1:
+            votes_list[0] = 0
+        else:
+            print(f'Problematic number of negative other votes: {votes_list[0]}') 
+    return votes_list
+
+def gerry_measures_conversion(districts_file, state_graph):
+    """
+    Convert given arguments to arguments needed by gerrymandering measure functions.
+    """
+    with open(state_graph, 'rb') as f:
+        state_graph = pickle.load(f)
+
+    # Add node attribute to precincts in graph
+    for node in state_graph:
+        precinct = state_graph.node_attributes(node)[0]
+        precinct.node = node
+    if str(districts_file)[-5:] == ".json":
+        with open(districts_file, 'r') as f:
+            district_geodata = json.load(f)
+        district_coords = [feature["geometry"]["coordinates"] for feature in district_geodata["features"]]
+        district_ids = [feature["properties"]["District"] for feature in district_geodata["features"]]
+        community_list = []
+        state = state_graph.node_attributes(list(state_graph.nodes())[0])[0].state
+        for num, district in enumerate(district_coords):
+            community = Community(district_ids[num], state_graph)
+            community.state = state
+            community._update_parties()
+            community.votes = _find_voter_data(district_coords[num], state_graph, community.parties)
+            community_list.append(community)
+    else:
+        community_list = Community.from_text_file(args[0],  state_graph)
+        for community in community_list:
+            community.votes = _find_voter_data(shapely_to_geojson(community.coords), state_graph, community.parties)
+    return community_list
 
 def efficency_gap(community_list, districts=False):
     """
@@ -50,17 +116,13 @@ def efficency_gap(community_list, districts=False):
     """
     total_votes = 0
     wasted_votes = {}
+    party_list = [party[8:].capitalize() for party in community_list[0].parties]
     for community in community_list:
-        for i, precinct in community.precincts.items():
+        for precinct in community.precincts.values():
             if precinct.total_other < 0:
-                print('total_other', i)
-        party_list = ["total" + party[7:] for party in community.parties]
-        party_dict = {}
-        for party in party_list:
-            party_sum = 0
-            for precinct in community.precincts.values():
-                party_sum += getattr(precinct, party)
-            party_dict[party[6:].capitalize()] = party_sum
+                precinct.total_other = 0
+        party_dict = {party_list[num] : community.votes[num] for num in range(len(party_list))}
+        # If first community, fill in wasted_votes
         if community == community_list[0]:
             for party in party_dict:
                 wasted_votes[party] = 0 
@@ -89,7 +151,7 @@ def efficency_gap(community_list, districts=False):
     print(f'State as whole: {int(sum(list(wasted_votes.values())))} Wasted votes, {round(100 * state_efficency_gap, 2)}% Efficency Gap, {round((100 * max(wasted_votes.values()) / sum(wasted_votes.values())), 2)}% of wasted votes are from {[i for i, votes in wasted_votes.items() if votes == max(wasted_votes.values())][0]}')
     print('State wasted_votes breakdown: ', wasted_votes)
     print('Total votes:', total_votes)
-
+    return state_efficency_gap
 
 def declination(community_list):
     """
@@ -100,8 +162,8 @@ def declination(community_list):
     """
     ratio_list = []
     for community in community_list:
-        dem_votes = sum([precinct.total_dem for precinct in community.precincts.values()])
-        rep_votes = sum([precinct.total_rep for precinct in community.precincts.values()])
+        dem_votes = community.votes[1]
+        rep_votes = community.votes[2]
         total = dem_votes + rep_votes
         ratio_list.append(dem_votes/total)
     rep_won = []
@@ -114,6 +176,9 @@ def declination(community_list):
             rep_won.append(ratio)
         if ratio > 0.5:
             dem_won.append(ratio)
+    if len(rep_won) == 0 or len(dem_won) == 0:
+        print('Declination not applicable')
+        return "None"
     rep_won = sorted(rep_won)
     dem_won = sorted(dem_won)
     rep_x = (len(rep_won)/2) - 0.5
@@ -139,6 +204,7 @@ def declination(community_list):
     else:
         print(f'Declination: {round(abs(declination), 3)} towards Reps')
     print(f'Misallocated Seats: {round(abs(declination) * len(community_list)/2, 3)}')
+    return declination
 
 def votes_to_seats(community_list, districts=False):
     """
@@ -151,6 +217,46 @@ def votes_to_seats(community_list, districts=False):
     :type districts: bool  
     """
 
+    for community in community_list:
+        total_votes = sum(community.votes)
+        community.partisanship = [votes/total_votes for votes in community.votes]
+        community.partisanship.pop(0)
+        community.partisanship = community.partisanship[:2]
+    point_list = [[0,0]]
+    community_list = sorted(community_list, key=lambda x: x.partisanship[0], reverse=True)
+    for num, community in enumerate(community_list):
+        point = []
+        point_x = 1 - community.partisanship[0]
+        point.append(point_x)
+        point_y = (num + 1)/len(community_list)
+        point.append(point_y)
+        point_list.append([point_x, point_list[-1][1]])
+        point_list.append(point)
+    point_list.append([1,1])
+    intersection_point_list = []
+    below = True
+    for point in point_list:
+        if point[1] <= point[0]:
+            if below == False:
+                if not point == [point[1], point[1]]:
+                    intersection_point_list.append([point[1], point[1]])
+                below = True
+            intersection_point_list.append(point)
+        else:
+            if below == True:
+                if not point == [point[1], point[1]]:
+                    intersection_point_list.append([point[0], point[0]])
+            below = False
+    intersection_point_list.append([1,0])
+    intersection_point_list.pop(0)
+    point_list.append([1,0])
+    point_list.pop(0)
+    intersection_area = area(intersection_point_list)
+    map_area = area(point_list)
+    overunderlap_area = (0.5 - intersection_area) + (map_area - intersection_area)
+    print(f"Votes to Seats overunderlap: {overunderlap_area}")
+    return overunderlap_area
+    
 def mock_election(community_list, districts=False):
     """
     Based on election results, run an election with inputted 
@@ -179,14 +285,10 @@ def mock_election(community_list, districts=False):
     state_total_votes = 0
     state_seats_won = {party : 0 for party in party_list}
     for community in community_list:
-        total_party_list = ["total_" + party.lower() for party in party_list]
-        party_votes = []
-        for num, party in enumerate(party_list):
-            exec('party_votes.append(sum([precinct. ' + total_party_list[num] + ' for precinct in community.precincts.values()]))')
-        total_votes = sum([precinct.total_votes for precinct in community.precincts.values()])
-        percentage_votes = {party_votes[num]/total_votes : party_list[num] for num, _ in enumerate(party_votes)}
-        for num, _ in enumerate(party_list):
-            state_party_votes[num] += party_votes[num]
+        total_votes = sum(community.votes)
+        percentage_votes = {votes/total_votes : party_list[num] for num, votes in enumerate(community.votes)}
+        for num, _ in enumerate(community.votes):
+            state_party_votes[num] += community.votes[num]
         state_total_votes += total_votes
         max_percent = max(list(percentage_votes.keys()))
         state_seats_won[percentage_votes[max_percent]] += 1
@@ -221,17 +323,12 @@ def mock_election(community_list, districts=False):
                 print(f'{round(100 * seats_won/total_seats)}%-', end='')
     print(' ratio)', end='')
     print('')
+    
 if __name__ == "__main__":
     args = sys.argv[1:]
-    with open(args[1], 'rb') as f:
-        state_graph = pickle.load(f)
 
-    # Add node attribute to precincts in graph
-    for node in state_graph:
-        precinct = state_graph.node_attributes(node)[0]
-        precinct.node = node
+    community_list = gerry_measures_conversion(args[0], args[1])
 
-    community_list = Community.from_text_file(args[0],  state_graph)
     if len(args) == 4:
         if "-e" in args[2]:
             efficency_gap(community_list, districts=True)
