@@ -8,6 +8,7 @@ test*.json
 test*.pickle
 test*.txt
 test*.png
+test*.sh
 hacking_the_election.egg-info
 test.py
 
