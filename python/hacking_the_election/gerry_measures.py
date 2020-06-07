@@ -30,6 +30,7 @@ import sys
 from os.path import dirname, abspath
 from math import ceil, pi
 import matplotlib.pyplot as plt
+import numpy as np
 from copy import deepcopy
 sys.path.append(dirname(dirname(abspath(__file__))))
 
@@ -44,27 +45,32 @@ def _find_voter_data(geodata, state_graph, party_list):
     precinct_list = []
     votes_list = [0 for party in party_list]
     total_party_list = ["total" + party[7:] for party in party_list]
-    for node in state_graph:
-        precinct_list.append(state_graph.node_attributes(node)[0])
-    shapely_district = geojson_to_shapely(geodata)
-    district_bounding_box = shapely_district.bounds
-    considerable_precincts = []
-    # Cull the list of precincts to only those worthy of consideration
-    for precinct in precinct_list:
-        bounding_box = precinct.coords.bounds
-        if not (bounding_box[0] < district_bounding_box[0] or bounding_box[1] < district_bounding_box[1]):
-            if not (bounding_box[2] > district_bounding_box[2] or bounding_box[3] > district_bounding_box[3]):
-                considerable_precincts.append(precinct)
-    for precinct in considerable_precincts:
-        intersection = shapely_district.intersection(precinct.coords).area
-        if intersection > 0:
-            percent_precinct = intersection/precinct.coords.area
-            if percent_precinct < 0:
-                print(f'Precinct {precinct.id} has negative area. That\'s extremely bad.')
+    if isinstance(geodata, Community):
+        for precinct in geodata.precincts.values():
             for num, party in enumerate(total_party_list):
-                exec('votes_list[num] += (percent_precinct * precinct.' + party + ')')
-        elif intersection < 0:
-            raise Exception(f'Precinct {precinct.id} has negative intersection area with district. How did this happen?????')
+                exec('votes_list[num] += (precinct.' + party + ')')
+    else:
+        for node in state_graph:
+            precinct_list.append(state_graph.node_attributes(node)[0])
+        shapely_district = geojson_to_shapely(geodata)
+        district_bounding_box = shapely_district.bounds
+        considerable_precincts = []
+        # Cull the list of precincts to only those worthy of consideration
+        for precinct in precinct_list:
+            bounding_box = precinct.coords.bounds
+            if not (bounding_box[0] < district_bounding_box[0] or bounding_box[1] < district_bounding_box[1]):
+                if not (bounding_box[2] > district_bounding_box[2] or bounding_box[3] > district_bounding_box[3]):
+                    considerable_precincts.append(precinct)
+        for precinct in considerable_precincts:
+            intersection = shapely_district.intersection(precinct.coords).area
+            if intersection > 0:
+                percent_precinct = intersection/precinct.coords.area
+                if percent_precinct < 0:
+                    print(f'Precinct {precinct.id} has negative area. That\'s extremely bad.')
+                for num, party in enumerate(total_party_list):
+                    exec('votes_list[num] += (percent_precinct * precinct.' + party + ')')
+            elif intersection < 0:
+                raise Exception(f'Precinct {precinct.id} has negative intersection area with district. How did this happen?????')
     # If total number of "other" votes is negative (possible), round to 0 as long as it's not too bad.
     if votes_list[0] < 0:
         if votes_list[0] > -1:
@@ -98,9 +104,10 @@ def gerry_measures_conversion(districts_file, state_graph):
             community.votes = _find_voter_data(district_coords[num], state_graph, community.parties)
             community_list.append(community)
     else:
-        community_list = Community.from_text_file(args[0],  state_graph)
+        community_list = Community.from_text_file(districts_file,  state_graph)
         for community in community_list:
-            community.votes = _find_voter_data(shapely_to_geojson(community.coords), state_graph, community.parties)
+            community._update_parties()
+            community.votes = _find_voter_data(community, state_graph, community.parties)
     return community_list
 
 def efficency_gap(community_list, districts=False):

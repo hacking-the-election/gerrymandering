@@ -55,7 +55,7 @@ class Community:
         with open(f"{PACKAGE_ROOT}/state_metadata.json", "r") as f:
             self.state_metadata = json.load(f)
 
-        for party in self.state_metadata[self.state]["party_data"]:
+        for party in self.state_metadata[self.state.replace(" ", "_")]["party_data"]:
             if party == "dem_keys":
                self.parties.append("percent_dem")
             elif party == "rep_keys":
@@ -254,8 +254,15 @@ class Community:
                      for node in precinct_graph.nodes()]
         precinct_dict = {p.id: p for p in precincts}
 
-        community_precinct_groups = [[precinct_dict[id_] for id_ in community_ids]
-                                     for community_ids in precinct_id_list]
+        community_precinct_groups = []
+        for community_ids in precinct_id_list:
+            community_precincts = []
+            for id_ in community_ids:
+                try:
+                    community_precincts.append(precinct_dict[id_])
+                except KeyError:
+                    pass
+            community_precinct_groups.append(community_precincts)
         
         communities = []
         for i, precinct_group in enumerate(community_precinct_groups):
