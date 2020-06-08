@@ -51,3 +51,4 @@
 "washington": washington/geodata.json washington/district.json --keys='{"DEM":"PRES_DVOTE","REP":"PRES_RVOTE","GEO":"GEOID10","POP":"POP100"}' washington.state
 "wyoming": wyoming/geodata.json wyoming/district.json --keys='{"DEM":"USP_D08","REP":"USP_R08","GEO":"GEOID10","POP":"VAP"}' wyoming.state
 "wisconsin": wisconsin/geodata.json wisconsin/district.json --keys='{"DEM":"PRESDEM08","REP":"PRESREP08","GEO":"JID","POP":"PERSONS","GRE":"PRESGRN08","LIB":"PRESLBR08","IND":"PRESIND108"}' wisconsin.state
+0.2

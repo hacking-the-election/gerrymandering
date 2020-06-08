@@ -79,7 +79,7 @@ Outline_Group Graphics::to_outline(Geometry::Multi_Polygon& mp, double v, bool a
 
     for (Polygon p : mp.border) {
         Outline o = to_outline(p.hull);
-        o.style().fill(fill);
+        o.style().fill(fill).thickness(0);
         os.add_outline(o);
     }
     return os;

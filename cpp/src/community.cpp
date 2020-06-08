@@ -182,6 +182,63 @@ void hte::Geometry::save(Communities cs, std::string out) {
 }
 
 
+vector<vector<double> > hte::Geometry::load_quantification(std::string tsv) {
+    vector<vector<double> > quant;
+    string quantification_tsv = readf(tsv);
+    string abs = split(quantification_tsv, "\n")[0];
+    string part = split(quantification_tsv, "\n")[1];
+
+    vector<double> q;
+    for (string t : split(abs, "\t")) {
+        q.push_back(stod(t));
+    }
+    quant.push_back(q);
+
+    q.clear();
+    for (string t : split(part, "\t")) {
+        q.push_back(stod(t));
+    }
+    quant.push_back(q);
+    return quant;
+}
+
+
+Communities hte::Geometry::load(std::string path, Graph& g, std::string tsv) {
+    string file = readf(path);
+    file = file.substr(1, file.size() - 3);
+    vector<string> strs = split(file, "[");
+    Communities communities(strs.size() - 1);
+    
+    for (int x = 0; x < strs.size(); x++) {
+        if (strs[x] != "" && strs[x] != " ") {
+            vector<string> s = split(strs[x], ",");
+            for (int i = 0; i < s.size(); i++) {
+                if (s[i] != " " && s[i] != "") {
+                    string mod = s[i];
+                    mod = mod.substr(mod.find("'") + 1, mod.size() - mod.find("'") - 1);
+                    mod = mod.substr(0, mod.find("'"));
+
+                    for (int n = 0; n < g.vertices.size(); n++) {
+                        if ((g.vertices.begin() + n).value().precinct->shape_id == mod) {
+                            communities[x - 1].add_node((g.vertices.begin() + n).value());
+                            g.vertices[(g.vertices.begin() + n).key()].community = x - 1;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    vector<vector<double> > quant = load_quantification(tsv);
+    for (int i = 0; i < quant[0].size(); i++) {
+        communities[i].quantification = quant[0][i];
+        communities[i].partisan_quantification = quant[1][i];
+    }
+
+    return communities;
+}
+
+
 Communities hte::Geometry::load(std::string path, Graph& g) {
     
     string file = readf(path);
@@ -222,7 +279,7 @@ int get_population(Communities& c) {
 }
 
 
-double get_compactness(Community& community) {
+double hte::Geometry::get_compactness(Community& community) {
     /*
         @desc: finds the reock compactness of a `Community`
         @params: `Community&` community: community object to find compactness of
@@ -245,7 +302,7 @@ double get_compactness(Community& community) {
 }
 
 
-double get_partisanship_stdev(Community& community) {
+double hte::Geometry::get_partisanship_stdev(Community& community) {
     double average = 0;
     map<POLITICAL_PARTY, vector<int> > total_data;
 

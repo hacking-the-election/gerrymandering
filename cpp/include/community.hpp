@@ -20,6 +20,8 @@ namespace Geometry {
 
     void save(Communities, std::string);
     Communities load(std::string, Graph&);
+    Communities load(std::string, Graph&, std::string);
+    std::vector<std::vector<double> > load_quantification(std::string tsv);
 
     class Community : public Graph {
         /*
@@ -28,6 +30,9 @@ namespace Geometry {
         */
 
         public:
+            double quantification;
+            double partisan_quantification;
+
             int get_population();
 
             void add_node(Node&);
@@ -43,7 +48,9 @@ namespace Geometry {
             Community(std::vector<int>& node_ids, Graph& graph);
             Community() {}
     };
-
+    
+    double get_partisanship_stdev(Community& community);
+    double get_compactness(Community& community);
     void optimize_compactness(Communities& communities, Graph& graph);
     void minimize_stdev(Communities& communities, Graph& graph);
     bool optimize_population(Communities& communities, Graph& g, double range);
