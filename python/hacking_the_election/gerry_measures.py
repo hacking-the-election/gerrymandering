@@ -162,7 +162,7 @@ def efficency_gap(community_list, districts=False):
 
 def declination(community_list):
     """
-    Calculates declination, based on https://arxiv.org/pdf/1803.04799.pdfhttps://arxiv.org/pdf/1803.04799.pdf
+    Calculates declination, based on https://arxiv.org/pdf/1803.04799.pdf
 
     :param community_list: List of `hacking_the_election.utils.community.Community` objects
     :type community_list: list
@@ -213,7 +213,7 @@ def declination(community_list):
     print(f'Misallocated Seats: {round(abs(declination) * len(community_list)/2, 3)}')
     return declination
 
-def votes_to_seats(community_list, districts=False):
+def votes_to_seats(community_list, districts=False, graph=False):
     """
     Finds the votes_to_seats graph for a state
 
@@ -222,6 +222,9 @@ def votes_to_seats(community_list, districts=False):
      
     :param districts: Whether indiviual district results should be printed
     :type districts: bool  
+
+    :param graph: Whether to return the entire list of points rather than the overunderlap area.
+    :type graph: bool
     """
 
     for community in community_list:
@@ -240,29 +243,32 @@ def votes_to_seats(community_list, districts=False):
         point_list.append([point_x, point_list[-1][1]])
         point_list.append(point)
     point_list.append([1,1])
-    intersection_point_list = []
-    below = True
-    for point in point_list:
-        if point[1] <= point[0]:
-            if below == False:
-                if not point == [point[1], point[1]]:
-                    intersection_point_list.append([point[1], point[1]])
-                below = True
-            intersection_point_list.append(point)
-        else:
-            if below == True:
-                if not point == [point[1], point[1]]:
-                    intersection_point_list.append([point[0], point[0]])
-            below = False
-    intersection_point_list.append([1,0])
-    intersection_point_list.pop(0)
-    point_list.append([1,0])
-    point_list.pop(0)
-    intersection_area = area(intersection_point_list)
-    map_area = area(point_list)
-    overunderlap_area = (0.5 - intersection_area) + (map_area - intersection_area)
-    print(f"Votes to Seats overunderlap: {overunderlap_area}")
-    return overunderlap_area
+    if graph:
+        return point_list
+    else:
+        intersection_point_list = []
+        below = True
+        for point in point_list:
+            if point[1] <= point[0]:
+                if below == False:
+                    if not point == [point[1], point[1]]:
+                        intersection_point_list.append([point[1], point[1]])
+                    below = True
+                intersection_point_list.append(point)
+            else:
+                if below == True:
+                    if not point == [point[1], point[1]]:
+                        intersection_point_list.append([point[0], point[0]])
+                below = False
+        intersection_point_list.append([1,0])
+        intersection_point_list.pop(0)
+        point_list.append([1,0])
+        point_list.pop(0)
+        intersection_area = area(intersection_point_list)
+        map_area = area(point_list)
+        overunderlap_area = (0.5 - intersection_area) + (map_area - intersection_area)
+        print(f"Votes to Seats overunderlap: {overunderlap_area}")
+        return overunderlap_area
     
 def mock_election(community_list, districts=False):
     """
