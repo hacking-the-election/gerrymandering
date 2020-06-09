@@ -28,7 +28,7 @@ using namespace Graphics;
 namespace fs = boost::filesystem;
 
 int RECURSION_STATE = 0;
-double PADDING = (15.0/16.0);
+double PADDING = (16.0/16.0);
 
 vector<RGB_Color> COLORS = {RGB_Color(79,161,154),RGB_Color(220,65,182),RGB_Color(83,206,83),RGB_Color(92,79,210),RGB_Color(159,212,68),RGB_Color(185,87,218),RGB_Color(210,198,52),RGB_Color(138,49,146),RGB_Color(106,164,49),RGB_Color(164,122,223),RGB_Color(103,213,137),RGB_Color(227,54,102),RGB_Color(86,213,187),RGB_Color(224,71,48),RGB_Color(110,207,226),RGB_Color(163,53,37),RGB_Color(91,126,219),RGB_Color(230,157,47),RGB_Color(91,73,156),RGB_Color(215,185,92),RGB_Color(73,111,171),RGB_Color(199,101,39),RGB_Color(111,170,232),RGB_Color(144,143,44),RGB_Color(211,78,147),RGB_Color(72,145,66),RGB_Color(184,106,175),RGB_Color(66,102,30),RGB_Color(226,157,227),RGB_Color(68,152,108),RGB_Color(162,48,72),RGB_Color(178,200,121),RGB_Color(139,69,112),RGB_Color(158,201,160),RGB_Color(222,108,115),RGB_Color(34,106,107),RGB_Color(225,131,94),RGB_Color(76,157,190),RGB_Color(174,118,44),RGB_Color(193,182,235),RGB_Color(108,99,36),RGB_Color(80,80,126),RGB_Color(226,183,135),RGB_Color(56,108,139),RGB_Color(123,80,39),RGB_Color(146,128,175),RGB_Color(64,105,70),RGB_Color(221,155,187),RGB_Color(126,142,92),RGB_Color(134,71,59),RGB_Color(226,158,149),RGB_Color(174,136,89),RGB_Color(176,110,107)};
 
@@ -468,13 +468,13 @@ void Graphics::draw_line(PixelBuffer& buffer, Geometry::coordinate start, Geomet
     for (t = (t + 1) / 2; ;) {
         // if cval is 0, we want to draw pure color
         double cval = std::max(0.0, 255 * (abs(err - dx + dy) / ed - t + 1)) / 255.0;
-        buffer.set_from_position(start[0], start[1], interpolate_rgb(color, RGB_Color::from_uint(buffer.get_from_position(start[0], start[1])), cval).to_uint());
+        buffer.set_from_position(start[0], start[1], color.to_uint());
         e2 = err; x2 = start[0];
 
         if (2 * e2 >= -dx) {
             for (e2 += dy, y2 = start[1]; e2 < ed*t && (end[1] != y2 || dx > dy); e2 += dx) {
                 double cval = std::max(0.0, 255 * (abs(e2) / ed - t + 1)) / 255.0;
-                buffer.set_from_position(start[0], y2 += sy, interpolate_rgb(color, RGB_Color::from_uint(buffer.get_from_position(start[0], start[1])), cval).to_uint());
+                buffer.set_from_position(start[0], y2 += sy, color.to_uint());
             }
             if (start[0] == end[0]) break;
             e2 = err; err -= dy; start[0] += sx; 
@@ -482,7 +482,7 @@ void Graphics::draw_line(PixelBuffer& buffer, Geometry::coordinate start, Geomet
         if (2 * e2 <= dy) {
             for (e2 = dx - e2; e2 < ed * t && (end[0] != x2 || dx < dy); e2 += dy) {
                 int cval = std::max(0.0, 255 * (abs(e2) / ed - t + 1)) / 255.0;
-                buffer.set_from_position(x2 += sx, start[1], interpolate_rgb(color, RGB_Color::from_uint(buffer.get_from_position(start[0], start[1])), cval).to_uint());
+                buffer.set_from_position(x2 += sx, start[1], color.to_uint());
             }
             if (start[1] == end[1]) break;
             err += dx; start[1] += sy; 
@@ -666,14 +666,14 @@ bool Canvas::get_bmp(std::string write_path) {
 }
 
 
-std::string Outline::get_svg() {
+std::string Outline::get_svg(double scale_factor) {
     std::string svg = "<path d=\"M";
-    svg += std::to_string(border.border[0][0]) + "," + std::to_string(border.border[0][1]);
+    svg += std::to_string((double)border.border[0][0] * scale_factor) + "," + std::to_string((double)border.border[0][1] * scale_factor);
 
     for (segment s : border.get_segments()) {
         svg += "L";
-        svg += std::to_string(s[0]) + "," + std::to_string(s[1]) + "," 
-            + std::to_string(s[2]) + "," + std::to_string(s[3]);
+        svg += std::to_string((double)s[0] * scale_factor) + "," + std::to_string((double)s[1] * scale_factor) + "," 
+            + std::to_string((double)s[2] * scale_factor) + "," + std::to_string((double)s[3] * scale_factor);
     }
 
     svg += "z\" stroke=\"rgb(" + std::to_string(style().outline_.r) + "," + std::to_string(style().outline_.g) + ","
@@ -684,17 +684,16 @@ std::string Outline::get_svg() {
 }
 
 
-std::string Outline_Group::get_svg() {
+std::string Outline_Group::get_svg(double scale_factor) {
     if (outlines.size() == 0) cout << "NO OUTLINES, EXPECT SEGFAULT" << endl;
-
     std::string svg = "<path d=\"";
 
     for (Outline o : outlines) {
-        svg += "M " + std::to_string(o.border.border[0][0]) + "," + std::to_string(o.border.border[0][1]);
+        svg += "M " + std::to_string((double)o.border.border[0][0] * scale_factor) + "," + std::to_string((double)o.border.border[0][1] * scale_factor);
         for (segment s : o.border.get_segments()) {
             svg += "L";
-            svg += std::to_string(s[0]) + "," + std::to_string(s[1]) + "," 
-                + std::to_string(s[2]) + "," + std::to_string(s[3]);
+            svg += std::to_string((double) s[0] * scale_factor) + "," + std::to_string((double)s[1] * scale_factor) + "," 
+                + std::to_string((double) s[2] * scale_factor) + "," + std::to_string((double) s[3] * scale_factor);
         }
         svg += "Z ";
     }
@@ -715,9 +714,13 @@ std::string Canvas::get_svg() {
     */
 
     std::string svg = "<svg xmlns=\"http://www.w3.org/2000/svg\" height=\"100%\" width=\"100%\" viewBox=\"0 0 " + std::to_string(width) + " " + std::to_string(height) + "\">";
+    bounding_box b = get_bounding_box();
+    double ratio_top = ceil((double) this->box[0]) / (double) (height);
+    double ratio_right = ceil((double) this->box[3]) / (double) (width);
+    double scale_factor = 1 / ((ratio_top > ratio_right) ? ratio_top : ratio_right); 
     
     for (Outline_Group o : outlines) {
-        svg += o.get_svg();
+        svg += o.get_svg(scale_factor);
     }
 
     return (svg + "</svg>");
@@ -742,15 +745,17 @@ bool Canvas::get_pnm(std::string write_path) {
 
 void Canvas::save_image(ImageFmt fmt, std::string path) {
     /*if (!to_date && fmt != ImageFmt::SVG)*/
-    rasterize();
 
     if (fmt == ImageFmt::BMP) {
+        rasterize();
         get_bmp(path);
     }
     else if (fmt == ImageFmt::SVG) {
+        resize_cont(false);
         writef(get_svg(), path + ".svg");
     }
     else if (fmt == ImageFmt::PNM) {
+        rasterize();
         get_pnm(path);
     }
 }
@@ -789,43 +794,49 @@ void Canvas::rasterize() {
         @return `void`
     */
 
-    // if (!to_date) {
     pixel_buffer = PixelBuffer(width, height);
-    // @warn may be doing extra computation here
-    get_bounding_box();
-
-    // translate into first quadrant
-    translate(-box[2], -box[1], true);
-    
-    // determine smaller side/side ratio for scaling
-    double ratio_top = ceil((double) this->box[0]) / (double) (width);
-    double ratio_right = ceil((double) this->box[3]) / (double) (height);
-    double scale_factor = 1 / ((ratio_top > ratio_right) ? ratio_top : ratio_right); 
-    scale(scale_factor * PADDING);
-
-    // add padding and translate for corner sizes
-    int px = (int)((double)width * (1.0-PADDING) / 2.0), py = (int)((double)height * (1.0-PADDING) / 2.0);
-    translate(px, py, false);
-
-    if (ratio_top < ratio_right) {
-        // center vertically
-        int t = (int)((((double)height - ((double)py * 2.0)) - (double)this->box[0] * scale_factor) / 2.0);
-        translate(0, t, false);
-    }
-    else {
-        int t = (int)((((double)width - ((double)px * 2.0)) - (double)this->box[3] * scale_factor) / 2.0);
-        translate(t, 0, false);
-    }
-    
+    resize_cont(true);
 
     for (Outline_Group o : outlines) {
         for (Outline outline : o.outlines) {
             draw_polygon(pixel_buffer, outline.border, outline.style());
         }
     }
-    
+
     to_date = true;
-    // draw_to_window();
+}
+
+
+void Canvas::resize_cont(bool scale_down) {
+    /*
+        Resize the canvas content so it fits on the height x width grid.
+    */
+
+    get_bounding_box();
+    // translate into first quadrant
+    translate(-box[2], -box[1], true);
+
+    if (scale_down) {
+        // determine smaller side/side ratio for scaling
+        double ratio_top = ceil((double) this->box[0]) / (double) (height);
+        double ratio_right = ceil((double) this->box[3]) / (double) (width);
+        double scale_factor = 1 / ((ratio_top > ratio_right) ? ratio_top : ratio_right); 
+        scale(scale_factor * PADDING);
+        
+        // add padding and translate for corner sizes
+        int px = (int)((double)width * (1.0-PADDING) / 2.0), py = (int)((double)height * (1.0-PADDING) / 2.0);
+        translate(px, py, false);
+
+        if (ratio_top < ratio_right) {
+            // center vertically
+            int t = (int)((((double)height - ((double)py * 2.0)) - (double)this->box[0] * scale_factor) / 2.0);
+            translate(0, t, false);
+        }
+        else {
+            int t = (int)((((double)width - ((double)px * 2.0)) - (double)this->box[3] * scale_factor) / 2.0);
+            translate(t, 0, false);
+        }
+    }
 }
 
 
