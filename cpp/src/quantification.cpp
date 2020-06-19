@@ -14,6 +14,7 @@ using namespace hte;
 using namespace Geometry;
 using namespace Graphics;
 
+
 double hte::Geometry::collapse_vals(double a, double b) {
     // where `a` is the republican ratio and b is the general quantification
     assert((a <= 1.0 && a >= 0.0));
@@ -132,25 +133,6 @@ std::map<POLITICAL_PARTY, double> Geometry::get_quantification(Graph& graph, Com
     c.AddPaths(clip, ClipperLib::ptClip, true);
     c.Execute(ClipperLib::ctDifference, solutions, ClipperLib::pftNonZero);
     Multi_Polygon pop_not_in_district = paths_to_multi_shape(solutions);
-    // cout << "got pop outside" << endl;
-    // Canvas canvas(900, 900);
-    // for (Polygon p : district.border) {
-    //     Outline o = to_outline(p.hull);
-    //     o.style().fill(RGB_Color(0,0,0));
-    //     canvas.add_outline(o);
-    // }
-    // for (Precinct p : communities[largest_index].shape.precincts) {
-    //     Outline o = to_outline(p.hull);
-    //     o.style().fill(RGB_Color(100,100,100));
-    //     canvas.add_outline(o);
-    // }
-    // for (Polygon p : pop_not_in_district.border) {
-    //     Outline o = to_outline(p.hull);
-    //     o.style().fill(RGB_Color(190,190,190)).outline(RGB_Color(0,0,0)).thickness(1);
-    //     canvas.add_outline(o);
-    // }
-    // canvas.draw_to_window();
-
     std::map<POLITICAL_PARTY, double> partisanships = get_partisanship_from_mask(communities[largest_index].shape, pop_not_in_district);
 
     double sum = 0;
@@ -170,90 +152,5 @@ std::map<POLITICAL_PARTY, double> Geometry::get_quantification(Graph& graph, Com
     }
 
     partisanships[POLITICAL_PARTY::ABSOLUTE_QUANTIFICATION] = get_population_from_mask(communities[largest_index].shape, pop_not_in_district) / communities[largest_index].get_population();
-    //cout << get_population_from_mask(communities[largest_index].shape, pop_not_in_district) << ", " << communities[largest_index].get_population() << endl;
     return partisanships;
-}
-
-
-class Community_District_Link {
-    public:
-        int community;
-        int district;
-        double distance;
-        friend bool operator< (const Community_District_Link& l1, const Community_District_Link& l2);
-};
-
-bool operator< (const Community_District_Link& l1, const Community_District_Link& l2) {
-    return l1.distance < l2.distance;
-}
-
-
-std::array<double, 2> hte::Geometry::get_state_quantification(State& state, Communities& communities, std::vector<Multi_Polygon> districts) {
-    // link each community with a respective district
-    map<int, int> i_links;
-    vector<Community_District_Link> links;
-    for (int i = 0; i < districts.size(); i++) {
-        for (int j = 0; j < communities.size(); j++) {
-            // get distance to centroid
-            Community_District_Link link;
-            link.community = j;
-            link.district = i;
-            link.distance = get_distance(districts[i].get_centroid(), communities[j].shape.get_centroid());
-            links.push_back(link);
-        }
-    }
-
-    sort(links.begin(), links.end());
-
-    while (links.size() > 0) {
-        // add the shortest link to the map
-        i_links[links[0].district] = links[0].community;
-        // remove all other potential links to that district
-        int d = links[0].district;
-        int c = links[0].community;
-
-        links.erase(
-            std::remove_if(
-                links.begin(), links.end(),
-                [d, c](const Community_District_Link & o) { return (o.district == d || o.community == c); }
-            ),
-            links.end()
-        );
-    }
-
-    // Canvas canvas(900, 900);
-    // for (Multi_Polygon p : districts) {
-    //     for (Polygon pl : p.border) {
-    //         Outline o(pl.hull);
-    //         o.style().fill(RGB_Color(-1,-1,-1)).outline(RGB_Color(255,0,0)).thickness(1);
-    //         canvas.add_outline(o);
-    //     }
-    // }
-
-    // for (Community c : communities) {
-    //     for (Polygon pl : generate_exterior_border(c.shape).border) {
-    //         Outline o(pl.hull);
-    //         o.style().fill(RGB_Color(-1,-1,-1)).outline(RGB_Color(0,255,0)).thickness(1);
-    //         canvas.add_outline(o);
-    //     }
-    // }
-    
-    for (auto& pair : i_links) {
-        Canvas canvas(900, 900);
-        for (Polygon pl : districts[pair.first].border) {
-            Outline o(pl.hull);
-            o.style().fill(RGB_Color(-1,-1,-1)).outline(RGB_Color(255,0,0)).thickness(1);
-            canvas.add_outline(o);
-        }
-        for (Polygon pl : generate_exterior_border(communities[pair.second].shape).border) {
-            Outline o(pl.hull);
-            o.style().fill(RGB_Color(-1,-1,-1)).outline(RGB_Color(0,255,0)).thickness(1);
-            canvas.add_outline(o);
-        }
-        canvas.draw_to_window();
-        cout << "district " << pair.first << " linked to " << pair.second << endl;
-    }
-
-    // canvas.draw_to_window();
-    return {0,0};
 }

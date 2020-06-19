@@ -52,23 +52,6 @@ using namespace chrono;
 
 void drawc(Communities&);
 
-class EdgeWrapper {
-    // a class that defines an edge and an attr, for sorting by 
-
-    public:
-        int ntr_id;
-        int ntc_id;
-        int attrs;
-        
-        friend bool operator< (const EdgeWrapper& l1, const EdgeWrapper& l2);
-        inline EdgeWrapper(int id, int cid, int attrs) : ntr_id(id), ntc_id(cid), attrs(attrs) {}
-};
-
-
-bool operator< (const EdgeWrapper& l1, const EdgeWrapper& l2) {
-    return (l1.attrs < l2.attrs);
-}
-
 
 class NodePtr {
     public:
@@ -279,6 +262,19 @@ int get_population(Communities& c) {
 }
 
 
+double hte::Geometry::get_distance_from_pop(Communities& cs) {
+    double av = 0;
+    double av_pop = get_population(cs) / cs.size();
+    for (Community& c : cs) {
+        av += (1.0 - abs(1.0 - (double)c.get_population() / av_pop));
+    }
+    double r = av / cs.size();
+
+    if (r >= 0.99) return 1.0;
+    else return r;
+}
+
+
 double hte::Geometry::get_compactness(Community& community) {
     /*
         @desc: finds the reock compactness of a `Community`
@@ -289,7 +285,7 @@ double hte::Geometry::get_compactness(Community& community) {
 
     
     // return (0.4);
-    coordinate center = community.shape.get_centroid();
+    coordinate center = community.shape.get_centroid(); 
     double farthest = 0;
 
     for (Precinct& p : community.shape.precincts) {
@@ -299,6 +295,34 @@ double hte::Geometry::get_compactness(Community& community) {
     }
 
     return (community.shape.get_area() / (farthest * PI));
+}
+
+
+double hte::Geometry::get_precise_compactness(Community& community) {
+    /*
+        @desc: finds the reock compactness of a `Community`
+        @params: `Community&` community: community object to find compactness of
+        @return: `double` reock compactness
+        @ref: https://fisherzachary.github.io/public/r-output.html
+    */
+
+    coordinate_set lp;
+    vector<vector<double> > p;
+
+    for (Precinct pre : community.shape.precincts) {
+        lp.insert(lp.end(), pre.hull.border.begin(), pre.hull.border.end());
+    }
+
+    p.reserve(lp.size());
+
+    for (int i = 0; i < lp.size(); i++)
+        p.emplace_back(lp[i].begin(), lp[i].end());
+
+    lp.clear();
+
+    MB mb (2, p.begin(), p.end());
+    return (double)community.shape.get_area() / (mb.squared_radius() * PI);
+
 }
 
 
@@ -321,6 +345,11 @@ double hte::Geometry::get_partisanship_stdev(Community& community) {
     }
     
     return (average / total_data.size());
+}
+
+
+double hte::Geometry::get_scalarized_metric(Communities& cs) {
+    return ((average(cs, get_precise_compactness) + get_distance_from_pop(cs)) / 2);
 }
 
 
@@ -386,7 +415,7 @@ vector<vector<int> > get_giveable_precincts(Graph& g, Communities& c, int in) {
 }
 
 
-double average(Communities& communities, double (*measure)(Community&)) {
+double hte::Geometry::average(Communities& communities, double (*measure)(Community&)) {
     /*
         @desc: find average `measure` of the `communities`
 
@@ -441,6 +470,7 @@ void hte::Geometry::optimize_compactness(Communities& communities, Graph& graph)
     }
 
     while (iterations_since_best < ITERATION_LIMIT) {
+
         int give = 0;
         for (int i = 0; i < SUB_MODIFICATIONS; i++) {
             vector<vector<int> > giveable = get_giveable_precincts(graph, communities, community_to_modify_ind);
@@ -450,6 +480,7 @@ void hte::Geometry::optimize_compactness(Communities& communities, Graph& graph)
                     give++;
                 }
             }
+            cout << average(communities, get_compactness) << endl;
         }
 
         int take = 0;
@@ -461,6 +492,7 @@ void hte::Geometry::optimize_compactness(Communities& communities, Graph& graph)
                     take++;
                 }
             }
+            cout << average(communities, get_compactness) << endl;
         }
 
         community_to_modify++;
@@ -636,6 +668,7 @@ void hte::Geometry::minimize_stdev(Communities& communities, Graph& graph) {
                 else {
                     // keep the exchange, set a new best
                     before_average = after_average;
+                    cout << before_average << endl;
                     num_exchanges++;
                 }
             }
@@ -656,6 +689,7 @@ void hte::Geometry::minimize_stdev(Communities& communities, Graph& graph) {
                 else {
                     before_average = after_average;
                     num_exchanges++;
+                    cout << before_average << endl;
                 }
             }
         }
@@ -667,24 +701,120 @@ void hte::Geometry::minimize_stdev(Communities& communities, Graph& graph) {
 }
 
 
+vector<array<int, 2> > get_all_exchanges(Graph& g, Communities& cs) {
+    vector<array<int, 2> > exchanges = {};
+    for (auto& pair : g.vertices) {
+        vector<int> dc = {};
+        for (Edge e : pair.second.edges) {
+            if (g.vertices[e[1]].community != pair.second.community) {
+                if (std::find(dc.begin(), dc.end(), g.vertices[e[1]].community) == dc.end()) {
+                    dc.push_back(g.vertices[e[1]].community);
+                    exchanges.push_back({pair.second.id, g.vertices[e[1]].community});
+                }
+            }
+        }
+    }
+
+    return exchanges;
+}
+
+
+void hte::Geometry::gradient_descent_optimization(Graph& g, Communities& cs, double (*measure)(Communities&)) {
+    while (true) {
+        Graph before = g;
+        array<int, 2> best_exchange;
+        double largest_measure = measure(cs);
+        bool can_be_better = false;
+        vector<array<int, 2> > exchanges = get_all_exchanges(g, cs);
+
+        for (array<int, 2> exchange_p : exchanges) {
+            int init_community = g.vertices[exchange_p[0]].community;
+            if (exchange_precinct(g, cs, exchange_p[0], exchange_p[1])) {
+                double m = measure(cs);
+                if (m > largest_measure) {
+                    largest_measure = m;
+                    best_exchange = exchange_p;
+                    can_be_better = true;
+                    cout << largest_measure << endl;
+                }
+                else {
+                    exchange_precinct(g, cs, exchange_p[0], init_community);
+                }
+            }
+        }
+
+        if (!can_be_better) {
+            cout << "reached end of optimization" << endl;
+            cout << largest_measure << endl;
+            break;
+        }
+
+        // exchange_precinct(g, cs, best_exchange[0], best_exchange[1]);
+    }
+}
+
+
+void hte::Geometry::simulated_annealing_optimization(Graph& g, Communities& cs, double (*measure)(Community&)) {
+    double Ec = average(cs, measure);
+    double Tmax = 30, Tmin = 0, T = Tmax;
+    double Cool = 0.99976;
+    int Epochs = 40000, Epoch = 0;
+
+    const int pow_m = 2;
+    const int mult_delta = 500000;
+
+    while (Epoch < Epochs) {
+        Epoch++;
+        vector<array<int, 2> > all_exchnages = get_all_exchanges(g, cs);
+        array<int, 2> chosen_exchange;
+        int init_community;
+        int choice = -1;
+
+        do {
+            int new_choice = rand_num(0, all_exchnages.size());
+            while (choice == new_choice) {
+                new_choice = rand_num(0, all_exchnages.size());
+            }
+            choice = new_choice;
+            chosen_exchange = all_exchnages[new_choice];
+            init_community = g.vertices[chosen_exchange[0]].community;
+        } while (!exchange_precinct(g, cs, chosen_exchange[0], chosen_exchange[1]));
+
+        double En = average(cs, measure);
+        double x = randf();
+
+        if (En < Ec) {
+            Ec = En;
+            cout << T << "\t" << Ec << endl;
+        }
+
+        else if ((T / Tmax) > x) {
+            cout << T << "\t" << Ec << endl;
+            Ec = En;
+        }
+        else {
+            exchange_precinct(g, cs, chosen_exchange[0], init_community);
+        }
+        // else if ( >= randf()) {
+        //     // keep the new measure
+        //     Ec = En;
+        // }
+
+        T *= Cool;
+    }
+}
+
+
 Communities hte::Geometry::karger_stein(Graph& g1, int n_communities) {
-    /*
-        @desc: Partitions a graph according to the Karger-Stein algorithm
-
-        @params:
-            `Graph` g: the graph to partition
-            `int` n_communities: the number of partitions
-
-        @return: `Communities` list of id's corresponding to the partition
-    */
-    
+    // initizize copy of graph
     Graph g = g1;
     const int MAX_SEARCH = 100;
 
     while (g.vertices.size() > n_communities) {
         // still more verts than communities needed
         // create edgewrapper as first beatable min
-        EdgeWrapper min(-1, -1, 10000000);
+        Edge min;
+        int t_min = 1000000;
 
         for (int i = 0; i < g.vertices.size(); i++) {
             // choose random node and edge of that node
@@ -694,12 +824,9 @@ Communities hte::Geometry::karger_stein(Graph& g1, int n_communities) {
 
             // if combining the `collapsed` vector of the nodes
             // on this edge is smaller than min, add new min
-            if (t < min.attrs) {
-                min = EdgeWrapper(
-                    node_to_remove_id,
-                    node_to_collapse_id,
-                    t
-                );
+            if (t < t_min) {
+                min = {node_to_remove_id, node_to_collapse_id};
+                t_min = t;
             }
             
             // create max cap for searching for min
@@ -708,23 +835,23 @@ Communities hte::Geometry::karger_stein(Graph& g1, int n_communities) {
 
 
         // add the edges from node to remove to node to collapse
-        for (Edge edge : g.vertices[min.ntr_id].edges) {
-            if (edge[1] != min.ntc_id) {
-                g.add_edge({edge[1], min.ntc_id});
+        for (Edge edge : g.vertices[min[0]].edges) {
+            if (edge[1] != min[1]) {
+                g.add_edge({edge[1], min[1]});
             }
         }
 
         // update collapsed of node_to_collapse
-        g.vertices[min.ntc_id].collapsed.push_back(min.ntr_id);
+        g.vertices[min[1]].collapsed.push_back(min[0]);
 
-        for (int c : g.vertices[min.ntr_id].collapsed) {
-            if (find(g.vertices[min.ntc_id].collapsed.begin(), g.vertices[min.ntc_id].collapsed.end(), c) == g.vertices[min.ntc_id].collapsed.end()) {
-                g.vertices[min.ntc_id].collapsed.push_back(c);
+        for (int c : g.vertices[min[0]].collapsed) {
+            if (find(g.vertices[min[1]].collapsed.begin(), g.vertices[min[1]].collapsed.end(), c) == g.vertices[min[1]].collapsed.end()) {
+                g.vertices[min[1]].collapsed.push_back(c);
             }
         }
 
         // remove node_to_remove
-        g.remove_node(min.ntr_id);
+        g.remove_node(min[0]);
     }
 
     // create vector of size `n_communities`
@@ -809,61 +936,24 @@ Communities hte::Geometry::get_communities(Graph& graph, Communities cs, double 
         cs[i].update_shape(graph);
     }
 
-    string anim_out = output_dir + "/anim/";
-    string data_out = output_dir + "/stats/";
-    if (communities_run) anim_out += "communities/";
-    else anim_out += "redistricts/";
-    if (communities_run) data_out += "communities/";
-    else data_out += "redistricts/";
-    data_out += "data.tsv";
-
     bool pop_compliant = false;
     int non_compliant_iterations = 0;
 
     do {
         // start time for max_time and initialize first graph
-        auto start = high_resolution_clock::now();
         Graph before = graph;
-        cout << "\e[2K\r" << get_progress_bar(((double)TIME_ELAPSED / (double)MAX_TIME)) << "  " << PRECINCTS_EXCHANGED << " exchanges, on stdev, np: " << non_compliant_iterations;
-        cout.flush();
-
         // perform optimization passes
         minimize_stdev(cs, graph);
-        auto stop = high_resolution_clock::now();
-        TIME_ELAPSED += duration_cast<seconds>(stop - start).count();
-        cout << "\e[2K\r" << get_progress_bar(((double)TIME_ELAPSED / (double)MAX_TIME)) << "  " << PRECINCTS_EXCHANGED << " exchanges, on compactness, np: " << non_compliant_iterations;
-        cout.flush();
-
-        start = high_resolution_clock::now();
         optimize_compactness(cs, graph);
-        stop = high_resolution_clock::now();
-        TIME_ELAPSED += duration_cast<seconds>(stop - start).count();
-        cout << "\e[2K\r" << get_progress_bar(((double)TIME_ELAPSED / (double)MAX_TIME)) << "  " << PRECINCTS_EXCHANGED << " exchanges, on population, np: " << non_compliant_iterations;
-        cout.flush();
-        start = high_resolution_clock::now();
         pop_compliant = optimize_population(cs, graph, pop_constraint);
         if (pop_compliant) non_compliant_iterations = 0;
         else non_compliant_iterations++;
-
         PRECINCTS_EXCHANGED = get_num_precincts_changed(before, graph);
-        Canvas canvas(450, 450);
-        canvas.add_outlines(to_outline(cs));
-        canvas.save_img_to_anim(ImageFmt::BMP, anim_out);
-        iteration++;
-        save_iteration_data(data_out, cs, PRECINCTS_EXCHANGED);
-        stop = high_resolution_clock::now();
-        TIME_ELAPSED += duration_cast<seconds>(stop - start).count();
-
         if (non_compliant_iterations == 50) {
             cout << endl << "gone 50 consecutive non-compliant iterations, fully exiting state" << endl;
             exit(1);
         }
     } while (((TIME_ELAPSED < MAX_TIME) && (PRECINCTS_EXCHANGED > (int)(MIN_PERCENT_PRECINCTS * (double)graph.vertices.size()))) || !pop_compliant);
 
-    // while (we still have time we've exchanged too many precincts)
-
-
-    // the communities are fully optimized
-    cout << "\e[2K\r" << get_progress_bar(1) << endl;
     return cs;
 }
