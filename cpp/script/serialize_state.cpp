@@ -1,6 +1,6 @@
 /*=======================================
  serialize_state.cpp:           k-vernooy
- last modified:               Sun, Jan 19
+ last modified:               Sun, May 17
  
  Given precinct and district geodata, and
  precinct voter data, writes to a binary 
@@ -11,27 +11,13 @@
 ========================================*/
 
 #include <iostream>
-#include "../include/shape.hpp"
-#include "../include/canvas.hpp"
-#include "../include/util.hpp"
+#include "../include/hte.h"
 
 using namespace std;
 using namespace hte::Geometry;
 
 
 int main(int argc, char* argv[]) {
-    /* 
-        @desc: parse data into a binary state object
-
-        @params:
-           `string` precinct_geoJSON: path to precinct geodata
-           `string` voter_data: (opt) path to precinct voter data
-           `string` district_geoJSON: path to district geodata
-
-        @return: `int` status
-    */
-
-
     string KEY = "--keys=";  // prefix to find specified options
 
     if (argc < 5) {

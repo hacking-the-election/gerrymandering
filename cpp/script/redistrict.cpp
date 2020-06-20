@@ -1,6 +1,6 @@
 /*=======================================
  sandbox.cpp:                   k-vernooy
- last modified:               Sun May 31
+ last modified:               Thu, Jun 18
  
  A simple testing environment with the
  hacking-the-election library
@@ -61,7 +61,7 @@ int main(int argc, char* argv[]) {
     Canvas collapsed_q(900, 900);
 
     for (int i = 0; i < redistricts.size(); i++) {
-        Multi_Polygon ext = generate_exterior_border(redistricts[i].shape);
+        MultiPolygon ext = generate_exterior_border(redistricts[i].shape);
         map<POLITICAL_PARTY, double> quantification = get_quantification(state.network, communities, ext);
         double partisanship = 0.5;
         if (quantification[POLITICAL_PARTY::DEMOCRAT] + quantification[POLITICAL_PARTY::REPUBLICAN] != 0)

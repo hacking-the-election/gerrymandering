@@ -1,6 +1,6 @@
 /*=======================================
  state_dump.cpp:                k-vernooy
- last modified:               Mon, May 25
+ last modified:               Thu, Jun 18
  
  Print information about a state object
 ========================================*/
@@ -30,7 +30,7 @@ int main(int argc, char* argv[]) {
     for (Precinct p : state.precincts) {
         precinct_sum += p.get_area();
     }
-    for (Multi_Polygon district : state.districts) {
+    for (MultiPolygon district : state.districts) {
         district_sum += district.get_area();
     }
 
@@ -73,6 +73,6 @@ int main(int argc, char* argv[]) {
 
     cout << state.network.vertices.size() << " nodes in state network" << endl;
     // cout << state.network.edges.size() << " edges in state network" << endl;
-    cout << state.network.get_num_components() << " components in state network" << endl;
+    cout << state.network.getNumComponents() << " components in state network" << endl;
     cout << "=============================================" << endl;
 }

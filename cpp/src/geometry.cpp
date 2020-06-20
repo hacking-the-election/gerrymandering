@@ -1,6 +1,6 @@
 /*=======================================
  geometry.cpp:                  k-vernooy
- last modified:              Fri, Feb 28
+ last modified:                Thu, Jun 18
  
  Definition of useful functions for
  computational geometry. Basic 
@@ -217,7 +217,7 @@ segments Geometry::Polygon::get_segments() {
 }
 
 
-segments Geometry::Multi_Polygon::get_segments() {
+segments Geometry::MultiPolygon::get_segments() {
     /*
         @desc: get a list of all segments in a multi_shape, for each shape, including holes
         @params: none
@@ -338,7 +338,7 @@ coordinate Geometry::Polygon::get_centroid() {
 }
 
 
-coordinate Geometry::Multi_Polygon::get_centroid() {
+coordinate Geometry::MultiPolygon::get_centroid() {
     /*
         @desc:
             returns average centroid from list of `holes`
@@ -427,7 +427,7 @@ double Geometry::Polygon::get_perimeter() {
 }
 
 
-double Multi_Polygon::get_area() {
+double MultiPolygon::get_area() {
     /*
         @desc: gets sum area of all Polygon objects in border
         @params: none
@@ -442,7 +442,7 @@ double Multi_Polygon::get_area() {
 }
 
 
-double Geometry::Multi_Polygon::get_perimeter() {
+double Geometry::MultiPolygon::get_perimeter() {
     /*
         @desc:
             gets sum perimeter of a multi shape object
@@ -482,15 +482,15 @@ bool get_bordering(Polygon s0, Polygon s1) {
     c.AddPaths(clip, ClipperLib::ptClip, true);
     c.Execute(ClipperLib::ctUnion, solutions, ClipperLib::pftNonZero);
 
-    Multi_Polygon ms = paths_to_multi_shape(solutions);
+    MultiPolygon ms = paths_to_multi_shape(solutions);
     return (ms.border.size() == 1);
 }
 
 
-bool get_bordering(Multi_Polygon s0, Polygon s1) {
+bool get_bordering(MultiPolygon s0, Polygon s1) {
     /*
         @desc: gets whether or not two shapes touch each other
-        @params: `Multi_Polygon` s0, `Polygon` s1: shapes to check bordering
+        @params: `MultiPolygon` s0, `Polygon` s1: shapes to check bordering
         @return: `bool` shapes are boording
     */
 
@@ -512,17 +512,17 @@ bool get_bordering(Multi_Polygon s0, Polygon s1) {
     c.Execute(ClipperLib::ctXor, xsolutions, ClipperLib::pftNonZero);
     c.Execute(ClipperLib::ctUnion, usolutions, ClipperLib::pftNonZero);
 
-    Multi_Polygon msx = paths_to_multi_shape(xsolutions);
-    Multi_Polygon msu = paths_to_multi_shape(usolutions);
+    MultiPolygon msx = paths_to_multi_shape(xsolutions);
+    MultiPolygon msu = paths_to_multi_shape(usolutions);
 
     return (msu.border.size() == s0.border.size() && msx.holes.size() == 0);
 }
 
 
-bool get_bordering(Multi_Polygon s0, Multi_Polygon s1) {
+bool get_bordering(MultiPolygon s0, MultiPolygon s1) {
     /*
         @desc: gets whether or not two shapes touch each other
-        @params: `Multi_Polygon` s0, `Multi_Polygon` s1: shapes to check bordering
+        @params: `MultiPolygon` s0, `MultiPolygon` s1: shapes to check bordering
         @return: `bool` shapes are boording
     */
 
@@ -545,8 +545,8 @@ bool get_bordering(Multi_Polygon s0, Multi_Polygon s1) {
     c.Execute(ClipperLib::ctXor, xsolutions, ClipperLib::pftNonZero);
     c.Execute(ClipperLib::ctUnion, usolutions, ClipperLib::pftNonZero);
 
-    Multi_Polygon msx = paths_to_multi_shape(xsolutions);
-    Multi_Polygon msu = paths_to_multi_shape(usolutions);
+    MultiPolygon msx = paths_to_multi_shape(xsolutions);
+    MultiPolygon msu = paths_to_multi_shape(usolutions);
 
     return (msu.border.size() < s0.border.size() + s1.border.size() && msx.holes.size() <= s0.holes.size() + s1.holes.size());
 }
@@ -614,7 +614,7 @@ bool get_inside_first(Geometry::LinearRing s0, Geometry::LinearRing s1) {
 }
 
 
-Multi_Polygon generate_exterior_border(Precinct_Group precinct_group) {
+MultiPolygon generate_exterior_border(Precinct_Group precinct_group) {
     /*
         Get the exterior border of a shape with interior components.
         Equivalent to 'dissolve' in mapshaper - remove bordering edges.
@@ -625,7 +625,7 @@ Multi_Polygon generate_exterior_border(Precinct_Group precinct_group) {
             `precinct_group`: A precinct group to generate the border of
 
         @return:
-            Multi_Polygon: exterior border of `precinct_group`
+            MultiPolygon: exterior border of `precinct_group`
     */ 
 
     // create paths array from polygon
@@ -702,10 +702,10 @@ ClipperLib::Paths shape_to_paths(Geometry::Polygon shape) {
 }
 
 
-Geometry::Multi_Polygon paths_to_multi_shape(ClipperLib::Paths paths) {
+Geometry::MultiPolygon paths_to_multi_shape(ClipperLib::Paths paths) {
     /*
         @desc: 
-              Create a Multi_Polygon object from a clipper Paths
+              Create a MultiPolygon object from a clipper Paths
               (multi path) object through nested iteration
 
         @params: `ClipperLib::Paths` paths: A
@@ -715,7 +715,7 @@ Geometry::Multi_Polygon paths_to_multi_shape(ClipperLib::Paths paths) {
             it's actually needed
     */
 
-    Multi_Polygon ms;
+    MultiPolygon ms;
     ReversePaths(paths);
 
     for (ClipperLib::Path path : paths) {
@@ -738,14 +738,14 @@ Geometry::Multi_Polygon paths_to_multi_shape(ClipperLib::Paths paths) {
     return ms;
 }
 
-Multi_Polygon poly_tree_to_shape(ClipperLib::PolyTree tree) {
+MultiPolygon poly_tree_to_shape(ClipperLib::PolyTree tree) {
     /*
         Loops through top-level children of a
         PolyTree to access outer-level polygons. Returns
         a multi_shape object containing these outer polys.
     */
    
-    Multi_Polygon ms;
+    MultiPolygon ms;
     
     for (ClipperLib::PolyNode* polynode : tree.Childs) {
         // if (polynode->IsHole()) x++;
@@ -833,7 +833,7 @@ Geometry::bounding_box Geometry::Polygon::get_bounding_box() {
 }
 
 
-Geometry::bounding_box Geometry::Multi_Polygon::get_bounding_box() {
+Geometry::bounding_box Geometry::MultiPolygon::get_bounding_box() {
     // set dummy extremes
     int top = border[0].hull.border[0][1], 
         bottom = border[0].hull.border[0][1], 

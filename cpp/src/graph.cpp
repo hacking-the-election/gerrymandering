@@ -1,6 +1,6 @@
 /*=======================================
  graph.cpp:                     k-vernooy
- last modified:               Sat, Apr 11
+ last modified:               Thu, Jun 18
  
  Definitions for graph theory related
  algorithm implementations such as
@@ -53,7 +53,7 @@ Graph Graph::get_induced_subgraph(vector<int> nodes) {
 }
         
 
-std::vector<Graph> Graph::get_components() {
+std::vector<Graph> Graph::getComponents() {
     /*
         @desc: get the subgraphs that make up the components
         @params: none
@@ -105,7 +105,7 @@ void Graph::dfs_recursor(int v, std::unordered_map<int, bool>& visited, std::vec
 }
 
 
-bool Graph::is_connected() {
+bool Graph::isConnected() {
     unordered_map<int, bool> v;
     int visited = 0;
     dfs_recursor(vertices.begin().key(), visited, v);
@@ -124,7 +124,7 @@ void Graph::dfs_recursor(int v, int& visited, unordered_map<int, bool>& visited_
 }
 
 
-int Graph::get_num_components() {
+int Graph::getNumComponents() {
     /*
         @desc: get number of components of a graph
         @params: none
@@ -168,7 +168,7 @@ void Graph::dfs_recursor(int v, std::unordered_map<int, bool>& visited) {
 } 
 
 
-void Graph::add_edge(Edge edge) {
+void Graph::addEdge(Edge edge) {
     /*
         @desc: Adds an edge to a graph object
         @params: `Geometry::Edge` edge: edge to be added

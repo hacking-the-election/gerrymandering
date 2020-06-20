@@ -1,6 +1,6 @@
 /*=======================================
  draw_community.cpp:            k-vernooy
- last modified:                Sun, Apr 5
+ last modified:               Sat, May 23
  
  Reads a state object and draws its
  community object list to a canvas

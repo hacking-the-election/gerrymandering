@@ -1,6 +1,6 @@
 /*=======================================
  shape.hpp:                     k-vernooy
- last modified:               Wed, Jun 17
+ last modified:               Fri, Jun 19
  
  Declarations for utility functions -
  vector modification, reading/writing 
@@ -47,13 +47,14 @@ namespace hte {
         void                      WriteFile(std::string contents, std::string path);
         std::string               ReadFile(std::string path);
         std::string               Join(std::vector<std::string> str, std::string del);
+        std::string               GetProgressBar(double progress);
         std::vector<std::string>  Split(std::string str, std::string del);
-        
+
         int RandInt(int start, int end);
         double RandUnitInterval();
 
-        double get_stdev(std::vector<int>& data);
-        double get_stdev(std::vector<double>& data);
+        double GetStdev(std::vector<int>& data);
+        double GetStdev(std::vector<double>& data);
     }
 }
 

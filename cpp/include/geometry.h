@@ -1,6 +1,6 @@
 /*=======================================
  geometry.hpp                   k-vernooy
- last modified:               Thu, Jun 18
+ last modified:               Fri, Jun 19
  
  Declarations of functions for geometrical
  manipulations and searching algorithms.
@@ -8,6 +8,8 @@
 
 #ifndef GEOMETRY_H
 #define GEOMETRY_H
+
+#include "util.h"
 
 /** \cond */
 #include <boost/geometry.hpp>
@@ -17,7 +19,7 @@
 
 #include "../lib/Clipper/cpp/clipper.hpp"
 #include "../lib/Miniball.hpp"
-#include "data.h"
+
 #define PI 3.14159265358979323
 
 
@@ -40,7 +42,6 @@ namespace Geometry {
     class  LinearRing;      //!< a group of lines
     class  Polygon;         //!< Exterior and optional interior LinearRings (for holes)
     class  MultiPolygon;    //!< A group of Polygons
-    class  PrecinctGroup;
     struct Point2d;
 
     typedef std::vector<Point2d>   Point2dVec;    //!< list of coordinates: {{x1, y1} ... {xn, yn}};
@@ -100,7 +101,7 @@ namespace Geometry {
             LinearRing() : centroid(NULL, NULL) {}
             LinearRing(Point2dVec b) : centroid(NULL, NULL) {
                 if (b[0] != b[b.size() - 1]) {
-                    throw Util::Exceptions::LinearRingOpen();
+                    throw ::hte::Util::Exceptions::LinearRingOpen();
                 }
 
                 border = b;
@@ -144,18 +145,18 @@ namespace Geometry {
             Polygon(LinearRing hull)
                 : hull(hull) {}
             Polygon(LinearRing hull, std::string shape_id)
-                : hull(hull), shape_id(shape_id) {}
+                : hull(hull), shapeId(shape_id) {}
 
             Polygon(LinearRing hull, std::vector<LinearRing> holes) 
                 : hull(hull), holes(holes) {}
 
             Polygon(LinearRing hull, std::vector<LinearRing> holes, std::string shape_id) 
-                : hull(hull), holes(holes), shape_id(shape_id) {}
+                : hull(hull), holes(holes), shapeId(shape_id) {}
 
 
             LinearRing               hull;      //!< Ring of exterior hull coordinates
             std::vector<LinearRing>  holes;     //!< List of exterior holes in shape
-            std::string              shape_id;  //!< The shape's GEOID, if applicable
+            std::string              shapeId;  //!< The shape's GEOID, if applicable
 
             virtual std::string  toJson();          // get the coordinate data of the polygon as GeoJson
             virtual double       getSignedArea();   // return (area of shape - area of holes)
@@ -168,8 +169,8 @@ namespace Geometry {
             friend bool operator== (const Polygon& p1, const Polygon& p2);
             friend bool operator!= (const Polygon& p1, const Polygon& p2);
             
-            int pop = 0;                        //!< Total population of the polygon
-            int is_part_of_multi_polygon = -1;  //!< Internal data for parsing rules
+            int pop = 0;                     //!< Total population of the polygon
+            int isPartOfMultiPolygon = -1;   //!< Internal data for parsing rules
     };
 
     
@@ -193,24 +194,24 @@ namespace Geometry {
             MultiPolygon(std::vector<Polygon> s, std::string t_id) {
                 // constructor with assignment
                 border = s;
-                shape_id = t_id;
+                shapeId = t_id;
             }
 
             MultiPolygon(std::vector<Data::Precinct> s) {
                 // constructor with assignment
                 for (Data::Precinct p : s) {
                     // copy precinct data to shape object
-                    Polygon s = Polygon(p.hull, p.holes, p.shape_id);
+                    Polygon s = Polygon(p.hull, p.holes, p.shapeId);
                     border.push_back(s);
                 }
             }
 
-            double        get_perimeter();         // total perimeter of border array
-            double        get_area();              // total area of the border shape array
-            virtual       std::string to_json();   // get a json string of the borders and holes
-            Point2d       get_centroid();          // average centroid of inner polys
-            SegmentVec    get_segments();          // return a segment list with shape's segments
-            BoundingBox   get_bounding_box();
+            double        getPerimeter();         // total perimeter of border array
+            double        getSignedArea();        // total area of the border shape array
+            virtual       std::string toJson();   // get a json string of the borders and holes
+            Point2d       getCentroid();          // average centroid of inner polys
+            SegmentVec    getSegments();          // return a segment list with shape's segments
+            BoundingBox   getBoundingBox();
 
             std::vector<Polygon> border;
 
@@ -220,19 +221,19 @@ namespace Geometry {
     };
 
 
-    bool               GetBordering(Polygon, Polygon);
-    bool               GetBoundOverlap(BoundingBox, BoundingBox);
-    bool               GetBoundInside(BoundingBox, BoundingBox);
-    bool               GetPointInRing(Point2d, LinearRing);
-    bool               GetInside(LinearRing, LinearRing);
-    bool               GetInsideFirst(LinearRing s0, LinearRing s1);
-    bool               GetPointInCircle(Point2d center, double radius, Point2d point);
+    bool GetBordering(Polygon, Polygon);
+    bool GetBoundOverlap(BoundingBox, BoundingBox);
+    bool GetBoundInside(BoundingBox, BoundingBox);
+    bool GetPointInRing(Point2d, LinearRing);
+    bool GetInside(LinearRing, LinearRing);
+    bool GetInsideFirst(LinearRing s0, LinearRing s1);
+    bool GetPointInCircle(Point2d center, double radius, Point2d point);
 
     double             GetDistance(Point2d c1, Point2d c2);
     double             GetDistance(Segment s);
     
     Polygon            GenerateGon(Point2d center, double radius, int nSides);
-    MultiPolygon       GenerateExteriorBorder(PrecinctGroup p);
+    MultiPolygon       GenerateExteriorBorder(std::vector<Polygon> p);
 
     Segment            CoordsToSegment(Point2d c1, Point2d c2);
     LinearRing         PathToRing(ClipperLib::Path path);

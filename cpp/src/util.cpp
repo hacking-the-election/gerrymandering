@@ -1,6 +1,6 @@
 /*=======================================
  util.cpp:                      k-vernooy
- last modified:               Wed, Jun 17
+ last modified:               Fri, Jun 19
 
  Funciton definitions for simple array,
  string, and other utilities.
@@ -13,6 +13,15 @@
 
 namespace hte {
     namespace Util {
+
+        std::string GetProgressBar(double progress) {
+            int length = 30;
+            std::string bar = "[";
+            int num = ceil(progress * (double) length);
+            for (int i = 0; i < num && i < length; i++) bar += "\e[32m=\e[0m";
+            for (int i = num; i < length; i++) bar += " ";
+            return bar + "]";
+        }
 
         std::string ReadFile(std::string path) {
             // initiate stream and buffer

@@ -1,6 +1,6 @@
 /*=======================================
  data.hpp                       k-vernooy
- last modified:               Thu, Jun 18
+ last modified:               Fri, Jun 19
  
  Declarations of classes and functions
  for political data storage, parsing, and
@@ -22,15 +22,13 @@ namespace hte {
         enum class PoliticalParty;
         enum class IdType;
         class DataParser;
-        class PrecinctGroup;
-
 
         /**
          * \brief An enum storing different political parties.
          */
         enum class PoliticalParty {
             Democrat, Republican, Green, Independent,
-            Libertarian, Reform, Other, Total
+            Libertarian, Reform, Other, Total, AbsoluteQuantification
         };
 
         /**
@@ -93,12 +91,12 @@ namespace hte {
                 // array of precinct objects
                 ::std::vector<Precinct> precincts;
 
-                int           getPopulation();
-                ::std::string   toJson();
-                void          removePrecinct(Precinct);
-                void          addPrecinct(Precinct);
-                Precinct      getPrecinctFromId(::std::string);
-                double        getArea();
+                ::std::string  toJson();
+                int            getPopulation();
+                void           removePrecinct(Precinct);
+                void           addPrecinct(Precinct);
+                Precinct       getPrecinctFromId(::std::string);
+                double         getArea();
 
                 Geometry::BoundingBox   getBoundingBox();
                 Geometry::Point2d       getCentroid();
@@ -129,15 +127,15 @@ namespace hte {
 
                 // generate a file from proper raw input with and without additional voter data files
                 static State GenerateFromFile(DataParser&);
-                static State GenerateFromFile(::std::string, ::std::string, ::std::map<PoliticalParty, string>, map<IdType, ::std::string>);
+                static State GenerateFromFile(::std::string, ::std::string, ::std::map<PoliticalParty, string>, ::std::map<IdType, ::std::string>);
                 static State GenerateFromFile(::std::string, ::std::string, ::std::string, ::std::map<PoliticalParty, ::std::string>, ::std::map<IdType, ::std::string>);
 
                 ::hte::Algorithm::Graph network; // represents the precinct network of the state
                 ::std::vector<MultiPolygon> districts; // the actual districts of the state
 
                 // serialize and read to and from binary, json
-                void            to_binary(::std::string path);
-                static State    from_binary(::std::string path);
+                void            toFile(::std::string path);
+                static State    fromFile(::std::string path);
         };
 
 

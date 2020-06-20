@@ -1,6 +1,6 @@
 /*=======================================
  parse.cpp:                     k-vernooy
- last modified:               Wed, Jun 17
+ last modified:               Thu, Jun 18
 
  Definitions of state methods for parsing
  from geodata and election data (see data

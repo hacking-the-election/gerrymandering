@@ -1,6 +1,6 @@
 /*=======================================
  generate_communities.cpp:      k-vernooy
- last modified:               Mon, May 25
+ last modified:                Thu, Jun 18
  
  Run community generation algorithm and 
  print coordinates as geojson for a given
@@ -145,7 +145,7 @@ int main(int argc, char* argv[]) {
     part_line.clear();
 
     for (int i = 0; i < redistricts.size(); i++) {
-        Multi_Polygon ext = generate_exterior_border(redistricts[i].shape);
+        MultiPolygon ext = generate_exterior_border(redistricts[i].shape);
         map<POLITICAL_PARTY, double> quantification = get_quantification(state.network, communities, ext);
         double partisanship = 0.5;
         if (quantification[POLITICAL_PARTY::DEMOCRAT] + quantification[POLITICAL_PARTY::REPUBLICAN] != 0)
