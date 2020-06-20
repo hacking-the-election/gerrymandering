@@ -1,6 +1,6 @@
 /*=======================================
  algorithm.h:                   k-vernooy
- last modified:               Thu, Jun 18
+ last modified:               Fri, Jun 19
 
  A header for defining graph theory classes
  and other structures needed for all
@@ -11,9 +11,10 @@
 #ifndef ALGORITHM_H
 #define ALGORITHM_H
 
+#include <unordered_map>
+
 #include "data.h"
 #include "geometry.h"
-#include <unordered_map>
 #include "../lib/ordered-map/include/tsl/ordered_map.h"
 
 
@@ -58,7 +59,7 @@ namespace hte {
          * @param id Node to removes edges to
          * @return Updated graph with removed edges
          */
-        Graph remove_edges_to(Graph g, int id);
+        Graph RemoveEdgesTo(Graph g, int id);
 
 
         /**
@@ -79,7 +80,7 @@ namespace hte {
                  * @param nodes the integer list of nodes to get the subgraph of
                  * @return The subgraph object
                  */
-                Graph get_induced_subgraph(std::vector<int> nodes);
+                Graph getInducedSubgraph(std::vector<int> nodes);
 
                 /**
                  * Determine the number of [components](https://en.wikipedia.org/wiki/Component_(graph_theory)) in the graph
@@ -93,25 +94,25 @@ namespace hte {
                  */
                 std::vector<Graph> getComponents();
                 bool isConnected();
-
-                void add_node(Node node);
-                void remove_node(int id);
+                void addNode(Node node);
+                void removeNode(int id);
                 void addEdge(Edge);
-                void remove_edge(Edge);
-                void remove_edges_to(int id);
+                void removeEdge(Edge);
+                void removeEdgesTo(int id);
 
                 protected:
                 // recursors for getting different data
-                void dfs_recursor(int v, std::unordered_map<int, bool>& visited);
-                void dfs_recursor(int v, std::unordered_map<int, bool>& visited, std::vector<int>* nodes);
-                void dfs_recursor(int v, int& visited, std::unordered_map<int, bool>& visited_b);
+                void dfsRecursor(int v, std::unordered_map<int, bool>& visited);
+                void dfsRecursor(int v, std::unordered_map<int, bool>& visited, std::vector<int>* nodes);
+                void dfsRecursor(int v, int& visited, std::unordered_map<int, bool>& visitedB);
         };
 
+
+        /**
+         * Contains a list of precincts, as well as information about
+         * linking and where is it on an island list.
+        */
         class Community : public Graph {
-            /*
-                Contains a list of precincts, as well as information about
-                linking and where is it on an island list.
-            */
 
             public:
                 double quantification;
@@ -131,48 +132,35 @@ namespace hte {
         };
 
 
-        double average(Communities& cs, double (*measure)(Community&));
-        double get_partisanship_stdev(Community& c);
-        double get_compactness(Community& c);
-        double get_precise_compactness(Community& c);
-        double get_distance_from_pop(Communities& cs);
-        double get_scalarized_metric(Communities& cs);
-        int get_num_precincts_changed(Graph& g1, Graph& g2);
+        double Average(Communities& cs, double (*measure)(Community&));
+        double GetPartisanshipStdev(Community& c);
+        double GetCompactness(Community& c);
+        double GetPreciseCompactness(Community& c);
+        double GetDistanceFromPop(Communities& cs, double);
+        double GetScalarizedMetric(Communities& cs);
+        int GetNumPrecinctsChanged(Graph& g1, Graph& g2);
 
-        void optimize_compactness(Communities& cs, Graph& g);
-        void minimize_stdev(Communities& cs, Graph& g);
-        bool optimize_population(Communities& cs, Graph& g, double range);
-
-
-        void save(Communities, std::string);
-        Communities load(std::string, Graph&);
-        Communities load(std::string, Graph&, std::string);
-        std::vector<std::vector<double> > load_quantification(std::string tsv);
+        void SaveCommunitiesToFile(Communities, std::string);
+        Communities LoadCommunitiesFromFile(std::string, Graph&);
+        Communities LoadCommunitiesWithQuantification(std::string, Graph&, std::string);
+        std::vector<std::vector<double> > LoadQuantification(std::string tsv);
 
 
         /**
          * Partitions a graph according to the Karger-Stein algorithm
-         * 
          * \param graph The graph to partition
          * \param n_communities The number of partitions to make
-         * @return: `Communities` list of id's corresponding to the partition
+         * @return: `Communities` list of id's corresponding to the pa
+         * rtition
          */
-        Communities karger_stein(Graph& graph, int nCommunities);
+        Communities KargerStein(Graph& graph, int nCommunities);
+        void GradientDescentOptimization(Graph& g, Communities& cs, double (*measure)(Communities&));
+        void SimulatedAnnealingOptimization(Graph& g, Communities& cs, double (*measure)(Community&));
 
-        /**
-         * Given a random init config, optimize the provided communities
-         * under the communities algorithm.
-         * 
-         * \param graph The connection network of the state
-         * \param init_config The communities to modify
-         * \param output_dir Where to save data files to
-         * \param communities_run Whether or not communities are being run (as apposed to redistricting)
-         * 
-         * \return Optimized communities
-         */
-        Communities get_communities(Graph& g, Communities initConfig, double popConstraint, std::string outputDir, bool communitiesRun);
-        void gradient_descent_optimization(Graph& g, Communities& cs, double (*measure)(Communities&));
-        void simulated_annealing_optimization(Graph& g, Communities& cs, double (*measure)(Community&));
+        double CollapseVals(double a, double b)
+        double GetPopulationFromMask(Data::PrecinctGroup pg, Geometry::MultiPolygon mp);
+        std::map<Data::PoliticalParty, double> GetPartisanshipFromMask(Data::PrecinctGroup pg, Geometry::MultiPolygon mp);
+        std::map<Data::PoliticalParty, double> GetQuantification(Graph& graph, Communities& communities, Geometry::MultiPolygon district);
     }
 }
 
