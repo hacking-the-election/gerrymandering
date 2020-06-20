@@ -1,40 +1,37 @@
 /*=======================================
  quantification.cpp:            k-vernooy
- last modified:               Sat May 16
+ last modified:              Fri, Jun 19
  
  Determines how gerrymandered a district
  is given a community map
 ========================================*/
 
-#include "../include/quantification.hpp"
 #include <iostream>
+#include "../include/hte.h"
 
 using namespace std;
 using namespace hte;
-using namespace Geometry;
-using namespace Graphics;
 
 
-double hte::Geometry::collapse_vals(double a, double b) {
-    // where `a` is the republican ratio and b is the general quantification
+double hte::Algorithm::CollapseVals(double a, double b) {
     assert((a <= 1.0 && a >= 0.0));
     assert((b <= 1.0 && b >= 0.0));
     return (a * (2.0 * (0.5 - b)));
 }
 
 
-double hte::Geometry::get_population_from_mask(Precinct_Group pg, Multi_Polygon mp) {
+double hte::Algorithm::GetPopulationFromMask(Data::PrecinctGroup pg, Geometry::MultiPolygon mp) {
     double pop = 0;
-    bounding_box bound = pg.get_bounding_box();
-    for (Precinct p : pg.precincts) {
-        if (bound_overlap(p.get_bounding_box(), bound)) {
+    Geometry::BoundingBox bound = pg.getBoundingBox();
+    for (Data::Precinct p : pg.precincts) {
+        if (Geometry::GetBoundOverlap(p.getBoundingBox(), bound)) {
             // get the overlap between mp and p
             // create paths array from polygon
-            ClipperLib::Path subj = ring_to_path(p.hull);
+            ClipperLib::Path subj = Geometry::RingToPath(p.hull);
 
             ClipperLib::Paths clip;
-            for (Polygon p : mp.border)
-                clip.push_back(ring_to_path(p.hull));
+            for (Geometry::Polygon p : mp.border)
+                clip.push_back(Geometry::RingToPath(p.hull));
 
             ClipperLib::Paths solutions;
             ClipperLib::Clipper c; // the executor
@@ -43,9 +40,9 @@ double hte::Geometry::get_population_from_mask(Precinct_Group pg, Multi_Polygon 
             c.AddPath(subj, ClipperLib::ptSubject, true);
             c.AddPaths(clip, ClipperLib::ptClip, true);
             c.Execute(ClipperLib::ctIntersection, solutions, ClipperLib::pftNonZero);
-            Multi_Polygon intersection = paths_to_multi_shape(solutions);
-            double ratio = (abs(intersection.get_area()) / abs(p.get_area()));
-            pop += ((double)p.pop * ratio);
+            Geometry::MultiPolygon intersection = Geometry::PathsToMultiPolygon(solutions);
+            double ratio = (abs(intersection.getSignedArea()) / abs(p.getSignedArea()));
+            pop += (static_cast<double>(p.pop) * ratio);
         }
     }
 
@@ -53,23 +50,23 @@ double hte::Geometry::get_population_from_mask(Precinct_Group pg, Multi_Polygon 
 }
 
 
-std::map<POLITICAL_PARTY, double> hte::Geometry::get_partisanship_from_mask(Precinct_Group pg, Multi_Polygon mp) {
-    std::map<POLITICAL_PARTY, double> partisanships;
-    bounding_box bound = pg.get_bounding_box();
+std::map<Data::PoliticalParty, double> hte::Algorithm::GetPartisanshipFromMask(Data::PrecinctGroup pg, Geometry::MultiPolygon mp) {
+    std::map<Data::PoliticalParty, double> partisanships;
+    Geometry::BoundingBox bound = pg.getBoundingBox();
 
-    for (auto& pair : pg.precincts[0].voter_data) {
+    for (auto& pair : pg.precincts[0].voterData) {
         partisanships[pair.first] = 0;
     }
 
-    for (Precinct p : pg.precincts) {
-        if (bound_overlap(p.get_bounding_box(), bound)) {
+    for (Data::Precinct p : pg.precincts) {
+        if (Geometry::GetBoundOverlap(p.getBoundingBox(), bound)) {
             // get the overlap between mp and p
             // create paths array from polygon
-            ClipperLib::Path subj = ring_to_path(p.hull);
+            ClipperLib::Path subj = Geometry::RingToPath(p.hull);
 
             ClipperLib::Paths clip;
-            for (Polygon p : mp.border)
-                clip.push_back(ring_to_path(p.hull));
+            for (Geometry::Polygon p : mp.border)
+                clip.push_back(Geometry::RingToPath(p.hull));
 
             ClipperLib::Paths solutions;
             ClipperLib::Clipper c; // the executor
@@ -78,10 +75,10 @@ std::map<POLITICAL_PARTY, double> hte::Geometry::get_partisanship_from_mask(Prec
             c.AddPath(subj, ClipperLib::ptSubject, true);
             c.AddPaths(clip, ClipperLib::ptClip, true);
             c.Execute(ClipperLib::ctIntersection, solutions, ClipperLib::pftNonZero);
-            Multi_Polygon intersection = paths_to_multi_shape(solutions);
-            double ratio = (abs(intersection.get_area()) / abs(p.get_area()));
+            Geometry::MultiPolygon intersection = Geometry::PathsToMultiPolygon(solutions);
+            double ratio = (abs(intersection.getSignedArea()) / abs(p.getSignedArea()));
 
-            for (auto& pair : p.voter_data) {
+            for (auto& pair : p.voterData) {
                 partisanships[pair.first] += (pair.second * ratio);
             }
         }
@@ -91,39 +88,44 @@ std::map<POLITICAL_PARTY, double> hte::Geometry::get_partisanship_from_mask(Prec
 }
 
 
-std::map<POLITICAL_PARTY, double> Geometry::get_quantification(Graph& graph, Communities& communities, Multi_Polygon district) {
+std::map<Data::PoliticalParty, double> Algorithm::GetQuantification(Graph& graph, Communities& communities, Geometry::MultiPolygon district) {
     // determines how gerrymandered `district` is with the `communities` map.
     // communities had better already be updated.
     double val = 0.0;
-    bounding_box db = district.get_bounding_box();
+    Geometry::BoundingBox db = district.getBoundingBox();
     // get all communities that overlap the current district
-    Precinct_Group state = Precinct_Group::from_graph(graph);
-    double district_population = get_population_from_mask(state, district);
 
-    int largest_index = -1;
-    int largest_pop = -1;
+    
+    Data::PrecinctGroup state;
+    for (auto& pair : graph.vertices) {
+        state.addPrecinct(*pair.second.precinct);
+    }
+    double districtPopulation = GetPopulationFromMask(state, district);
+
+    int largestIndex = -1;
+    int largestPop = -1;
 
     for (int i = 0; i < communities.size(); i++) {
-        communities[i].update_shape(graph);
-        if (bound_overlap(communities[i].shape.get_bounding_box(), db)) {
+        communities[i].resetShape(graph);
+        if (Geometry::GetBoundOverlap(communities[i].shape.getBoundingBox(), db)) {
             // get intersection between the two shapes
-            double pop = get_population_from_mask(communities[i].shape, district);
-            if (pop > largest_pop) {
-                largest_pop = pop;
-                largest_index = i;
+            double pop = GetPopulationFromMask(communities[i].shape, district);
+            if (pop > largestPop) {
+                largestPop = pop;
+                largestIndex = i;
             }
         }
     }
 
     // get the difference of the two shapes
     ClipperLib::Paths subj;
-    for (Precinct p : communities[largest_index].shape.precincts) {
-        subj.push_back(ring_to_path(p.hull));
+    for (Data::Precinct p : communities[largestIndex].shape.precincts) {
+        subj.push_back(Geometry::RingToPath(p.hull));
     }
 
     ClipperLib::Paths clip;
-    for (Polygon p : district.border)
-        clip.push_back(ring_to_path(p.hull));
+    for (Geometry::Polygon p : district.border)
+        clip.push_back(Geometry::RingToPath(p.hull));
 
     ClipperLib::Paths solutions;
     ClipperLib::Clipper c; // the executor
@@ -132,12 +134,12 @@ std::map<POLITICAL_PARTY, double> Geometry::get_quantification(Graph& graph, Com
     c.AddPaths(subj, ClipperLib::ptSubject, true);
     c.AddPaths(clip, ClipperLib::ptClip, true);
     c.Execute(ClipperLib::ctDifference, solutions, ClipperLib::pftNonZero);
-    Multi_Polygon pop_not_in_district = paths_to_multi_shape(solutions);
-    std::map<POLITICAL_PARTY, double> partisanships = get_partisanship_from_mask(communities[largest_index].shape, pop_not_in_district);
+    Geometry::MultiPolygon popNotInDistrict = Geometry::PathsToMultiPolygon(solutions);
+    std::map<Data::PoliticalParty, double> partisanships = GetPartisanshipFromMask(communities[largestIndex].shape, popNotInDistrict);
 
     double sum = 0;
     for (auto& pair : partisanships) {
-        if (pair.first != POLITICAL_PARTY::TOTAL) {
+        if (pair.first != Data::PoliticalParty::Total) {
             sum += pair.second;
         }
     }
@@ -151,6 +153,8 @@ std::map<POLITICAL_PARTY, double> Geometry::get_quantification(Graph& graph, Com
         }
     }
 
-    partisanships[POLITICAL_PARTY::ABSOLUTE_QUANTIFICATION] = get_population_from_mask(communities[largest_index].shape, pop_not_in_district) / communities[largest_index].get_population();
+    partisanships[Data::PoliticalParty::AbsoluteQuantification]
+       = GetPopulationFromMask(communities[largestIndex].shape, popNotInDistrict) / communities[largestIndex].getPopulation();
+
     return partisanships;
 }
