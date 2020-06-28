@@ -625,6 +625,9 @@ def create_graph(election_file, geo_file, pop_file, state):
 
 if __name__ == "__main__":
     ordered_precinct_graph = create_graph(*sys.argv[1:5])
+    # Add node attributes to precinct objects.
+    for node in ordered_precinct_graph:
+        ordered_precinct_graph.node_attributes(node)[0].node = node
 
     # Save graph as pickle
     with open(sys.argv[5], "wb+") as f:
