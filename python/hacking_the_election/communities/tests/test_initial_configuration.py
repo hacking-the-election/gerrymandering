@@ -33,6 +33,9 @@ class TestInitialConfiguration(unittest.TestCase):
     
     def test_grid_graph(self):
         """Tests random community generation with a graph of 100 precincts in a grid.
+
+        If SHOW is set to `True`, this generates an image of the configuration.
+        If not, then it simply runs the function and checks if it raises an exception.
         """
 
         G1 = graph()  # A graph whose nodes are in a order of the grid.
@@ -41,8 +44,9 @@ class TestInitialConfiguration(unittest.TestCase):
         for x in range(10):
             for y in range(10):
                 coords = Point(x * 10, y * 10).buffer(2)
-                precinct = Precinct(0, coords, "North Montana",
+                precinct = Precinct(0, coords, "vermont",
                                     str(10*x + y), 1, 2)
+                precinct.node = int(precinct.id)
                 G1.add_node(int(precinct.id), attrs=[precinct])
 
         # Add edges so that degree can be calculated.
@@ -67,13 +71,13 @@ class TestInitialConfiguration(unittest.TestCase):
 
         communities = create_initial_configuration(G2, 2)
 
-        def get_color(node):
-            precinct = G2.node_attributes(node)[0]
-            for c, community in enumerate(communities):
-                if precinct in community.precincts.values():
-                    return COLORS[c]
-
         if SHOW:
+            def get_color(node):
+                precinct = G2.node_attributes(node)[0]
+                for c, community in enumerate(communities):
+                    if precinct in community.precincts.values():
+                        return COLORS[c]
+
             visualize_graph(G2, None, lambda v: G2.node_attributes(v)[0].centroid,
                 colors=get_color, sizes=lambda x: 20, show=True)
 

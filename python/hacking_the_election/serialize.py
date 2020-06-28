@@ -408,13 +408,13 @@ def create_graph(election_file, geo_file, pop_file, state):
         tostring("".join(precinct["properties"][json_id] for json_id in json_ids))
         for non_precinct_id in non_precinct_ids])
     }
-    with open('./maryland_election_data.tab', 'a') as f:
-        for precinct_id, data in precinct_election_data.items():
-            f.write(str(precinct_id))
-            for party in data:
-                f.write('\t')
-                f.write(str(list(party.values())[0]))
-            f.write('\n')
+    # with open('./maryland_election_data.tab', 'a') as f:
+    #     for precinct_id, data in precinct_election_data.items():
+    #         f.write(str(precinct_id))
+    #         for party in data:
+    #             f.write('\t')
+    #             f.write(str(list(party.values())[0]))
+    #         f.write('\n')
     # Remove multipolygons from our dictionaries. (This is so our districts/communities stay contiguous)
     split_multipolygons(geodata_dict, pop, precinct_election_data)
     # Combine precincts with holes in them

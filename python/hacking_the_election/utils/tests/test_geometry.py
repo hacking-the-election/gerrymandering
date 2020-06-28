@@ -133,7 +133,7 @@ class TestGeometry(unittest.TestCase):
         """
         self.assertEqual(
             geometry.get_distance([0, 0], [4, 4]),
-            4 * math.sqrt(2)
+            32
         )
 
 

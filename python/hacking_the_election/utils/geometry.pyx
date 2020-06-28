@@ -162,7 +162,7 @@ def get_compactness(district):
     :param district: District to find compactness of.
     :type district: `shapely.geometry.Polygon` or `shapely.geometry.MultiPolygon`
 
-    :return: Schwartzberg compactness of `district`.
+    :return: Reock compactness of `district`.
     :rtype: float
     """
 

@@ -43,7 +43,6 @@ class Precinct:
         # used for data visualization
         self.community = None
         
-        
         # number of parties with data
         self.num_parties_data = 0
 

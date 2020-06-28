@@ -94,49 +94,34 @@ class TestGraph(unittest.TestCase):
         precincts_graph = graph.get_induced_subgraph(self.vermont_graph, precincts)
         
         self.assertEqual(len(precincts_graph.nodes()), 4)
-        self.assertEqual(len(precincts_graph.edges()) / 2, 3)
+        self.assertEqual(len(precincts_graph.edges()), 6)
 
     def test_get_giveable_precincts(self):
         """Tests `hacking_the_election.utils.graph.get_giveable_precincts`
         """
         
-        giveable_precincts = [p.id for p in graph.get_giveable_precincts(
-            self.vermont_graph, self.communities, 0).keys()]
-
-        for c in self.communities:
-            c.update_coords()
-
-        # Check contiguity of both communities as precincts are exchanged.
-        for id_ in giveable_precincts:
-            self.communities[0].give_precinct(self.communities[1],
-                id_, update={"coords"})
-            self.assertIsInstance(self.communities[0].coords, Polygon)
-            self.assertIsInstance(self.communities[1].coords, Polygon)
-            self.communities[1].give_precinct(self.communities[0],
-                id_, update={"coords"})
+        giveable_precincts = graph.get_giveable_precincts(self.vermont_graph, self.communities, 0)
 
         # Check that a community that is equal to the state has no giveable precincts.
         at_large = Community(0, self.vermont_graph)
         self.assertEqual(
             graph.get_giveable_precincts(self.vermont_graph,
                 [at_large], 0),
-            {}
+            []
         )
 
     def test_get_takeable_precincts(self):
         """Tests `hacking_the_election.utils.graph.get_takeable_precincts`
         """
 
-        # TODO: Add more elaborate test.
-        # takeable_precincts = \
-        #     [p.id for p in graph.get_takeable_precincts(self.vermont_graph, self.communities, 0).keys()]
+        takeable_precincts = graph.get_takeable_precincts(self.vermont_graph, self.communities, 1)
 
         # Check that a community that is equal to the state has no giveable precincts.
         at_large = Community(0, self.vermont_graph)
         self.assertEqual(
             graph.get_takeable_precincts(self.vermont_graph,
                 [at_large], 0),
-            {}
+            []
         )
 
 
