@@ -1,9 +1,6 @@
 # TODO
 
-## Long Term
-- Serialization
-- Community algorithm
-- Quantification algorithm
-- Unit tests
-- Documentation (sphinx?)
-- Animations (also for development)
+- Update docstrings and improve readability.
+- Generate sphinx documentation.
+- Finish unit tests.
+- Implement Ant Colony Optimization for communities.
