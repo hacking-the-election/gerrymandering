@@ -5,12 +5,13 @@
 import json
 import math
 import os
+import pickle
 import sys
 import unittest
 
 from shapely.geometry import MultiPolygon, Point
 
-from hacking_the_election.utils import geometry
+from hacking_the_election.utils import community, geometry, precinct
 from hacking_the_election.visualization.map_visualization import visualize_map
 
 
@@ -42,6 +43,9 @@ class TestGeometry(unittest.TestCase):
             # Total state boundary of Vermont.
             self.vermont = geometry.geojson_to_shapely(
                 json.load(f)["features"][0]["geometry"]["coordinates"])
+
+        with open(f"{SOURCE_DIR}/data/vermont_graph.pickle", "rb") as f:
+            self.vermont_graph = pickle.load(f)
 
     def test_geojson_to_shapely(self):
         """Tests `hacking_the_election.utils.geometry.geojson_to_shapely`
@@ -135,6 +139,31 @@ class TestGeometry(unittest.TestCase):
             geometry.get_distance([0, 0], [4, 4]),
             32
         )
+
+    def test_get_imprecise_compactness(self):
+        """Tests `hacking_the_election.utils.geometry.get_imprecise_compactness`
+        """
+
+        # Create circle-shaped community.
+
+        circle = Point(0, 0).buffer(10)
+
+        n_precincts = len(list(circle.exterior.coords))
+
+        precincts = []
+        for i, point in enumerate(list(circle.exterior.coords)):
+            precinct_coords = Point(*point).buffer(math.sqrt((100 * math.pi / n_precincts) / math.pi))
+            p = precinct.Precinct(0, precinct_coords, "vermont", str(i), 0, 0)
+            p.node = i
+            precincts.append(p)
+
+        c = community.Community(0, self.vermont_graph)
+        for p in precincts:
+            c.take_precinct(p)
+
+        # Compactness of a circle should equal 1.
+
+        assert abs(geometry.get_imprecise_compactness(c) - 1) < 0.1
 
 
 if __name__ == "__main__":

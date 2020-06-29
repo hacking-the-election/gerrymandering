@@ -44,7 +44,7 @@ class TestGraph(unittest.TestCase):
     def setUp(self):
         """Loads data files and saves as instance attributes.
         """
-        with open(f"{SOURCE_DIR}/data/graph/vermont_graph.pickle", "rb") as f:
+        with open(f"{SOURCE_DIR}/data/vermont_graph.pickle", "rb") as f:
             self.vermont_graph = pickle.load(f)
         self.communities = create_initial_configuration(self.vermont_graph, 2)
 

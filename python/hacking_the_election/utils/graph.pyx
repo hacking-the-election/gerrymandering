@@ -286,7 +286,7 @@ def graph_from_file(file_path, precinct_list):
     :return: graph
     :rtype: pygraph.classes.graph.graph
     """
-    return_graph = graph()
+    return_graph = Graph()
     with open(file_path, "r") as f:
         file_graph = f.read().strip()
     nodes = eval((file_graph.split(']')[0] + ']'))

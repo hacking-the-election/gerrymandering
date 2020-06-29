@@ -203,15 +203,19 @@ cpdef float get_imprecise_compactness(district):
 
     cdef list center = district.centroid
 
-    cdef list distances = []
-    cpdef precinct
+    cdef float max_distance = 0.0
+    cdef float precinct_distance
     cdef list centroid
+    cpdef precinct
     for precinct in district.precincts.values():
         centroid = precinct.centroid
-        distances.append(get_distance(center, centroid))
+        precinct_distance = get_distance(center, centroid)
+        if precinct_distance > max_distance:
+            max_distance = precinct_distance
 
-    cdef float circle_area = max(distances) * math.pi
+    cdef float circle_area = max_distance * math.pi
     return district.area / circle_area
+
 
 def area(ring):
     """Calculates the area of a json ring
@@ -237,7 +241,7 @@ def area(ring):
 
 
 cpdef float get_distance(list p1, list p2):
-    """Finds the distance between two points.
+    """Finds the squared distance between two points.
 
     :param p1: A point in format [x, y]
     :type p1: list of float
@@ -245,7 +249,7 @@ cpdef float get_distance(list p1, list p2):
     :param p2: A point in format [x, y]
     :type p2: list of float
 
-    :return: The euclidean distance between p1 and p2.
+    :return: The squared euclidean distance between p1 and p2.
     :rtype: float
     """
     cdef float x1 = p1[0]
