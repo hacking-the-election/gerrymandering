@@ -1,6 +1,6 @@
 /*===============================================
  community.cpp:                        k-vernooy
- last modified:                     Fri, Jun 19
+ last modified:                     Sun, Jun 21
  
  Definition of the community-generation algorithm
  quantifying gerrymandering and redistricting
@@ -31,29 +31,10 @@
 
 using namespace std;
 using namespace hte;
-using namespace Geometry;
-using namespace Graphics;
-using namespace Data;
-using namespace Algorithm;
-
 
 #define VERBOSE 1
 #define DEBUG 0
 #define SPEED_OPT 0
-
-
-class NodePtr {
-    public:
-        int id;
-        int id_x;
-        int degree;
-    friend bool operator< (const NodePtr& l1, const NodePtr& l2);
-};
-
-
-bool operator< (const NodePtr& l1, const NodePtr& l2) {
-    return (l1.degree < l2.degree);
-}
 
 
 void Community::resetShape(Graph& graph) {
@@ -64,7 +45,7 @@ void Community::resetShape(Graph& graph) {
 }
 
 
-int hte::Algorithm::GetNumPrecinctsChanged(Graph& before, Graph& after) {
+int hte::GetNumPrecinctsChanged(Graph& before, Graph& after) {
     int tot = 0;
     for (int i = 0; i < before.vertices.size(); i++) {
         if ((before.vertices.begin() + i).value().community != (after.vertices.begin() + i).value().community) {
@@ -75,7 +56,7 @@ int hte::Algorithm::GetNumPrecinctsChanged(Graph& before, Graph& after) {
 }
 
 
-int hte::Algorithm::Community::getPopulation() {
+int hte::Community::getPopulation() {
     int sum = 0;
     for (Precinct p : shape.precincts) sum += p.pop;
     return sum;
@@ -101,7 +82,7 @@ void Community::addNode(Node& node) {
 }
 
 
-void hte::Algorithm::SaveCommunitiesToFile(Communities cs, std::string out) {
+void hte::SaveCommunitiesToFile(Communities cs, std::string out) {
     string file = "[";
     for (Community c : cs) {
         file += "[";
@@ -113,19 +94,19 @@ void hte::Algorithm::SaveCommunitiesToFile(Communities cs, std::string out) {
 
     file.pop_back(); file.pop_back();
     file += "]";
-    Util::WriteFile(file, out);
+    WriteFile(file, out);
 }
 
 
-Communities hte::Algorithm::LoadCommunitiesWithQuantification(std::string path, Graph& g, std::string tsv) {
-    string file = Util::ReadFile(path);
+Communities hte::LoadCommunitiesWithQuantification(std::string path, Graph& g, std::string tsv) {
+    string file = ReadFile(path);
     file = file.substr(1, file.size() - 3);
-    vector<string> strs = Util::Split(file, "[");
+    vector<string> strs = Split(file, "[");
     Communities communities(strs.size() - 1);
     
     for (int x = 0; x < strs.size(); x++) {
         if (strs[x] != "" && strs[x] != " ") {
-            vector<string> s = Util::Split(strs[x], ",");
+            vector<string> s = Split(strs[x], ",");
             for (int i = 0; i < s.size(); i++) {
                 if (s[i] != " " && s[i] != "") {
                     string mod = s[i];
@@ -153,20 +134,20 @@ Communities hte::Algorithm::LoadCommunitiesWithQuantification(std::string path, 
 }
 
 
-vector<vector<double> > hte::Algorithm::LoadQuantification(std::string tsv) {
+vector<vector<double> > hte::LoadQuantification(std::string tsv) {
     vector<vector<double> > quant;
-    string quantificationTsv = Util::ReadFile(tsv);
-    string abs = Util::Split(quantificationTsv, "\n")[0];
-    string part = Util::Split(quantificationTsv, "\n")[1];
+    string quantificationTsv = ReadFile(tsv);
+    string abs = Split(quantificationTsv, "\n")[0];
+    string part = Split(quantificationTsv, "\n")[1];
 
     vector<double> q;
-    for (string t : Util::Split(abs, "\t")) {
+    for (string t : Split(abs, "\t")) {
         q.push_back(stod(t));
     }
     quant.push_back(q);
 
     q.clear();
-    for (string t : Util::Split(part, "\t")) {
+    for (string t : Split(part, "\t")) {
         q.push_back(stod(t));
     }
     quant.push_back(q);
@@ -174,16 +155,16 @@ vector<vector<double> > hte::Algorithm::LoadQuantification(std::string tsv) {
 }
 
 
-Communities hte::Algorithm::LoadCommunitiesFromFile(std::string path, Graph& g) {
+Communities hte::LoadCommunitiesFromFile(std::string path, Graph& g) {
     
-    string file = Util::ReadFile(path);
+    string file = ReadFile(path);
     file = file.substr(1, file.size() - 3);
-    vector<string> strs = Util::Split(file, "[");
+    vector<string> strs = Split(file, "[");
     Communities communities(strs.size() - 1);
     
     for (int x = 0; x < strs.size(); x++) {
         if (strs[x] != "" && strs[x] != " ") {
-            vector<string> s = Util::Split(strs[x], ",");
+            vector<string> s = Split(strs[x], ",");
             for (int i = 0; i < s.size(); i++) {
                 if (s[i] != " " && s[i] != "") {
                     string mod = s[i];
@@ -214,7 +195,7 @@ int GetPopulation(Communities& c) {
 }
 
 
-double hte::Algorithm::GetDistanceFromPop(Communities& cs, double threshold) {
+double hte::GetDistanceFromPop(Communities& cs, double threshold) {
     double av = 0;
     double av_pop = GetPopulation(cs) / cs.size();
     for (Community& c : cs) {
@@ -227,7 +208,7 @@ double hte::Algorithm::GetDistanceFromPop(Communities& cs, double threshold) {
 }
 
 
-double hte::Algorithm::GetCompactness(Community& community) {
+double hte::GetCompactness(Community& community) {
     /*
         @desc: finds the reock compactness of a `Community`
         @params: `Community&` community: community object to find compactness of
@@ -250,7 +231,7 @@ double hte::Algorithm::GetCompactness(Community& community) {
 }
 
 
-double hte::Algorithm::GetPreciseCompactness(Community& community) {
+double hte::GetPreciseCompactness(Community& community) {
     /*
         @desc: finds the reock compactness of a `Community`
         @params: `Community&` community: community object to find compactness of
@@ -260,25 +241,21 @@ double hte::Algorithm::GetPreciseCompactness(Community& community) {
 
     Point2dVec lp;
     vector<vector<double> > p;
-
     for (Precinct pre : community.shape.precincts) {
         lp.insert(lp.end(), pre.hull.border.begin(), pre.hull.border.end());
     }
 
     p.reserve(lp.size());
-
     for (int i = 0; i < lp.size(); i++)
-        p.emplace_back(vector<double>{static_cast<double>(lp[i].x), static_cast<double>(lp[i].)y}));
-
+        p.emplace_back(vector<double>{static_cast<double>(lp[i].x), static_cast<double>(lp[i].y)});
     lp.clear();
 
     MB mb (2, p.begin(), p.end());
-    return (double)community.shape.getArea() / (mb.squared_radius() * PI);
-
+    return static_cast<double>(community.shape.getArea()) / (mb.squared_radius() * PI);
 }
 
 
-double hte::Algorithm::GetPartisanshipStdev(Community& community) {
+double hte::GetPartisanshipStdev(Community& community) {
     double average = 0;
     map<PoliticalParty, vector<int> > total_data;
 
@@ -293,20 +270,19 @@ double hte::Algorithm::GetPartisanshipStdev(Community& community) {
     }
 
     for (auto& pair : total_data) {
-        average += Util::GetStdev(pair.second);
+        average += GetStdev(pair.second);
     }
     
     return (average / total_data.size());
 }
 
 
-double hte::Algorithm::GetScalarizedMetric(Communities& cs) {
+double hte::GetScalarizedMetric(Communities& cs) {
     return ((Average(cs, GetPreciseCompactness) + GetDistanceFromPop(cs, 0.99)) / 2);
 }
 
 
-bool ExchangePrecinct(Graph& g, Communities& cs, int node_to_take, int community_to_take) {
-    // moves a node from its community into `community_to_take`
+bool hte::ExchangePrecinct(Graph& g, Communities& cs, int node_to_take, int community_to_take) {
     int nttc = g.vertices[node_to_take].community;
     if (cs[nttc].vertices.size() == 1) {
         return false;
@@ -321,70 +297,14 @@ bool ExchangePrecinct(Graph& g, Communities& cs, int node_to_take, int community
 }
 
 
-vector<int> get_takeable_precincts(Graph& g, Communities& c, int in) {
-    vector<int> takeable = {};
-
-    for (auto& pair : c[in].vertices) {
-        for (Edge& e : g.vertices[pair.first].edges) {
-            if (g.vertices[e[1]].community != in) {
-                if (std::find(takeable.begin(), takeable.end(), e[1]) == takeable.end()) {
-                    takeable.push_back(e[1]);
-                }
-            }
-        }
-    }
-
-    return takeable;
-}
-
-
-vector<vector<int> > get_giveable_precincts(Graph& g, Communities& c, int in) {
-    /*
-        @desc: Find precincts bordering another community
-        @params:
-            `Graph&` g: graph for reference
-            `Communities&` c: communities to check
-            `int` in: index of community to check
-
-        @return: `vector<array<int, 2>` giveable precincts, and the community to give to
-    */
-
-    vector<vector<int> > giveable = {};
-
-    for (auto& pair : c[in].vertices) {
-        for (Edge& edge : g.vertices[pair.first].edges) {
-            // if the node borders a precinct not in the community
-            if (g.vertices[edge[1]].community != in) {
-                giveable.push_back({
-                    pair.first, g.vertices[edge[1]].community
-                });
-                break;
-            }
-        }
-    }
-
-    return giveable;
-}
-
-
-double hte::Algorithm::Average(Communities& communities, double (*measure)(Community&)) {
-    /*
-        @desc: find average `measure` of the `communities`
-
-        @params:
-            `Communities&` communities: list of communities measure
-            `double (*measure)(Community&)`: pointer to function of type double with param `Community&`
-        
-        @return: `double` average measure
-    */
-
+double hte::Average(Communities& communities, double (*measure)(Community&)) {
     double sum = 0;
     for (int i = 0; i < communities.size(); i++) sum += measure(communities[i]);
     return (sum / communities.size());
 }
 
 
-vector<array<int, 2> > GetAllExchanges(Graph& g, Communities& cs) {
+vector<array<int, 2> > hte::GetAllExchanges(Graph& g, Communities& cs) {
     vector<array<int, 2> > exchanges = {};
     for (auto& pair : g.vertices) {
         vector<int> dc = {};
@@ -402,7 +322,7 @@ vector<array<int, 2> > GetAllExchanges(Graph& g, Communities& cs) {
 }
 
 
-void hte::Algorithm::GradientDescentOptimization(Graph& g, Communities& cs, double (*measure)(Communities&)) {
+void hte::GradientDescentOptimization(Graph& g, Communities& cs, double (*measure)(Communities&)) {
     while (true) {
         Graph before = g;
         array<int, 2> bestExchange;
@@ -428,12 +348,13 @@ void hte::Algorithm::GradientDescentOptimization(Graph& g, Communities& cs, doub
             break;
         }
 
+        cout << largestMeasure << endl;
         ExchangePrecinct(g, cs, bestExchange[0], bestExchange[1]);
     }
 }
 
 
-void hte::Algorithm::SimulatedAnnealingOptimization(Graph& g, Communities& cs, double (*measure)(Community&)) {
+void hte::SimulatedAnnealingOptimization(Graph& g, Communities& cs, double (*measure)(Community&)) {
     double Ec = Average(cs, measure);
     double Tmax = 30, Tmin = 0, T = Tmax;
     double Cool = 0.99976;
@@ -447,9 +368,9 @@ void hte::Algorithm::SimulatedAnnealingOptimization(Graph& g, Communities& cs, d
         int choice = -1;
 
         do {
-            int newChoice = Util::RandInt(0, allExchanges.size());
+            int newChoice = RandInt(0, allExchanges.size());
             while (choice == newChoice) {
-                newChoice = Util::RandInt(0, allExchanges.size());
+                newChoice = RandInt(0, allExchanges.size());
             }
             choice = newChoice;
             chosenExchange = allExchanges[newChoice];
@@ -457,7 +378,7 @@ void hte::Algorithm::SimulatedAnnealingOptimization(Graph& g, Communities& cs, d
         } while (!ExchangePrecinct(g, cs, chosenExchange[0], chosenExchange[1]));
 
         double En = Average(cs, measure);
-        double x = Util::RandUnitInterval();
+        double x = RandUnitInterval();
 
         if (En < Ec) {
             Ec = En;
@@ -477,7 +398,7 @@ void hte::Algorithm::SimulatedAnnealingOptimization(Graph& g, Communities& cs, d
 
 
 //  Create a randomly partitioned graph with the Karger-Stein algorithm
-Communities hte::Algorithm::KargerStein(Graph& g1, int nCommunities) {
+Communities hte::KargerStein(Graph& g1, int nCommunities) {
     // initizize copy of graph
     Graph g = g1;
     const int MAX_SEARCH = 100;
@@ -488,8 +409,8 @@ Communities hte::Algorithm::KargerStein(Graph& g1, int nCommunities) {
 
         for (int i = 0; i < g.vertices.size(); i++) {
             // choose random node and edge of that node
-            int nodeToRemoveId = (g.vertices.begin() + Util::RandInt(0, g.vertices.size() - 1)).key();
-            int nodeToCollapseId = g.vertices[nodeToRemoveId].edges[Util::RandInt(0, g.vertices[nodeToRemoveId].edges.size() - 1)][1];
+            int nodeToRemoveId = (g.vertices.begin() + RandInt(0, g.vertices.size() - 1)).key();
+            int nodeToCollapseId = g.vertices[nodeToRemoveId].edges[RandInt(0, g.vertices[nodeToRemoveId].edges.size() - 1)][1];
             int t = g.vertices[nodeToRemoveId].collapsed.size() + g.vertices[nodeToCollapseId].collapsed.size();
 
             // if combining the `collapsed` vector of the nodes
