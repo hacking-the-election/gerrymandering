@@ -1,6 +1,6 @@
 /*=======================================
  shape.cpp:                     k-vernooy
- last modified:               Fri, Jun 19
+ last modified:               Sun, Jun 21
  
  Definition of generic methods for shapes, 
  precincts, districts and states that do
@@ -15,30 +15,38 @@
 #include <iostream>
 #include <boost/archive/text_oarchive.hpp>
 #include <boost/archive/text_iarchive.hpp>
+#include <boost/serialization/map.hpp>
+#include <boost/serialization/vector.hpp>
+#include <boost/serialization/array.hpp>
 #include "../include/hte.h"
-
 
 using namespace hte;
 using std::cout;
 using std::endl;
 using std::string;
 
-
 const string geojsonHeader = "{\"type\": \"FeatureCollection\", \"features\":[";
 
 
-int Data::PrecinctGroup::getPopulation() {
-    // Returns total population in a Precinct_Group
+hte::MultiPolygon::MultiPolygon(std::vector<hte::Precinct> s) {
+    // constructor with assignment
+    for (Precinct p : s) {
+        // copy precinct data to shape object
+        Polygon s = Polygon(p.hull, p.holes, p.shapeId);
+        border.push_back(s);
+    }
+}
 
+
+int hte::PrecinctGroup::getPopulation() {
     int total = 0;
-    for (Data::Precinct p : precincts)
+    for (hte::Precinct p : precincts)
         total += p.pop;
-
     return total;
 }
 
 
-void Data::PrecinctGroup::removePrecinct(Data::Precinct pre) {
+void hte::PrecinctGroup::removePrecinct(hte::Precinct pre) {
     /*
         @desc: Removes a precinct from a Precinct Group and updates the border with a difference
         @params: `Precinct` pre: Precinct to be removed
@@ -50,12 +58,12 @@ void Data::PrecinctGroup::removePrecinct(Data::Precinct pre) {
         precincts.erase(it);
     }
     else {
-        throw Util::Exceptions::PrecinctNotInGroup();
+        throw Exceptions::PrecinctNotInGroup();
     }
 }
 
 
-void Data::PrecinctGroup::addPrecinct(Data::Precinct pre) {
+void hte::PrecinctGroup::addPrecinct(hte::Precinct pre) {
     /*
         @desc: Adds a precinct to a Precinct Group and updates the border with a union
         @params: `Precinct` pre: Precinct to be added
@@ -67,57 +75,67 @@ void Data::PrecinctGroup::addPrecinct(Data::Precinct pre) {
 }
 
 
-bool Geometry::operator== (const Geometry::LinearRing& l1, const Geometry::LinearRing& l2) {
+bool hte::operator== (const hte::Point2d& l1, const hte::Point2d& l2) {
+    return (l1.x == l2.x && l1.y == l2.y);
+}
+
+
+bool hte::operator!= (const hte::Point2d& l1, const hte::Point2d& l2) {
+    return (l1.x != l2.x || l1.y != l2.y);
+}
+
+
+bool hte::operator== (const hte::LinearRing& l1, const hte::LinearRing& l2) {
     return (l1.border == l2.border);
 }
 
 
-bool Geometry::operator!= (const Geometry::LinearRing& l1, const Geometry::LinearRing& l2) {
+bool hte::operator!= (const hte::LinearRing& l1, const hte::LinearRing& l2) {
     return (l1.border != l2.border);
 }
 
 
-bool Geometry::operator== (const Geometry::Polygon& p1, const Geometry::Polygon& p2) {
+bool hte::operator== (const hte::Polygon& p1, const hte::Polygon& p2) {
     return (p1.hull == p2.hull && p1.holes == p2.holes);
 }
 
 
-bool Geometry::operator!= (const Geometry::Polygon& p1, const Geometry::Polygon& p2) {
+bool hte::operator!= (const hte::Polygon& p1, const hte::Polygon& p2) {
     return (p1.hull != p2.hull || p1.holes != p2.holes);
 }
 
 
-bool Data::operator== (const Data::Precinct& p1, const Data::Precinct& p2) {
+bool hte::operator== (const hte::Precinct& p1, const hte::Precinct& p2) {
     return (p1.shapeId == p2.shapeId);
 }
 
 
-bool Data::operator!= (const Data::Precinct& p1, const Data::Precinct& p2) {
+bool hte::operator!= (const hte::Precinct& p1, const hte::Precinct& p2) {
     return (p1.shapeId != p2.shapeId);
 }
 
 
-bool Geometry::operator== (const Geometry::MultiPolygon& s1, const Geometry::MultiPolygon& s2) {
+bool hte::operator== (const hte::MultiPolygon& s1, const hte::MultiPolygon& s2) {
     return (s1.border == s2.border);
 }
 
 
-bool Geometry::operator!= (const Geometry::MultiPolygon& s1, const Geometry::MultiPolygon& s2) {
+bool hte::operator!= (const hte::MultiPolygon& s1, const hte::MultiPolygon& s2) {
     return (s1.border != s2.border);
 }
 
 
-bool Algorithm::operator< (const Algorithm::Node& l1, const Algorithm::Node& l2) {
+bool hte::operator< (const hte::Node& l1, const hte::Node& l2) {
     return (l1.edges.size() < l2.edges.size());
 }
 
 
-bool Algorithm::operator== (const Algorithm::Node& l1, const Algorithm::Node& l2) {
+bool hte::operator== (const hte::Node& l1, const hte::Node& l2) {
     return (l1.id == l2.id);
 }
 
 
-string Geometry::LinearRing::toJson() {
+string hte::LinearRing::toJson() {
     /*
         @desc: converts a linear ring into a json array of coords
         @params: none
@@ -125,7 +143,7 @@ string Geometry::LinearRing::toJson() {
     */
 
     string str = "[";
-    for (Geometry::Point2d c : border)
+    for (hte::Point2d c : border)
         str += "[" + std::to_string(c.x) + ", " + std::to_string(c.y) + "],";
 
     str = str.substr(0, str.size() - 1);
@@ -135,10 +153,10 @@ string Geometry::LinearRing::toJson() {
 }
 
 
-string Data::PrecinctGroup::toJson() {
+string hte::PrecinctGroup::toJson() {
     /*
         @desc:
-            converts a Precinct_Group object into a geojson document
+            converts a PrecinctGroup object into a geojson document
             for viewing in mapshaper or elsewhere
 
         @params: none
@@ -147,10 +165,10 @@ string Data::PrecinctGroup::toJson() {
 
     string str = geojsonHeader;
     
-    for (Data::Precinct p : precincts) {
+    for (hte::Precinct p : precincts) {
         str += "{\"type\":\"Feature\",\"geometry\":{\"type\":\"Polygon\",\"coordinates\":[";
         str += p.hull.toJson();
-        for (Geometry::LinearRing hole : p.holes)
+        for (hte::LinearRing hole : p.holes)
             str += "," + hole.toJson();
         str += "]}},";
     }
@@ -161,7 +179,7 @@ string Data::PrecinctGroup::toJson() {
 }
 
 
-string Geometry::Polygon::toJson() {
+string hte::Polygon::toJson() {
     /*
         @desc: Converts a normal shape object into geojson
         @params: none
@@ -176,7 +194,7 @@ string Geometry::Polygon::toJson() {
 }
 
 
-string Geometry::MultiPolygon::toJson() {
+string hte::MultiPolygon::toJson() {
     /*
         @desc: Converts a multiple shape object into geojson
         @params: none
@@ -184,7 +202,7 @@ string Geometry::MultiPolygon::toJson() {
     */
 
     string str = geojsonHeader + "{\"type\":\"Feature\",\"geometry\":{\"type\":\"MultiPolygon\",\"coordinates\":[";
-    for (Geometry::Polygon s : border) {
+    for (hte::Polygon s : border) {
         str += "[";
         str += s.hull.toJson();
         for (LinearRing h : s.holes) {
@@ -200,7 +218,7 @@ string Geometry::MultiPolygon::toJson() {
 }
 
 
-void Data::State::toFile(string path) {
+void hte::State::toFile(string path) {
     std::ofstream ofs(path);
     boost::archive::text_oarchive oa(ofs);
     oa << *this;
@@ -208,7 +226,7 @@ void Data::State::toFile(string path) {
 }
 
 
-Data::State Data::State::fromFile(string path) {
+hte::State hte::State::fromFile(string path) {
     State state;
     std::ifstream ifs(path);
     boost::archive::text_iarchive ia(ifs);
@@ -250,53 +268,59 @@ namespace boost {
         */
 
         template<class Archive>
-        void serialize(Archive & ar, Data::State& s, const unsigned int version) {
-            ar & boost::serialization::base_object<Geometry::Precinct_Group>(s);
+        void serialize(Archive & ar, hte::Point2d& c, const unsigned int version) {
+            ar & c.x;
+            ar & c.y;
+        }
+
+        template<class Archive>
+        void serialize(Archive & ar, hte::State& s, const unsigned int version) {
+            ar & boost::serialization::base_object<hte::PrecinctGroup>(s);
             ar & s.districts;
             ar & s.network;
         }
 
 
         template<class Archive>
-        void serialize(Archive & ar, Data::PrecinctGroup& s, const unsigned int version) {
+        void serialize(Archive & ar, hte::PrecinctGroup& s, const unsigned int version) {
             ar & s.precincts;
-            ar & boost::serialization::base_object<Geometry::MultiPolygon>(s);
+            ar & boost::serialization::base_object<hte::MultiPolygon>(s);
         }
 
 
         template<class Archive>
-        void serialize(Archive & ar, Geometry::MultiPolygon& s, const unsigned int version) {
+        void serialize(Archive & ar, hte::MultiPolygon& s, const unsigned int version) {
             ar & s.border;
             ar & s.shapeId;
         }
 
 
         template<class Archive>
-        void serialize(Archive & ar, Geometry::Polygon& s, const unsigned int version) {
+        void serialize(Archive & ar, hte::Polygon& s, const unsigned int version) {
             ar & s.hull;
             ar & s.holes;
-            ar & s.shape_id;
+            ar & s.shapeId;
             ar & s.pop;
             ar & s.isPartOfMultiPolygon;
         }
 
 
         template<class Archive>
-        void serialize(Archive & ar, Geometry::LinearRing& s, const unsigned int version) {
+        void serialize(Archive & ar, hte::LinearRing& s, const unsigned int version) {
             ar & s.border;
             ar & s.centroid;
         }
 
 
         template<class Archive>
-        void serialize(Archive & ar, Algorithm::Graph& s, const unsigned int version) {
+        void serialize(Archive & ar, hte::Graph& s, const unsigned int version) {
             ar & s.edges;
             ar & s.vertices;
         }
 
 
         template<class Archive>
-        void serialize(Archive & ar, Algorithm::Node& s, const unsigned int version) {
+        void serialize(Archive & ar, hte::Node& s, const unsigned int version) {
             ar & s.edges;
             ar & s.id;
         }
@@ -321,10 +345,10 @@ namespace boost {
 
 
         template<class Archive>
-        void serialize(Archive & ar, Data::Precinct& s, const unsigned int version) {
+        void serialize(Archive & ar, hte::Precinct& s, const unsigned int version) {
             ar & s.voterData;
             ar & s.pop;
-            ar & boost::serialization::base_object<Geometry::Polygon>(s);
+            ar & boost::serialization::base_object<hte::Polygon>(s);
         }
     }
 }
