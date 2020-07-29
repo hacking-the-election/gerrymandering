@@ -1,6 +1,6 @@
 /*=======================================
  geometry.cpp:                  k-vernooy
- last modified:                Thu, Jun 18
+ last modified:                  Sun, Jun 21
  
  Definition of useful functions for
  computational geometry. Basic 
@@ -12,45 +12,23 @@
 #include <chrono>
 #include <random>
 #include <math.h>
-
-#include "../include/geometry.hpp"
-#include "../include/canvas.hpp"
-#include "../include/shape.hpp"   // class definitions
-#include "../include/util.hpp"
-
-// define geometric constants
-const long int c = pow(10, 18);
-const long int d = pow(10, 9);
-const long int l = pow(2, 6);
+#include "../include/hte.h"
 
 using namespace hte;
-using namespace Geometry;
 using namespace std;
 
-/*
-    Following methods utilize the segment of segments typedefs.
-    These are useful for summing distances, or checking colinearity,
-    which is used for below border functions.
-*/
 
-double round_d(double value) {
-    return round(value * d) / d;
-}
-
-
-segment coords_to_seg(coordinate c1, coordinate c2) {
+Segment hte::PointsToSegment(Point2d c1, Point2d c2) {
     /*
         @desc: combines coordinates into a segment array
         @params: `c1`, `c2`: coordinates 1 and 2 in segment
-        @return: `Geometry::segment` a segment with the coordinates provided
+        @return: `hte::segment` a segment with the coordinates provided
     */
-
-    segment s = {{ c1[0], c1[1], c2[0], c2[1] }};
-    return s;
+    return {{c1.x, c1.y, c2.x, c2.y}};
 }
 
 
-double get_distance(segment s) {
+double hte::GetDistance(Segment s) {
     /* 
         @desc: Distance formula on a segment array
         @params: `s`: a segment to get the distance of
@@ -61,179 +39,66 @@ double get_distance(segment s) {
 }
 
 
-double get_distance(coordinate c0, coordinate c1) {
+double hte::GetDistance(Point2d c0, Point2d c1) {
     /*
         @desc: Distance formula on two separate points
         @params: `c1`, `c2`: coordinates 1 and 2 in segment
         @return: `double` the distance between the coordinates
     */
 
-    return get_distance(coords_to_seg(c0, c1));
+    return GetDistance(PointsToSegment(c0, c1));
 }
 
 
-vector<long int> get_equation(segment s) {
-    /*
-        @desc:
-            Use slope/intercept form and substituting coordinates
-            in order to determine equation of a line segment
-
-        @params: `s`: the segment to calculate
-        @return: `vector` slope and intercept
-        @warn: Need handlers for div by 0
-    */
-
-    long int dy = s[3] - s[1];
-    long int dx = s[2] - s[0];
-
-    long int m;
-    
-    if (dx != 0) m = (dy * l) / dx;
-    else m = l;
-
-    long int b = -1 * ((m * s[0]) - s[1]); // @warn - multiply by -1 for value
-
+vector<long> hte::GetEquation(Segment s) {
+    long dy = s[3] - s[1], dx = s[2] - s[0], m;
+    if (dx != 0) m = dy / dx;
+    else m = INFINITY;
+    long b = -1 * ((m * s[0]) - s[1]);
     return {m, b};
 }
 
 
-bool get_colinear(segment s0, segment s1) {
-    /*
-        @desc: gets whether or not two lines have the same equation
-        @params: `s0`, `s1`: two segments to check colinearity
-        @return: `bool` are colinear
-    */
+SegmentVec hte::LinearRing::getSegments() {
+    SegmentVec segs;
 
-    return (get_equation(s0) == get_equation(s1));
-}
-
-
-bool point_on_segment(coordinate c, segment s) {
-    /*
-        @desc: checks if a coordinate lines within a line segment
-        @params:
-            `coordinate` c: coordinate to check
-            `segment` s: segment to contain point
-
-        @return: `bool` segment contains line
-    */
-
-    if ((c[0] == s[0] && c[1] == s[1]) || (c[0] == s[2] && c[1] == s[3]))
-        // point on endpoints of segment
-        return true;
-
-    int crossproduct = (c[1] - s[1]) * (s[2] - s[0]) - (c[0] - s[0]) * (s[3] - s[1]);
-    if (abs(crossproduct) != 0)
-        return false;
-
-    int dotproduct = (c[0] - s[0]) * (s[2] - s[0]) + (c[1] - s[1]) * (s[3] - s[1]);
-    if (dotproduct < 0)
-        return false;
-
-    int squaredlengthba = (s[2] - s[0]) * (s[2] - s[0]) + (s[3] - s[1]) * (s[3] - s[1]);
-
-    if (dotproduct > squaredlengthba)
-        return false;
-
-    return true;
-}
-
-
-bool get_overlap(segment s0, segment s1) {
-    /*
-        @desc:
-            Returns whether or not two segments' bounding boxes
-            overlap, meaning one of the extremes of a segment are
-            within the range of the other's. One shared point does
-            not count to overlap.
-        
-        @params: `s0`, `s1`: two segments to check overlap
-        @return: `bool` segments overlap
-        @warn: This function is untested!
-    */
-    
-    long int s0min = s0[0];
-    long int s0max = s0[2];
-
-    if (s0[2] < s0min) {
-        s0min = s0[2];
-        s0max = s0[0];
-    }
-
-    long int s1min = s1[0];
-    long int s1max = s1[2];
-
-    if (s1[2] < s1min) {
-        s1min = s1[2];
-        s1max = s1[0];
-    }
-
-    return (s0min <= s1max && s1min <= s0max);
-}
-
-
-segments Geometry::LinearRing::get_segments() {
-    /*
-        @desc:
-            returns a vector of segments from the
-            coordinate array of a LinearRing.border property
-
-        @params: none
-        @return: segments of a ring
-    */
-
-    segments segs;
-    vector<coordinate> border_x = border;
-
-    for (int i = 0; i < border_x.size(); i++) {
-        coordinate c1 = border_x[i];  // starting coord
-        coordinate c2;                // ending coord
+    for (int i = 0; i < border.size(); i++) {
+        Point2d c1 = border[i];   // starting coord
+        Point2d c2;               // ending coord
 
         // find position of ending coordinate
-        if (i == border_x.size() - 1) c2 = border_x[0];
-        else c2 = border_x[i + 1];
+        if (i == border.size() - 1) c2 = border[0];
+        else c2 = border[i + 1];
 
-        if (c1 != c2) segs.push_back(coords_to_seg(c1, c2)); // add to list
+        if (c1 != c2) segs.push_back(PointsToSegment(c1, c2)); // add to list
     }
 
     return segs;
 }
 
 
-segments Geometry::Polygon::get_segments() {
-    /*
-        @desc: get list of all segments in a shape, including hole LinearRings array
-        @params: none
-        @return: segments of a shape
-    */
-
-    segments segs = this->hull.get_segments();
+SegmentVec hte::Polygon::getSegments() {
+    SegmentVec segs = this->hull.getSegments();
     
     for (LinearRing hole : this->holes)
-        for (segment seg : hole.get_segments())
+        for (Segment seg : hole.getSegments())
             segs.push_back(seg);
 
     return segs;
 }
 
 
-segments Geometry::MultiPolygon::get_segments() {
-    /*
-        @desc: get a list of all segments in a multi_shape, for each shape, including holes
-        @params: none
-        @return: segments array of each shape
-    */
-
-    segments segs;
+SegmentVec hte::MultiPolygon::getSegments() {
+    SegmentVec segs;
     for (Polygon s : this->border)
-        for (segment seg : s.get_segments())
+        for (Segment seg : s.getSegments())
             segs.push_back(seg);
 
     return segs;
 }
 
 
-coordinate Geometry::LinearRing::get_centroid() {
+Point2d hte::LinearRing::getCentroid() {
     /* 
         @desc: Gets the centroid of a polygon with coords
         @ref: https://en.wikipedia.org/wiki/Centroid#Centroid_of_polygon
@@ -265,26 +130,26 @@ coordinate Geometry::LinearRing::get_centroid() {
 }
 
 
-boost_polygon ring_to_boost_poly(LinearRing shape) {
+BoostPolygon hte::RingToBoostPoly(LinearRing shape) {
     /*
         Converts a shape object into a boost polygon object
         by looping over each point and manually adding it to a 
         boost polygon using assign_points and vectors
     */
 
-    boost_polygon poly;
+    BoostPolygon poly;
     // create vector of boost points
-    std::vector<boost_point> points;
+    std::vector<BoostPoint2d> points;
     points.reserve(shape.border.size());
-    for (coordinate c : shape.border) 
-        points.emplace_back(boost_point(c[0],c[1])),
+    for (Point2d c : shape.border) 
+        points.emplace_back(BoostPoint2d(c.x, c.y)),
 
-    assign_points(poly, points);
+    boost::geometry::assign_points(poly, points);
     return poly;
 }
 
 
-double Geometry::LinearRing::get_area() {
+double hte::LinearRing::getSignedArea() {
     /*
         @desc:
             returns the area of a linear ring, using latitude * long
@@ -302,14 +167,14 @@ double Geometry::LinearRing::get_area() {
         if (i == border.size() - 1) j = 0;
         else j = i + 1;
 
-        area += (border[i][0] * border[j][1]) - (border[i][1] * border[j][0]);
+        area += (border[i].x * border[j].y) - (border[i].y * border[j].x);
     }
 
     return area / 2.0;
 }
 
 
-double Geometry::LinearRing::get_perimeter() {
+double hte::LinearRing::getPerimeter() {
     /*
         @desc: returns the perimeter of a LinearRing object by summing distance
         @params: none
@@ -317,72 +182,72 @@ double Geometry::LinearRing::get_perimeter() {
     */
 
     double t = 0;
-    for (segment s : get_segments())
-        t += get_distance(s);    
+    for (Segment s : getSegments())
+        t += GetDistance(s);    
 
     return t;
 }
 
 
-coordinate Geometry::Polygon::get_centroid() {
+Point2d hte::Polygon::getCentroid() {
     /*
         @desc:
             returns average centroid from list of `holes`
-            and `hull` by calling `LinearRing::get_centroid`
+            and `hull` by calling `LinearRing::getCentroid`
 
         @params: none
         @return: `coordinate` average centroid of shape
     */
 
-    return (hull.get_centroid());
+    return (hull.getCentroid());
 }
 
 
-coordinate Geometry::MultiPolygon::get_centroid() {
+Point2d hte::MultiPolygon::getCentroid() {
     /*
         @desc:
             returns average centroid from list of `holes`
-            and `hull` by calling `LinearRing::get_centroid`
+            and `hull` by calling `LinearRing::getCentroid`
 
         @params: none
         @return: `coordinate` average centroid of shape
     */
 
-    coordinate average = {0,0};
+    Point2d average = {0,0};
     for (Polygon p : border) {
-        boost_point center;
-        boost::geometry::centroid(ring_to_boost_poly(p.hull), center);
-        average[0] += center.x();
-        average[1] += center.y();
+        BoostPoint2d center;
+        boost::geometry::centroid(hte::RingToBoostPoly(p.hull), center);
+        average.x += center.x();
+        average.y += center.y();
     }
 
-    return {(int)(average[0] / border.size()), (int)(average[1] / border.size())};
+    return {static_cast<long>(average.x / border.size()), static_cast<long>(average.y / border.size())};
 }
 
 
-coordinate Geometry::Precinct_Group::get_centroid() {
+Point2d hte::PrecinctGroup::getCentroid() {
     /*
         @desc:
             returns average centroid from list of `holes`
-            and `hull` by calling `LinearRing::get_centroid`
+            and `hull` by calling `LinearRing::getCentroid`
 
         @params: none
         @return: `coordinate` average centroid of shape
     */
 
-    coordinate average = {0,0};
+    Point2d average = {0,0};
 
     for (Precinct s : precincts) {
-        coordinate center = s.hull.get_centroid();
-        average[0] += center[0];
-        average[1] += center[1];
+        Point2d center = s.hull.getCentroid();
+        average.x += center.x;
+        average.y += center.y;
     }
 
-    return {((long int)average[0] / (long int)precincts.size()), ((long int)average[1] / (long int)precincts.size())};
+    return {(static_cast<long>(average.x) / static_cast<long>(precincts.size())), (static_cast<long>(average.y) / static_cast<long>(precincts.size()))};
 }
 
 
-double Geometry::Polygon::get_area() {
+double hte::Polygon::getSignedArea() {
     /*
         @desc:
             gets the area of the hull of a shape
@@ -392,24 +257,24 @@ double Geometry::Polygon::get_area() {
         @return: `double` totale area of shape
     */
 
-    double area = hull.get_area();
-    for (Geometry::LinearRing h : holes)
-        area -= h.get_area();
+    double area = hull.getSignedArea();
+    for (hte::LinearRing h : holes)
+        area -= h.getSignedArea();
 
     return area;
 }
 
 
-double Geometry::Precinct_Group::get_area() {
+double hte::PrecinctGroup::getArea() {
     double sum = 0;
     
     for (Precinct p : precincts)
-        sum += abs(p.get_area());
+        sum += abs(p.getSignedArea());
     return sum;
 }
 
 
-double Geometry::Polygon::get_perimeter() {
+double hte::Polygon::getPerimeter() {
     /*
         @desc:
             gets the sum perimeter of all LinearRings
@@ -419,15 +284,15 @@ double Geometry::Polygon::get_perimeter() {
         @return: `double` total perimeter of shape
     */
 
-    double perimeter = hull.get_perimeter();
-    for (Geometry::LinearRing h : holes)
-        perimeter += h.get_perimeter();
+    double perimeter = hull.getPerimeter();
+    for (hte::LinearRing h : holes)
+        perimeter += h.getPerimeter();
 
     return perimeter;
 }
 
 
-double MultiPolygon::get_area() {
+double MultiPolygon::getSignedArea() {
     /*
         @desc: gets sum area of all Polygon objects in border
         @params: none
@@ -436,13 +301,13 @@ double MultiPolygon::get_area() {
 
     double total = 0;
     for (Polygon s : border)
-        total += s.get_area();
+        total += s.getSignedArea();
 
     return total;
 }
 
 
-double Geometry::MultiPolygon::get_perimeter() {
+double hte::MultiPolygon::getPerimeter() {
     /*
         @desc:
             gets sum perimeter of a multi shape object
@@ -454,13 +319,13 @@ double Geometry::MultiPolygon::get_perimeter() {
 
     double p = 0;
     for (Polygon shape : border)
-        p += shape.get_perimeter();
+        p += shape.getPerimeter();
 
     return p;
 }
 
 
-bool get_bordering(Polygon s0, Polygon s1) {
+bool hte::GetBordering(Polygon s0, Polygon s1) {
     /*
         @desc: gets whether or not two shapes touch each other
         @params: `Polygon` s0, `Polygon` s1: shapes to check bordering
@@ -469,10 +334,10 @@ bool get_bordering(Polygon s0, Polygon s1) {
     
     // create paths array from polygon
 	ClipperLib::Paths subj;
-    subj.push_back(ring_to_path(s0.hull));
+    subj.push_back(RingToPath(s0.hull));
 
     ClipperLib::Paths clip;
-    clip.push_back(ring_to_path(s1.hull));
+    clip.push_back(RingToPath(s1.hull));
 
     ClipperLib::Paths solutions;
     ClipperLib::Clipper c; // the executor
@@ -482,77 +347,12 @@ bool get_bordering(Polygon s0, Polygon s1) {
     c.AddPaths(clip, ClipperLib::ptClip, true);
     c.Execute(ClipperLib::ctUnion, solutions, ClipperLib::pftNonZero);
 
-    MultiPolygon ms = paths_to_multi_shape(solutions);
+    MultiPolygon ms = PathsToMultiPolygon(solutions);
     return (ms.border.size() == 1);
 }
 
 
-bool get_bordering(MultiPolygon s0, Polygon s1) {
-    /*
-        @desc: gets whether or not two shapes touch each other
-        @params: `MultiPolygon` s0, `Polygon` s1: shapes to check bordering
-        @return: `bool` shapes are boording
-    */
-
-    // create paths array from polygon
-	ClipperLib::Paths subj;
-    for (Polygon s : s0.border)
-        subj.push_back(ring_to_path(s.hull));
-
-    ClipperLib::Paths clip;
-    clip.push_back(ring_to_path(s1.hull));
-
-    ClipperLib::Paths usolutions;
-    ClipperLib::Paths xsolutions;
-    ClipperLib::Clipper c; // the executor
-
-    // execute union on paths array
-    c.AddPaths(subj, ClipperLib::ptSubject, true);
-    c.AddPaths(clip, ClipperLib::ptClip, true);
-    c.Execute(ClipperLib::ctXor, xsolutions, ClipperLib::pftNonZero);
-    c.Execute(ClipperLib::ctUnion, usolutions, ClipperLib::pftNonZero);
-
-    MultiPolygon msx = paths_to_multi_shape(xsolutions);
-    MultiPolygon msu = paths_to_multi_shape(usolutions);
-
-    return (msu.border.size() == s0.border.size() && msx.holes.size() == 0);
-}
-
-
-bool get_bordering(MultiPolygon s0, MultiPolygon s1) {
-    /*
-        @desc: gets whether or not two shapes touch each other
-        @params: `MultiPolygon` s0, `MultiPolygon` s1: shapes to check bordering
-        @return: `bool` shapes are boording
-    */
-
-    // create paths array from polygon
-	ClipperLib::Paths subj;
-    for (Polygon s : s0.border)
-        subj.push_back(ring_to_path(s.hull));
-
-    ClipperLib::Paths clip;
-    for (Polygon s : s1.border)
-        clip.push_back(ring_to_path(s.hull));
-
-    ClipperLib::Paths usolutions;
-    ClipperLib::Paths xsolutions;
-    ClipperLib::Clipper c; // the executor
-
-    // execute union on paths array
-    c.AddPaths(subj, ClipperLib::ptSubject, true);
-    c.AddPaths(clip, ClipperLib::ptClip, true);
-    c.Execute(ClipperLib::ctXor, xsolutions, ClipperLib::pftNonZero);
-    c.Execute(ClipperLib::ctUnion, usolutions, ClipperLib::pftNonZero);
-
-    MultiPolygon msx = paths_to_multi_shape(xsolutions);
-    MultiPolygon msu = paths_to_multi_shape(usolutions);
-
-    return (msu.border.size() < s0.border.size() + s1.border.size() && msx.holes.size() <= s0.holes.size() + s1.holes.size());
-}
-
-
-bool point_in_ring(Geometry::coordinate coord, Geometry::LinearRing lr) {
+bool hte::GetPointInRing(hte::Point2d coord, hte::LinearRing lr) {
     /*
         @desc:
             gets whether or not a point is in a ring using
@@ -571,13 +371,13 @@ bool point_in_ring(Geometry::coordinate coord, Geometry::LinearRing lr) {
         lr.border.push_back(lr.border[0]);
 
     // convert to clipper types for builtin function
-    ClipperLib::Path path = ring_to_path(lr);
-    ClipperLib::IntPoint p(coord[0], coord[1]);
+    ClipperLib::Path path = RingToPath(lr);
+    ClipperLib::IntPoint p(coord.x, coord.y);
     return (!(ClipperLib::PointInPolygon(p, path) == 0));
 }
 
 
-bool get_inside(Geometry::LinearRing s0, Geometry::LinearRing s1) {
+bool hte::GetInside(hte::LinearRing s0, hte::LinearRing s1) {
     /*
         @desc:
             gets whether or not s0 is inside of 
@@ -590,14 +390,14 @@ bool get_inside(Geometry::LinearRing s0, Geometry::LinearRing s1) {
         @return: `bool` `s0` inside `s1`
     */
 
-    for (coordinate c : s0.border)
-        if (!point_in_ring(c, s1)) return false;
+    for (Point2d c : s0.border)
+        if (!GetPointInRing(c, s1)) return false;
 
     return true;
 }
 
 
-bool get_inside_first(Geometry::LinearRing s0, Geometry::LinearRing s1) {
+bool hte::GetInsideFirst(hte::LinearRing s0, hte::LinearRing s1) {
     /*
         @desc:
             gets whether or not the first point of s0 is
@@ -610,11 +410,11 @@ bool get_inside_first(Geometry::LinearRing s0, Geometry::LinearRing s1) {
         @return: `bool` first coordinate of `s0` inside `s1`
     */
 
-    return (point_in_ring(s0.border[0], s1));
+    return (GetPointInRing(s0.border[0], s1));
 }
 
 
-MultiPolygon generate_exterior_border(Precinct_Group precinct_group) {
+MultiPolygon hte::GenerateExteriorBorder(PrecinctGroup pg) {
     /*
         Get the exterior border of a shape with interior components.
         Equivalent to 'dissolve' in mapshaper - remove bordering edges.
@@ -631,8 +431,8 @@ MultiPolygon generate_exterior_border(Precinct_Group precinct_group) {
     // create paths array from polygon
 	ClipperLib::Paths subj;
 
-    for (Precinct p : precinct_group.precincts)
-        for (ClipperLib::Path path : shape_to_paths(p))
+    for (Precinct p : pg.precincts)
+        for (ClipperLib::Path path : PolygonToPaths(p))
             subj.push_back(path);
 
 
@@ -643,35 +443,37 @@ MultiPolygon generate_exterior_border(Precinct_Group precinct_group) {
     c.AddPaths(subj, ClipperLib::ptSubject, true);
     c.Execute(ClipperLib::ctUnion, solutions, ClipperLib::pftNonZero);
 
-    return paths_to_multi_shape(solutions);
+    return PathsToMultiPolygon(solutions);
 }
 
 
-ClipperLib::Path ring_to_path(Geometry::LinearRing ring) {
+ClipperLib::Path hte::RingToPath(hte::LinearRing ring) {
     /*
         Creates a clipper Path object from a
         given Polygon object by looping through points
     */
 
     ClipperLib::Path p;
-    for (coordinate point : ring.border )
-        p.push_back(ClipperLib::IntPoint(point[0], point[1]));
+    for (Point2d point : ring.border)
+        p.push_back(ClipperLib::IntPoint(point.x, point.y));
 
     return p;
 }
 
 
-Geometry::LinearRing path_to_ring(ClipperLib::Path path) {
+hte::LinearRing hte::PathToRing(ClipperLib::Path path) {
     /*
         Creates a shape object from a clipper Path
         object by looping through points
     */
 
-    Geometry::LinearRing s;
+    hte::LinearRing s;
 
-    for (ClipperLib::IntPoint point : path ) {
-        coordinate p = {point.X, point.Y};
-        if (p[0] != 0 && p[1] != 0) s.border.push_back(p);
+    for (ClipperLib::IntPoint point : path) {
+        Point2d p = {point.X, point.Y};
+        // @warn i have no idea what the below line was trying to do?
+        // if (p.x != 0 && p.y != 0)
+        s.border.push_back(p);
     }
 
     if (s.border[0] != s.border[s.border.size() - 1])
@@ -681,19 +483,19 @@ Geometry::LinearRing path_to_ring(ClipperLib::Path path) {
 }
 
 
-ClipperLib::Paths shape_to_paths(Geometry::Polygon shape) {
+ClipperLib::Paths hte::PolygonToPaths(hte::Polygon shape) {
 
     if (shape.hull.border[0] != shape.hull.border[shape.hull.border.size() - 1])
         shape.hull.border.push_back(shape.hull.border[0]);
 
     ClipperLib::Paths p;
-    p.push_back(ring_to_path(shape.hull));
+    p.push_back(RingToPath(shape.hull));
     
-    for (Geometry::LinearRing ring : shape.holes) {
+    for (hte::LinearRing ring : shape.holes) {
         if (ring.border[0] != ring.border[ring.border.size() - 1])
             ring.border.push_back(ring.border[0]);
 
-        ClipperLib::Path path = ring_to_path(ring);
+        ClipperLib::Path path = RingToPath(ring);
         ReversePath(path);
         p.push_back(path);
     }
@@ -702,7 +504,7 @@ ClipperLib::Paths shape_to_paths(Geometry::Polygon shape) {
 }
 
 
-Geometry::MultiPolygon paths_to_multi_shape(ClipperLib::Paths paths) {
+MultiPolygon hte::PathsToMultiPolygon(ClipperLib::Paths paths) {
     /*
         @desc: 
               Create a MultiPolygon object from a clipper Paths
@@ -720,17 +522,15 @@ Geometry::MultiPolygon paths_to_multi_shape(ClipperLib::Paths paths) {
 
     for (ClipperLib::Path path : paths) {
         if (!ClipperLib::Orientation(path)) {
-            Geometry::LinearRing border = path_to_ring(path);
+            hte::LinearRing border = PathToRing(path);
             if (border.border[0] == border.border[border.border.size() - 1]) {
-                // border.border.insert(border.border.begin(), border.border[border.border.size() - 1]);
-                Geometry::Polygon s(border);
+                hte::Polygon s(border);
                 ms.border.push_back(s);
             }
         }
         else {
-            // std::cout << "hole" << std::endl;
-            ReversePath(path);
-            Geometry::LinearRing hole = path_to_ring(path);
+            ClipperLib::ReversePath(path);
+            hte::LinearRing hole = hte::PathToRing(path);
             ms.holes.push_back(hole);
         }
     }
@@ -738,38 +538,20 @@ Geometry::MultiPolygon paths_to_multi_shape(ClipperLib::Paths paths) {
     return ms;
 }
 
-MultiPolygon poly_tree_to_shape(ClipperLib::PolyTree tree) {
-    /*
-        Loops through top-level children of a
-        PolyTree to access outer-level polygons. Returns
-        a multi_shape object containing these outer polys.
-    */
-   
-    MultiPolygon ms;
-    
-    for (ClipperLib::PolyNode* polynode : tree.Childs) {
-        // if (polynode->IsHole()) x++;
-        Geometry::LinearRing s = path_to_ring(polynode->Contour);
-        Polygon shape(s);
-        ms.border.push_back(shape);
-    }
 
-    return ms;
-}
-
-Polygon generate_gon(coordinate c, double radius, int n) {
+Polygon hte::GenerateGon(Point2d c, double radius, int n) {
     /*
         Takes a radius, center, and number of sides to generate
         a regular polygon around that center with that radius
     */
 
     double angle = 360 / n;
-    coordinate_set coords;
+    Point2dVec coords;
 
     for (int i = 0; i < n; i++) {
         double x = radius * std::cos((angle * i) * PI/180);
         double y = radius * std::sin((angle * i) * PI/180);
-        coords.push_back({(int)x + c[0], (int)y + c[1]});
+        coords.push_back({(int)x + c.x, (int)y + c.y});
     }
 
     LinearRing lr(coords);
@@ -777,76 +559,76 @@ Polygon generate_gon(coordinate c, double radius, int n) {
 }
 
 
-bool point_in_circle(Geometry::coordinate center, double radius, Geometry::coordinate point) {
+bool hte::GetPointInCircle(hte::Point2d center, double radius, hte::Point2d point) {
     /*
         @desc:
             Determines whetehr or not a point is inside a
             circle by checking distance to the center
 
         @params:
-            `Geometry::coordinate` center: x/y coords of the circle center
+            `hte::coordinate` center: x/y coords of the circle center
             `double` radius: radius of the circle
-            `Geometry::coordinate` point: point to check
+            `hte::coordinate` point: point to check
     
         @return: `bool` point is inside
     */
 
-    return (get_distance(center, point) <= radius);
+    return (GetDistance(center, point) <= radius);
 }
 
 
 
-Geometry::bounding_box Geometry::LinearRing::get_bounding_box() {
-    int top = border[0][1], 
-    bottom = border[0][1], 
-    left = border[0][0], 
-    right = border[0][0];
+BoundingBox hte::LinearRing::getBoundingBox() {
+    int top = border[0].y, 
+    bottom = border[0].y, 
+    left = border[0].x, 
+    right = border[0].x;
 
     // loop through and find actual corner using ternary assignment
-    for (Geometry::coordinate coord : border) {
-        if (coord[1] > top) top = coord[1];
-        if (coord[1] < bottom) bottom = coord[1];
-        if (coord[0] < left) left = coord[0];
-        if (coord[0] > right) right = coord[0];
+    for (hte::Point2d coord : border) {
+        if (coord.y > top) top = coord.y;
+        if (coord.y < bottom) bottom = coord.y;
+        if (coord.x < left) left = coord.x;
+        if (coord.x > right) right = coord.x;
     }
 
     return {top, bottom, left, right}; // return bounding box
 }
 
 
-Geometry::bounding_box Geometry::Polygon::get_bounding_box() {
+BoundingBox hte::Polygon::getBoundingBox() {
     // set dummy extremes
-    int top = hull.border[0][1], 
-        bottom = hull.border[0][1], 
-        left = hull.border[0][0], 
-        right = hull.border[0][0];
+    int top = hull.border[0].y, 
+        bottom = hull.border[0].y, 
+        left = hull.border[0].x, 
+        right = hull.border[0].x;
 
     // loop through and find actual corner using ternary assignment
-    for (Geometry::coordinate coord : hull.border) {
-        if (coord[1] > top) top = coord[1];
-        if (coord[1] < bottom) bottom = coord[1];
-        if (coord[0] < left) left = coord[0];
-        if (coord[0] > right) right = coord[0];
+    for (hte::Point2d coord : hull.border) {
+        if (coord.y > top) top = coord.y;
+        if (coord.y < bottom) bottom = coord.y;
+        if (coord.x < left) left = coord.x;
+        if (coord.x > right) right = coord.x;
     }
 
     return {top, bottom, left, right}; // return bounding box
 }
 
 
-Geometry::bounding_box Geometry::MultiPolygon::get_bounding_box() {
+BoundingBox hte::MultiPolygon::getBoundingBox() {
     // set dummy extremes
-    int top = border[0].hull.border[0][1], 
-        bottom = border[0].hull.border[0][1], 
-        left = border[0].hull.border[0][0], 
-        right = border[0].hull.border[0][0];
+    int top = border[0].hull.border[0].y, 
+        bottom = border[0].hull.border[0].y, 
+        left = border[0].hull.border[0].x, 
+        right = border[0].hull.border[0].x;
 
     for (Polygon p : border) {
         // loop through and find actual corner using ternary assignment
-        for (Geometry::coordinate coord : p.hull.border) {
-            if (coord[1] > top) top = coord[1];
-            if (coord[1] < bottom) bottom = coord[1];
-            if (coord[0] < left) left = coord[0];
-            if (coord[0] > right) right = coord[0];
+        for (hte::Point2d coord : p.hull.border) {
+            if (coord.y > top) top = coord.y;
+            if (coord.y < bottom) bottom = coord.y;
+            if (coord.x < left) left = coord.x;
+            if (coord.x > right) right = coord.x;
         }
     }
 
@@ -854,21 +636,21 @@ Geometry::bounding_box Geometry::MultiPolygon::get_bounding_box() {
 }
 
 
-Geometry::bounding_box Geometry::Precinct_Group::get_bounding_box() {
+BoundingBox hte::PrecinctGroup::getBoundingBox() {
     // set dummy extremes
     if (precincts.size() != 0) {
-        int top = precincts[0].hull.border[0][1], 
-            bottom = precincts[0].hull.border[0][1], 
-            left = precincts[0].hull.border[0][0], 
-            right = precincts[0].hull.border[0][0];
+        int top = precincts[0].hull.border[0].y, 
+            bottom = precincts[0].hull.border[0].y, 
+            left = precincts[0].hull.border[0].x, 
+            right = precincts[0].hull.border[0].x;
 
         for (Precinct p : precincts) {
             // loop through and find actual corner using ternary assignment
-            for (Geometry::coordinate coord : p.hull.border) {
-                if (coord[1] > top) top = coord[1];
-                if (coord[1] < bottom) bottom = coord[1];
-                if (coord[0] < left) left = coord[0];
-                if (coord[0] > right) right = coord[0];
+            for (hte::Point2d coord : p.hull.border) {
+                if (coord.y > top) top = coord.y;
+                if (coord.y < bottom) bottom = coord.y;
+                if (coord.x < left) left = coord.x;
+                if (coord.x > right) right = coord.x;
             }
         }
         return {top, bottom, left, right}; // return bounding box
@@ -880,10 +662,10 @@ Geometry::bounding_box Geometry::Precinct_Group::get_bounding_box() {
 }
 
 
-bool bound_overlap(Geometry::bounding_box b1, Geometry::bounding_box b2) {
+bool hte::GetBoundOverlap(BoundingBox b1, BoundingBox b2) {
     /*
         @desc: Determines whether or not two rects overlap
-        @params: `Geometry::bounding_box` b1, b2: bounding boxes to check overlap
+        @params: `BoundingBox` b1, b2: bounding boxes to check overlap
         @return: `bool` do rects overlap
     */
 
@@ -892,7 +674,7 @@ bool bound_overlap(Geometry::bounding_box b1, Geometry::bounding_box b2) {
     return true;
 }
 
-bool bound_inside(hte::Geometry::bounding_box b1, hte::Geometry::bounding_box b2) {
+bool hte::GetBoundInside(BoundingBox b1, BoundingBox b2) {
     // gets whether or not b1 is inside b2
     return (b1[0] < b2[0] && b1[1] > b2[1] && b1[2] > b2[2] && b1[3] < b2[3]);
 }
