@@ -1,6 +1,6 @@
 /*=======================================
  graph.cpp:                     k-vernooy
- last modified:               Thu, Jun 18
+ last modified:               Mon, Jun 22
  
  Definitions for graph theory related
  algorithm implementations such as
@@ -8,33 +8,26 @@
 ========================================*/
 
 #include <unordered_map>
-#include <iostream>
 #include <algorithm>
 #include <numeric>
-#include <chrono>
+#include "../include/hte.h"
 
-#include "../include/shape.hpp"
-#include "../include/canvas.hpp"
-#include "../include/util.hpp"
-
-
-using namespace hte::Graphics;
-using namespace hte::Geometry;
+using namespace hte;
 using namespace std;
-using namespace chrono;
 
-void Graph::remove_node(int id) {
-    remove_edges_to(id);
+
+void Graph::removeNode(int id) {
+    removeEdgesTo(id);
     vertices.erase(id);
 }
 
 
-void Graph::add_node(Node node) {
+void Graph::addNode(Node node) {
     this->vertices.insert({node.id, node});
 }
 
 
-Graph Graph::get_induced_subgraph(vector<int> nodes) {
+Graph Graph::getInducedSubgraph(vector<int> nodes) {
 
     Graph subgraph;
     Graph copy = *this;
@@ -57,7 +50,7 @@ std::vector<Graph> Graph::getComponents() {
     /*
         @desc: get the subgraphs that make up the components
         @params: none
-        @return: `vector<Geometry::Graph>` components subgraphs
+        @return: `vector<Graph>` components subgraphs
     */
 
     unordered_map<int, bool> visited;
@@ -67,10 +60,10 @@ std::vector<Graph> Graph::getComponents() {
         if (!visited[(vertices.begin() + i).key()]) {
             Graph component;
             vector<int> graph = {};
-            dfs_recursor((vertices.begin() + i).key(), visited, &graph);
+            dfsRecursor((vertices.begin() + i).key(), visited, &graph);
 
             for (int i = 0; i < graph.size(); i++) {
-                component.add_node(this->vertices[graph[i]]);
+                component.addNode(this->vertices[graph[i]]);
             }
 
             components.push_back(component);
@@ -81,7 +74,7 @@ std::vector<Graph> Graph::getComponents() {
 }
 
 
-void Graph::dfs_recursor(int v, std::unordered_map<int, bool>& visited, std::vector<int>* nodes) {
+void Graph::dfsRecursor(int v, std::unordered_map<int, bool>& visited, std::vector<int>* nodes) {
     /*
         @desc: recur seach for each adjacent node to index v
         
@@ -99,7 +92,7 @@ void Graph::dfs_recursor(int v, std::unordered_map<int, bool>& visited, std::vec
     for (Edge& e : vertices[v].edges) {
         int t_id = e[1];
         if (!visited[t_id]) { 
-            dfs_recursor(t_id, visited, nodes);
+            dfsRecursor(t_id, visited, nodes);
         }
     }
 }
@@ -108,17 +101,17 @@ void Graph::dfs_recursor(int v, std::unordered_map<int, bool>& visited, std::vec
 bool Graph::isConnected() {
     unordered_map<int, bool> v;
     int visited = 0;
-    dfs_recursor(vertices.begin().key(), visited, v);
+    dfsRecursor(vertices.begin().key(), visited, v);
     return (visited == vertices.size());
 }
 
 
-void Graph::dfs_recursor(int v, int& visited, unordered_map<int, bool>& visited_b) {
+void Graph::dfsRecursor(int v, int& visited, unordered_map<int, bool>& visitedB) {
     visited++;
-    visited_b[v] = true;
+    visitedB[v] = true;
     for (Edge& e : vertices[v].edges) {
-        if (!visited_b[e[1]]) {
-            dfs_recursor(e[1], visited, visited_b);
+        if (!visitedB[e[1]]) {
+            dfsRecursor(e[1], visited, visitedB);
         }
     }
 }
@@ -131,13 +124,12 @@ int Graph::getNumComponents() {
         @return: `int` number of components
     */
 
-
     unordered_map<int, bool> visited;
     int x = 0;
 
     for (int i = 0; i < vertices.size(); i++) {
         if (!visited[(vertices.begin() + i).key()]) {
-            dfs_recursor((vertices.begin() + i).key(), visited); 
+            dfsRecursor((vertices.begin() + i).key(), visited); 
             x++;
         }
     }
@@ -146,8 +138,7 @@ int Graph::getNumComponents() {
 }
 
 
-
-void Graph::dfs_recursor(int v, std::unordered_map<int, bool>& visited) { 
+void Graph::dfsRecursor(int v, std::unordered_map<int, bool>& visited) { 
     /*
         @desc: recur seach for each adjacent node to index v
         
@@ -162,7 +153,7 @@ void Graph::dfs_recursor(int v, std::unordered_map<int, bool>& visited) {
     visited[v] = true; 
     for (Edge& edge : vertices[v].edges) {
         if (!visited[edge[1]]) { 
-            dfs_recursor(edge[1], visited);
+            dfsRecursor(edge[1], visited);
         }
     }
 } 
@@ -171,7 +162,7 @@ void Graph::dfs_recursor(int v, std::unordered_map<int, bool>& visited) {
 void Graph::addEdge(Edge edge) {
     /*
         @desc: Adds an edge to a graph object
-        @params: `Geometry::Edge` edge: edge to be added
+        @params: `Edge` edge: edge to be added
         @return: `void`
     */
 
@@ -214,7 +205,7 @@ void Graph::addEdge(Edge edge) {
 }
 
 
-Graph hte::Geometry::remove_edges_to(Graph g, int id) {
+Graph hte::RemoveEdgesTo(Graph g, int id) {
     for (Edge edge : g.vertices[id].edges) {
         Edge remove = {edge[1], edge[0]};
 
@@ -235,11 +226,11 @@ Graph hte::Geometry::remove_edges_to(Graph g, int id) {
 }
 
 
-void Graph::remove_edges_to(int id) {
+void Graph::removeEdgesTo(int id) {
     /*
         @desc: removes edges to a node id
         @params: `int` id: id to remove edges of
-        @return: `std::vector<Geometry::Edge>` edges that have been removed
+        @return: `std::vector<Edge>` edges that have been removed
     */
 
 
