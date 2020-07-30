@@ -38,22 +38,20 @@ def _get_precinct_from_id(graph, id_):
             return precinct
 
 
-class TestGraph(unittest.TestCase):
+with open(f"{SOURCE_DIR}/data/vermont_graph.pickle", "rb") as f:
+    VERMONT_GRAPH = pickle.load(f)
+COMMUNITIES = graph.create_initial_configuration(VERMONT_GRAPH, 2)
 
-    def setUp(self):
-        """Loads data files and saves as instance attributes.
-        """
-        with open(f"{SOURCE_DIR}/data/vermont_graph.pickle", "rb") as f:
-            self.vermont_graph = pickle.load(f)
-        self.communities = graph.create_initial_configuration(self.vermont_graph, 2)
+
+class TestGraph(unittest.TestCase):
 
     def test_light_copy(self):
         """Tests `hacking_the_election.utils.graph.light_copy`
         """
-        light_copy = graph.light_copy(self.vermont_graph)
+        light_copy = graph.light_copy(VERMONT_GRAPH)
         
-        self.assertEqual(set(light_copy.nodes()), set(self.vermont_graph.nodes()))
-        self.assertEqual(set(light_copy.edges()), set(self.vermont_graph.edges()))
+        self.assertEqual(set(light_copy.nodes()), set(VERMONT_GRAPH.nodes()))
+        self.assertEqual(set(light_copy.edges()), set(VERMONT_GRAPH.edges()))
         for v in light_copy.nodes():
             self.assertEqual(light_copy.node_attributes(v), [])
 
@@ -75,7 +73,7 @@ class TestGraph(unittest.TestCase):
         """Tests `hacking_the_election.utils.graph.get_components`
         """
 
-        vermont_components = len(graph.get_components(self.vermont_graph))
+        vermont_components = len(graph.get_components(VERMONT_GRAPH))
         self.assertEqual(vermont_components, 1)
 
         G = Graph()
@@ -87,10 +85,10 @@ class TestGraph(unittest.TestCase):
         """
 
         precinct_ids = ["50013VD102", "50011VD101", "50011VD95", "50011VD93"]
-        precincts = [_get_precinct_from_id(self.vermont_graph, id_)
+        precincts = [_get_precinct_from_id(VERMONT_GRAPH, id_)
                      for id_ in precinct_ids]
         
-        precincts_graph = graph.get_induced_subgraph(self.vermont_graph, precincts)
+        precincts_graph = graph.get_induced_subgraph(VERMONT_GRAPH, precincts)
         
         self.assertEqual(len(precincts_graph.nodes()), 4)
         self.assertEqual(len(precincts_graph.edges()), 6)
@@ -99,12 +97,12 @@ class TestGraph(unittest.TestCase):
         """Tests `hacking_the_election.utils.graph.get_giveable_precincts`
         """
         
-        giveable_precincts = graph.get_giveable_precincts(self.vermont_graph, self.communities, 0)
+        giveable_precincts = graph.get_giveable_precincts(VERMONT_GRAPH, COMMUNITIES, 0)
 
         # Check that a community that is equal to the state has no giveable precincts.
-        at_large = Community(0, self.vermont_graph)
+        at_large = Community(0, VERMONT_GRAPH)
         self.assertEqual(
-            graph.get_giveable_precincts(self.vermont_graph,
+            graph.get_giveable_precincts(VERMONT_GRAPH,
                 [at_large], 0),
             []
         )
@@ -113,12 +111,12 @@ class TestGraph(unittest.TestCase):
         """Tests `hacking_the_election.utils.graph.get_takeable_precincts`
         """
 
-        takeable_precincts = graph.get_takeable_precincts(self.vermont_graph, self.communities, 1)
+        takeable_precincts = graph.get_takeable_precincts(VERMONT_GRAPH, COMMUNITIES, 1)
 
         # Check that a community that is equal to the state has no giveable precincts.
-        at_large = Community(0, self.vermont_graph)
+        at_large = Community(0, VERMONT_GRAPH)
         self.assertEqual(
-            graph.get_takeable_precincts(self.vermont_graph,
+            graph.get_takeable_precincts(VERMONT_GRAPH,
                 [at_large], 0),
             []
         )
@@ -135,6 +133,16 @@ class TestGraph(unittest.TestCase):
             g.add_edge(edge)
 
         self.assertEqual(graph.get_articulation_points(g), {1, 2, 4})
+
+    def test_get_initial_configuration(self):
+        """Tests `hacking_the_election.utils.graph.create_initial_configuration`
+        """
+
+        communities = graph.create_initial_configuration(VERMONT_GRAPH, 3)
+        self.assertEqual(len(communities), 3)
+        for community in communities:
+            self.assertIsInstance(community, Community)
+            self.assertEqual(len(graph.get_components(community.induced_subgraph)), 1)
 
 
 if __name__ == "__main__":
