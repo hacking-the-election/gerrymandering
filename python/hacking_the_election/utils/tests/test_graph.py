@@ -9,9 +9,8 @@ import unittest
 
 from shapely.geometry import Point, Polygon
 from pygraph.classes.graph import graph as Graph
+from pygraph.classes.digraph import digraph as DirectedGraph
 
-from hacking_the_election.communities.initial_configuration import \
-    create_initial_configuration
 from hacking_the_election.utils import graph
 from hacking_the_election.utils.community import Community
 from hacking_the_election.utils.precinct import Precinct
@@ -46,7 +45,7 @@ class TestGraph(unittest.TestCase):
         """
         with open(f"{SOURCE_DIR}/data/vermont_graph.pickle", "rb") as f:
             self.vermont_graph = pickle.load(f)
-        self.communities = create_initial_configuration(self.vermont_graph, 2)
+        self.communities = graph.create_initial_configuration(self.vermont_graph, 2)
 
     def test_light_copy(self):
         """Tests `hacking_the_election.utils.graph.light_copy`
@@ -123,6 +122,19 @@ class TestGraph(unittest.TestCase):
                 [at_large], 0),
             []
         )
+    
+    def test_get_articulation_points(self):
+        """Tests `hacking_the_election.utils.graph.get_articulation_points`
+        """
+
+        g = Graph()
+        for v in range(1, 7):
+            g.add_node(v)
+        edges = [(1, 2), (2, 3), (1, 4), (4, 5), (5, 6), (6, 4)]
+        for edge in edges:
+            g.add_edge(edge)
+
+        self.assertEqual(graph.get_articulation_points(g), {1, 2, 4})
 
 
 if __name__ == "__main__":

@@ -5,7 +5,10 @@ Graph theory related functions and classes.
 import copy
 
 from pygraph.classes.graph import graph as Graph
+from pygraph.classes.digraph import digraph as DirectedGraph
 from pygraph.classes.exceptions import AdditionError
+
+from hacking_the_election.utils.community import Community
 
 
 cdef float _get_community_pop(community):
@@ -163,6 +166,90 @@ cpdef get_induced_subgraph(graph, list precincts):
     return induced_subgraph
 
 
+cpdef _get_dfs_spanning_tree(graph, spanning_tree, int v, parent=None, int depth=0):
+    """Performs the DFS algorithm and finds the spanning tree of the traversal.
+
+    :param graph: A graph on which to perform a dfs traversal.
+    :type graph: `pygraph.classes.graph.graph`
+
+    :param spanning_tree: The directed graph which will be used as the spanning tree.
+    :type spanning_tree: `pygraph.classes.digraph.digraph`
+
+    :param v: The start node.
+    :type v: int
+
+    :param parent: The parent node of the inputted start node, defaults to None (for root node of entire search)
+    :type parent: int or NoneType
+
+    :param depth: The current depth of recursion, defaults to 0.
+    :type depth: int
+    """
+    spanning_tree.add_node(v)
+    spanning_tree.add_node_attribute(v, depth)
+    if parent is not None:
+        spanning_tree.add_edge((parent, v))
+
+    cdef int u
+    for u in graph.neighbors(v):
+        if u not in spanning_tree.nodes():
+            _get_dfs_spanning_tree(graph, spanning_tree, u, v, depth + 1)
+        else:
+            if u not in spanning_tree.incidents(v):
+                spanning_tree.add_edge((v, u))
+    
+    # Calculate and store lowpoint.
+    cdef set descendants = set()
+    cdef int descendant
+    _dfs(spanning_tree, descendants, v)
+    cdef int lowpoint = min(
+        [spanning_tree.node_attributes(descendant)[0]
+         for descendant in descendants])
+    spanning_tree.add_node_attribute(v, lowpoint)
+
+
+cpdef set get_articulation_points(graph):
+    """Finds the set of articulation points within a graph.
+
+    :param graph: A graph.
+    :type graph: `pygraph.classes.graph.graph`
+
+    :return: The set of articulation points in the graph.
+    :rtype: set of int
+    """
+    cdef int v = graph.nodes()[0]
+    cdef int root = v
+    cdef int descendant
+    cdef set descendants
+    
+    spanning_tree = DirectedGraph()
+    _get_dfs_spanning_tree(graph, spanning_tree, v)  # Populate tree.
+
+    # Get depth and lowpoint of each node.
+    cdef dict depths = {}
+    cdef dict lowpoints = {}
+
+    cdef list node_attributes
+    cdef int node
+    for node in spanning_tree.nodes():
+        node_attributes = spanning_tree.node_attributes(node)
+        depths[node] = node_attributes[0]
+        lowpoints[node] = node_attributes[1]
+    
+    # Find articulaiton points.
+    cdef set articulation_points = set()
+    cdef int child
+    for node in spanning_tree.nodes():
+        if node != root:
+            for child in spanning_tree.neighbors(node):
+                if lowpoints[child] >= depths[node]:
+                    articulation_points.add(node)
+        else:
+            if len(spanning_tree.neighbors(node)) > 1:
+                articulation_points.add(node)
+    
+    return articulation_points
+
+
 cdef _remove_edges_to(graph, int node):
     """Removes edges connected to a node.
 
@@ -296,3 +383,35 @@ def graph_from_file(file_path, precinct_list):
     for edge in edges:
         return_graph.add_edge(edge)
     return return_graph
+
+
+def create_initial_configuration(precinct_graph, n_communities):
+    """Creates a list of communities based off of a state precinct-map represented by a graph.
+
+    Implementation of Karger-Stein algorithm, except modified a bit to
+    make the partitions of similar sizes.
+
+    :param precinct_graph: A graph with each node representing a precinct, with precincts stored as node attributes.
+    :type precinct_graph: `pygraph.classes.graph.graph`
+    """
+
+    # Create copy of `precinct_graph` without precinct data.
+    G = light_copy(precinct_graph)
+
+    while len(G.nodes()) > n_communities:
+        attr_lengths = {}  # Links edges to the number of nodes they contain.
+        edges = set(G.edges())
+        for i in range(min(100, len(edges))):
+            e = edges.pop()
+            attr_lengths[e] = (len(G.node_attributes(e[0]))
+                             + len(G.node_attributes(e[1])))
+        contract(G, min(attr_lengths))
+
+    # Create community objects from nodes.
+    communities = [Community(i, precinct_graph) for i in range(n_communities)]
+    for i, node in enumerate(G.nodes()):
+        for precinct_node in G.node_attributes(node):
+            communities[i].take_precinct(
+                precinct_graph.node_attributes(precinct_node)[0])
+
+    return communities
