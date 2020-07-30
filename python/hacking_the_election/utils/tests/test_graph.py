@@ -12,7 +12,10 @@ from pygraph.classes.graph import graph as Graph
 from pygraph.classes.digraph import digraph as DirectedGraph
 
 from hacking_the_election.utils import graph
-from hacking_the_election.utils.community import Community
+from hacking_the_election.utils.community import (
+    Community,
+    create_initial_configuration
+)
 from hacking_the_election.utils.precinct import Precinct
 
 
@@ -40,7 +43,7 @@ def _get_precinct_from_id(graph, id_):
 
 with open(f"{SOURCE_DIR}/data/vermont_graph.pickle", "rb") as f:
     VERMONT_GRAPH = pickle.load(f)
-COMMUNITIES = graph.create_initial_configuration(VERMONT_GRAPH, 2)
+COMMUNITIES = create_initial_configuration(VERMONT_GRAPH, 2)
 
 
 class TestGraph(unittest.TestCase):
@@ -133,16 +136,6 @@ class TestGraph(unittest.TestCase):
             g.add_edge(edge)
 
         self.assertEqual(graph.get_articulation_points(g), {1, 2, 4})
-
-    def test_get_initial_configuration(self):
-        """Tests `hacking_the_election.utils.graph.create_initial_configuration`
-        """
-
-        communities = graph.create_initial_configuration(VERMONT_GRAPH, 3)
-        self.assertEqual(len(communities), 3)
-        for community in communities:
-            self.assertIsInstance(community, Community)
-            self.assertEqual(len(graph.get_components(community.induced_subgraph)), 1)
 
 
 if __name__ == "__main__":

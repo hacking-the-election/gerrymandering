@@ -15,6 +15,11 @@ from hacking_the_election.utils.geometry import (
     get_compactness,
     get_imprecise_compactness
 )
+from hacking_the_election.utils.graph import (
+    contract,
+    get_components,
+    light_copy
+)
 from hacking_the_election.utils.stats import average, standard_deviation
 
 
@@ -175,7 +180,7 @@ class Community:
         """
 
         if len(self.precincts) == 1:
-            return
+            return False
 
         try:
             precinct = self.precincts[precinct_id]
@@ -184,7 +189,7 @@ class Community:
 
         if other is self:
             raise ValueError("Community cannot give precinct to itself.")
-        
+
         # Update induced subgraph
         self.induced_subgraph.del_node(
             self.precincts[precinct_id].node)
@@ -201,6 +206,8 @@ class Community:
                 exec(f"self.update_{attr}()")
             except AttributeError:
                 raise ValueError(f"No such attribute as {attr} in Community instance.")
+        
+        return True
 
     @property
     def centroid(self):
@@ -291,3 +298,35 @@ class Community:
         new.population_stdev = copy.copy(self.population_stdev)
 
         return new
+
+
+def create_initial_configuration(precinct_graph, n_communities):
+    """Creates a list of communities based off of a state precinct-map represented by a graph.
+
+    Implementation of Karger-Stein algorithm, except modified a bit to
+    make the partitions of similar sizes.
+
+    :param precinct_graph: A graph with each node representing a precinct, with precincts stored as node attributes.
+    :type precinct_graph: `pygraph.classes.graph.graph`
+    """
+
+    # Create copy of `precinct_graph` without precinct data.
+    G = light_copy(precinct_graph)
+
+    while len(G.nodes()) > n_communities:
+        attr_lengths = {}  # Links edges to the number of nodes they contain.
+        edges = set(G.edges())
+        for i in range(min(100, len(edges))):
+            e = edges.pop()
+            attr_lengths[e] = (len(G.node_attributes(e[0]))
+                             + len(G.node_attributes(e[1])))
+        contract(G, min(attr_lengths))
+
+    # Create community objects from nodes.
+    communities = [Community(i, precinct_graph) for i in range(n_communities)]
+    for i, node in enumerate(G.nodes()):
+        for precinct_node in G.node_attributes(node):
+            communities[i].take_precinct(
+                precinct_graph.node_attributes(precinct_node)[0])
+
+    return communities

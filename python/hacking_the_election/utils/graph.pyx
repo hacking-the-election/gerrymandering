@@ -8,8 +8,6 @@ from pygraph.classes.graph import graph as Graph
 from pygraph.classes.digraph import digraph as DirectedGraph
 from pygraph.classes.exceptions import AdditionError
 
-from hacking_the_election.utils.community import Community
-
 
 cdef float _get_community_pop(community):
     community.update_population()
@@ -383,35 +381,3 @@ def graph_from_file(file_path, precinct_list):
     for edge in edges:
         return_graph.add_edge(edge)
     return return_graph
-
-
-def create_initial_configuration(precinct_graph, n_communities):
-    """Creates a list of communities based off of a state precinct-map represented by a graph.
-
-    Implementation of Karger-Stein algorithm, except modified a bit to
-    make the partitions of similar sizes.
-
-    :param precinct_graph: A graph with each node representing a precinct, with precincts stored as node attributes.
-    :type precinct_graph: `pygraph.classes.graph.graph`
-    """
-
-    # Create copy of `precinct_graph` without precinct data.
-    G = light_copy(precinct_graph)
-
-    while len(G.nodes()) > n_communities:
-        attr_lengths = {}  # Links edges to the number of nodes they contain.
-        edges = set(G.edges())
-        for i in range(min(100, len(edges))):
-            e = edges.pop()
-            attr_lengths[e] = (len(G.node_attributes(e[0]))
-                             + len(G.node_attributes(e[1])))
-        contract(G, min(attr_lengths))
-
-    # Create community objects from nodes.
-    communities = [Community(i, precinct_graph) for i in range(n_communities)]
-    for i, node in enumerate(G.nodes()):
-        for precinct_node in G.node_attributes(node):
-            communities[i].take_precinct(
-                precinct_graph.node_attributes(precinct_node)[0])
-
-    return communities
