@@ -18,48 +18,6 @@ cdef float _get_precinct_xcoord(tuple precinct_tuple):
     return precinct_tuple[0].centroid[0]
 
 
-cdef _dfs(graph, spanning_tree, int v, parent=None, int depth=0):
-    """Performs the DFS algorithm and finds the spanning tree of the traversal.
-
-    :param graph: A graph on which to perform a dfs traversal.
-    :type graph: `pygraph.classes.graph.graph`
-
-    :param spanning_tree: The directed graph which will be used as the spanning tree.
-    :type spanning_tree: `pygraph.classes.digraph.digraph`
-
-    :param v: The start node.
-    :type v: int
-
-    :param parent: The parent node of the inputted start node, defaults to None (for root node of entire search)
-    :type parent: int or NoneType
-
-    :param depth: The current depth of recursion, defaults to 0.
-    :type depth: int
-    """
-    spanning_tree.add_node(v)
-    spanning_tree.add_node_attribute(v, depth)
-    if parent is not None:
-        spanning_tree.add_edge((parent, v))
-
-    cdef int u
-    for u in graph.neighbors(v):
-        if u not in spanning_tree.nodes():
-            _dfs(graph, spanning_tree, u, v, depth + 1)
-        else:
-            if u not in spanning_tree.incidents(v):
-                spanning_tree.add_edge((v, u))
-    
-    # Calculate and store lowpoint.
-    cdef object descendants_tree = DirectedGraph()
-    cdef int descendant
-    _dfs(spanning_tree, descendants_tree, v)
-    cdef set descendants = set(descendants_tree.nodes())
-    cdef int lowpoint = min(
-        [spanning_tree.node_attributes(descendant)[0]
-         for descendant in descendants])
-    spanning_tree.add_node_attribute(v, lowpoint)
-
-
 cpdef light_copy(G):
     """Returns a graph without node attributes.
 
@@ -121,6 +79,71 @@ cpdef void contract(G, tuple t):
         G.add_edge((new_node, neighbor))
 
 
+cdef void _dfs(graph, set nodes, int v):
+    """Finds all the nodes in a component of a graph containing a start node.
+
+    Implementation of the depth-first search algorithm translated from wikipedia:
+    https://en.wikipedia.org/wiki/Depth-first_search#Pseudocode
+
+    :param graph: The graph to traverse.
+    :type graph: `pygraph.classes.graph.graph`
+
+    :param nodes: a set that will have nodes added to it as they are traversed.
+    :type nodes: set of int
+
+    :param v: The start node in the search tree
+    :type v: int
+    """
+    nodes.add(v)
+    cdef int w
+    cdef list neighbors
+    neighbors = graph.neighbors(v)
+    for w in neighbors:
+        if w not in nodes:
+            _dfs(graph, nodes, int(w))
+
+
+cpdef _get_dfs_spanning_tree(graph, spanning_tree, int v, parent=None, int depth=0):
+    """Performs the DFS algorithm and finds the spanning tree of the traversal.
+
+    :param graph: A graph on which to perform a dfs traversal.
+    :type graph: `pygraph.classes.graph.graph`
+
+    :param spanning_tree: The directed graph which will be used as the spanning tree.
+    :type spanning_tree: `pygraph.classes.digraph.digraph`
+
+    :param v: The start node.
+    :type v: int
+
+    :param parent: The parent node of the inputted start node, defaults to None (for root node of entire search)
+    :type parent: int or NoneType
+
+    :param depth: The current depth of recursion, defaults to 0.
+    :type depth: int
+    """
+    spanning_tree.add_node(v)
+    spanning_tree.add_node_attribute(v, depth)
+    if parent is not None:
+        spanning_tree.add_edge((parent, v))
+
+    cdef int u
+    for u in graph.neighbors(v):
+        if u not in spanning_tree.nodes():
+            _get_dfs_spanning_tree(graph, spanning_tree, u, v, depth + 1)
+        else:
+            if u not in spanning_tree.incidents(v):
+                spanning_tree.add_edge((v, u))
+    
+    # Calculate and store lowpoint.
+    cdef set descendants = set()
+    cdef int descendant
+    _dfs(spanning_tree, descendants, v)
+    cdef int lowpoint = min(
+        [spanning_tree.node_attributes(descendant)[0]
+         for descendant in descendants])
+    spanning_tree.add_node_attribute(v, lowpoint)
+
+
 cpdef list get_components(graph):
     """Finds number of discontinuous components of a graph.
 
@@ -138,15 +161,11 @@ cpdef list get_components(graph):
 
     # While not all nodes have been discovered.
     while discovered_nodes != graph_nodes:
-        component_spanning_tree = DirectedGraph()
+        component = set()
         # Search all nodes in `start_v`'s component.
-        _dfs(
-            graph,
-            component_spanning_tree,
-            int(min(graph_nodes - discovered_nodes))
-        )
-        components.append(component.nodes())
-        discovered_nodes.update(set(component.nodes()))
+        _dfs(graph, component, int(min(graph_nodes - discovered_nodes)))
+        components.append(list(component))
+        discovered_nodes.update(component)
     return components
 
 
