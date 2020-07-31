@@ -5,12 +5,13 @@ generating political communities.
 Usage:
 python3 -m hacking_the_election.communities <serialized_state_graph_path> <n_communities> <output_path> <algorithm> [animation_dir]
 
-<algorithm> can either be "SA" or "GA"
+<algorithm> can either be "SA" or "GA", but it can also be "speed", which will run each of the algorithms 100 times and return their average speed.
 """
 
 import pickle
 import random
 import sys
+import time
 
 from pygraph.classes.graph import graph as Graph
 
@@ -27,8 +28,14 @@ from hacking_the_election.utils.graph import (
 from hacking_the_election.visualization.misc import draw_state
 
 
-UPDATE_ATTRIBUTES = {"partisanship_stdev", "imprecise_compactness", "population"}
+UPDATE_ATTRIBUTES = set()
 
+T_MAX = 30
+T_MIN = 0
+EPOCHS = 40000
+COOL = 0.99976
+
+VERBOSE = True
 
 def _get_score(communities):
     """Returns the goodness score of a list of communities.
@@ -39,8 +46,8 @@ def _get_score(communities):
     :return: A score between 0 and 1 representing the goodness of the inputted communities.
     :rtype: float
     """
-    
-    return average([c.imprecise_compactness for c in communities])
+
+    return random.random()
 
 def _get_all_exchanges(precinct_graph, communities):
     """Finds all the possible ways that a community map can be changed via a single precinct exchanges between two communities.
@@ -161,6 +168,52 @@ def generate_communities_simulated_annealing(precinct_graph, n_communities, anim
             pass
 
     communities = create_initial_configuration(precinct_graph, n_communities)
+    community_dict = {c.id: c for c in communities}
+
+    current_energy = _get_score(communities)
+    temp = T_MAX
+
+    for epoch in range(EPOCHS):
+        
+        exchanges = _get_all_exchanges(precinct_graph, communities)
+        choice = random.sample(exchanges, 1)[0]
+        init_community = None
+        other_community = None
+
+        # Choose a random exchange.
+        while True:
+            choice = random.choice(
+                [c for c in exchanges if c is not choice])
+            
+            init_community = community_dict[choice[0].community]
+            other_community = community_dict[choice[1]]
+
+            if init_community.give_precinct(other_community, choice[0].id):
+                break
+        
+        new_energy = _get_score(communities)
+
+        if new_energy < current_energy:
+            # Go ahead with exchange because it lowers energy.
+            current_energy = new_energy
+        
+        elif ((temp / T_MAX) > random.random()):
+            # Go ahead with exchange because of probability function.
+            current_energy = new_energy
+        
+        else:
+            # Don't go ahead with exchange.
+            other_community.give_precinct(init_community, choice[0].id)
+
+        if VERBOSE:
+            sys.stdout.write(f"\r" + "".join([" " for _ in range(20)]))
+            sys.stdout.write(f"\r{round(current_energy, 8)}\t{round(temp, 8)}\t{epoch}")
+            sys.stdout.flush()
+
+        temp *= COOL
+    
+    if VERBOSE:
+        print()
 
     return communities
 
@@ -175,12 +228,14 @@ if __name__ == "__main__":
     if len(sys.argv) > 5:
         args.append(sys.argv[5])
 
+    start_time = time.time()
     if sys.argv[4] == "SA":
         communities = generate_communities_simulated_annealing(*args)
     elif sys.argv[4] == "GA":
         communities = generate_communities_gradient_ascent(*args)
+    print(f"RUN TIME: {time.time() - start_time}")
 
-    # draw_state(precinct_graph, None, fpath="test_gradient_ascent.png")
+    draw_state(precinct_graph, None, fpath="test_algorithm.png")
 
     # Write to file.
     with open(sys.argv[3], "wb+") as f:
