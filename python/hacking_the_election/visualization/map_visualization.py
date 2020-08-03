@@ -175,7 +175,7 @@ if __name__ == "__main__":
     with open(sys.argv[1], "rb") as f:
         precinct_graph = pickle.load(f)
 
-    precincts = [precinct_graph.node_attributes(node)[0] for node in precinct_graph.nodes()]
+    precincts = [precinct_graph.nodes[node]['precinct'] for node in precinct_graph.nodes()]
     color_dict = get_partisanship_colors(precincts, lambda p: p.dem_rep_partisanship)
 
     visualize_map(precincts, None if sys.argv[2] == "None" else sys.argv[2],

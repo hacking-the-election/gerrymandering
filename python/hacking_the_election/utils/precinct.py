@@ -9,7 +9,7 @@ from hacking_the_election.utils.stats import standard_deviation
 
 class Precinct:
     """Class containing voter, population, and geo data for a single precinct.
-    Should be pointed to by node in `pygraph.classes.graph.graph` object.
+    Should be pointed to by node in `networkx.Graph` object.
 
     :param rep_data: Republican voter counts corresponding to elections.
     :type rep_data: dict
