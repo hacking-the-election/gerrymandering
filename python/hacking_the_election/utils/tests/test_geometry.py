@@ -19,33 +19,31 @@ SOURCE_DIR = os.path.dirname(__file__)
 SHOW = False
 
 
+# Load data files.
+with open(f"{SOURCE_DIR}/data/geometry/original_gerrymander.json", "r") as f:
+    # Stored as GeoJson, not shapely object.
+    ORIGINAL_GERRYMANDER = \
+        json.load(f)["features"][0]["geometry"]["coordinates"]
+
+with open(f"{SOURCE_DIR}/data/geometry/vermont_precincts.json", "r") as f:
+    vermont_precincts_json = json.load(f)
+
+# Dict linking geoid10 to shapely object containing coordinates.
+VERMONT_PRECINCTS = {}
+for p in vermont_precincts_json["features"]:
+    VERMONT_PRECINCTS[p["properties"]["GEOID10"]] = \
+        geometry.geojson_to_shapely(p["geometry"]["coordinates"])
+
+with open(f"{SOURCE_DIR}/data/geometry/vermont.json", "r") as f:
+    # Total state boundary of Vermont.
+    VERMONT = geometry.geojson_to_shapely(
+        json.load(f)["features"][0]["geometry"]["coordinates"])
+
+with open(f"{SOURCE_DIR}/data/vermont_graph.pickle", "rb") as f:
+    VERMONT_GRAPH = pickle.load(f)
+
+
 class TestGeometry(unittest.TestCase):
-
-    def setUp(self):
-        """Loads data files and saves as instance attributes.
-        """
-
-        with open(f"{SOURCE_DIR}/data/geometry/original_gerrymander.json", "r") as f:
-            # Stored as GeoJson, not shapely object.
-            self.original_gerrymander = \
-                json.load(f)["features"][0]["geometry"]["coordinates"]
-
-        with open(f"{SOURCE_DIR}/data/geometry/vermont_precincts.json", "r") as f:
-            vermont_precincts_json = json.load(f)
-
-        # Dict linking geoid10 to shapely object containing coordinates.
-        self.vermont_precincts = {}
-        for precinct in vermont_precincts_json["features"]:
-            self.vermont_precincts[precinct["properties"]["GEOID10"]] = \
-                geometry.geojson_to_shapely(precinct["geometry"]["coordinates"])
-
-        with open(f"{SOURCE_DIR}/data/geometry/vermont.json", "r") as f:
-            # Total state boundary of Vermont.
-            self.vermont = geometry.geojson_to_shapely(
-                json.load(f)["features"][0]["geometry"]["coordinates"])
-
-        with open(f"{SOURCE_DIR}/data/vermont_graph.pickle", "rb") as f:
-            self.vermont_graph = pickle.load(f)
 
     def test_geojson_to_shapely(self):
         """Tests `hacking_the_election.utils.geometry.geojson_to_shapely`
@@ -57,7 +55,7 @@ class TestGeometry(unittest.TestCase):
         Otherwise simply checks that the function does not throw an error.
         """
 
-        original_gerrymander_polygon = geometry.geojson_to_shapely(self.original_gerrymander)
+        original_gerrymander_polygon = geometry.geojson_to_shapely(ORIGINAL_GERRYMANDER)
 
         if SHOW:
             visualize_map([original_gerrymander_polygon], None, show=True)
@@ -84,22 +82,22 @@ class TestGeometry(unittest.TestCase):
         """
         self.assertEqual(
             geometry.get_if_bordering(
-                self.vermont_precincts["50009VD85"],
-                self.vermont_precincts["50009VD77"]
+                VERMONT_PRECINCTS["50009VD85"],
+                VERMONT_PRECINCTS["50009VD77"]
             ),
             True
         )
         self.assertEqual(
             geometry.get_if_bordering(
-                self.vermont_precincts["50003VD37"],
-                self.vermont_precincts["50009VD77"]
+                VERMONT_PRECINCTS["50003VD37"],
+                VERMONT_PRECINCTS["50009VD77"]
             ),
             False
         )
         self.assertEqual(
             geometry.get_if_bordering(
-                self.vermont,
-                self.vermont_precincts["50009VD85"],
+                VERMONT,
+                VERMONT_PRECINCTS["50009VD85"],
                 inside=True
             ),
             True
@@ -110,26 +108,26 @@ class TestGeometry(unittest.TestCase):
         """
 
         original_gerrymander_polygon = \
-            geometry.geojson_to_shapely(self.original_gerrymander)
+            geometry.geojson_to_shapely(ORIGINAL_GERRYMANDER)
 
         original_reock_score = round(geometry.get_compactness(original_gerrymander_polygon), 3)
         self.assertEqual(original_reock_score, 0.32)
 
-        vermont_reock_score = round(geometry.get_compactness(self.vermont), 3)
+        vermont_reock_score = round(geometry.get_compactness(VERMONT), 3)
         self.assertEqual(vermont_reock_score, 0.423)
 
     def test_area(self):
         """Tests `hacking_the_election.utils.geometry.area`
         """
 
-        precinct = self.vermont_precincts["50009VD85"]
+        precinct = VERMONT_PRECINCTS["50009VD85"]
 
         precinct_area = round(
             geometry.area(geometry.shapely_to_geojson(precinct)[0]), 3)
 
         self.assertEqual(
             precinct_area,
-            round(self.vermont_precincts["50009VD85"].area, 3)
+            round(VERMONT_PRECINCTS["50009VD85"].area, 3)
         )
 
     def test_get_distance(self):
@@ -157,16 +155,17 @@ class TestGeometry(unittest.TestCase):
             p.node = i
             precincts.append(p)
 
-        c = community.Community(0, self.vermont_graph)
+        c = community.Community(0, VERMONT_GRAPH)
         for p in precincts:
             c.take_precinct(p)
 
         # Compactness of a circle should equal 1.
-
-        assert abs(geometry.get_imprecise_compactness(c) - 1) < 0.1
+        self.assertLess(abs(geometry.get_imprecise_compactness(c) - 1), 0.1)
 
 
 if __name__ == "__main__":
-    SHOW = "-s" in sys.argv[1:]
+    if "-s" in sys.argv[1:]:
+        SHOW = True
+        sys.argv.remove("-s")
 
     unittest.main()

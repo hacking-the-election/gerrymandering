@@ -6,10 +6,9 @@ Usage:
 
 import sys
 
-from hacking_the_election.communities.tests import test_initial_configuration
 from hacking_the_election.utils.tests import (
-    test_geometry,
-    test_graph
+    test_community,
+    test_geometry
 )
 
 
@@ -62,11 +61,8 @@ if __name__ == "__main__":
     if sys.argv[1] == "test":
 
         # Test utils package.
+        runtests(test_community.TestCommunity)
         runtests(test_geometry.TestGeometry)
-        runtests(test_graph.TestGraph)
-
-        # Test communities package.
-        runtests(test_initial_configuration.TestInitialConfiguration)
 
         # Print failures.
         failed = False

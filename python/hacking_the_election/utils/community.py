@@ -6,6 +6,7 @@ import copy
 import json
 import pickle
 import os
+import random
 
 import networkx as nx
 from shapely.geometry import MultiPolygon, Polygon
@@ -21,7 +22,7 @@ from hacking_the_election.utils.stats import average, standard_deviation
 PACKAGE_ROOT = os.path.dirname(os.path.dirname(__file__))
 
 
-def light_copy(G):
+def _light_copy(G):
     """Returns a graph without node attributes.
 
     :param G: A graph containing node and edge data.
@@ -30,16 +31,16 @@ def light_copy(G):
     :return: A graph with equivalent node and edge data to `graph`, but without any node attributes.
     :rtype: `networkx.Graph`
     """
-    G2 = Graph()
+    G2 = nx.Graph()
     for v in G.nodes:
         G2.add_node(v)
     for e in G.edges:
-        if not G2.has_edge(e):
-            G2.add_edge(e)
+        if not G2.has_edge(*e):
+            G2.add_edge(*e)
     return G2
 
 
-def contract(G, t):
+def _contract(G, t):
     """Contracts an edge in a graph.
 
     :param G: Graph containing edge `t`
@@ -50,17 +51,17 @@ def contract(G, t):
     """
     new_contracted_nodes = []
     for v in t:
-        v_contracted_nodes = G.nodes[v]['contracted nodes']
-        if len(v_contracted_nodes) != 0:
+        try:
+            v_contracted_nodes = G.nodes[v]['contracted nodes']
             new_contracted_nodes += v_contracted_nodes
-        else:
+        except KeyError:
             new_contracted_nodes.append(v)
     
     new_node_neighbors = list(set(G.neighbors(t[0]))
                             | set(G.neighbors(t[1])))
     new_node_neighbors.remove(t[0]); new_node_neighbors.remove(t[1])
     
-    G.remove_edge(t)
+    G.remove_edge(*t)
     G.remove_node(t[0]); G.remove_node(t[1])
 
     nodes = G.nodes
@@ -82,6 +83,10 @@ class Community:
     """
 
     def __init__(self, community_id, state_graph):
+
+        if not isinstance(state_graph, nx.Graph):
+            raise TypeError(f"state_graph must be of type {nx.Graph!r}, "
+                            f"not {type(state_graph)!r}")
 
         self.id = community_id
 
@@ -186,6 +191,7 @@ class Community:
         :param update: Set of attribute names of this class that should be updated after adding this precinct.
         :type update: set of string
         """
+        update = copy.copy(update)
 
         if self.state == "":
             self.state = precinct.state
@@ -270,7 +276,7 @@ class Community:
 
     @property
     def area(self):
-        """The area of the district.
+        """The area of the community.
         """
         return sum([p.coords.area for p in self.precincts.values()])
 
@@ -354,26 +360,32 @@ def create_initial_configuration(precinct_graph, n_communities):
     Implementation of Karger-Stein algorithm, except modified a bit to
     make the partitions of similar sizes.
 
+    Does not update any of the communities' attributes based off of the
+    precincts they have had added to them.
+
     :param precinct_graph: A graph with each node representing a precinct, with precincts stored as node attributes.
     :type precinct_graph: `networkx.Graph`
+
+    :return: A list of communities that the graph has been divided into.
+    :rtype: `hacking_the_election.utils.community.Community`
     """
 
     # Create copy of `precinct_graph` without precinct data.
-    G = light_copy(precinct_graph)
+    G = _light_copy(precinct_graph)
 
     while len(G.nodes) > n_communities:
         attr_lengths = {}  # Links edges to the number of nodes they contain.
         edges = set(G.edges)
         for i in range(min(100, len(edges))):
-            e = edges.pop()
+            e = random.sample(edges, 1)[0]
             attr_lengths[e] = (len(G.nodes[e[0]])
                              + len(G.nodes[e[1]]))
-        contract(G, min(attr_lengths))
+        _contract(G, min(attr_lengths))
 
     # Create community objects from nodes.
     communities = [Community(i, precinct_graph) for i in range(n_communities)]
     for i, node in enumerate(G.nodes):
-        for precinct_node in G.nodes[node]:
+        for precinct_node in G.nodes[node]['contracted nodes']:
             communities[i].take_precinct(
                 precinct_graph.nodes[precinct_node]['precinct'])
 
