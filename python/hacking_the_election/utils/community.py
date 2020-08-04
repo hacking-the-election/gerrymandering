@@ -270,12 +270,13 @@ class Community:
     def centroid(self):
         """The average centroid of the community's precincts.
         """
-        precinct_X = []
-        precinct_Y = []
+        X_sum = 0
+        Y_sum = 0
         for precinct in self.precincts.values():
-            precinct_X.append(precinct.centroid[0])
-            precinct_Y.append(precinct.centroid[1])
-        return [average(precinct_X), average(precinct_Y)]
+            X_sum += precinct.centroid[0]
+            Y_sum += precinct.centroid[1]
+        n_precincts = len(self.precincts)
+        return [X_sum / n_precincts, Y_sum / n_precincts]
 
     @property
     def area(self):

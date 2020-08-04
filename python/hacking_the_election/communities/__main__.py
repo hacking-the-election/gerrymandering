@@ -5,7 +5,17 @@ generating political communities.
 Usage:
 python3 -m hacking_the_election.communities <serialized_state_graph_path> <n_communities> <output_path> <algorithm> [animation_dir]
 
-<algorithm> can either be "SA" or "GA", but it can also be "speed", which will run each of the algorithms 100 times and return their average speed.
+<algorithm> can either be "SA" or "GA"
+grid search:
+    - We just have to run gradient ascent a bunch of times.
+    - for simulated annealing we must change:
+        - starting temp.
+        - cooling function.
+        - number of epochs.
+        - probability function.
+    - For simulated annealing, not only do we have to consider how much
+        it optimizes the score, but we also must consider how long it takes.
+        Will that just be multiplying the two values, together?
 """
 
 import pickle
@@ -16,14 +26,14 @@ import time
 import networkx as nx
 
 from hacking_the_election.utils.community import create_initial_configuration
+from hacking_the_election.utils.geometry import get_distance
 from hacking_the_election.utils.stats import average
 from hacking_the_election.visualization.misc import draw_state
 
 
-UPDATE_ATTRIBUTES = set()
+UPDATE_ATTRIBUTES = {"population", "partisanship_stdev"}
 
 T_MAX = 30
-T_MIN = 0
 EPOCHS = 40000
 COOL = 0.99976
 
@@ -39,7 +49,33 @@ def _get_score(communities):
     :rtype: float
     """
 
-    return random.random()
+    # Population compactness and geometric compactness.
+    compactness_score = 0
+    for community in communities:
+        precinct_populations = {}
+        max_population = 0
+        for precinct in community.precincts.values():
+            precinct_populations[precinct.id] = precinct.pop
+            if precinct.pop > max_population:
+                max_population = precinct.pop
+
+        for precinct in community.precincts.values():
+            distance = get_distance(
+                precinct.centroid, community.centroid)
+            compactness_score += (distance
+                * (precinct_populations[precinct.id] / max_population))
+    
+    # Population distribution.
+    state_pop = sum([c.population for c in communities])
+    ideal_pop = state_pop / len(communities)
+    population_score = (1
+        - sum([abs(c.population - ideal_pop) for c in communities]) / state_pop)
+
+    # Partisanship stdev.
+    partisanship_score = average([c.partisanship_stdev for c in communities])
+
+    return average([compactness_score, population_score, partisanship_score])
+
 
 def _get_all_exchanges(precinct_graph, communities):
     """Finds all the possible ways that a community map can be changed via a single precinct exchanges between two communities.
@@ -222,17 +258,17 @@ if __name__ == "__main__":
     if sys.argv[4] == 'speed':
         VERBOSE = False
         GA_times = []
-        for _ in range(100):
+        for _ in range(10):
             start_time = time.time()
             generate_communities_gradient_ascent(*args)
             GA_times.append(time.time() - start_time)
-        SA_times = []
-        for _ in range(100):
-            start_time = time.time()
-            generate_communities_simulated_annealing(*args)
-            SA_times.append(time.time() - start_time)
+        # SA_times = []
+        # for _ in range(100):
+        #     start_time = time.time()
+        #     generate_communities_simulated_annealing(*args)
+        #     SA_times.append(time.time() - start_time)
         print("GA Average:", average(GA_times))
-        print("SA Average:", average(SA_times))
+        # print("SA Average:", average(SA_times))
     else:
         start_time = time.time()
         if sys.argv[4] == "SA":
@@ -243,6 +279,6 @@ if __name__ == "__main__":
 
         draw_state(precinct_graph, None, fpath="test_algorithm.png")
 
-    # Write to file.
-    with open(sys.argv[3], "wb+") as f:
-        pickle.dump(communities, f)
+        # Write to file.
+        with open(sys.argv[3], "wb+") as f:
+            pickle.dump(communities, f)
