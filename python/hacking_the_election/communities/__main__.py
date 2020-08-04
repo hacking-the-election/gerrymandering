@@ -13,18 +13,10 @@ import random
 import sys
 import time
 
-from pygraph.classes.graph import graph as Graph
+import networkx as nx
 
-from hacking_the_election.utils.community import (
-    Community,
-    create_initial_configuration
-)
+from hacking_the_election.utils.community import create_initial_configuration
 from hacking_the_election.utils.stats import average
-from hacking_the_election.utils.graph import (
-    contract,
-    get_articulation_points,
-    light_copy
-)
 from hacking_the_election.visualization.misc import draw_state
 
 
@@ -53,45 +45,43 @@ def _get_all_exchanges(precinct_graph, communities):
     """Finds all the possible ways that a community map can be changed via a single precinct exchanges between two communities.
 
     :param precinct_graph: A graph with each node representing a precinct, with precincts stored as node attributes.
-    :type precinct_graph: `pygraph.classes.graph.graph`
+    :type precinct_graph: `networkx.Graph`
 
     :param communities: A list of the communities that divy up the precincts in precinct_graph
     :type communities: list of `hacking_the_election.utils.community.Community`
 
     :return: A set of tuples containing a precinct and a community it can be sent to.
-    :rtype: set of tuple of `hacking_the_election.utils.precinct.Precinct` and int
+    :rtype: set of tuple of `hacking_the_election.utils.precinct.Precinct` and int, also a dict of articulation points.
     """
 
+    articulation_points = {}
+    for c in communities:
+        articulation_points[c.id] = \
+            set(nx.articulation_points(c.induced_subgraph))
+
     exchanges = set()
-
-    community_dict = {c.id: c for c in communities}
-    community_articulation_points = {}
-    for community in communities:
-        community_articulation_points[community.id] = \
-            get_articulation_points(community.induced_subgraph)
-
-    for node in precinct_graph.nodes():
-
-        precinct = precinct_graph.node_attributes(node)[0]
-        node_community = precinct.community
-
-        if node in community_articulation_points[node_community]:
+    for node in precinct_graph.nodes:
+        neighboring_communities = set()
+        precinct = precinct_graph.nodes[node]['precinct']
+        if precinct.node in articulation_points[precinct.community]:
             continue
-
         for neighbor in precinct_graph.neighbors(node):
             neighbor_community = \
-                precinct_graph.node_attributes(neighbor)[0].community
-            if neighbor_community != node_community:
+                precinct_graph.nodes[neighbor]['precinct'].community
+            if (
+                        (neighbor_community != precinct.community)
+                    and (neighbor_community not in neighboring_communities)):
+                neighboring_communities.add(neighbor_community)
                 exchanges.add((precinct, neighbor_community))
     
-    return exchanges
+    return exchanges, articulation_points
 
 
 def generate_communities_gradient_ascent(precinct_graph, n_communities, animation_dir=None):
     """Generates a set of political communities using gradient ascent.
 
     :param precinct_graph: A graph with each node representing a precinct, with precincts stored as node attributes.
-    :type precinct_graph: `pygraph.classes.graph.graph`
+    :type precinct_graph: `networkx.Graph`
 
     :param n_communities: The number of communities to break the state into.
     :type n_communities: int
@@ -119,7 +109,7 @@ def generate_communities_gradient_ascent(precinct_graph, n_communities, animatio
         best_exchange = None
         can_be_better = False
         largest_score = _get_score(communities)
-        exchanges = _get_all_exchanges(precinct_graph, communities)
+        exchanges, _ = _get_all_exchanges(precinct_graph, communities)
 
         for precinct, community_id in exchanges:
             init_community = community_dict[precinct.community]
@@ -138,7 +128,8 @@ def generate_communities_gradient_ascent(precinct_graph, n_communities, animatio
         if not can_be_better:
             break
 
-        print(largest_score)
+        if VERBOSE:
+            print(largest_score)
         best_exchange[0].give_precinct(
             best_exchange[1], best_exchange[2], UPDATE_ATTRIBUTES)
 
@@ -149,7 +140,7 @@ def generate_communities_simulated_annealing(precinct_graph, n_communities, anim
     """Generates a set of political communities using simulated annealing.
 
     :param precinct_graph: A graph with each node representing a precinct, with precincts stored as node attributes.
-    :type precinct_graph: `pygraph.classes.graph.graph`
+    :type precinct_graph: `networkx.Graph`
 
     :param n_communities: The number of communities to break the state into.
     :type n_communities: int
@@ -175,7 +166,7 @@ def generate_communities_simulated_annealing(precinct_graph, n_communities, anim
 
     for epoch in range(EPOCHS):
         
-        exchanges = _get_all_exchanges(precinct_graph, communities)
+        exchanges, _ = _get_all_exchanges(precinct_graph, communities)
         choice = random.sample(exchanges, 1)[0]
         init_community = None
         other_community = None
@@ -228,14 +219,29 @@ if __name__ == "__main__":
     if len(sys.argv) > 5:
         args.append(sys.argv[5])
 
-    start_time = time.time()
-    if sys.argv[4] == "SA":
-        communities = generate_communities_simulated_annealing(*args)
-    elif sys.argv[4] == "GA":
-        communities = generate_communities_gradient_ascent(*args)
-    print(f"RUN TIME: {time.time() - start_time}")
+    if sys.argv[4] == 'speed':
+        VERBOSE = False
+        GA_times = []
+        for _ in range(100):
+            start_time = time.time()
+            generate_communities_gradient_ascent(*args)
+            GA_times.append(time.time() - start_time)
+        SA_times = []
+        for _ in range(100):
+            start_time = time.time()
+            generate_communities_simulated_annealing(*args)
+            SA_times.append(time.time() - start_time)
+        print("GA Average:", average(GA_times))
+        print("SA Average:", average(SA_times))
+    else:
+        start_time = time.time()
+        if sys.argv[4] == "SA":
+            communities = generate_communities_simulated_annealing(*args)
+        elif sys.argv[4] == "GA":
+            communities = generate_communities_gradient_ascent(*args)
+        print(f"RUN TIME: {time.time() - start_time}")
 
-    draw_state(precinct_graph, None, fpath="test_algorithm.png")
+        draw_state(precinct_graph, None, fpath="test_algorithm.png")
 
     # Write to file.
     with open(sys.argv[3], "wb+") as f:

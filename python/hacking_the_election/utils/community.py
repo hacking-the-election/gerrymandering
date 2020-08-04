@@ -251,6 +251,9 @@ class Community:
         del self.precincts[precinct_id]
         other.take_precinct(precinct, update)
 
+        # if not nx.is_connected(self.induced_subgraph):
+        #     raise Exception(precinct.node)
+
         # Update attributes.
         if "coords" in update:
             self.coords = self.coords.difference(precinct.coords)
