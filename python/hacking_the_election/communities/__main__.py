@@ -3,7 +3,7 @@ Implementation of the simulated annealing and gradient ascent for
 generating political communities.
 
 Usage:
-python3 -m hacking_the_election.communities <serialized_state_graph_path> <n_communities> <output_path> <algorithm> [animation_dir]
+python3 -m hacking_the_election.communities <serialized_state_graph_path> <n_communities> <output_path> <algorithm>
 
 <algorithm> can either be "SA" or "GA"
 grid search:
@@ -38,6 +38,8 @@ EPOCHS = 40000
 COOL = 0.99976
 
 VERBOSE = True
+
+# ------- General private functions ------- #
 
 def _get_score(communities):
     """Returns the goodness score of a list of communities.
@@ -112,6 +114,19 @@ def _get_all_exchanges(precinct_graph, communities):
     
     return exchanges, articulation_points
 
+# ------- simulated annealing-specific private functions ------- #
+
+def _cool(t):
+    """Temperature cooling function.
+    """
+    return t * COOL
+
+
+def _probability(temp, current_energy, new_energy):
+    """The probability of doing a given exchange.
+    """
+    return temp / T_MAX
+
 
 def generate_communities_gradient_ascent(precinct_graph, n_communities, animation_dir=None):
     """Generates a set of political communities using gradient ascent.
@@ -172,7 +187,8 @@ def generate_communities_gradient_ascent(precinct_graph, n_communities, animatio
     return communities
 
 
-def generate_communities_simulated_annealing(precinct_graph, n_communities, animation_dir=None):
+def generate_communities_simulated_annealing(precinct_graph, n_communities,
+        prob, cool, animation_dir=None):
     """Generates a set of political communities using simulated annealing.
 
     :param precinct_graph: A graph with each node representing a precinct, with precincts stored as node attributes.
@@ -180,6 +196,12 @@ def generate_communities_simulated_annealing(precinct_graph, n_communities, anim
 
     :param n_communities: The number of communities to break the state into.
     :type n_communities: int
+
+    :param prob: A function that returns the probability of doing an exchange given the temperature, current energy, and new energy.
+    :type prob: function
+
+    :param cool: A function that takes the current temperature and returns the temperature for the next epoch.
+    :type cool: function
 
     :param animation_dir: Path to directory which will contain files for animation, defaults to None
     :type animation_dir: str or NoneType
@@ -220,11 +242,11 @@ def generate_communities_simulated_annealing(precinct_graph, n_communities, anim
         
         new_energy = _get_score(communities)
 
-        if new_energy < current_energy:
-            # Go ahead with exchange because it lowers energy.
+        if new_energy > current_energy:
+            # Go ahead with exchange because it increases energy.
             current_energy = new_energy
         
-        elif ((temp / T_MAX) > random.random()):
+        elif (prob(temp, current_energy, new_energy) > random.random()):
             # Go ahead with exchange because of probability function.
             current_energy = new_energy
         
@@ -237,7 +259,7 @@ def generate_communities_simulated_annealing(precinct_graph, n_communities, anim
             sys.stdout.write(f"\r{round(current_energy, 8)}\t{round(temp, 8)}\t{epoch}")
             sys.stdout.flush()
 
-        temp *= COOL
+        temp = cool(temp)
     
     if VERBOSE:
         print()
@@ -252,8 +274,6 @@ if __name__ == "__main__":
         precinct_graph = pickle.load(f)
 
     args = [precinct_graph, int(sys.argv[2])]
-    if len(sys.argv) > 5:
-        args.append(sys.argv[5])
 
     if sys.argv[4] == 'speed':
         VERBOSE = False
@@ -272,7 +292,8 @@ if __name__ == "__main__":
     else:
         start_time = time.time()
         if sys.argv[4] == "SA":
-            communities = generate_communities_simulated_annealing(*args)
+            communities = generate_communities_simulated_annealing(
+                *args, prob=_probability, cool=_cool)
         elif sys.argv[4] == "GA":
             communities = generate_communities_gradient_ascent(*args)
         print(f"RUN TIME: {time.time() - start_time}")
