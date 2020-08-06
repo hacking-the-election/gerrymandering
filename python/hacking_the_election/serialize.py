@@ -534,7 +534,7 @@ def create_graph(election_file, geo_file, pop_file, state):
     # Get components of graph (islands of precincts)
     if not number_connected_components(unordered_precinct_graph) == 1:
         while number_connected_components(unordered_precinct_graph) != 1:
-            graph_components = connected_components(unordered_precinct_graph)
+            graph_components = list(connected_components(unordered_precinct_graph))
             # print(graph_components, '# of graph components')
             # Create list with dictionary containing keys as precincts, 
             # values as centroids for each component

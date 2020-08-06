@@ -3,11 +3,12 @@ Implementation of the simulated annealing and greedy algorithms for
 generating political communities.
 
 Usage:
-python3 -m hacking_the_election.communities <serialized_state_graph_path> <n_communities> <output_path> <algorithm> [image_path]
+python3 -m hacking_the_election.communities <serialized_state_graph_path> <n_communities> <output_path> <algorithm> <image_path> [<text_file>]
 
 <algorithm> can either be "SA" for simulated annealing or "GA" for greedy algorithm.
 """
 
+import math
 import pickle
 import random
 import sys
@@ -15,18 +16,21 @@ import time
 
 import networkx as nx
 
-from hacking_the_election.utils.community import create_initial_configuration
+from hacking_the_election.utils.community import (
+    Community,
+    create_initial_configuration
+)
 from hacking_the_election.utils.geometry import get_distance
 from hacking_the_election.utils.stats import average
 from hacking_the_election.visualization.misc import draw_state
 
 
-UPDATE_ATTRIBUTES = {"population", "partisanship_stdev"}
-
-T_MAX = 30
-EPOCHS = 40000
+T_MAX = 5
+EPOCHS = 5000
 ALPHA = 0.99976  # Cooling factor
 
+UPDATE_ATTRIBUTES = {"centroid", "population", "partisanship_stdev"}
+TEXT_FILE = False
 VERBOSE = True
 
 # ------- General private functions ------- #
@@ -46,15 +50,11 @@ def _get_score(communities):
     for community in communities:
         community_compactness_score = 0
 
-        # Calculate all populations and all distances,
-        # Save the max distance.
-        precinct_populations = {}
+        # Calculate all distances; save the max distance.
         precinct_distances = {}
         max_distance = 0
 
         for precinct in community.precincts.values():
-            precinct_populations[precinct.id] = precinct.pop
-            
             precinct_distances[precinct.id] = get_distance(
                 precinct.centroid, community.centroid)
             if precinct_distances[precinct.id] > max_distance:
@@ -64,7 +64,7 @@ def _get_score(communities):
         for precinct in community.precincts.values():
             community_compactness_score += (
                 (precinct_distances[precinct.id] / max_distance)
-              * (precinct_populations[precinct.id] / community.population)
+              * (precinct.pop / community.population)
             )
         
         compactness_score += community_compactness_score
@@ -72,13 +72,21 @@ def _get_score(communities):
     compactness_score /= len(communities)
     
     # Population distribution.
+    population_score = 1
+
     state_pop = sum([c.population for c in communities])
     ideal_pop = state_pop / len(communities)
-    population_score = (1
-        - sum([abs(c.population - ideal_pop) for c in communities]) / state_pop)
+    max_deviation = ideal_pop * 0.1
+    deviations = [abs(c.population - ideal_pop) for c in communities]
+    if not all([deviation <= max_deviation for deviation in deviations]):
+        # If it doesn't fit the constraint, the score is less than one
+        # because there is still room for improvement.
+        population_score -= sum(deviations) / state_pop
 
     # Partisanship stdev.
     partisanship_score = 1 - average([c.partisanship_stdev for c in communities])
+
+    print(compactness_score, population_score, partisanship_score)
 
     return average([compactness_score, population_score, partisanship_score])
 
@@ -133,7 +141,7 @@ def _probability(temp, current_energy, new_energy):
         # Always do exchanges that are good.
         return 1
     else:
-        return temp / T_MAX
+        return math.exp((new_energy - current_energy) / temp)
 
 
 def _get_random_exchange(precinct_graph, communities, articulation_points):
@@ -202,7 +210,10 @@ def generate_communities_greedy(precinct_graph, n_communities, animation_dir=Non
             pass
 
     # Create initial configuration and update attributes.
-    communities = create_initial_configuration(precinct_graph, n_communities)
+    if TEXT_FILE:
+        communities = Community.from_text_file(TEXT_FILE, precinct_graph)
+    else:
+        communities = create_initial_configuration(precinct_graph, n_communities)
     for community in communities:
         for attribute in UPDATE_ATTRIBUTES:
             eval(f"community.update_{attribute}()")
@@ -213,6 +224,7 @@ def generate_communities_greedy(precinct_graph, n_communities, animation_dir=Non
     if VERBOSE:
         print("Score      \tIteration")
 
+    start_time = time.time()
     while True:
         i += 1
         best_exchange = None
@@ -247,7 +259,7 @@ def generate_communities_greedy(precinct_graph, n_communities, animation_dir=Non
             # that can immediately improve from this point.
             if VERBOSE:
                 print()
-            return communities
+            return communities, time.time() - start_time
 
         # perform best exchange.
         best_exchange[0].give_precinct(
@@ -283,7 +295,10 @@ def generate_communities_simulated_annealing(precinct_graph, n_communities,
         except FileExistsError:
             pass
 
-    communities = create_initial_configuration(precinct_graph, n_communities)
+    if TEXT_FILE:
+        communities = Community.from_text_file(TEXT_FILE, precinct_graph)
+    else:
+        communities = create_initial_configuration(precinct_graph, n_communities)
     for community in communities:
         for attribute in UPDATE_ATTRIBUTES:
             eval(f"community.update_{attribute}()")
@@ -293,10 +308,19 @@ def generate_communities_simulated_annealing(precinct_graph, n_communities,
     temp = T_MAX
     articulation_points = None
 
+    # Save these things in case you don't reach them at the end when the temperature is low.
+    best_state = []  # List of lists of precincts.
+    highest_energy = 0.0
+
     if VERBOSE:
         print("Score      \tTemperature  \tEpoch")
+    
+    energies = []
 
+    start_time = time.time()
     for epoch in range(EPOCHS):
+
+        energies.append(current_energy)
 
         # Choose random exchange.
         precinct, other_community_id, articulation_points = \
@@ -316,6 +340,10 @@ def generate_communities_simulated_annealing(precinct_graph, n_communities,
             last_epoch_change = True
             # Reset articulation points because they need to be recalculated.
             articulation_points = None
+            # Save new best state if necessary.
+            if current_energy > highest_energy:
+                best_state = [list(community.precincts.values()) for community in communities]
+                highest_energy = current_energy
         else:
             # Exchange was not chosen by probability function.
             other_community.give_precinct(
@@ -328,11 +356,18 @@ def generate_communities_simulated_annealing(precinct_graph, n_communities,
             sys.stdout.flush()
 
         temp = cool(temp)
-    
+
+    run_time = time.time() - start_time
+
     if VERBOSE:
         print()
 
-    return communities
+    # Re-generate the saved best communities.
+    communities = [Community(i, precinct_graph) for i in range(n_communities)]
+    for i, precincts in enumerate(best_state):
+        for precinct in precincts:
+            communities[i].take_precinct(precinct)
+    return communities, run_time, energies
 
 
 if __name__ == "__main__":
@@ -342,33 +377,22 @@ if __name__ == "__main__":
         precinct_graph = pickle.load(f)
 
     args = [precinct_graph, int(sys.argv[2])]
+    if len(sys.argv) > 6:
+        TEXT_FILE = sys.argv[6]
 
-    if sys.argv[4] == 'speed':
-        VERBOSE = False
-        GA_times = []
-        for _ in range(10):
-            start_time = time.time()
-            generate_communities_greedy(*args)
-            GA_times.append(time.time() - start_time)
-        # SA_times = []
-        # for _ in range(100):
-        #     start_time = time.time()
-        #     generate_communities_simulated_annealing(*args)
-        #     SA_times.append(time.time() - start_time)
-        print("GA Average:", average(GA_times))
-        # print("SA Average:", average(SA_times))
-    else:
-        start_time = time.time()
-        if sys.argv[4] == "SA":
-            communities = generate_communities_simulated_annealing(
-                *args, prob=_probability, cool=_cool)
-        elif sys.argv[4] == "GA":
-            communities = generate_communities_greedy(*args)
-        print(f"RUN TIME: {time.time() - start_time}")
+    if sys.argv[4] == "SA":
+        communities, run_time, energies = generate_communities_simulated_annealing(
+            *args, prob=_probability, cool=_cool)
+        # import matplotlib.pyplot as plt
+        # plt.plot(list(range(1, 5001)), energies)
+        # plt.show()
+    elif sys.argv[4] == "GA":
+        communities, run_time = generate_communities_greedy(*args)
+    print(f"RUN TIME: {run_time}")
 
-        if len(sys.argv) > 5:
-            draw_state(precinct_graph, None, fpath=sys.argv[5])
+    if len(sys.argv) > 5:
+        draw_state(precinct_graph, None, fpath=sys.argv[5])
 
-        # Write to file.
-        with open(sys.argv[3], "wb+") as f:
-            pickle.dump(communities, f)
+    # Write to file.
+    with open(sys.argv[3], "wb+") as f:
+        pickle.dump(communities, f)

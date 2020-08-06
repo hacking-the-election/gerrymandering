@@ -7,6 +7,7 @@ import json
 import pickle
 import os
 import random
+import sys
 
 import networkx as nx
 from shapely.geometry import MultiPolygon, Polygon
@@ -94,6 +95,7 @@ class Community:
         self.coords = Polygon()  # Geometric shape of the community.
         self.partisanship = []
         self.partisanship_stdev = 0
+        self.centroid = [0, 0]
         self.compactness = 0
         self.imprecise_compactness = 0
         self.population = 0
@@ -154,6 +156,16 @@ class Community:
                 precinct_percentages.append(percentage_func(precinct))
             party_stdevs.append(standard_deviation(precinct_percentages))
         self.partisanship_stdev = average(party_stdevs)
+
+    def update_centroid(self):
+        """Updates the centroid of the community, being the average
+        centroid of the precincts of the community.
+        """
+        precincts = self.precincts.values()
+        n_precincts = len(precincts)
+        X_sum = sum([p.centroid[0] for p in precincts])
+        Y_sum = sum([p.centroid[0] for p in precincts])
+        self.centroid = [X_sum / n_precincts, Y_sum, n_precincts]
 
     def update_compactness(self):
         """Update the compactness attribute for this community.
@@ -265,18 +277,6 @@ class Community:
                 raise ValueError(f"No such attribute as {attr} in Community instance.")
         
         return True
-
-    @property
-    def centroid(self):
-        """The average centroid of the community's precincts.
-        """
-        X_sum = 0
-        Y_sum = 0
-        for precinct in self.precincts.values():
-            X_sum += precinct.centroid[0]
-            Y_sum += precinct.centroid[1]
-        n_precincts = len(self.precincts)
-        return [X_sum / n_precincts, Y_sum / n_precincts]
 
     @property
     def area(self):
@@ -394,3 +394,15 @@ def create_initial_configuration(precinct_graph, n_communities):
                 precinct_graph.nodes[precinct_node]['precinct'])
 
     return communities
+
+
+if __name__ == "__main__":
+
+    with open(sys.argv[1], "rb") as f:
+        precinct_graph = pickle.load(f)
+
+    communities = create_initial_configuration(precinct_graph, 7)
+    community_lists = []
+    for community in communities:
+        community_lists.append(list(community.precincts.keys()))
+    print(community_lists)
