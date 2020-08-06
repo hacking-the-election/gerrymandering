@@ -8,7 +8,7 @@ import pickle
 import sys
 
 from PIL import Image, ImageDraw
-from pygraph.classes.graph import graph
+import networkx as nx
 
 from hacking_the_election.utils.precinct import Precinct
 from hacking_the_election.utils.visualization import modify_coords
@@ -18,7 +18,7 @@ def visualize_graph(graph, output_path, coords, colors=None, sizes=None, show=Fa
     """Creates an image of a graph and saves it to a file.
 
     :param graph: The graph you want to visualize.
-    :type graph: `pygraph.classes.graph.graph`
+    :type graph: `networkx.Graph`
 
     :param output_path: Path to where image should be saved. None if you don't want it to be saved.
     :type output_path: str or NoneType
@@ -38,8 +38,8 @@ def visualize_graph(graph, output_path, coords, colors=None, sizes=None, show=Fa
     graph_image = Image.new("RGB", (1000, 1000), "white")
     draw = ImageDraw.Draw(graph_image, "RGB")
 
-    graph_nodes = graph.nodes()
-    graph_edges = graph.edges()
+    graph_nodes = list(graph.nodes())
+    graph_edges = list(graph.edges())
 
     modified_coords = modify_coords(
         [coords(node) for node in graph_nodes], [1000, 1000]
@@ -88,4 +88,4 @@ if __name__ == "__main__":
     with open(sys.argv[1], "rb") as f:
         graph = pickle.load(f)
 
-    visualize_graph(graph, eval(sys.argv[2]), lambda node: graph.node_attributes(node)[0].centroid, show=True)
+    visualize_graph(graph, eval(sys.argv[2]), lambda node: graph.nodes['node']['precinct'].centroid, show=True)

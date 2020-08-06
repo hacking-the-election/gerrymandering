@@ -17,7 +17,7 @@ def draw_state(graph, animation_dir, shapes=[], fpath=None):
     """Draws a precinct map of a state with colors associated to each community.
 
     :param graph: A graph with precincts as node attributes.
-    :type graph: `pygraph.classes.graph.graph`
+    :type graph: `networkx.Graph`
 
     :param animation_dir: The directory where the file should be saved.
     :type animation_dir: str
@@ -29,7 +29,7 @@ def draw_state(graph, animation_dir, shapes=[], fpath=None):
     :type fpath: str
     """
 
-    precincts = [graph.node_attributes(node)[0] for node in graph.nodes()]
+    precincts = [graph.nodes[node]['precinct'] for node in graph.nodes]
     colors = get_community_colors(len(set([p.community for p in precincts])))
     
     if fpath is not None:
