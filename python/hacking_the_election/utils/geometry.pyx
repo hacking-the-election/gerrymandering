@@ -2,7 +2,6 @@
 Various useful geometric functions.
 """
 
-
 import math
 
 import miniball
@@ -42,12 +41,14 @@ def geojson_to_shapely(geojson, int_coords=False):
 
         return LinearRing(point_list)
     elif isinstance(geojson[0][0][0], list):
+        # Multipolygon.
         if int_coords:
             polygons = [geojson_to_shapely(polygon, int_coords=True) for polygon in geojson]
         else:
             polygons = [geojson_to_shapely(polygon) for polygon in geojson]
         return MultiPolygon(polygons)
     elif isinstance(geojson[0][0][0], float):
+        # Polygon.
         if int_coords:
             polygon_list = [geojson_to_shapely(ring, int_coords=True) for ring in geojson]
         else:
@@ -159,36 +160,46 @@ def get_compactness(district):
 
     Formula obtained from here: https://fisherzachary.github.io/public/r-output.html
 
-    :param district: District to find compactness of.
-    :type district: `shapely.geometry.Polygon` or `shapely.geometry.MultiPolygon`
+    :param district: Coords of district to find compactness of.
+    :type district: `shapely.geometry.Polygon` or list of `shapely.geometry`
 
     :return: Reock compactness of `district`.
     :rtype: float
     """
 
-    district_coords = shapely_to_geojson(district)
-    P = []
-    if isinstance(district, Polygon):
-        for linear_ring in district_coords:
-            for point in linear_ring:
-                P.append(point)
-    elif isinstance(district, MultiPolygon):
+    cdef list P = []
+    if isinstance(district, list):
+        district_coords = [shapely_to_geojson(polygon) for polygon in district]
         for polygon in district_coords:
             for linear_ring in polygon:
                 for point in linear_ring:
                     P.append(point)
+    elif isinstance(district, Polygon):
+        district_coords = shapely_to_geojson(district)
+        for linear_ring in district_coords:
+            for point in linear_ring:
+                P.append(point)
+    else:
+        raise TypeError("`district` must be of type Polygon or list of Polygon")
 
     # Move points towards origin for better precision.
-    minx = min(P, key=lambda p: p[0])[0]
-    miny = min(P, key=lambda p: p[1])[1]
+    cdef float minx = min(P, key=lambda p: p[0])[0]
+    cdef float miny = min(P, key=lambda p: p[1])[1]
 
     P = [(p[0] - minx, p[1] - miny) for p in P]
 
     # Get minimum bounding circle of district.
     mb = miniball.Miniball(P)
-    squared_radius = mb.squared_radius()
-    circle_area = math.pi * squared_radius
-    return district.area / circle_area
+    cdef float squared_radius = mb.squared_radius()
+    cdef float circle_area = math.pi * squared_radius
+
+    # Calculate reock score.
+    cdef float district_area
+    if isinstance(district, list):
+        district_area = sum([p.area for p in district])
+    else:
+        district_area = district.area
+    return district_area / circle_area
 
 
 cpdef float get_imprecise_compactness(district):
@@ -204,15 +215,17 @@ cpdef float get_imprecise_compactness(district):
     cdef list center = district.centroid
 
     cdef float max_distance = 0.0
-    cdef float precinct_distance
-    cdef list centroid
+    cdef float distance
+    cdef list centroid, precinct_points, point
     cpdef precinct
     for precinct in district.precincts.values():
-        centroid = precinct.centroid
-        precinct_distance = get_distance(center, centroid)
-        if precinct_distance > max_distance:
-            max_distance = precinct_distance
+        precinct_points = precinct.points
+        for point in precinct_points:
+            distance = get_distance(center, point)
+            if distance > max_distance:
+                max_distance = distance
 
+    # max_distance is already squared.
     cdef float circle_area = max_distance * math.pi
     return district.area / circle_area
 

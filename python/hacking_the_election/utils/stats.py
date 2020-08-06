@@ -25,9 +25,8 @@ def average(values, weights=[]):
         if len(weights) != len(values):
             raise ValueError("There should be the same number of values as weights.")
 
-        weighted_sum = 0
-        for weight, value in zip(weights, values):
-            weighted_sum += value * weight
+        weighted_sum = \
+            sum([weight * value for weight, value in zip(weights, values)])
         return weighted_sum / sum(weights)
     else:
         return sum(values) / len(values)

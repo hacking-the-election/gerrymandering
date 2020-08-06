@@ -15,25 +15,39 @@ import sys
 import time
 
 import networkx as nx
+# import numpy as np
 
 from hacking_the_election.utils.community import (
     Community,
     create_initial_configuration
 )
-from hacking_the_election.utils.geometry import get_distance
+from hacking_the_election.utils.geometry import get_distance, get_imprecise_compactness
 from hacking_the_election.utils.stats import average
 from hacking_the_election.visualization.misc import draw_state
 
 
 T_MAX = 5
-EPOCHS = 5000
+EPOCHS = 40000
 ALPHA = 0.99976  # Cooling factor
 
-UPDATE_ATTRIBUTES = {"centroid", "population", "partisanship_stdev"}
+# C1 = 0.000000002  # Strechiness of sigmoid.
+# C2 = 230000000  # Horizontal translation of sigmoid.
+
+# UPDATE_ATTRIBUTES = {"area", "centroid", "population", "partisanship_stdev"}
+UPDATE_ATTRIBUTES = {"area", "centroid"}
 TEXT_FILE = False
 VERBOSE = True
 
 # ------- General private functions ------- #
+
+def _logit(x):
+    return - ((math.log(-x / (x - 2)) - 4) / 4)
+
+
+# def _sigmoid(x):
+#     return - (1 / (1 + math.exp(-C1 * (x - C2)))) + 1
+# _sigmoid = np.vectorize(_sigmoid)
+
 
 def _get_score(communities):
     """Returns the goodness score of a list of communities.
@@ -44,33 +58,49 @@ def _get_score(communities):
     :return: A score between 0 and 1 representing the goodness of the inputted communities.
     :rtype: float
     """
-
     # Population compactness and geometric compactness.
-    compactness_score = 0
-    for community in communities:
-        community_compactness_score = 0
+    # compactness_score_sum = 0
+    # for community in communities:
+    #     distances = []
+    #     pop_weights = []
 
-        # Calculate all distances; save the max distance.
-        precinct_distances = {}
-        max_distance = 0
+    #     for precinct in community.precincts.values():
+    #         distances.append(get_distance(
+    #             precinct.centroid, community.centroid)
+    #         )
+    #         pop_weights.append(precinct.pop / community.population)
 
-        for precinct in community.precincts.values():
-            precinct_distances[precinct.id] = get_distance(
-                precinct.centroid, community.centroid)
-            if precinct_distances[precinct.id] > max_distance:
-                max_distance = precinct_distances[precinct.id]
+    #     normalized_distances = _sigmoid(np.array(distances))
+    #     weighted_values = np.multiply(normalized_distances, np.array(pop_weights))
+    #     community_score = np.sum(weighted_values)
+    #     compactness_score_sum += community_score
 
-        # Use distances to calculate compactness score for this community.
-        for precinct in community.precincts.values():
-            community_compactness_score += (
-                (precinct_distances[precinct.id] / max_distance)
-              * (precinct.pop / community.population)
-            )
+    # compactness_score = compactness_score_sum / len(communities)
+
+    # pop_weighted_distances_sum = 0
+    # for community in communities:
+    #     precincts = community.precincts.values()
         
-        compactness_score += community_compactness_score
+    #     precinct_distances = {}
+    #     max_distance = 0
 
-    compactness_score /= len(communities)
-    
+    #     for precinct in precincts:
+    #         precinct_distances[precinct.id] = get_distance(
+    #             precinct.centroid, community.centroid
+    #         )
+    #         if precinct_distances[precinct.id] > max_distance:
+    #             max_distance = precinct_distances[precinct.id]
+        
+    #     for precinct in precincts:
+    #         pop_weighted_distances_sum += (
+    #             (precinct_distances[precinct.id] / max_distance)
+    #           * (precinct.pop / community.population)
+    #         )
+
+    # compactness_score = 1 - (pop_weighted_distances_sum / len(communities))
+
+    compactness_score = average([get_imprecise_compactness(c) for c in communities])
+
     # Population distribution.
     population_score = 1
 
@@ -86,9 +116,18 @@ def _get_score(communities):
     # Partisanship stdev.
     partisanship_score = 1 - average([c.partisanship_stdev for c in communities])
 
-    print(compactness_score, population_score, partisanship_score)
+    # Get weights with logit function.
+    weights = [
+        _logit(compactness_score),
+        _logit(population_score),
+        _logit(partisanship_score)
+    ]
 
-    return average([compactness_score, population_score, partisanship_score])
+    # print(compactness_score, weights[0])
+    # print(population_score, weights[1])
+    # print(partisanship_score, weights[2])
+
+    return average([compactness_score, population_score, partisanship_score], weights=weights)
 
 
 def _get_all_exchanges(precinct_graph, communities):
@@ -224,11 +263,14 @@ def generate_communities_greedy(precinct_graph, n_communities, animation_dir=Non
     if VERBOSE:
         print("Score      \tIteration")
 
+    scores = []
+    largest_score = _get_score(communities)
+
     start_time = time.time()
     while True:
         i += 1
+        scores.append(largest_score)
         best_exchange = None
-        largest_score = _get_score(communities)
         exchanges, _ = _get_all_exchanges(precinct_graph, communities)
 
         for precinct, community_id in exchanges:
@@ -259,7 +301,7 @@ def generate_communities_greedy(precinct_graph, n_communities, animation_dir=Non
             # that can immediately improve from this point.
             if VERBOSE:
                 print()
-            return communities, time.time() - start_time
+            return communities, time.time() - start_time, scores
 
         # perform best exchange.
         best_exchange[0].give_precinct(
@@ -311,6 +353,7 @@ def generate_communities_simulated_annealing(precinct_graph, n_communities,
     # Save these things in case you don't reach them at the end when the temperature is low.
     best_state = []  # List of lists of precincts.
     highest_energy = 0.0
+    last_epoch_change = True
 
     if VERBOSE:
         print("Score      \tTemperature  \tEpoch")
@@ -371,10 +414,17 @@ def generate_communities_simulated_annealing(precinct_graph, n_communities,
 
 
 if __name__ == "__main__":
+
+    import matplotlib.pyplot as plt
     
     # Load input file and generate communities.
     with open(sys.argv[1], "rb") as f:
         precinct_graph = pickle.load(f)
+    # Add area and points attributes to speed up imprecise compactness.
+    for node in precinct_graph.nodes:
+        precinct = precinct_graph.nodes[node]['precinct']
+        precinct.area = precinct.coords.area
+        precinct.points = [list(coord) for coord in list(precinct.coords.exterior.coords)]
 
     args = [precinct_graph, int(sys.argv[2])]
     if len(sys.argv) > 6:
@@ -383,11 +433,15 @@ if __name__ == "__main__":
     if sys.argv[4] == "SA":
         communities, run_time, energies = generate_communities_simulated_annealing(
             *args, prob=_probability, cool=_cool)
-        # import matplotlib.pyplot as plt
-        # plt.plot(list(range(1, 5001)), energies)
-        # plt.show()
+
+        # Plot energy over epoch.
+        plt.plot(list(range(1, EPOCHS + 1)), energies)
+        plt.show()
     elif sys.argv[4] == "GA":
-        communities, run_time = generate_communities_greedy(*args)
+        communities, run_time, scores = generate_communities_greedy(*args)
+        # Plot scores over epoch.
+        plt.plot(list(range(len(scores))), scores)
+        plt.show()
     print(f"RUN TIME: {run_time}")
 
     if len(sys.argv) > 5:
