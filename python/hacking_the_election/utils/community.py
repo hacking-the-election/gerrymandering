@@ -93,6 +93,7 @@ class Community:
 
         self.precincts = {}  # Dict maps node ids (in graph) to precinct objects.
         self.coords = Polygon()  # Geometric shape of the community.
+        self.area = 0
         self.partisanship = []
         self.partisanship_stdev = 0
         self.centroid = [0, 0]
@@ -132,6 +133,11 @@ class Community:
     # The following functions exist so that certain attributes don't
     # have to be calculated when they aren't needed right away.
 
+    def update_area(self):
+        """The area of the community.
+        """
+        self.area = sum([p.area for p in self.precincts.values()])
+
     def update_coords(self):
         """Update the coords attribute for this community
         """
@@ -164,17 +170,15 @@ class Community:
         precincts = self.precincts.values()
         n_precincts = len(precincts)
         X_sum = sum([p.centroid[0] for p in precincts])
-        Y_sum = sum([p.centroid[0] for p in precincts])
-        self.centroid = [X_sum / n_precincts, Y_sum, n_precincts]
+        Y_sum = sum([p.centroid[1] for p in precincts])
+        self.centroid = [X_sum / n_precincts, Y_sum / n_precincts]
 
     def update_compactness(self):
         """Update the compactness attribute for this community.
 
         Uses individual precinct coords. Does not require `coords` attribute to be updated.
         """
-        precinct_multipolygon = \
-            MultiPolygon([p.coords for p in self.precincts.values()])
-        self.compactness = get_compactness(precinct_multipolygon)
+        self.compactness = get_compactness([p.coords for p in self.precincts.values()])
     
     def update_imprecise_compactness(self):
         """Update the imprecise_compactness attribute for this community.
@@ -191,8 +195,9 @@ class Community:
     def update_population_stdev(self):
         """Update the population_stdev attribute for this community.
         """
+        self.update_population()
         self.population_stdev = \
-            standard_deviation([p.pop for p in self.precincts.values()])
+            standard_deviation([p.pop / self.pop for p in self.precincts.values()])
 
     def take_precinct(self, precinct, update=set()):
         """Adds a precinct to this community.
@@ -277,12 +282,6 @@ class Community:
                 raise ValueError(f"No such attribute as {attr} in Community instance.")
         
         return True
-
-    @property
-    def area(self):
-        """The area of the community.
-        """
-        return sum([p.coords.area for p in self.precincts.values()])
 
     @property
     def dem_rep_partisanship(self):
