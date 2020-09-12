@@ -22,16 +22,9 @@ settings.json
 .vscode
 *.dSYM/
 
-
 # c++
 cpp/bin/
 cpp/test/test
 cpp/test_data/
-# cpp/build/*.o
-*.o
-
-output/*/anim/
-output/*/img/*.png
-
-cpp/generate_communities
-cpp/generate_communities.sh
+cpp/build/*.o
+cpp/build/*.d
