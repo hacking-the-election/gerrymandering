@@ -376,7 +376,7 @@ def create_graph(election_file, geo_file, pop_file, state):
         # find where population is stored, either election or geodata
         try:
             _ = geodata["features"][0]["properties"][json_pops[0]]
-        except (ValueError or KeyError):
+        except (ValueError, KeyError):
             pop_data_type = "tab"
             # population is in election data
             pop_col_indices = [i for i, header in enumerate(election_data[0]) if header in json_pops]
@@ -518,7 +518,7 @@ def create_graph(election_file, geo_file, pop_file, state):
                 pass
             except:
                 node_precinct_id = unordered_precinct_graph.nodes[node]['precinct'].id
-                precinct10_precinct_id = unordered_precinct_graph.nodes[precicnt10]['precinct'].id
+                precinct10_precinct_id = unordered_precinct_graph.nodes[precinct10]['precinct'].id
                 raise Exception(f'Failed intersection check, precincts being checked were {node_precinct_id}, {precinct10_precinct_id} of nodes {node} and {precinct10}, respectively')
         completed_precincts.append(node)
 

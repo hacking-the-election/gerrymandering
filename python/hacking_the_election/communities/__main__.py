@@ -83,7 +83,7 @@ def _get_score(communities):
         
     #     precinct_distances = {}
     #     max_distance = 0
-
+    # 
     #     for precinct in precincts:
     #         precinct_distances[precinct.id] = get_distance(
     #             precinct.centroid, community.centroid
@@ -147,7 +147,6 @@ def _get_all_exchanges(precinct_graph, communities):
     for c in communities:
         articulation_points[c.id] = \
             set(nx.articulation_points(c.induced_subgraph))
-
     exchanges = set()
     for node in precinct_graph.nodes:
         neighboring_communities = set()
