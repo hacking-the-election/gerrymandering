@@ -31,11 +31,20 @@ class Precinct:
     """
 
     def __init__(self, pop, coords, state, precinct_id, rep_data, dem_data, 
-                 green_data=None, lib_data=None, reform_data=None, ind_data=None, const_data=None, other_data=None):
+                 green_data=None, lib_data=None, reform_data=None, ind_data=None, const_data=None, other_data=None, scale_factor=0.02):
 
         self.pop = pop
         # should be shapely polygon
         self.coords = coords
+        self.min_x, self.min_y, self.max_x, self.max_y = coords.bounds
+
+        # x_length = self.max_x - self.min_x
+        # y_length = self.max_y - self.min_y
+
+        # self.min_x -= (x_length * scale_factor)
+        # self.max_x += (x_length * scale_factor)
+        # self.min_y -= (y_length * scale_factor)
+        # self.max_y += (y_length * scale_factor)
         # centroid will be in list form, i.e. [35.274923, 71.47102]
         self.centroid = list(self.coords.centroid.coords[0])
         self.state = state

@@ -12,6 +12,7 @@ from os.path import dirname, abspath
 from os import listdir
 import pickle
 import networkx as nx
+from shapely.geometry import Point
 
 from hacking_the_election.utils.precinct import Precinct
 from hacking_the_election.utils.block import Block
@@ -139,8 +140,11 @@ def create_graph(state_name):
     precinct_list = []
 
     # Precinct/census group ids, pandas Series
-    precinct_ids = election_data["GEOID10"]
+    precinct_ids = election_data["GEOID10"] 
 
+
+    precincts_num = len(precinct_ids)
+    precincts_created = 0
     for geo_id in precinct_ids:
         rep_votes = election_data[election_data["GEOID10"] == geo_id]["Rep_2008_pres"].item()
         dem_votes = election_data[election_data["GEOID10"] == geo_id]["Dem_2008_pres"].item()
@@ -148,18 +152,26 @@ def create_graph(state_name):
         total_pop = demographics[demographics["GEOID10"] == geo_id]["Tot_2010_tot"].item()
 
         coordinate_data = geojson_to_shapely(precinct_coordinates[geo_id])
-        precinct_list.append(Precinct(total_pop, coordinate_data, state_name, geo_id, rep_votes, dem_votes))
 
+        precinct = Precinct(total_pop, coordinate_data, state_name, geo_id, rep_votes, dem_votes)
+        precinct_list.append(precinct)
+        precincts_created += 1
+        print(f"\rPrecincts Created: {precincts_created}/{precincts_num}, {round(100*precincts_created/precincts_num, 1)}%", end="")
+        sys.stdout.flush()
+    print("\n")
     block_ids = block_demographics["id"]
     block_num = len(block_ids)
     block_list = []
+    county_to_blocks = {}
     blocks_created = 0
+    previous_county = None
     for geo_id in block_ids:
 
         row = block_demographics[block_demographics["id"] == geo_id]
 
         total_pop = row["Total"].item()
-        coordinate_data  = geojson_to_shapely(block_coordinates[geo_id[geo_id.find("US")+2:]])
+        geo_id_beginning = geo_id.find("US")+2
+        coordinate_data  = geojson_to_shapely(block_coordinates[geo_id[geo_id_beginning:]])
         racial_data = {}
 
         racial_data["hispanic"] = row["Total!!Hispanic or Latino"].item()
@@ -230,21 +242,93 @@ def create_graph(state_name):
         racial_data["white:black:asian:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of five races!!White; Black or African American; Asian; Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
         racial_data["white:aian:asian:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of five races!!White; American Indian and Alaska Native; Asian; Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
         racial_data["black:aian:asian:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of five races!!Black or African American; American Indian and Alaska Native; Asian; Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
-        
+
         racial_data["white:black:aian:asian:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of six races!!White; Black or African American; American Indian and Alaska Native; Asian; Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
         
         # racial_data = fractional_assignment(racial_data)
         fractional_assignment(racial_data)
-        block_list.append(Block(total_pop, coordinate_data, state_name, geo_id, racial_data))
+        block = Block(total_pop, coordinate_data, state_name, geo_id, racial_data)
+        block_list.append(block)
+        if previous_county == None or previous_county != geo_id[geo_id_beginning:geo_id_beginning+5]:
+            county_to_blocks[geo_id[geo_id_beginning:geo_id_beginning+5]] = [block]
+        else:
+            county_to_blocks[geo_id[geo_id_beginning:geo_id_beginning+5]].append(block)
+        previous_county = geo_id[geo_id_beginning:geo_id_beginning+5]
+        # print(previous_county)
         blocks_created += 1
         print(f"\rBlocks Created: {blocks_created}/{block_num}, {round(100*blocks_created/block_num, 1)}%", end="")
         sys.stdout.flush()
+    # with open("vermont_p.pickle", "wb") as f:
+    #     pickle.dump(precinct_list, f)
+    # with open("vermont_c.pickle", "wb") as f:
+    #     pickle.dump(county_to_blocks, f)
+    # with open("vermont_p.pickle", "rb") as f:
+    #     precinct_list = pickle.load(f)
+    # with open("vermont_c.pickle", "rb") as f:
+    #    county_to_blocks = pickle.load(f)
+
+    print("\n")
+    seen_blocks = {}
+
+    # Stores the ids of blocks which are in a precinct {id : [id]}
+    precinct_to_blocks = {}
+    blocks_matched = 0
+    previous_precinct = None
+    for precinct in precinct_list:
+        possible_blocks = county_to_blocks[precinct.id[:5]]
+        accounted_population = 0
+        for block in possible_blocks:
+            # Temporarily necessary for vermont testing
+            if block.id == "1000000US500239541002044":
+                continue
+            if accounted_population > precinct.pop:
+                break
+            if precinct.max_x < block.min_x or precinct.min_x > block.max_x or precinct.max_y < block.min_y or precinct.min_y > block.max_y:
+                continue
+            else:
+                if abs(precinct.coords.intersection(block.coords).area-block.coords.area)<0.5*block.coords.area:
+                    # print(block.id, precinct.id)
+                    if block.id in seen_blocks:
+                        print("ALARM BELLS: ", block.id, seen_blocks[block.id], precinct.id)
+                    # if precinct.coords.contains(block.coords.exterior.coords):
+                    # if precinct.coords.contains(block.coords.representative_point()):
+                    # print(previous_precinct, precinct.id)
+                    if previous_precinct == None or previous_precinct != precinct.id:
+                        precinct_to_blocks[precinct.id] = [block]
+                    else:
+                        precinct_to_blocks[precinct.id].append(block)
+                    previous_precinct = precinct.id
+                    accounted_population += block.pop
+                    blocks_matched += 1
+                    seen_blocks[block.id] = precinct.id
+        print(f"\rBlocks Matched: {blocks_matched}/{block_num}", end="")
+        sys.stdout.flush()
+    print("\
+        n")
+    for precinct in precinct_list:
+        precinct_blocks = precinct_to_blocks[precinct.id]
+        # print(precinct_blocks)
+        block_pop_sum = sum([block.pop for block in precinct_blocks])
+        if block_pop_sum < 0:
+            print("NEGATIVE BLOCK AREAS! BIG PROBLEM")
+        elif block_pop_sum == 0:
+            for block in precinct_blocks:
+                block.rep_votes = 0
+                block.dem_votes = 0
+        else:
+            for block in precinct_blocks:
+                try:
+                    block.rep_votes = precinct.total_rep * block.pop/block_pop_sum
+                    block.dem_votes = precinct.total_dem * block.pop/block_pop_sum
+                except:
+                    print([block.pop for block in precinct_blocks], precinct.id)
+                block.create_election_data()
+
     block_graph = nx.Graph()
     for i, block in enumerate(block_list):
         block_graph.add_node(i, block=block)
-    # node_num = len(block_graph.nodes())
-    # print(f"Number of blocks/nodes: {node_num}")
-    print("\n")
+    node_num = len(block_graph.nodes())
+    print(f"Number of blocks/nodes: {node_num}")
 
 if __name__ == "__main__":
     block_graph = create_graph(sys.argv[1])

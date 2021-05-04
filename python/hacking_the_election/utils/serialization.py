@@ -38,6 +38,7 @@ def compare_ids(non_geodata_ids, geodata_ids):
             non_geodata_to_geodata[str(precinct_id)] = str(precinct_id)
     return non_geodata_to_geodata
 
+
 def split_multipolygons(geodata, pop_data, election_data):
     """
     Takes geodata, population data, and election data and splits them to create new precincts

@@ -4,11 +4,21 @@ A class representing the new smallest unit in our algorithm: the census block.
 
 class Block:
     
-    def __init__(self, pop, coords, state, id, racial_data, rep_data=None, dem_data=None):
+    def __init__(self, pop, coords, state, id, racial_data, rep_data=None, dem_data=None, scale_factor=0.02):
         self.pop = pop
 
         # Shapely polygon
         self.coords = coords
+        self.min_x, self.min_y, self.max_x, self.max_y = coords.bounds
+
+        # x_length = self.max_x - self.min_x
+        # y_length = self.max_y - self.min_y
+
+        # self.min_x -= (x_length * scale_factor)
+        # self.max_x += (x_length * scale_factor)
+        # self.min_y -= (y_length * scale_factor)
+        # self.max_y += (y_length * scale_factor)
+
         self.centroid = list(self.coords.centroid.coords[0])
 
         self.state = state
@@ -57,7 +67,7 @@ class Block:
 
         self.community = None
     
-    def create_election_data():
+    def create_election_data(self):
         self.total_votes = self.rep_votes + self.dem_votes
         if self.total_votes == 0:
             self.percent_rep = None
