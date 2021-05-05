@@ -24,6 +24,9 @@ class Block:
         self.state = state
         self.id = id
 
+        # List of block ids which represent neighbors of the block
+        self.neighbors = []
+
         self.rep_votes = rep_data
         self.dem_votes = dem_data
 

@@ -17,6 +17,7 @@ from shapely.geometry import Point
 from hacking_the_election.utils.precinct import Precinct
 from hacking_the_election.utils.block import Block
 from hacking_the_election.utils.geometry import geojson_to_shapely, get_if_bordering
+from hacking_the_election.visualization.graph_visualization import visualize_graph
 
 def fractional_assignment(racial_data):
     """
@@ -158,7 +159,7 @@ def create_graph(state_name):
         precincts_created += 1
         print(f"\rPrecincts Created: {precincts_created}/{precincts_num}, {round(100*precincts_created/precincts_num, 1)}%", end="")
         sys.stdout.flush()
-    print("\n")
+    print("\n", end="")
     block_ids = block_demographics["id"]
     block_num = len(block_ids)
     block_list = []
@@ -245,7 +246,6 @@ def create_graph(state_name):
 
         racial_data["white:black:aian:asian:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of six races!!White; Black or African American; American Indian and Alaska Native; Asian; Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
         
-        # racial_data = fractional_assignment(racial_data)
         fractional_assignment(racial_data)
         block = Block(total_pop, coordinate_data, state_name, geo_id, racial_data)
         block_list.append(block)
@@ -258,16 +258,16 @@ def create_graph(state_name):
         blocks_created += 1
         print(f"\rBlocks Created: {blocks_created}/{block_num}, {round(100*blocks_created/block_num, 1)}%", end="")
         sys.stdout.flush()
-    # with open("vermont_p.pickle", "wb") as f:
-    #     pickle.dump(precinct_list, f)
-    # with open("vermont_c.pickle", "wb") as f:
-    #     pickle.dump(county_to_blocks, f)
-    # with open("vermont_p.pickle", "rb") as f:
-    #     precinct_list = pickle.load(f)
-    # with open("vermont_c.pickle", "rb") as f:
-    #    county_to_blocks = pickle.load(f)
+    # # with open("vermont_p.pickle", "wb") as f:
+    # #     pickle.dump(precinct_list, f)
+    # # with open("vermont_c.pickle", "wb") as f:
+    # #     pickle.dump(county_to_blocks, f)
+    # # with open("vermont_p.pickle", "rb") as f:
+    # #     precinct_list = pickle.load(f)
+    # # with open("vermont_c.pickle", "rb") as f:
+    # #    county_to_blocks = pickle.load(f)
 
-    print("\n")
+    print("\n", end="")
     seen_blocks = {}
 
     # Stores the ids of blocks which are in a precinct {id : [id]}
@@ -303,8 +303,7 @@ def create_graph(state_name):
                     seen_blocks[block.id] = precinct.id
         print(f"\rBlocks Matched: {blocks_matched}/{block_num}", end="")
         sys.stdout.flush()
-    print("\
-        n")
+    print("\n", end="")
     for precinct in precinct_list:
         precinct_blocks = precinct_to_blocks[precinct.id]
         # print(precinct_blocks)
@@ -323,16 +322,96 @@ def create_graph(state_name):
                 except:
                     print([block.pop for block in precinct_blocks], precinct.id)
                 block.create_election_data()
+    # with open("vermont.pickle", "wb") as f:
+        # pickle.dump(block_list, f)
+    # with open("vermont.pickle", "rb") as f:
+    #    block_list = pickle.load(f)
 
+    block_x_sorted = block_list
+    block_x_sorted.sort(key=lambda x : x.min_x)
+    block_y_sorted = block_list
+    block_y_sorted.sort(key=lambda x : x.min_y)
+
+    possible_borders= []
+    edges = []
+    edges_created = 0
+    if block_x_sorted[-1].max_x - block_x_sorted[0].min_x > block_y_sorted[-1].max_y - block_y_sorted[0].min_y:
+        active = [block_x_sorted[0]]
+        for i, block in  enumerate(block_x_sorted):
+            if i == 0:
+                continue
+            active_blocks_to_remove = []
+            for j, check_block in enumerate(active):
+                if check_block.max_x < block.min_x:
+                    active_blocks_to_remove.append(j)
+                else:
+                    possible_borders.append([check_block, block])
+            active_blocks_to_remove.sort(reverse=True)
+            for index in active_blocks_to_remove:
+                active.pop(index)
+            active.append(block)
+            print(f"\rBlocks checked: {i}", end="")
+            sys.stdout.flush()
+        pass
+    else:
+        active = [block_y_sorted[0]]
+        for i, block in  enumerate(block_y_sorted):
+            if i == 0:
+                continue
+            active_blocks_to_remove = []
+            for j, check_block in enumerate(active):
+                if check_block.max_y < block.min_y:
+                    active_blocks_to_remove.append(j)
+                else:
+                    possible_borders.append([check_block, block])
+            active_blocks_to_remove.sort(reverse=True)
+            for index in active_blocks_to_remove:
+                active.pop(index)
+            active.append(block)
+            print(f"\rBlocks Checked: {i}/{block_num}, {round(100*i/block_num, 1)}%", end="")
+            sys.stdout.flush()
+        print("\n", end="")
+        for pairing in possible_borders:
+            if pairing[0].max_x < pairing[1].min_x or pairing[1].max_x < pairing[0].min_x:
+                continue
+            if "1000000US500239541002044" in [block.id for block in pairing]:
+                continue
+            # if abs(pairing[0].coords.intersection(pairing[1].coords).area - 0) < 0.05*min(pairing[0].coords.area, pairing[1].coords.area):
+            if pairing[0].coords.intersection(pairing[1].coords).area == 0:
+                edges.append(pairing)
+                edges_created += 1
+                print(f"\rEdges Created: {edges_created}", end="")
+                sys.stdout.flush()
+    print("\n", end="")
     block_graph = nx.Graph()
+    block_to_index = {}
     for i, block in enumerate(block_list):
+        block_to_index[block] = i
         block_graph.add_node(i, block=block)
-    node_num = len(block_graph.nodes())
-    print(f"Number of blocks/nodes: {node_num}")
+    # node_num = len(block_graph.nodes())
+    # print(f"Number of blocks/nodes: {node_num}")
+    print("Nodes added to graph")
 
+    edges_num = len(edges)
+    for edge in edges:
+        block_graph.add_edge(block_to_index[edge[0]], block_to_index[edge[1]])
+        edge[0].neighbors.append(edge[1].id)
+        edge[1].neighbors.append(edge[0].id)
+        print(f"\rEdges added to graph: {edges_created}/{edges_num}, {round(100*edges_created/edges_num, 1)}%", end="")
+        sys.stdout.flush()
+    print("\n")  
+    return block_graph
+      
 if __name__ == "__main__":
     block_graph = create_graph(sys.argv[1])
 
     # with open(sys.argv[2], "wb+") as f:
     #     pickle.dump(block_graph, f)
     # print(SOURCE_DIR)
+    visualize_graph(
+        block_graph,
+        f'./{sys.argv[1]}_graph.jpg',
+        lambda n : block_graph.nodes[n]['block'].centroid,
+        # sizes=(lambda n : block_graph.nodes[n]['precinct'].pop/500),
+        show=True
+    )
