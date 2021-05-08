@@ -11,8 +11,14 @@ import subprocess
 from os.path import dirname, abspath
 from os import listdir
 import pickle
+from itertools import combinations
+
 import networkx as nx
-from shapely.geometry import Point
+from networkx.algorithms import (
+    connected_components,
+    number_connected_components
+)
+from shapely.geometry import Point, MultiPolygon, Polygon
 
 from hacking_the_election.utils.precinct import Precinct
 from hacking_the_election.utils.block import Block
@@ -97,6 +103,150 @@ def fractional_assignment(racial_data):
     racial_data["black"] += .02*racial_data["white:black:aian:aapi"]
     racial_data["white"] += .960*racial_data["white:black:aian:aapi"]
     del racial_data["white:black:aian:aapi"] 
+
+def split_multipolygons(block_list):
+    indexes_to_remove = []
+    blocks_to_add = []
+    for i, block in enumerate(block_list):
+        if isinstance(block.coords, MultiPolygon):
+            indexes_to_remove.append(i)
+            full_area = block.coords.area
+            for j, polygon in enumerate(block.coords):
+                ratio = polygon.area/full_area 
+                pop = block.pop * ratio
+                state = block.state
+                id = block.id + "_s" + str(j)
+                split_racial_data = {}
+                for race, data in block.racial_data.items():
+                    split_racial_data[race] = data * ratio
+                split_rep_votes = block.rep_votes * ratio
+                split_dem_votes = block.dem_votes * ratio
+                blocks_to_add.append(Block(pop, polygon, state, id, split_racial_data, split_rep_votes, split_dem_votes))
+    indexes_to_remove.sort(reverse=True)
+    for index in indexes_to_remove:
+        block_list.pop(index)
+    for block in blocks_to_add:
+        block_list.append(block)
+    print(f"Multipolygons removed: {len(indexes_to_remove)}")
+    print(f"New polygons created: {len(blocks_to_add)}")
+
+def combine_holypolygons(block_list):
+    # Once these holes have already accounted for (data added to surrounding block, no need to check again)
+    # actually stores indexes of holes
+    holes = []
+    for block in block_list:
+        # print(block.id)
+        # if block.id == "1000000US500239552003006":
+            # print("ok!", list(block.coords.interiors)[0], block.coords)
+        if len(list(block.coords.interiors)) > 0:
+            hole_area = sum([hole.area for hole in list(block.coords.interiors)])
+            found_area = 0
+            for i, check_block in enumerate(block_list):
+                if check_block.min_x < block.min_x or check_block.max_x > block.max_x or check_block.min_y < block.min_y or check_block.max_y > block.max_y:
+                    continue
+                if block in holes:
+                    continue
+                if check_block.id == block.id:
+                    continue
+                if found_area > hole_area:
+                    break
+                for hole in block.coords.interiors:
+                    # if block.id == "1000000US500239552003006":
+                    #     print("ok!")
+                        # if check_block.id == "1000000US500239552003007":
+                            # print("yes!", abs(hole.intersection(check_block.coords).area - check_block.coords.area) <= 0.02*check_block.coords.area)
+                            # print(hole.intersection(check_block.coords).area, check_block.coords.area, abs(hole.intersection(check_block.coords).area - check_block.coords.area), 0.02*check_block.coords.area)
+                    # if abs(hole.intersection(check_block.coords).area - check_block.coords.area) <= 0.02*check_block.coords.area:
+                    if Point(check_block.coords.centroid).within(Polygon(hole)):
+                        holes.append(i)
+                        found_area += check_block.coords.area
+                        block.pop += check_block.pop
+                        # This try/except can be removed once all blocks are matched!
+                        try:
+                            block.rep_votes += check_block.rep_votes
+                            block.dem_votes += check_block.dem_votes
+                            block.create_election_data()
+                        except:
+                            pass
+                        for race, data in check_block.racial_data.items():
+                            block.racial_data[race] += data
+                        block.create_racial_data()
+                        break
+    holes.sort(reverse=True)
+    for index in holes:
+        block_list.pop(index)
+    print(f"Holes removed: {len(holes)}")
+
+def connect_islands(block_graph):
+    original_graph_components_num = number_connected_components(block_graph)
+    if not number_connected_components(block_graph) == 1:
+        while number_connected_components(block_graph) != 1:
+            graph_components = list(connected_components(block_graph))
+            # print(graph_components, '# of graph components')
+            # Create list with dictionary containing keys as precincts, 
+            # values as centroids for each component
+            centroid_list = []
+            for component in graph_components:
+                component_list = {}
+                for block in component:
+                    component_list[block] = block_graph.nodes[block]['block'].centroid
+                centroid_list.append(component_list)
+                
+            # Keys are minimum distances to and from different islands, 
+            # values are tuples of nodes to add edges between
+            min_distances = {}
+            # print(len(list(combinations([num for num in range(0, len(graph_components))], 2))), 'list of stuffs')
+            # For nonrepeating combinations of components, add to list of edges
+            for combo in list(combinations([num for num in range(0, (len(graph_components) - 1))], 2)):
+                # Create list of centroids to compare
+                centroids_1 = centroid_list[combo[0]]
+                centroids_2 = centroid_list[combo[1]]
+                min_distance = 0
+                min_tuple = None
+                for block_1, centroid_1 in centroids_1.items():
+                    for block_2, centroid_2 in centroids_2.items():
+                        x_distance = centroid_1[0] - centroid_2[0]
+                        y_distance = centroid_1[1] - centroid_2[1]
+                        # No need to sqrt unnecessarily
+                        distance = (x_distance ** 2) + (y_distance ** 2)
+                        if min_distance == 0:
+                            min_distance = distance
+                            min_tuple = (block_1, block_2)
+                        elif distance < min_distance:
+                            # print(block_1, block_2)
+                            min_distance = distance
+                            min_tuple = (block_1, block_2)
+                min_distances[min_distance] = min_tuple
+            # combinations() fails once the graph is one edge away from completion, so this is manual
+            if len(graph_components) == 2:
+                min_distance = 0
+                for block_1 in graph_components[0]:
+                    centroid_1 = block_graph.nodes[block_1]['block'].centroid
+                    for block_2 in graph_components[1]:
+                        centroid_2 = block_graph.nodes[block_2]['block'].centroid
+                        x_distance = centroid_1[0] - centroid_2[0]
+                        y_distance = centroid_1[1] - centroid_2[1]
+                        # No need to sqrt unnecessarily
+                        distance = (x_distance ** 2) + (y_distance ** 2)
+                        if min_distance == 0:
+                            min_distance = distance
+                            min_tuple = (block_1, block_2)
+                        elif distance < min_distance:
+                            # print(block_1, block_2)
+                            min_distance = distance
+                            min_tuple = (block_1, block_2)
+                min_distances[min_distance] = min_tuple
+
+            # Find edge to add
+            try:
+                edge_to_add = min_distances[min(min_distances)]
+            except ValueError:
+                break
+            block_graph.add_edge(*edge_to_add)
+            print(f"\rConnecting islands progress: {100 - round(100 * (len(graph_components)-1)/original_graph_components_num, 2)}%")
+
+            # print('yo', block_graph.nodes[edge_to_add[0]]['block'].id, block_graph.nodes[edge_to_add[1]]['block'].id)
+
 
 def create_graph(state_name):
 
@@ -258,14 +408,14 @@ def create_graph(state_name):
         blocks_created += 1
         print(f"\rBlocks Created: {blocks_created}/{block_num}, {round(100*blocks_created/block_num, 1)}%", end="")
         sys.stdout.flush()
-    # # with open("vermont_p.pickle", "wb") as f:
-    # #     pickle.dump(precinct_list, f)
-    # # with open("vermont_c.pickle", "wb") as f:
-    # #     pickle.dump(county_to_blocks, f)
-    # # with open("vermont_p.pickle", "rb") as f:
-    # #     precinct_list = pickle.load(f)
-    # # with open("vermont_c.pickle", "rb") as f:
-    # #    county_to_blocks = pickle.load(f)
+    # # # with open("vermont_p.pickle", "wb") as f:
+    # # #     pickle.dump(precinct_list, f)
+    # # # with open("vermont_c.pickle", "wb") as f:
+    # # #     pickle.dump(county_to_blocks, f)
+    # # # with open("vermont_p.pickle", "rb") as f:
+    # # #     precinct_list = pickle.load(f)
+    # # # with open("vermont_c.pickle", "rb") as f:
+    # # #    county_to_blocks = pickle.load(f)
 
     print("\n", end="")
     seen_blocks = {}
@@ -279,8 +429,8 @@ def create_graph(state_name):
         accounted_population = 0
         for block in possible_blocks:
             # Temporarily necessary for vermont testing
-            if block.id == "1000000US500239541002044":
-                continue
+            # if block.id == "1000000US500239541002044":
+            #     continue
             if accounted_population > precinct.pop:
                 break
             if precinct.max_x < block.min_x or precinct.min_x > block.max_x or precinct.max_y < block.min_y or precinct.min_y > block.max_y:
@@ -301,7 +451,7 @@ def create_graph(state_name):
                     accounted_population += block.pop
                     blocks_matched += 1
                     seen_blocks[block.id] = precinct.id
-        print(f"\rBlocks Matched: {blocks_matched}/{block_num}", end="")
+        print(f"\rBlocks Matched: {blocks_matched}/{block_num}, {round(100*blocks_matched/block_num, 1)}%", end="")
         sys.stdout.flush()
     print("\n", end="")
     for precinct in precinct_list:
@@ -323,10 +473,15 @@ def create_graph(state_name):
                     print([block.pop for block in precinct_blocks], precinct.id)
                 block.create_election_data()
     # with open("vermont.pickle", "wb") as f:
-        # pickle.dump(block_list, f)
+    #     pickle.dump(block_list, f)
     # with open("vermont.pickle", "rb") as f:
-    #    block_list = pickle.load(f)
-
+    #     block_list = pickle.load(f)
+    
+    # Split blocks which are not contiguous
+    split_multipolygons(block_list)
+    # Combine holes 
+    combine_holypolygons(block_list)
+    block_num = len(block_list)
     block_x_sorted = block_list
     block_x_sorted.sort(key=lambda x : x.min_x)
     block_y_sorted = block_list
@@ -374,8 +529,8 @@ def create_graph(state_name):
         for pairing in possible_borders:
             if pairing[0].max_x < pairing[1].min_x or pairing[1].max_x < pairing[0].min_x:
                 continue
-            if "1000000US500239541002044" in [block.id for block in pairing]:
-                continue
+            # if "1000000US500239541002044" in [block.id for block in pairing]:
+            #     continue
             # if abs(pairing[0].coords.intersection(pairing[1].coords).area - 0) < 0.05*min(pairing[0].coords.area, pairing[1].coords.area):
             if pairing[0].coords.intersection(pairing[1].coords).area == 0:
                 edges.append(pairing)
@@ -400,8 +555,13 @@ def create_graph(state_name):
         print(f"\rEdges added to graph: {edges_created}/{edges_num}, {round(100*edges_created/edges_num, 1)}%", end="")
         sys.stdout.flush()
     print("\n")  
+    # with open("vermont_graph.pickle", "wb") as f:
+    #     pickle.dump(block_graph, f)
+    # with open("vermont_graph.pickle", "rb") as f:
+    #     block_graph = pickle.load(f)
+    connect_islands(block_graph)
     return block_graph
-      
+
 if __name__ == "__main__":
     block_graph = create_graph(sys.argv[1])
 
