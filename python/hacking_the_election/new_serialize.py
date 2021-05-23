@@ -22,7 +22,7 @@ from shapely.geometry import Point, MultiPolygon, Polygon
 
 from hacking_the_election.utils.precinct import Precinct
 from hacking_the_election.utils.block import Block
-from hacking_the_election.utils.geometry import geojson_to_shapely, get_if_bordering
+from hacking_the_election.utils.geometry import geojson_to_shapely, get_if_bordering, shapely_to_geojson
 from hacking_the_election.visualization.graph_visualization import visualize_graph
 
 def fractional_assignment(racial_data):
@@ -144,12 +144,12 @@ def combine_holypolygons(block_list):
             for i, check_block in enumerate(block_list):
                 if check_block.min_x < block.min_x or check_block.max_x > block.max_x or check_block.min_y < block.min_y or check_block.max_y > block.max_y:
                     continue
-                if block in holes:
+                if i in holes:
                     continue
                 if check_block.id == block.id:
                     continue
-                if found_area > hole_area:
-                    break
+                # if found_area > hole_area:
+                #     break
                 for hole in block.coords.interiors:
                     # if block.id == "1000000US500239552003006":
                     #     print("ok!")
@@ -158,6 +158,15 @@ def combine_holypolygons(block_list):
                             # print(hole.intersection(check_block.coords).area, check_block.coords.area, abs(hole.intersection(check_block.coords).area - check_block.coords.area), 0.02*check_block.coords.area)
                     # if abs(hole.intersection(check_block.coords).area - check_block.coords.area) <= 0.02*check_block.coords.area:
                     if Point(check_block.coords.centroid).within(Polygon(hole)):
+                        if block.id == "1000000US500099501001366":
+                            if check_block.id == "1000000US500099501001376":
+                                print("japan hole is found!")
+                            else:
+                                print("other holes were found", check_block.id)
+                        if block.id == "1000000US500099501001376":
+                            print("this is the japan non hole!")
+                        # if block.id == "1000000US500199518001036":
+                        #     if check_block.id == "1000000US500199518001043":
                         holes.append(i)
                         found_area += check_block.coords.area
                         block.pop += check_block.pop
@@ -172,9 +181,15 @@ def combine_holypolygons(block_list):
                             block.racial_data[race] += data
                         block.create_racial_data()
                         break
+            block.coords = Polygon(block.coords.exterior)
     holes.sort(reverse=True)
     for index in holes:
-        block_list.pop(index)
+        try:
+            block_list.pop(index)
+        except:
+            print(index)
+
+            print("\n")
     print(f"Holes removed: {len(holes)}")
 
 def connect_islands(block_graph):
@@ -247,6 +262,37 @@ def connect_islands(block_graph):
 
             # print('yo', block_graph.nodes[edge_to_add[0]]['block'].id, block_graph.nodes[edge_to_add[1]]['block'].id)
 
+def create_json(block_list):
+    block_num = len(block_list)
+    json_string = '{"type": "FeatureCollection", "features": ['
+    for i, block in enumerate(block_list):
+        json_string += '\n{"type": "Feature", "geometry":{"type": '
+        json_string += f'\"{"Polygon" if isinstance(block.coords, Polygon) else "MultiPolygon"}\", '
+        json_string += f'"coordinates":{shapely_to_geojson(block.coords)}'
+        json_string += '}, "properties": {'
+        json_string += f"\"STATE\" : \"{block.state}\", "
+        json_string += f"\"ID\" : \"{block.id}\", "
+        json_string += f"\"POP\" : \"{block.pop}\", "
+        json_string += f"\"CENTROID\" : \"{block.centroid}\", "
+        json_string += f"\"NEIGHBORS\" : \"{block.neighbors}\", "
+        json_string += f"\"TOTAL_VOTES\" : \"{block.total_votes}\", "
+        json_string += f"\"REP_VOTES\" : \"{block.rep_votes}\", "
+        json_string += f"\"DEM_VOTES\" : \"{block.dem_votes}\", "
+        json_string += f"\"WHITE\" : \"{block.white}\", "
+        json_string += f"\"BLACK\" : \"{block.black}\", "
+        json_string += f"\"HISPANIC\" : \"{block.hispanic}\", "
+        json_string += f"\"AAPI\" : \"{block.aapi}\", "
+        json_string += f"\"AIAN\" : \"{block.aian}\", "
+        json_string += f"\"OTHER\" : \"{block.other}\""
+        if i == block_num-1:
+            json_string += "}}"
+        else:
+            json_string += "}},"
+        print(f"\rWriting json: {i}/{block_num}, {round(100*i/block_num, 1)}%", end="")
+        sys.stdout.flush()
+    json_string += "\n]}"
+    print("\n", end='')
+    return json_string
 
 def create_graph(state_name):
 
@@ -297,8 +343,11 @@ def create_graph(state_name):
     precincts_num = len(precinct_ids)
     precincts_created = 0
     for geo_id in precinct_ids:
-        rep_votes = election_data[election_data["GEOID10"] == geo_id]["Rep_2008_pres"].item()
-        dem_votes = election_data[election_data["GEOID10"] == geo_id]["Dem_2008_pres"].item()
+        rep_votes = election_data[election_data["GEOID10"] == geo_id]["Rep_2008_pres"]
+        # if rep_votes.size == 2:
+        rep_votes = rep_votes.max()
+        dem_votes = election_data[election_data["GEOID10"] == geo_id]["Dem_2008_pres"]
+        dem_votes = dem_votes.max()
         # In addition to total population, racial data needs to be added as well
         total_pop = demographics[demographics["GEOID10"] == geo_id]["Tot_2010_tot"].item()
 
@@ -480,7 +529,7 @@ def create_graph(state_name):
     # Split blocks which are not contiguous
     split_multipolygons(block_list)
     # Combine holes 
-    combine_holypolygons(block_list)
+    # combine_holypolygons(block_list)
     block_num = len(block_list)
     block_x_sorted = block_list
     block_x_sorted.sort(key=lambda x : x.min_x)
@@ -507,7 +556,16 @@ def create_graph(state_name):
             active.append(block)
             print(f"\rBlocks checked: {i}", end="")
             sys.stdout.flush()
-        pass
+        print("\n", end="")
+        for pairing in possible_borders:
+            if pairing[0].max_y < pairing[1].min_y or pairing[1].max_y < pairing[0].min_y:
+                continue
+            # if abs(pairing[0].coords.intersection(pairing[1].coords).area - 0) < 0.05*min(pairing[0].coords.area, pairing[1].coords.area):
+            if pairing[0].coords.intersection(pairing[1].coords).area == 0:
+                edges.append(pairing)
+                edges_created += 1
+                print(f"\rEdges Created: {edges_created}", end="")
+                sys.stdout.flush()
     else:
         active = [block_y_sorted[0]]
         for i, block in  enumerate(block_y_sorted):
@@ -529,8 +587,6 @@ def create_graph(state_name):
         for pairing in possible_borders:
             if pairing[0].max_x < pairing[1].min_x or pairing[1].max_x < pairing[0].min_x:
                 continue
-            # if "1000000US500239541002044" in [block.id for block in pairing]:
-            #     continue
             # if abs(pairing[0].coords.intersection(pairing[1].coords).area - 0) < 0.05*min(pairing[0].coords.area, pairing[1].coords.area):
             if pairing[0].coords.intersection(pairing[1].coords).area == 0:
                 edges.append(pairing)
@@ -555,11 +611,14 @@ def create_graph(state_name):
         print(f"\rEdges added to graph: {edges_created}/{edges_num}, {round(100*edges_created/edges_num, 1)}%", end="")
         sys.stdout.flush()
     print("\n")  
-    # with open("vermont_graph.pickle", "wb") as f:
-    #     pickle.dump(block_graph, f)
     # with open("vermont_graph.pickle", "rb") as f:
     #     block_graph = pickle.load(f)
     connect_islands(block_graph)
+    with open("vermont_list.pickle", "wb") as f:
+        pickle.dump(block_list, f)
+    json_string = create_json(block_list)
+    with open("serialized.json", "w") as f:
+        f.write(json_string)
     return block_graph
 
 if __name__ == "__main__":
