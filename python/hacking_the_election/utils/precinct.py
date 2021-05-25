@@ -30,8 +30,7 @@ class Precinct:
     :type geoid: str
     """
 
-    def __init__(self, pop, coords, state, precinct_id, rep_data, dem_data, 
-                 green_data=None, lib_data=None, reform_data=None, ind_data=None, const_data=None, other_data=None, scale_factor=0.02):
+    def __init__(self, pop, coords, state, precinct_id, total_data, rep_data, dem_data, scale_factor=0.02):
 
         self.pop = pop
         # should be shapely polygon
@@ -52,100 +51,24 @@ class Precinct:
         # used for data visualization
         self.community = None
         
+        self.total_votes = total_data
+        self.rep_votes = rep_data
+        self.dem_votes = dem_data
+        self.other_votes = None
+
         # number of parties with data
-        self.num_parties_data = 0
+        # self.num_parties_data = 0
 
-        try:
-            self.total_rep = float(rep_data)
-            self.num_parties_data += 1
-        except ValueError:
-            self.total_rep = 0
-        try:
-            self.total_dem = float(dem_data)
-            self.num_parties_data += 1
-        except ValueError:
-            self.total_dem = 0
-        # Green Party of the United States
-        if green_data:
-            try:
-                self.total_green = float(green_data)
-                self.num_parties_data += 1
-            except ValueError:
-                self.total_green = 0
-        else:
-            self.total_green = 0
-        # Libertarian Party
-        if lib_data:
-            try:
-                self.total_lib = float(lib_data)
-                self.num_parties_data += 1
-            except ValueError:
-                self.total_lib = 0
-        else:
-            self.total_lib = 0
-        # Reform Party of the United States of America
-        if reform_data:
-            try:
-                self.total_reform = float(reform_data)
-                self.num_parties_data += 1
-            except ValueError:
-                self.total_reform = 0
-        else:
-            self.total_reform = 0
-        # Independent Party
-        if ind_data:
-            try:
-                self.total_ind = float(ind_data)
-                self.num_parties_data += 1
-            except ValueError:
-                self.total_ind = 0
-        else:
-            self.total_ind = 0
-        # Constitution Party
-        if const_data:
-            try:
-                self.total_const = float(const_data)
-                self.num_parties_data += 1
-            except ValueError:
-                self.total_const = 0
-        else:
-            self.total_const = 0
-
-        if other_data:
-            try:
-                self.total_other = float(other_data)
-                self.num_parties_data += 1
-            except ValueError:
-                self.total_other = 0
-        else:
-            self.total_other = 0
-
-        self.total_votes = (self.total_dem + self.total_rep + self.total_green
-                          + self.total_lib + self.total_reform + self.total_ind
-                          + self.total_const + self.total_other)
         if self.total_votes == 0:
             self.percent_dem = None
             self.percent_rep = None
-
-            self.percent_green = None
-            self.percent_lib = None
-            self.percent_reform = None
-            self.percent_ind = None
-            self.percent_const = None
-
             self.percent_other = None
         else:
+            self.other_votes = self.total_votes - self.rep_votes - self.dem_votes
+            self.percent_dem = self.dem_votes / self.total_votes
+            self.percent_rep = self.rep_votes / self.total_votes
+            self.percent_other = 1 - self.percent_dem - self.percent_rep
 
-            self.percent_dem = self.total_dem / self.total_votes
-            self.percent_rep = self.total_rep / self.total_votes
-
-            self.percent_green = self.total_green / self.total_votes
-            self.percent_lib = self.total_lib / self.total_votes
-            self.percent_reform = self.total_reform / self.total_votes
-            self.percent_ind = self.total_ind / self.total_votes
-            self.percent_const = self.total_const / self.total_votes
-
-            self.percent_other = self.total_other / self.total_votes
 
     @property
     def dem_rep_partisanship(self):
@@ -153,7 +76,7 @@ class Precinct:
         """
 
         try:
-            republican = self.total_rep / (self.total_rep + self.total_dem)
+            republican = self.rep_votes / (self.rep_votes + self.dem_votes)
         except ZeroDivisionError:
             republican = 0
         if republican < 0.5:

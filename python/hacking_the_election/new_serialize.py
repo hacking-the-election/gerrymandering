@@ -348,12 +348,15 @@ def create_graph(state_name):
         rep_votes = rep_votes.max()
         dem_votes = election_data[election_data["GEOID10"] == geo_id]["Dem_2008_pres"]
         dem_votes = dem_votes.max()
+
+        total_votes = election_data[election_data["GEOID10"] == geo_id]["Tot_2008_pres"]
+        total_votes = total_votes.max()
         # In addition to total population, racial data needs to be added as well
         total_pop = demographics[demographics["GEOID10"] == geo_id]["Tot_2010_tot"].item()
 
         coordinate_data = geojson_to_shapely(precinct_coordinates[geo_id])
 
-        precinct = Precinct(total_pop, coordinate_data, state_name, geo_id, rep_votes, dem_votes)
+        precinct = Precinct(total_pop, coordinate_data, state_name, geo_id, total_votes, rep_votes, dem_votes)
         precinct_list.append(precinct)
         precincts_created += 1
         print(f"\rPrecincts Created: {precincts_created}/{precincts_num}, {round(100*precincts_created/precincts_num, 1)}%", end="")
@@ -516,8 +519,9 @@ def create_graph(state_name):
         else:
             for block in precinct_blocks:
                 try:
-                    block.rep_votes = precinct.total_rep * block.pop/block_pop_sum
-                    block.dem_votes = precinct.total_dem * block.pop/block_pop_sum
+                    block.rep_votes = precinct.rep_votes * block.pop/block_pop_sum
+                    block.dem_votes = precinct.dem_votes * block.pop/block_pop_sum
+                    block.total_votes = precinct.total_votes * block.pop/block_pop_sum
                 except:
                     print([block.pop for block in precinct_blocks], precinct.id)
                 block.create_election_data()

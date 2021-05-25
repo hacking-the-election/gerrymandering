@@ -5,6 +5,7 @@ Each function takes in a path to a .json or .pickle file and returns a list of C
 
 import json
 import pickle
+from random import choice
 import networkx as nx
 
 from hacking_the_election.utils.block import Block
@@ -52,3 +53,6 @@ def random_generation(path):
     block_graph = _deserialize(path)
     block_list = [node.block for node in block_graph.nodes()]
     community_list = []
+    while len(block_list) > 0:
+        starting_block = choice(block_list)
+        block_list.remove(starting_block)

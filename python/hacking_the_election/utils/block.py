@@ -4,7 +4,7 @@ A class representing the new smallest unit in our algorithm: the census block.
 
 class Block:
     
-    def __init__(self, pop, coords, state, id, racial_data, rep_data=None, dem_data=None, scale_factor=0.02):
+    def __init__(self, pop, coords, state, id, racial_data, total_data=None, rep_data=None, dem_data=None, scale_factor=0.02):
         self.pop = float(pop)
 
         # Shapely polygon
@@ -26,22 +26,27 @@ class Block:
 
         # List of block ids which represent neighbors of the block
         self.neighbors = []
+        # List of community ids which represent communities
 
+        self.total_votes = total_data
         self.rep_votes = rep_data
         self.dem_votes = dem_data
+        self.other_votes = None
 
-        self.total_votes = 0
         self.percent_rep = None
         self.percent_dem = None
+        self.percent_other = None
 
-        if self.rep_votes != None and self.rep_votes != None:
-            self.total_votes = self.rep_votes + self.dem_votes
+        if self.total_votes != None:
             if self.total_votes == 0:
                 self.percent_rep = None
                 self.percent_dem = None
+                self.percent_other = None
             else:
+                self.other_votes = self.total_votes - self.dem_votes - self.rep_votes
                 self.percent_rep = self.rep_votes/self.total_votes
                 self.percent_dem = self.dem_votes/self.total_votes
+                self.percent_other = 1 - self.percent_rep - self.percent_dem
         # Dictionary
         self.racial_data = racial_data 
 
@@ -77,13 +82,15 @@ class Block:
         self.community = None
     
     def create_election_data(self):
-        self.total_votes = self.rep_votes + self.dem_votes
         if self.total_votes == 0:
             self.percent_rep = None
             self.percent_dem = None
+            self.percent_other = None
         else:
+            self.other_votes = 1 - self.dem_votes - self.rep_votes
             self.percent_rep = self.rep_votes/self.total_votes
             self.percent_dem = self.dem_votes/self.total_votes
+            self.total_votes = 1 - self.percent_rep - self.percent_dem
     
     def create_racial_data(self):
         # Individual racial groups
