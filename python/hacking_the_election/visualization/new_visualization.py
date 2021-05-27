@@ -10,8 +10,8 @@ from hacking_the_election.utils.geometry import shapely_to_geojson
 from hacking_the_election.utils.visualization import get_community_colors, modify_coords
 from hacking_the_election.visualization.map_visualization import _get_coords, _draw_polygon
 
-def visualize_map(communities, output_path):
-    image = Image.new("RGB", (2000,2000), "white")
+def visualize_map(communities, output_path, quality=8192):
+    image = Image.new("RGB", (quality,quality), "white")
     draw = ImageDraw.Draw(image, "RGB")
 
     flattened_x = []
@@ -54,22 +54,23 @@ def visualize_map(communities, output_path):
     flattened_x = np.subtract(flattened_x, np.array(min_x))
     flattened_y = np.subtract(flattened_y, np.array(min_y))
 
-    flattened_x *= 0.95*2000/dilation
-    flattened_y *= 0.95*2000/dilation
+    flattened_x *= 0.95*quality/dilation
+    flattened_y *= 0.95*quality/dilation
 
-    flattened_y = np.negative(flattened_y) + 2000
+    flattened_y = np.negative(flattened_y) + quality
 
-    flattened_x = np.add(flattened_x, (2000 - flattened_x.max()) / 2)
+    flattened_x = np.add(flattened_x, (quality - flattened_x.max()) / 2)
     flattened_y = np.subtract(flattened_y, flattened_y.min()/2)
 
     flattened_x, flattened_y = flattened_x.tolist(), flattened_y.tolist()
 
-    with open("../modified_coords.pickle", "wb") as f:
+    with open("./modified_coords.pickle", "wb") as f:
         pickle.dump(blocks, f)
 
     colors = []
     for i in range(len(communities)):
-        colors.append((randint(0,255),randint(0,255),randint(0,255)))
+        # Ensure colors don't come too close to black or white
+        colors.append((randint(5,250),randint(5,250),randint(5,250)))
 
     block_tracker = 0
     blocks = []

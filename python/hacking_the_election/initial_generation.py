@@ -48,9 +48,8 @@ def _deserialize(path):
             block_graph.add_node(i, block=created_block)
             block_list.append(created_block)
             block_to_index[created_block.id] = i
-            print(f"\rEdges added to graph: {i}", end="")
+            print(f"\rBlocks added to graph: {i}", end="")
             sys.stdout.flush()
-        print("\n")  
         for block in block_list:
             for neighbor_id in block.neighbors:
                 block_graph.add_edge(block.id, block_to_index[neighbor_id])
@@ -59,6 +58,7 @@ def _deserialize(path):
             block_graph = pickle.load(f)
     else:
         raise Exception("Incorrect file type, please use a .json or .pickle file")
+    print("\n", end="")
     return block_graph
 
 def random_generation(path, state):
@@ -67,21 +67,19 @@ def random_generation(path, state):
     random starting block and adds neighbors. Continues until all blocks are used
     """
     block_graph = _deserialize(path)
-    print("deserialized!")
-    # block_list = [block_graph.nodes[node]["block"] for node in block_graph.nodes()]
-    block_list = nx.get_node_attributes(block_graph, 'block')
-    indexes = {i:block_list[i] for i in range(len(block_list))}
-    # print(indexes)
+    print("Block graph deserialized. ")
+    block_dict = nx.get_node_attributes(block_graph, 'block')
+    # print(block_dict)
+    indexes = {i:block_dict[i] for i in range(len(block_dict))}
     ids_to_indexes = {block.id : i for i, block in indexes.items()}
     for index in ids_to_indexes.values():
-        # print(index, "stuff!@")
         try:
             _ = indexes[index]
         except:
             print(index)
     community_list = []
     community_id = 0
-    while len(block_list) > 0:
+    while len(block_dict) > 0:
         community_id += 1
         try:
             starting_index = choice(list(indexes.keys()))
@@ -90,45 +88,59 @@ def random_generation(path, state):
         starting_block = indexes[starting_index]
         del indexes[starting_index]
         neighbor_indexes = [id for id in starting_block.neighbors if ids_to_indexes[id] in indexes]
-        # print(neighbor_indexes)
         blocks = [starting_block]
-        while len(blocks) <= 250:
+        while len(blocks) <= 1000:
             try:
                 # Choose neighbor randomly, or go in order?
                 # neighbor_id = choice(neighbor_indexes)
                 neighbor_id = neighbor_indexes[0]
             except:
-            #     print("now there's yoo!")
                 break
-            # print("there was a neighbor!", neighbor_id)
             neighbor_indexes.remove(neighbor_id)
-            # print("this was like, done!")
             try:
-                # print("yooo!")
-                # print(ids_to_indexes[neighbor_id])
                 neighbor_block = indexes[ids_to_indexes[neighbor_id]]
-                # print(neighbor_block)
             except:
                 continue
             else:
                 del indexes[ids_to_indexes[neighbor_id]]
-            # print("stuff even makes it here!")
             blocks.append(neighbor_block)
             for neighbor in neighbor_block.neighbors:
                 if ids_to_indexes[neighbor] in indexes:
-                    # print("things are being added!")
                     neighbor_indexes.append(neighbor)
-        # print(len(blocks), "block length!")
-        # for block in blocks:
-            # print(block.id)
+
         created_community = Community(state, community_id, blocks)
         for block in blocks:
             block.community = community_id
-        # print(type(created_community.coords))
         community_list.append(created_community)
         print(f"\rCommunities created: {community_id}", end="")
         sys.stdout.flush()
-    print("\n")
+    print("\n", end="")
+    # print(block_dict)
+    # Calcualate borders and neighbors for all communities
+    ids_to_blocks = {block.id: block for block in block_dict.values()}
+    for community in community_list:
+        community.find_neighbors_and_border(ids_to_blocks)
+
+    # Remove small communities
+    id_to_community = {community.id:community for community in community_list}
+    to_remove = [community for community in community_list if len(community.blocks) < 300]
+    for i, community in enumerate(to_remove):
+        neighboring_community_id = choice(community.neighbors)
+        id_to_community[neighboring_community_id].merge_community(community)
+        print(f"\rCommunities merged: {i}/{len(to_remove)}, {round(100*i/len(to_remove), 1)}%", end="")
+        sys.stdout.flush()
+        community_list.remove(community)
+    print("\n", end="")
+
+    # Calcualate borders and neighbors for all communities
+    ids_to_blocks = {block.id: block for block in block_dict.values()}
+    for i, community in enumerate(community_list):
+        community.find_neighbors_and_border(ids_to_blocks)
+        # Renumber communities
+        community.id = i
+        for block in community.blocks:
+            block.community = i
+    print(f"Final number of communities: {len(community_list)}")
     return community_list
 
 if __name__ == "__main__":

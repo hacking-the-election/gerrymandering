@@ -34,11 +34,15 @@ class Community:
     """
 
     def __init__(self, state, id, blocks):
+        # string, e.g. "vermont"
         self.state = state
+        # positive integer, at least 1
         self.id = id
+        # list of Block objects
         self.blocks = blocks
+        # shapely.geometry.Polygon or MultiPolygon
         self.coords = unary_union([block.coords for block in self.blocks])
-
+        # Dictionary, keys being integers, values being Block objects
         self.block_ids = [block.id for block in self.blocks]
 
         # Aggregates stats for the community
@@ -48,6 +52,7 @@ class Community:
         self.rep_votes = sum([block.rep_votes for block in self.blocks if block.rep_votes != None])
         self.other_votes = sum([block.other_votes for block in self.blocks if block.other_votes != None])
         
+        # Calculate statistics for political percentages
         if self.total_votes == 0:
             self.percent_dem = None
             self.percent_rep = None
@@ -57,13 +62,14 @@ class Community:
             self.percent_rep = self.rep_votes/self.total_votes
             self.percent_other = self.other_votes/self.total_votes
 
+        # Aggregate racial statistics for the community
         self.white = sum([block.white for block in self.blocks])
         self.black = sum([block.black for block in self.blocks])
         self.hispanic = sum([block.hispanic for block in self.blocks])
         self.aapi = sum([block.aapi for block in self.blocks])
         self.aian = sum([block.aian for block in self.blocks])
         self.other = sum([block.other for block in self.blocks])
-
+        # self-explanatory dictionary
         self.racial_data = {"white":self.white, "black":self.black, "hispanic":self.hispanic, "aapi":self.aapi, "aian":self.aian, "other":self.other}
         
         if self.pop == 0:
@@ -85,25 +91,73 @@ class Community:
 
             self.percent_minority = 1 - self.percent_white
 
+        # Contains list of blocks, subset of self.blocks, which represent blocks at the border of this community
         self.border = None
+        # list of integers, representing the ids of the neighboring communities
         self.neighbors = None
 
         # Below attributes use Jensen-Shannon divergence to measure how similar the community is, for community-based evaluation
         self.race_similarity = None
         self.partisanship_similarity = None
+        # If we choose to use density
         # self.density_similarity = None
 
     def find_neighbors_and_border(self, id_to_block):
         """
         Finds the communities which border this community, and finds the blocks of this community which are on the border of other communities
         """
+        border = []
+        neighbors = []
         for block in self.blocks:
             for neighbor in block.neighbors:
                 if id_to_block[neighbor].community != self.id:
-                    self.border.append(block)
-                    if id_to_block[neighbor].community not in self.neighbors:
-                        self.neighbors.append(id_to_block[neighbor].community)
+                    border.append(block)
+                    if id_to_block[neighbor].community not in neighbors:
+                        neighbors.append(id_to_block[neighbor].community)
+        self.border = border
+        self.neighbors = neighbors
     
+    def merge_community(self, community):
+        """
+        Merges another community into this one and updates attributes.
+        """
+        self.blocks.extend(community.blocks)
+        self.coords = self.coords.union(community.coords)
+        self.block_ids.extend(community.block_ids)
+        for block in community.blocks:
+            block.community = self.id
+        attributes_to_update = ["pop", "total_votes", "dem_votes", "rep_votes", "other_votes", "white", "black", "hispanic", "aapi", "aian", "other"]
+        for attribute in attributes_to_update:
+            exec("self." + attribute + " += community." + attribute)
+        if self.total_votes == 0:
+            self.percent_dem = None
+            self.percent_rep = None
+            self.percent_other = None
+        else:
+            self.percent_dem = self.dem_votes/self.total_votes
+            self.percent_rep = self.rep_votes/self.total_votes
+            self.percent_other = self.other_votes/self.total_votes
+        
+        if self.pop == 0:
+            self.percent_white = None
+            self.percent_black = None
+            self.percent_hispanic = None
+            self.percent_apai = None
+            self.percent_aian = None
+            self.percent_other = None
+
+            self.percent_minority = None
+        else: 
+            self.percent_white = self.white / self.pop
+            self.percent_black = self.black / self.pop
+            self.percent_hispanic = self.hispanic / self.pop
+            self.percent_aapi = self.aapi / self.pop
+            self.percent_aian = self.aian / self.pop
+            self.percent_other = self.other / self.pop
+
+            self.percent_minority = 1 - self.percent_white
+        
+
     def calculate_race_similarity(self):
         """
         Uses the Jensen-Shannon divergence metric to calculate the similarity of the communities' race distributions.
