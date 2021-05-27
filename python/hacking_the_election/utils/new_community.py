@@ -2,6 +2,9 @@
 Contains a class which represents a political community, as well as functions to help calcualate metrics
 """
 from math import log
+from shapely.ops import unary_union
+
+from hacking_the_election.utils.geometry import geojson_to_shapely
 
 def kullback_leibler(p, q, base=2):
     """
@@ -19,7 +22,7 @@ def jensen_shannon(block_probability_distributions):
     and returns the jensen shannon divergence, a float from 0-1 which denotes similarity, 1 being the best.
     """
     distribution_num = len(block_probability_distributions)
-    mixture = [] [sum([distribution[i] for distribution in block_probability_distributions) for i in range(distribution_num)]
+    mixture = [sum([distribution[i] for distribution in block_probability_distributions]) for i in range(distribution_num)]
     divergence = 0
     for distribution in block_probability_distributions:
         divergence += kullback_leibler(distribution, mixture)/distribution_num
@@ -34,6 +37,7 @@ class Community:
         self.state = state
         self.id = id
         self.blocks = blocks
+        self.coords = unary_union([block.coords for block in self.blocks])
 
         self.block_ids = [block.id for block in self.blocks]
 
@@ -43,10 +47,15 @@ class Community:
         self.dem_votes = sum([block.dem_votes for block in self.blocks if block.dem_votes != None])
         self.rep_votes = sum([block.rep_votes for block in self.blocks if block.rep_votes != None])
         self.other_votes = sum([block.other_votes for block in self.blocks if block.other_votes != None])
-
-        self.percent_dem = self.dem_votes/self.total_votes
-        self.percent_rep = self.rep_votes/self.total_votes
-        self.percent_other = self.other_votes/self.total_votes
+        
+        if self.total_votes == 0:
+            self.percent_dem = None
+            self.percent_rep = None
+            self.percent_other = None
+        else:
+            self.percent_dem = self.dem_votes/self.total_votes
+            self.percent_rep = self.rep_votes/self.total_votes
+            self.percent_other = self.other_votes/self.total_votes
 
         self.white = sum([block.white for block in self.blocks])
         self.black = sum([block.black for block in self.blocks])
@@ -56,15 +65,25 @@ class Community:
         self.other = sum([block.other for block in self.blocks])
 
         self.racial_data = {"white":self.white, "black":self.black, "hispanic":self.hispanic, "aapi":self.aapi, "aian":self.aian, "other":self.other}
+        
+        if self.pop == 0:
+            self.percent_white = None
+            self.percent_black = None
+            self.percent_hispanic = None
+            self.percent_apai = None
+            self.percent_aian = None
+            self.percent_other = None
 
-        self.percent_white = self.white / self.pop
-        self.percent_black = self.black / self.pop
-        self.percent_hispanic = self.hispanic / self.pop
-        self.percent_aapi = self.aapi / self.pop
-        self.percent_aian = self.aian / self.pop
-        self.percent_other = self.other / self.pop
+            self.percent_minority = None
+        else: 
+            self.percent_white = self.white / self.pop
+            self.percent_black = self.black / self.pop
+            self.percent_hispanic = self.hispanic / self.pop
+            self.percent_aapi = self.aapi / self.pop
+            self.percent_aian = self.aian / self.pop
+            self.percent_other = self.other / self.pop
 
-        self.percent_minority = 1 - self.percent_white
+            self.percent_minority = 1 - self.percent_white
 
         self.border = None
         self.neighbors = None

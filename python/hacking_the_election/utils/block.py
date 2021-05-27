@@ -87,10 +87,10 @@ class Block:
             self.percent_dem = None
             self.percent_other = None
         else:
-            self.other_votes = 1 - self.dem_votes - self.rep_votes
+            self.other_votes = self.total_votes - self.dem_votes - self.rep_votes
             self.percent_rep = self.rep_votes/self.total_votes
             self.percent_dem = self.dem_votes/self.total_votes
-            self.total_votes = 1 - self.percent_rep - self.percent_dem
+            self.percent_other = 1 - self.percent_rep - self.percent_dem
     
     def create_racial_data(self):
         # Individual racial groups

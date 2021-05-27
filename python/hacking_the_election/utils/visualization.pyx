@@ -52,7 +52,7 @@ cpdef list modify_coords(list coords, list bounds):
 
     # Move to first quadrant.
     cdef DTYPE_t min_x = min(X)
-    cdef int min_y = min(Y)
+    cdef DTYPE_t min_y = min(Y)
 
     cdef int p
     for p in range(n_points):

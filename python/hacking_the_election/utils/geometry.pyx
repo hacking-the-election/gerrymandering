@@ -86,6 +86,11 @@ def shapely_to_geojson(shape, json_format=False):
             for coord in list(interior.coords):
                 interior_coords.append(list(coord))
             geojson.append(interior_coords)
+    elif isinstance(shape, LinearRing):
+        exterior_coords = []
+        for coord in shape.coords:
+            exterior_coords.append([coord[0], coord[1]])
+        return [exterior_coords]
     else:
         raise TypeError("shapely_to_geojson only accepts arguments of type "
                         "shapely.geometry.Polygon or shapely.geometry.MultiPolygon",

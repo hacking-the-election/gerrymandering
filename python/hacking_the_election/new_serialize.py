@@ -121,7 +121,8 @@ def split_multipolygons(block_list):
                     split_racial_data[race] = data * ratio
                 split_rep_votes = block.rep_votes * ratio
                 split_dem_votes = block.dem_votes * ratio
-                blocks_to_add.append(Block(pop, polygon, state, id, split_racial_data, split_rep_votes, split_dem_votes))
+                split_total_votes = block.total_votes * ratio
+                blocks_to_add.append(Block(pop, polygon, state, id, split_racial_data, split_total_votes, split_rep_votes, split_dem_votes))
     indexes_to_remove.sort(reverse=True)
     for index in indexes_to_remove:
         block_list.pop(index)
@@ -275,6 +276,8 @@ def create_json(block_list):
         json_string += f"\"POP\" : \"{block.pop}\", "
         json_string += f"\"CENTROID\" : \"{block.centroid}\", "
         json_string += f"\"NEIGHBORS\" : \"{block.neighbors}\", "
+        # if block.total_votes < block.rep_votes + block.dem_votes:
+        #     print("OHHOASDHFOASDFHDOSANO")
         json_string += f"\"TOTAL_VOTES\" : \"{block.total_votes}\", "
         json_string += f"\"REP_VOTES\" : \"{block.rep_votes}\", "
         json_string += f"\"DEM_VOTES\" : \"{block.dem_votes}\", "
@@ -351,6 +354,8 @@ def create_graph(state_name):
 
         total_votes = election_data[election_data["GEOID10"] == geo_id]["Tot_2008_pres"]
         total_votes = total_votes.max()
+        if total_votes < rep_votes + dem_votes:
+            print("BIG BIG BIG BIG PROBLEM!!!")
         # In addition to total population, racial data needs to be added as well
         total_pop = demographics[demographics["GEOID10"] == geo_id]["Tot_2010_tot"].item()
 
@@ -471,7 +476,6 @@ def create_graph(state_name):
 
     print("\n", end="")
     seen_blocks = {}
-
     # Stores the ids of blocks which are in a precinct {id : [id]}
     precinct_to_blocks = {}
     blocks_matched = 0
@@ -516,22 +520,35 @@ def create_graph(state_name):
             for block in precinct_blocks:
                 block.rep_votes = 0
                 block.dem_votes = 0
+                block.total_votes = 0
+                block.other_votes = 0
         else:
             for block in precinct_blocks:
                 try:
                     block.rep_votes = precinct.rep_votes * block.pop/block_pop_sum
                     block.dem_votes = precinct.dem_votes * block.pop/block_pop_sum
                     block.total_votes = precinct.total_votes * block.pop/block_pop_sum
+                    if block.total_votes < block.rep_votes + block.dem_votes:
+                        print(block.id, block.total_votes, block.rep_votes, block.dem_votes, "REEEE")
                 except:
                     print([block.pop for block in precinct_blocks], precinct.id)
-                block.create_election_data()
+            # for block in block_list:
+            #     if block.total_votes < block.rep_votes + block.dem_votes:
+            #         print("it happens before 537!")
+                # block.create_election_data()
     # with open("vermont.pickle", "wb") as f:
     #     pickle.dump(block_list, f)
     # with open("vermont.pickle", "rb") as f:
     #     block_list = pickle.load(f)
     
+    # for block in block_list:
+    #     if block.total_votes < block.rep_votes + block.dem_votes:
+    #         print("it happens before line 544")
     # Split blocks which are not contiguous
     split_multipolygons(block_list)
+    # for block in block_list:
+    #     if block.total_votes < block.rep_votes + block.dem_votes:
+    #         print("it happens before line 546")
     # Combine holes 
     # combine_holypolygons(block_list)
     block_num = len(block_list)
@@ -597,6 +614,9 @@ def create_graph(state_name):
                 edges_created += 1
                 print(f"\rEdges Created: {edges_created}", end="")
                 sys.stdout.flush()
+    # for block in block_list:
+    #     if block.total_votes < block.rep_votes + block.dem_votes:
+    #         print("it happens before line 612")
     print("\n", end="")
     block_graph = nx.Graph()
     block_to_index = {}
@@ -615,6 +635,9 @@ def create_graph(state_name):
         print(f"\rEdges added to graph: {edges_created}/{edges_num}, {round(100*edges_created/edges_num, 1)}%", end="")
         sys.stdout.flush()
     print("\n")  
+    # for block in block_list:
+    #     if block.total_votes < block.rep_votes + block.dem_votes:
+    #         print("it happens before line 635")
     # with open("vermont_graph.pickle", "rb") as f:
     #     block_graph = pickle.load(f)
     connect_islands(block_graph)
