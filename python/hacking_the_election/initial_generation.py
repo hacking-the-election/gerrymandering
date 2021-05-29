@@ -89,7 +89,8 @@ def random_generation(path, state):
         del indexes[starting_index]
         neighbor_indexes = [id for id in starting_block.neighbors if ids_to_indexes[id] in indexes]
         blocks = [starting_block]
-        while len(blocks) <= 1000:
+        community_population = starting_block.pop
+        while community_population <= 20000:
             try:
                 # Choose neighbor randomly, or go in order?
                 # neighbor_id = choice(neighbor_indexes)
@@ -104,6 +105,7 @@ def random_generation(path, state):
             else:
                 del indexes[ids_to_indexes[neighbor_id]]
             blocks.append(neighbor_block)
+            community_population += neighbor_block.pop
             for neighbor in neighbor_block.neighbors:
                 if ids_to_indexes[neighbor] in indexes:
                     neighbor_indexes.append(neighbor)
@@ -123,11 +125,11 @@ def random_generation(path, state):
 
     # Remove small communities
     id_to_community = {community.id:community for community in community_list}
-    to_remove = [community for community in community_list if len(community.blocks) < 300]
+    to_remove = [community for community in community_list if community.pop < 5000]
     for i, community in enumerate(to_remove):
         neighboring_community_id = choice(community.neighbors)
         id_to_community[neighboring_community_id].merge_community(community)
-        print(f"\rCommunities merged: {i}/{len(to_remove)}, {round(100*i/len(to_remove), 1)}%", end="")
+        print(f"\rCommunities merged: {i+1}/{len(to_remove)}, {round(100*(i+1)/len(to_remove), 1)}%", end="")
         sys.stdout.flush()
         community_list.remove(community)
     print("\n", end="")

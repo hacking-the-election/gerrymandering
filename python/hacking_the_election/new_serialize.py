@@ -528,8 +528,6 @@ def create_graph(state_name):
                     block.rep_votes = precinct.rep_votes * block.pop/block_pop_sum
                     block.dem_votes = precinct.dem_votes * block.pop/block_pop_sum
                     block.total_votes = precinct.total_votes * block.pop/block_pop_sum
-                    if block.total_votes < block.rep_votes + block.dem_votes:
-                        print(block.id, block.total_votes, block.rep_votes, block.dem_votes, "REEEE")
                 except:
                     print([block.pop for block in precinct_blocks], precinct.id)
             # for block in block_list:
@@ -608,8 +606,14 @@ def create_graph(state_name):
         for pairing in possible_borders:
             if pairing[0].max_x < pairing[1].min_x or pairing[1].max_x < pairing[0].min_x:
                 continue
+            intersection = pairing[0].coords.intersection(pairing[1].coords)
+            if intersection.is_empty:
+                continue
             # if abs(pairing[0].coords.intersection(pairing[1].coords).area - 0) < 0.05*min(pairing[0].coords.area, pairing[1].coords.area):
-            if pairing[0].coords.intersection(pairing[1].coords).area == 0:
+            if intersection.area == 0:
+                ids = [pairing[0].id, pairing[1].id]
+                if "1000000US500070027013009" in ids and "1000000US500070027013025" in ids:
+                    print("wait this still shows up!")
                 edges.append(pairing)
                 edges_created += 1
                 print(f"\rEdges Created: {edges_created}", end="")

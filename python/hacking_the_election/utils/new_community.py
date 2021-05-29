@@ -41,7 +41,7 @@ class Community:
         # list of Block objects
         self.blocks = blocks
         # shapely.geometry.Polygon or MultiPolygon
-        self.coords = unary_union([block.coords for block in self.blocks])
+        # self.coords = unary_union([block.coords for block in self.blocks])
         # Dictionary, keys being integers, values being Block objects
         self.block_ids = [block.id for block in self.blocks]
 
@@ -122,7 +122,7 @@ class Community:
         Merges another community into this one and updates attributes.
         """
         self.blocks.extend(community.blocks)
-        self.coords = self.coords.union(community.coords)
+        # self.coords = self.coords.union(community.coords)
         self.block_ids.extend(community.block_ids)
         for block in community.blocks:
             block.community = self.id

@@ -11,6 +11,11 @@ from hacking_the_election.utils.visualization import get_community_colors, modif
 from hacking_the_election.visualization.map_visualization import _get_coords, _draw_polygon
 
 def visualize_map(communities, output_path, quality=8192):
+    """
+    Visualizes map of communities.
+    Takes in a list of communities, a path to output the picture to,
+    and a quality which should be the resolution of the image. 
+    """
     image = Image.new("RGB", (quality,quality), "white")
     draw = ImageDraw.Draw(image, "RGB")
 
@@ -24,7 +29,7 @@ def visualize_map(communities, output_path, quality=8192):
     for community in communities:
         for block in community.blocks:
             block_list.append(block)
-            counter = 0
+    counter = 0
     for i, block in enumerate(block_list):
         # print(shapely_to_geojson(block.coords)[0])
         test = np.array(shapely_to_geojson(block.coords)[0])
