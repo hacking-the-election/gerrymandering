@@ -10,7 +10,7 @@ from hacking_the_election.utils.geometry import shapely_to_geojson
 from hacking_the_election.utils.visualization import get_community_colors, modify_coords
 from hacking_the_election.visualization.map_visualization import _get_coords, _draw_polygon
 
-def visualize_map(communities, output_path, quality=8192):
+def visualize_map(communities, output_path, quality=8192, color="random"):
     """
     Visualizes map of communities.
     Takes in a list of communities, a path to output the picture to,
@@ -75,7 +75,15 @@ def visualize_map(communities, output_path, quality=8192):
     colors = []
     for i in range(len(communities)):
         # Ensure colors don't come too close to black or white
-        colors.append((randint(5,250),randint(5,250),randint(5,250)))
+        if color == "community_partisanship":
+            percent_dem = communities[i].percent_dem
+            percent_rep = communities[i].percent_rep
+            if percent_dem:
+                colors.append((round(percent_rep*255),0,round(percent_dem*255)))
+            else:
+                colors.append((128,128,128))
+        elif color  == "random":
+            colors.append((randint(5,250),randint(5,250),randint(5,250)))
 
     block_tracker = 0
     blocks = []
@@ -105,4 +113,7 @@ if __name__ == '__main__':
     with open("../community_list.pickle", "rb") as f:
         community_list = pickle.load(f)
 
-    visualize_map(community_list, "../community_visualization.jpg")
+    color = sys.argv[1]
+    if color not in ["random", "community_partisanship"]:
+        raise Exception("Color argument needs to be 'random' or 'community_partisanship'!")
+    visualize_map(community_list, "../community_visualization.jpg", color=color)
