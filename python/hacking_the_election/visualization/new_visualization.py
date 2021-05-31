@@ -1,3 +1,11 @@
+"""
+Contains functions for visualizing communities. 
+
+Usage (in python directory):
+
+python3 -m hacking_the_election.visualization.new_visualization [path_to_community_list.pickle] [color]
+"""
+
 from PIL import Image, ImageDraw
 import pickle
 import sys
@@ -27,9 +35,11 @@ def visualize_map(communities, output_path, quality=8192, color="random"):
     flatten_to_block_indexes = {}
     block_list = []
     for community in communities:
+        state_name = community.state
         for block in community.blocks:
             block_list.append(block)
     counter = 0
+    block_num = len(block_list)
     for i, block in enumerate(block_list):
         # print(shapely_to_geojson(block.coords)[0])
         test = np.array(shapely_to_geojson(block.coords)[0])
@@ -42,10 +52,16 @@ def visualize_map(communities, output_path, quality=8192, color="random"):
             flattened_y.append(coord[1])
             flatten_to_block_indexes[counter] = i
             counter += 1
-        x_values.append(x_coords)
-        y_values.append(y_coords)
+        # x_values.append(x_coords)
+        x_values.append(np.array(x_coords))
+        # y_values.append(y_coords)
+        y_values.append(np.array(y_coords))
         # blocks.append(test)
         blocks.append(shapely_to_geojson(block.coords)[0])
+        print(f"\rRetrieve Coordinates: {i}/{block_num}, {round(100*i/block_num, 1)}%", end="")
+        sys.stdout.flush()
+    print("\n", end="")
+
 
     flattened_x = np.array(flattened_x)
     flattened_y = np.array(flattened_y)
@@ -56,64 +72,105 @@ def visualize_map(communities, output_path, quality=8192, color="random"):
     max_y = flattened_y.max()
     dilation = max(max_x-min_x, max_y-min_y)
 
-    flattened_x = np.subtract(flattened_x, np.array(min_x))
-    flattened_y = np.subtract(flattened_y, np.array(min_y))
+    final_max_x = (max_x-min_x)*0.95*quality/dilation
+    final_max_y = quality - ((max_y-min_y)*0.95*quality/dilation)
 
-    flattened_x *= 0.95*quality/dilation
-    flattened_y *= 0.95*quality/dilation
+    modified_coords = []
+    for i in range(block_num):
+        block_x_values = x_values[i]
+        block_y_values = y_values[i]
+        block_x_values = np.subtract(block_x_values, min_x)
+        block_y_values = np.subtract(block_y_values, min_y)
+        block_x_values *= 0.95*quality/dilation
+        block_y_values *= 0.95*quality/dilation
+        block_y_values = np.negative(block_y_values) + quality
 
-    flattened_y = np.negative(flattened_y) + quality
+        block_x_values = np.add(block_x_values, (quality - final_max_x) / 2)
+        block_y_values = np.subtract(block_y_values, final_max_y/2)
+        modified_coords.append(zip(block_x_values.tolist(), block_y_values.tolist()))
+        print(f"\rCoords Modified: {i}/{block_num}, {round(100*i/block_num, 1)}%", end="")
+        sys.stdout.flush()
+    print("\n", end="")        
 
-    flattened_x = np.add(flattened_x, (quality - flattened_x.max()) / 2)
-    flattened_y = np.subtract(flattened_y, flattened_y.min()/2)
+    # flattened_x = np.subtract(flattened_x, np.array(min_x))
+    # flattened_y = np.subtract(flattened_y, np.array(min_y))
 
-    flattened_x, flattened_y = flattened_x.tolist(), flattened_y.tolist()
+    # flattened_x *= 0.95*quality/dilation
+    # flattened_y *= 0.95*quality/dilation
+
+    # flattened_y = np.negative(flattened_y) + quality
+
+    # flattened_x = np.add(flattened_x, (quality - flattened_x.max()) / 2)
+    # flattened_y = np.subtract(flattened_y, flattened_y.min()/2)
+
+    # flattened_x, flattened_y = flattened_x.tolist(), flattened_y.tolist()
 
     with open("./modified_coords.pickle", "wb") as f:
         pickle.dump(blocks, f)
 
     colors = []
-    for i in range(len(communities)):
-        # Ensure colors don't come too close to black or white
-        if color == "community_partisanship":
-            percent_dem = communities[i].percent_dem
-            percent_rep = communities[i].percent_rep
-            if percent_dem:
+    if color == "block_partisanship":
+        for block in block_list:
+            percent_dem = block.percent_dem
+            percent_rep = block.percent_rep
+            if block.pop != 0:
                 colors.append((round(percent_rep*255),0,round(percent_dem*255)))
             else:
                 colors.append((128,128,128))
-        elif color  == "random":
-            colors.append((randint(5,250),randint(5,250),randint(5,250)))
+    elif color in ["community_partisanship", "random"]:
+        for i in range(len(communities)):
+            # Ensure colors don't come too close to black or white
+            if color == "community_partisanship":
+                percent_dem = communities[i].percent_dem
+                percent_rep = communities[i].percent_rep
+                if percent_dem:
+                    colors.append((round(percent_rep*255),0,round(percent_dem*255)))
+                else:
+                    colors.append((128,128,128))
+            elif color  == "random":
+                colors.append((randint(5,250),randint(5,250),randint(5,250)))
 
-    block_tracker = 0
-    blocks = []
-    block_holder = []
-    coord_num = len(flattened_x)
-    for i in range(len(flattened_x)):
-        if flatten_to_block_indexes[i] == block_tracker:
-            block_holder.append([flattened_x[i], flattened_y[i]])
-        else:
-            blocks.append(block_holder)
-            block_holder = [[flattened_x[i], flattened_y[i]]]
-            block_tracker += 1
-        print(f"\rCoords Unflattened: {i}/{coord_num}, {round(100*i/coord_num, 1)}%", end="")
-        sys.stdout.flush()
-    print("\n", end="")
+    # block_tracker = 0
+    # blocks = []
+    # block_holder = []
+    # coord_num = len(flattened_x)
+    # for i in range(len(flattened_x)):
+    #     if flatten_to_block_indexes[i] == block_tracker:
+    #         block_holder.append([flattened_x[i], flattened_y[i]])
+    #     else:
+    #         blocks.append(block_holder)
+    #         block_holder = [[flattened_x[i], flattened_y[i]]]
+    #         block_tracker += 1
+    #     print(f"\rCoords Unflattened: {i}/{coord_num}, {round(100*i/coord_num, 1)}%", end="")
+    #     sys.stdout.flush()
+    # print("\n", end="")
 
-    for i, block in enumerate(blocks):
+    # for i, block in enumerate(blocks):
+    for i, block in enumerate(modified_coords):
         # for polygon in modified_coords[i]:
         #     print(polygon)
-        draw.polygon([tuple(point) for point in block], fill=colors[block_list[i].community-1], outline=(0, 0, 0))
+        if color == "block_partisanship":
+            draw.polygon([tuple(point) for point in block], fill=colors[i], outline=(0, 0, 0))
+        else:
+            draw.polygon([tuple(point) for point in block], fill=colors[block_list[i].community], outline=(0, 0, 0))
             # _draw_polygon(draw, polygon, colors[i])
 
-    image.save(output_path)
+    last_slash =output_path.rfind("/")
+    modified_output_path = output_path[:last_slash+1] + state_name + "_" + output_path[last_slash+1:]
+    image.save(modified_output_path)
     image.show()
 
 if __name__ == '__main__':
-    with open("../community_list.pickle", "rb") as f:
+    with open(sys.argv[1], "rb") as f:
         community_list = pickle.load(f)
 
-    color = sys.argv[1]
-    if color not in ["random", "community_partisanship"]:
-        raise Exception("Color argument needs to be 'random' or 'community_partisanship'!")
-    visualize_map(community_list, "../community_visualization.jpg", color=color)
+    color = sys.argv[2]
+    if color not in ["random", "community_partisanship", "block_partisanship"]:
+        raise Exception("Color argument needs to be 'random', 'block_partisanship', or 'community_partisanship'!")
+    try:
+        quality = sys.argv[3]
+    except:
+        visualize_map(community_list, "new_docs/images/" + color + "_community_visualization.jpg", color=color)
+    else:
+        visualize_map(community_list, "new_docs/images/" + color + "_community_visualization.jpg", color=color, quality=quality)
+

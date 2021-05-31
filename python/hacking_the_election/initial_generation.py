@@ -10,7 +10,7 @@ import sys
 import json
 import pickle
 from random import choice
-
+import time
 import networkx as nx
 # from shapely.geometry import Polygon
 
@@ -71,6 +71,7 @@ def random_generation(path, state):
     """
     block_graph = _deserialize(path)
     print("Block graph deserialized. ")
+    t = time.time()
     block_dict = nx.get_node_attributes(block_graph, 'block')
     # print(block_dict)
     indexes = {i:block_dict[i] for i in range(len(block_dict))}
@@ -126,6 +127,7 @@ def random_generation(path, state):
     for community in community_list:
         community.find_neighbors_and_border(ids_to_blocks)
 
+    start_merge_time = time.time()
     # Remove small communities
     id_to_community = {community.id:community for community in community_list}
     to_remove = [community for community in community_list if community.pop < 5000]
@@ -136,6 +138,8 @@ def random_generation(path, state):
         sys.stdout.flush()
         community_list.remove(community)
     print("\n", end="")
+    end_merge_time = time.time()-start_merge_time
+    print(f"Time needed for merging: {end_merge_time}, an average of {end_merge_time/len(to_remove)} seconds per merge")
 
     # Calcualate borders and neighbors for all communities
     ids_to_blocks = {block.id: block for block in block_dict.values()}
@@ -146,6 +150,7 @@ def random_generation(path, state):
         for block in community.blocks:
             block.community = i
     print(f"Final number of communities: {len(community_list)}")
+    print(f"Time required, excluding deserialization: {time.time()-t} seconds")
     return community_list
 
 if __name__ == "__main__":
@@ -155,4 +160,4 @@ if __name__ == "__main__":
     with open(sys.argv[2] + "_community_list.pickle", "wb") as f:
         pickle.dump(community_list, f)
     
-    visualize_map(community_list, "./community_visualization.jpg")
+    visualize_map(community_list, "new_docs/images/community_visualization.jpg")

@@ -300,11 +300,11 @@ def create_json(block_list):
 
 def create_graph(state_name, check_point="beginning"):
 
-    SOURCE_DIR = "../../.." + "/hte-data-new/raw/" + state_name
+    SOURCE_DIR = "../.." + "/hte-data-new/raw/" + state_name
     if state_name == "california":
         # Do special stuff for california
         pass
-
+    print(SOURCE_DIR)
     if check_point == "beginning":
         # Load files in to function, and decompress them if necessary
         files = listdir(f"{SOURCE_DIR}")
@@ -677,15 +677,14 @@ def create_graph(state_name, check_point="beginning"):
     return block_graph
 
 if __name__ == "__main__":
-    try:
+    if sys.argv[2]:
         mode = sys.argv[2]
-    except:
-        block_graph = create_graph(sys.argv[1])
-    else:
         if mode not in ["beginning", "block_matching", "block_vote_assignment"]:
             raise Exception("The checkpoint should be one of 'beginning, block_matching, or block_vote_assignment'.")
         else:
             block_graph = create_graph(sys.argv[1], mode)
+    else:
+        block_graph = create_graph(sys.argv[1])
     print("Serialization Completed. The following time is used for visualizing the graph, which is not essential.")
     # with open(sys.argv[2], "wb+") as f:
     #     pickle.dump(block_graph, f)

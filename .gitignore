@@ -11,6 +11,10 @@ test*.png
 test*.sh
 hacking_the_election.egg-info
 test.py
+vermont*.pickle
+north_carolina*.pickle
+vermont*.json
+north_carolina*.json
 
 # cython
 python/**/*.c
