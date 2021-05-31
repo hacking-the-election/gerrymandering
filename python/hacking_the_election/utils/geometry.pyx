@@ -4,7 +4,6 @@ Various useful geometric functions.
 
 import math
 
-import miniball
 from shapely.geometry import (
     LinearRing,
     MultiPolygon,
@@ -33,13 +32,20 @@ def geojson_to_shapely(geojson, int_coords=False):
     :rtype: `shapely.geometry.Polygon` or `shapely.geometry.MultiPolygon`
     """
     # If linear ring
-    if isinstance(geojson[0][0], float):
+    if type(geojson[0][0]) in [float, int]:
         if int_coords:
             point_list = [(_float_to_int(point[0]), _float_to_int(point[1])) for point in geojson]
         else:
             point_list = [tuple(point) for point in geojson]
 
         return LinearRing(point_list)
+    elif type(geojson[0][0][0]) in [float, int]:
+        # Polygon.
+        if int_coords:
+            polygon_list = [geojson_to_shapely(ring, int_coords=True) for ring in geojson]
+        else:
+            polygon_list = [geojson_to_shapely(ring) for ring in geojson]
+        return Polygon(polygon_list[0], polygon_list[1:])
     elif isinstance(geojson[0][0][0], list):
         # Multipolygon.
         if int_coords:
@@ -47,13 +53,6 @@ def geojson_to_shapely(geojson, int_coords=False):
         else:
             polygons = [geojson_to_shapely(polygon) for polygon in geojson]
         return MultiPolygon(polygons)
-    elif isinstance(geojson[0][0][0], float):
-        # Polygon.
-        if int_coords:
-            polygon_list = [geojson_to_shapely(ring, int_coords=True) for ring in geojson]
-        else:
-            polygon_list = [geojson_to_shapely(ring) for ring in geojson]
-        return Polygon(polygon_list[0], polygon_list[1:])
     else:
         raise ValueError("invalid geojson")
 
@@ -194,6 +193,7 @@ def get_compactness(district):
     P = [(p[0] - minx, p[1] - miny) for p in P]
 
     # Get minimum bounding circle of district.
+    raise Exception("outdated! reock compactness function is no longer in use.")
     mb = miniball.Miniball(P)
     cdef float squared_radius = mb.squared_radius()
     cdef float circle_area = math.pi * squared_radius

@@ -1,8 +1,9 @@
 """
 Script for serializing block-level election, geo, and population data.
 Data is serialized into ".pickle" file containing graph with nodes containing Precinct objects
-Usage:
-python3 -m hacking_the_election.new_serialize [state_name] [output_dir]
+
+Usage (from the python directory):
+python3 -m hacking_the_election.new_serialize [state_name] [check_point]
 """
 import sys
 import json
@@ -297,219 +298,237 @@ def create_json(block_list):
     print("\n", end='')
     return json_string
 
-def create_graph(state_name):
+def create_graph(state_name, check_point="beginning"):
 
     SOURCE_DIR = "../../.." + "/hte-data-new/raw/" + state_name
     if state_name == "california":
         # Do special stuff for california
         pass
 
-    # Load files in to function, and decompress them if necessary
-    files = listdir(f"{SOURCE_DIR}")
+    if check_point == "beginning":
+        # Load files in to function, and decompress them if necessary
+        files = listdir(f"{SOURCE_DIR}")
 
-    if not "block_geodata.json" in files:
-        subprocess.run(["7za", "e", f"{SOURCE_DIR}/block_geodata.7z", f"-o{SOURCE_DIR}"])
-    with open(f"{SOURCE_DIR}/block_geodata.json", "r") as f:
-        block_geodata = json.load(f)
+        if not "block_geodata.json" in files:
+            subprocess.run(["7za", "e", f"{SOURCE_DIR}/block_geodata.7z", f"-o{SOURCE_DIR}"])
+        with open(f"{SOURCE_DIR}/block_geodata.json", "r") as f:
+            block_geodata = json.load(f)
 
-    if not "geodata.json" in files:
-        subprocess.run(["7za", "e", f"{SOURCE_DIR}/geodata.7z", f"-o{SOURCE_DIR}"])
-    with open(f"{SOURCE_DIR}/geodata.json", "r") as f:
-        geodata = json.load(f)
+        if not "geodata.json" in files:
+            subprocess.run(["7za", "e", f"{SOURCE_DIR}/geodata.7z", f"-o{SOURCE_DIR}"])
+        with open(f"{SOURCE_DIR}/geodata.json", "r") as f:
+            geodata = json.load(f)
 
-    if not "block_demographics.csv" in files:
-        subprocess.run(["7za", "e", f"{SOURCE_DIR}/block_demographics.7z",f"-o{SOURCE_DIR}"])
-    with open(f"{SOURCE_DIR}/block_demographics.csv", "r") as f:
-        block_demographics = pandas.read_csv(f, header=1)
+        if not "block_demographics.csv" in files:
+            subprocess.run(["7za", "e", f"{SOURCE_DIR}/block_demographics.7z",f"-o{SOURCE_DIR}"])
+        with open(f"{SOURCE_DIR}/block_demographics.csv", "r") as f:
+            block_demographics = pandas.read_csv(f, header=1)
 
-    with open(f"{SOURCE_DIR}/demographics.csv", "r") as f:
-        demographics = pandas.read_csv(f)
+        with open(f"{SOURCE_DIR}/demographics.csv", "r") as f:
+            demographics = pandas.read_csv(f)
 
-    with open(f"{SOURCE_DIR}/election_data.csv", "r") as f:
-        election_data = pandas.read_csv(f)
+        with open(f"{SOURCE_DIR}/election_data.csv", "r") as f:
+            election_data = pandas.read_csv(f)
 
-    precinct_coordinates = {precinct["properties"]["GEOID10"] :
-        precinct["geometry"]["coordinates"] 
-        for precinct in geodata["features"]
-    }
-    block_coordinates = {block["properties"]["GEOID10"] :
-        block["geometry"]["coordinates"] 
-        for block in block_geodata["features"]
-    }
+        precinct_coordinates = {precinct["properties"]["GEOID10"] :
+            precinct["geometry"]["coordinates"] 
+            for precinct in geodata["features"]
+        }
+        block_coordinates = {block["properties"]["GEOID10"] :
+            block["geometry"]["coordinates"] 
+            for block in block_geodata["features"]
+        }
 
-    precinct_list = []
+        precinct_list = []
 
-    # Precinct/census group ids, pandas Series
-    precinct_ids = election_data["GEOID10"] 
+        # Precinct/census group ids, pandas Series
+        precinct_ids = election_data["GEOID10"] 
 
 
-    precincts_num = len(precinct_ids)
-    precincts_created = 0
-    for geo_id in precinct_ids:
-        rep_votes = election_data[election_data["GEOID10"] == geo_id]["Rep_2008_pres"]
-        # if rep_votes.size == 2:
-        rep_votes = rep_votes.max()
-        dem_votes = election_data[election_data["GEOID10"] == geo_id]["Dem_2008_pres"]
-        dem_votes = dem_votes.max()
+        precincts_num = len(precinct_ids)
+        precincts_created = 0
+        for geo_id in precinct_ids:
+            rep_votes = election_data[election_data["GEOID10"] == geo_id]["Rep_2008_pres"]
+            # if rep_votes.size == 2:
+            rep_votes = rep_votes.max()
+            dem_votes = election_data[election_data["GEOID10"] == geo_id]["Dem_2008_pres"]
+            dem_votes = dem_votes.max()
 
-        total_votes = election_data[election_data["GEOID10"] == geo_id]["Tot_2008_pres"]
-        total_votes = total_votes.max()
-        if total_votes < rep_votes + dem_votes:
-            print("BIG BIG BIG BIG PROBLEM!!!")
-        # In addition to total population, racial data needs to be added as well
-        total_pop = demographics[demographics["GEOID10"] == geo_id]["Tot_2010_tot"].item()
+            total_votes = election_data[election_data["GEOID10"] == geo_id]["Tot_2008_pres"]
+            total_votes = total_votes.max()
+            if total_votes < rep_votes + dem_votes:
+                print("BIG BIG BIG BIG PROBLEM!!!")
+            # In addition to total population, racial data needs to be added as well
+            total_pop = demographics[demographics["GEOID10"] == geo_id]["Tot_2010_tot"].item()
 
-        coordinate_data = geojson_to_shapely(precinct_coordinates[geo_id])
+            coordinate_data = geojson_to_shapely(precinct_coordinates[geo_id])
 
-        precinct = Precinct(total_pop, coordinate_data, state_name, geo_id, total_votes, rep_votes, dem_votes)
-        precinct_list.append(precinct)
-        precincts_created += 1
-        print(f"\rPrecincts Created: {precincts_created}/{precincts_num}, {round(100*precincts_created/precincts_num, 1)}%", end="")
-        sys.stdout.flush()
-    print("\n", end="")
-    block_ids = block_demographics["id"]
-    block_num = len(block_ids)
-    block_list = []
-    county_to_blocks = {}
-    blocks_created = 0
-    previous_county = None
-    for geo_id in block_ids:
+            precinct = Precinct(total_pop, coordinate_data, state_name, geo_id, total_votes, rep_votes, dem_votes)
+            precinct_list.append(precinct)
+            precincts_created += 1
+            print(f"\rPrecincts Created: {precincts_created}/{precincts_num}, {round(100*precincts_created/precincts_num, 1)}%", end="")
+            sys.stdout.flush()
+        print("\n", end="")
+        block_ids = block_demographics["id"]
+        block_num = len(block_ids)
+        block_list = []
+        county_to_blocks = {}
+        blocks_created = 0
+        previous_county = None
+        for geo_id in block_ids:
 
-        row = block_demographics[block_demographics["id"] == geo_id]
+            row = block_demographics[block_demographics["id"] == geo_id]
 
-        total_pop = row["Total"].item()
-        geo_id_beginning = geo_id.find("US")+2
-        coordinate_data  = geojson_to_shapely(block_coordinates[geo_id[geo_id_beginning:]])
-        racial_data = {}
+            total_pop = row["Total"].item()
+            geo_id_beginning = geo_id.find("US")+2
+            coordinate_data  = geojson_to_shapely(block_coordinates[geo_id[geo_id_beginning:]])
+            racial_data = {}
 
-        racial_data["hispanic"] = row["Total!!Hispanic or Latino"].item()
+            racial_data["hispanic"] = row["Total!!Hispanic or Latino"].item()
 
-        racial_data["white"] = row["Total!!Not Hispanic or Latino!!Population of one race!!White alone"].item()
-        racial_data["black"] = row["Total!!Not Hispanic or Latino!!Population of one race!!Black or African American alone"].item()
-        racial_data["aian"] = row["Total!!Not Hispanic or Latino!!Population of one race!!American Indian and Alaska Native alone"].item()
-        racial_data["asian"] = row["Total!!Not Hispanic or Latino!!Population of one race!!Asian alone"].item()
-        racial_data["nhpi"] = row["Total!!Not Hispanic or Latino!!Population of one race!!Native Hawaiian and Other Pacific Islander alone"].item()
-        racial_data["other"] = row["Total!!Not Hispanic or Latino!!Population of one race!!Some Other Race alone"].item()
-        
-        racial_data["white:black"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of two races!!White; Black or African American"].item()
-        racial_data["white:aian"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of two races!!White; American Indian and Alaska Native"].item()
-        racial_data["white:asian"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of two races!!White; Asian"].item()
-        racial_data["white:nhpi"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of two races!!White; Native Hawaiian and Other Pacific Islander"].item()
-        racial_data["white:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of two races!!White; Some Other Race"].item()
-        racial_data["black:aian"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of two races!!Black or African American; American Indian and Alaska Native"].item()
-        racial_data["black:asian"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of two races!!Black or African American; Asian"].item()
-        racial_data["black:nhpi"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of two races!!Black or African American; Native Hawaiian and Other Pacific Islander"].item()
-        racial_data["black:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of two races!!Black or African American; Some Other Race"].item()
-        racial_data["aian:asian"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of two races!!American Indian and Alaska Native; Asian"].item() 
-        racial_data["aian:nhpi"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of two races!!American Indian and Alaska Native; Native Hawaiian and Other Pacific Islander"].item() 
-        racial_data["aian:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of two races!!American Indian and Alaska Native; Some Other Race"].item() 
-        racial_data["asian:nhpi"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of two races!!Asian; Native Hawaiian and Other Pacific Islander"].item() 
-        racial_data["asian:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of two races!!Asian; Some Other Race"].item() 
-        racial_data["nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of two races!!Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
-        
-        racial_data["white:black:aian"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!White; Black or African American; American Indian and Alaska Native"].item() 
-        racial_data["white:black:asian"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!White; Black or African American; Asian"].item() 
-        racial_data["white:black:nhpi"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!White; Black or African American; Native Hawaiian and Other Pacific Islander"].item() 
-        racial_data["white:black:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!White; Black or African American; Some Other Race"].item() 
-        racial_data["white:aian:asian"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!White; American Indian and Alaska Native; Asian"].item() 
-        racial_data["white:aian:nhpi"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!White; American Indian and Alaska Native; Native Hawaiian and Other Pacific Islander"].item() 
-        racial_data["white:aian:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!White; American Indian and Alaska Native; Some Other Race"].item() 
-        racial_data["white:asian:nhpi"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!White; Asian; Native Hawaiian and Other Pacific Islander"].item() 
-        racial_data["white:asian:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!White; Asian; Some Other Race"].item() 
-        racial_data["white:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!White; Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
-        racial_data["black:aian:asian"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!Black or African American; American Indian and Alaska Native; Asian"].item() 
-        racial_data["black:aian:nhpi"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!Black or African American; American Indian and Alaska Native; Native Hawaiian and Other Pacific Islander"].item() 
-        racial_data["black:aian:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!Black or African American; American Indian and Alaska Native; Some Other Race"].item() 
-        racial_data["black:asian:nhpi"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!Black or African American; Asian; Native Hawaiian and Other Pacific Islander"].item() 
-        racial_data["black:asian:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!Black or African American; Asian; Some Other Race"].item() 
-        racial_data["black:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!Black or African American; Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
-        racial_data["aian:asian:nhpi"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!American Indian and Alaska Native; Asian; Native Hawaiian and Other Pacific Islander"].item() 
-        racial_data["aian:asian:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!American Indian and Alaska Native; Asian; Some Other Race"].item() 
-        racial_data["aian:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!American Indian and Alaska Native; Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
-        racial_data["asian:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!Asian; Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
-        
-        racial_data["white:black:aian:asian"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of four races!!White; Black or African American; American Indian and Alaska Native; Asian"].item() 
-        racial_data["white:black:aian:nhpi"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of four races!!White; Black or African American; American Indian and Alaska Native; Native Hawaiian and Other Pacific Islander"].item() 
-        racial_data["white:black:aian:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of four races!!White; Black or African American; American Indian and Alaska Native; Some Other Race"].item() 
-        racial_data["white:black:asian:nhpi"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of four races!!White; Black or African American; Asian; Native Hawaiian and Other Pacific Islander"].item() 
-        racial_data["white:black:asian:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of four races!!White; Black or African American; Asian; Some Other Race"].item() 
-        racial_data["white:black:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of four races!!White; Black or African American; Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
-        racial_data["white:aian:asian:nhpi"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of four races!!White; American Indian and Alaska Native; Asian; Native Hawaiian and Other Pacific Islander"].item() 
-        racial_data["white:aian:asian:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of four races!!White; American Indian and Alaska Native; Asian; Some Other Race"].item() 
-        racial_data["white:aian:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of four races!!White; American Indian and Alaska Native; Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
-        racial_data["white:asian:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of four races!!White; Asian; Native Hawaiian and Other Pacific Islander, Some Other Race"].item() 
-        racial_data["black:aian:asian:nhpi"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of four races!!Black or African American; American Indian and Alaska Native; Asian; Native Hawaiian and Other Pacific Islander"].item() 
-        racial_data["black:aian:asian:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of four races!!Black or African American; American Indian and Alaska Native; Asian; Some Other Race"].item() 
-        racial_data["black:aian:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of four races!!Black or African American; American Indian and Alaska Native; Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
-        racial_data["black:asian:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of four races!!Black or African American; Asian; Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
-        racial_data["aian:asian:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of four races!!American Indian and Alaska Native; Asian; Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
-        
-        racial_data["white:black:aian:asian:nhpi"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of five races!!White; Black or African American; American Indian and Alaska Native; Asian; Native Hawaiian and Other Pacific Islander"].item() 
-        racial_data["white:black:aian:asian:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of five races!!White; Black or African American; American Indian and Alaska Native; Asian; Some Other Race"].item() 
-        racial_data["white:black:aian:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of five races!!White; Black or African American; American Indian and Alaska Native; Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
-        racial_data["white:black:asian:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of five races!!White; Black or African American; Asian; Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
-        racial_data["white:aian:asian:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of five races!!White; American Indian and Alaska Native; Asian; Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
-        racial_data["black:aian:asian:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of five races!!Black or African American; American Indian and Alaska Native; Asian; Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
+            racial_data["white"] = row["Total!!Not Hispanic or Latino!!Population of one race!!White alone"].item()
+            racial_data["black"] = row["Total!!Not Hispanic or Latino!!Population of one race!!Black or African American alone"].item()
+            racial_data["aian"] = row["Total!!Not Hispanic or Latino!!Population of one race!!American Indian and Alaska Native alone"].item()
+            racial_data["asian"] = row["Total!!Not Hispanic or Latino!!Population of one race!!Asian alone"].item()
+            racial_data["nhpi"] = row["Total!!Not Hispanic or Latino!!Population of one race!!Native Hawaiian and Other Pacific Islander alone"].item()
+            racial_data["other"] = row["Total!!Not Hispanic or Latino!!Population of one race!!Some Other Race alone"].item()
+            
+            racial_data["white:black"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of two races!!White; Black or African American"].item()
+            racial_data["white:aian"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of two races!!White; American Indian and Alaska Native"].item()
+            racial_data["white:asian"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of two races!!White; Asian"].item()
+            racial_data["white:nhpi"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of two races!!White; Native Hawaiian and Other Pacific Islander"].item()
+            racial_data["white:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of two races!!White; Some Other Race"].item()
+            racial_data["black:aian"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of two races!!Black or African American; American Indian and Alaska Native"].item()
+            racial_data["black:asian"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of two races!!Black or African American; Asian"].item()
+            racial_data["black:nhpi"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of two races!!Black or African American; Native Hawaiian and Other Pacific Islander"].item()
+            racial_data["black:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of two races!!Black or African American; Some Other Race"].item()
+            racial_data["aian:asian"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of two races!!American Indian and Alaska Native; Asian"].item() 
+            racial_data["aian:nhpi"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of two races!!American Indian and Alaska Native; Native Hawaiian and Other Pacific Islander"].item() 
+            racial_data["aian:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of two races!!American Indian and Alaska Native; Some Other Race"].item() 
+            racial_data["asian:nhpi"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of two races!!Asian; Native Hawaiian and Other Pacific Islander"].item() 
+            racial_data["asian:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of two races!!Asian; Some Other Race"].item() 
+            racial_data["nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of two races!!Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
+            
+            racial_data["white:black:aian"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!White; Black or African American; American Indian and Alaska Native"].item() 
+            racial_data["white:black:asian"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!White; Black or African American; Asian"].item() 
+            racial_data["white:black:nhpi"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!White; Black or African American; Native Hawaiian and Other Pacific Islander"].item() 
+            racial_data["white:black:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!White; Black or African American; Some Other Race"].item() 
+            racial_data["white:aian:asian"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!White; American Indian and Alaska Native; Asian"].item() 
+            racial_data["white:aian:nhpi"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!White; American Indian and Alaska Native; Native Hawaiian and Other Pacific Islander"].item() 
+            racial_data["white:aian:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!White; American Indian and Alaska Native; Some Other Race"].item() 
+            racial_data["white:asian:nhpi"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!White; Asian; Native Hawaiian and Other Pacific Islander"].item() 
+            racial_data["white:asian:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!White; Asian; Some Other Race"].item() 
+            racial_data["white:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!White; Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
+            racial_data["black:aian:asian"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!Black or African American; American Indian and Alaska Native; Asian"].item() 
+            racial_data["black:aian:nhpi"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!Black or African American; American Indian and Alaska Native; Native Hawaiian and Other Pacific Islander"].item() 
+            racial_data["black:aian:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!Black or African American; American Indian and Alaska Native; Some Other Race"].item() 
+            racial_data["black:asian:nhpi"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!Black or African American; Asian; Native Hawaiian and Other Pacific Islander"].item() 
+            racial_data["black:asian:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!Black or African American; Asian; Some Other Race"].item() 
+            racial_data["black:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!Black or African American; Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
+            racial_data["aian:asian:nhpi"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!American Indian and Alaska Native; Asian; Native Hawaiian and Other Pacific Islander"].item() 
+            racial_data["aian:asian:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!American Indian and Alaska Native; Asian; Some Other Race"].item() 
+            racial_data["aian:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!American Indian and Alaska Native; Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
+            racial_data["asian:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of three races!!Asian; Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
+            
+            racial_data["white:black:aian:asian"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of four races!!White; Black or African American; American Indian and Alaska Native; Asian"].item() 
+            racial_data["white:black:aian:nhpi"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of four races!!White; Black or African American; American Indian and Alaska Native; Native Hawaiian and Other Pacific Islander"].item() 
+            racial_data["white:black:aian:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of four races!!White; Black or African American; American Indian and Alaska Native; Some Other Race"].item() 
+            racial_data["white:black:asian:nhpi"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of four races!!White; Black or African American; Asian; Native Hawaiian and Other Pacific Islander"].item() 
+            racial_data["white:black:asian:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of four races!!White; Black or African American; Asian; Some Other Race"].item() 
+            racial_data["white:black:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of four races!!White; Black or African American; Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
+            racial_data["white:aian:asian:nhpi"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of four races!!White; American Indian and Alaska Native; Asian; Native Hawaiian and Other Pacific Islander"].item() 
+            racial_data["white:aian:asian:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of four races!!White; American Indian and Alaska Native; Asian; Some Other Race"].item() 
+            racial_data["white:aian:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of four races!!White; American Indian and Alaska Native; Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
+            racial_data["white:asian:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of four races!!White; Asian; Native Hawaiian and Other Pacific Islander, Some Other Race"].item() 
+            racial_data["black:aian:asian:nhpi"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of four races!!Black or African American; American Indian and Alaska Native; Asian; Native Hawaiian and Other Pacific Islander"].item() 
+            racial_data["black:aian:asian:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of four races!!Black or African American; American Indian and Alaska Native; Asian; Some Other Race"].item() 
+            racial_data["black:aian:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of four races!!Black or African American; American Indian and Alaska Native; Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
+            racial_data["black:asian:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of four races!!Black or African American; Asian; Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
+            racial_data["aian:asian:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of four races!!American Indian and Alaska Native; Asian; Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
+            
+            racial_data["white:black:aian:asian:nhpi"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of five races!!White; Black or African American; American Indian and Alaska Native; Asian; Native Hawaiian and Other Pacific Islander"].item() 
+            racial_data["white:black:aian:asian:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of five races!!White; Black or African American; American Indian and Alaska Native; Asian; Some Other Race"].item() 
+            racial_data["white:black:aian:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of five races!!White; Black or African American; American Indian and Alaska Native; Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
+            racial_data["white:black:asian:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of five races!!White; Black or African American; Asian; Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
+            racial_data["white:aian:asian:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of five races!!White; American Indian and Alaska Native; Asian; Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
+            racial_data["black:aian:asian:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of five races!!Black or African American; American Indian and Alaska Native; Asian; Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
 
-        racial_data["white:black:aian:asian:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of six races!!White; Black or African American; American Indian and Alaska Native; Asian; Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
-        
-        fractional_assignment(racial_data)
-        block = Block(total_pop, coordinate_data, state_name, geo_id, racial_data)
-        block_list.append(block)
-        if previous_county == None or previous_county != geo_id[geo_id_beginning:geo_id_beginning+5]:
-            county_to_blocks[geo_id[geo_id_beginning:geo_id_beginning+5]] = [block]
-        else:
-            county_to_blocks[geo_id[geo_id_beginning:geo_id_beginning+5]].append(block)
-        previous_county = geo_id[geo_id_beginning:geo_id_beginning+5]
-        # print(previous_county)
-        blocks_created += 1
-        print(f"\rBlocks Created: {blocks_created}/{block_num}, {round(100*blocks_created/block_num, 1)}%", end="")
-        sys.stdout.flush()
-    # # # with open("vermont_p.pickle", "wb") as f:
-    # # #     pickle.dump(precinct_list, f)
-    # # # with open("vermont_c.pickle", "wb") as f:
-    # # #     pickle.dump(county_to_blocks, f)
-    # # # with open("vermont_p.pickle", "rb") as f:
-    # # #     precinct_list = pickle.load(f)
-    # # # with open("vermont_c.pickle", "rb") as f:
-    # # #    county_to_blocks = pickle.load(f)
-
-    print("\n", end="")
-    seen_blocks = {}
-    # Stores the ids of blocks which are in a precinct {id : [id]}
-    precinct_to_blocks = {}
-    blocks_matched = 0
-    previous_precinct = None
-    for precinct in precinct_list:
-        possible_blocks = county_to_blocks[precinct.id[:5]]
-        accounted_population = 0
-        for block in possible_blocks:
-            # Temporarily necessary for vermont testing
-            # if block.id == "1000000US500239541002044":
-            #     continue
-            if accounted_population > precinct.pop:
-                break
-            if precinct.max_x < block.min_x or precinct.min_x > block.max_x or precinct.max_y < block.min_y or precinct.min_y > block.max_y:
-                continue
+            racial_data["white:black:aian:asian:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of six races!!White; Black or African American; American Indian and Alaska Native; Asian; Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
+            
+            fractional_assignment(racial_data)
+            block = Block(total_pop, coordinate_data, state_name, geo_id, racial_data)
+            block_list.append(block)
+            if previous_county == None or previous_county != geo_id[geo_id_beginning:geo_id_beginning+5]:
+                county_to_blocks[geo_id[geo_id_beginning:geo_id_beginning+5]] = [block]
             else:
-                if abs(precinct.coords.intersection(block.coords).area-block.coords.area)<0.5*block.coords.area:
-                    # print(block.id, precinct.id)
-                    if block.id in seen_blocks:
-                        print("ALARM BELLS: ", block.id, seen_blocks[block.id], precinct.id)
-                    # if precinct.coords.contains(block.coords.exterior.coords):
-                    # if precinct.coords.contains(block.coords.representative_point()):
-                    # print(previous_precinct, precinct.id)
-                    if previous_precinct == None or previous_precinct != precinct.id:
-                        precinct_to_blocks[precinct.id] = [block]
-                    else:
-                        precinct_to_blocks[precinct.id].append(block)
-                    previous_precinct = precinct.id
-                    accounted_population += block.pop
-                    blocks_matched += 1
-                    seen_blocks[block.id] = precinct.id
-        print(f"\rBlocks Matched: {blocks_matched}/{block_num}, {round(100*blocks_matched/block_num, 1)}%", end="")
-        sys.stdout.flush()
-    print("\n", end="")
+                county_to_blocks[geo_id[geo_id_beginning:geo_id_beginning+5]].append(block)
+            previous_county = geo_id[geo_id_beginning:geo_id_beginning+5]
+            # print(previous_county)
+            blocks_created += 1
+            print(f"\rBlocks Created: {blocks_created}/{block_num}, {round(100*blocks_created/block_num, 1)}%", end="")
+            sys.stdout.flush()
+        print("\n", end="")
+        with open(state_name + "_precinct_list.pickle", "wb") as f:
+            pickle.dump(precinct_list, f)
+        with open(state_name + "_county_to_block.pickle", "wb") as f:
+            pickle.dump(county_to_blocks, f)
+        with open(state_name + "_unsplit_block_list.pickle", "wb") as f:
+            pickle.dump(block_list, f)
+    else:
+        with open(state_name + "_precinct_list.pickle", "rb") as f:
+            precinct_list = pickle.load(f)
+        with open(state_name + "_county_to_block.pickle", "rb") as f:
+        county_to_blocks = pickle.load(f)
+        with open(state_name + "_unsplit_block_list.pickle", "rb") as f:
+        block_list = pickle.load(f)
+
+    if check_point != "block_vote_assignment":
+        block_num = len(block_list)
+        seen_blocks = {}
+        Stores the ids of blocks which are in a precinct {id : [id]}
+        precinct_to_blocks = {}
+        blocks_matched = 0
+        previous_precinct = None
+        for precinct in precinct_list:
+            possible_blocks = county_to_blocks[precinct.id[:5]]
+            accounted_population = 0
+            for block in possible_blocks:
+                # Temporarily necessary for vermont testing
+                # if block.id == "1000000US500239541002044":
+                #     continue
+                if accounted_population > precinct.pop:
+                    break
+                if precinct.max_x < block.min_x or precinct.min_x > block.max_x or precinct.max_y < block.min_y or precinct.min_y > block.max_y:
+                    continue
+                else:
+                    if abs(precinct.coords.intersection(block.coords).area-block.coords.area)<0.5*block.coords.area:
+                        # print(block.id, precinct.id)
+                        if block.id in seen_blocks:
+                            print("ALARM BELLS: ", block.id, seen_blocks[block.id], precinct.id)
+                        # if precinct.coords.contains(block.coords.exterior.coords):
+                        # if precinct.coords.contains(block.coords.representative_point()):
+                        # print(previous_precinct, precinct.id)
+                        if previous_precinct == None or previous_precinct != precinct.id:
+                            precinct_to_blocks[precinct.id] = [block]
+                        else:
+                            precinct_to_blocks[precinct.id].append(block)
+                        previous_precinct = precinct.id
+                        accounted_population += block.pop
+                        blocks_matched += 1
+                        seen_blocks[block.id] = precinct.id
+            print(f"\rBlocks Matched: {blocks_matched}/{block_num}, {round(100*blocks_matched/block_num, 1)}%", end="")
+            sys.stdout.flush()
+        print("\n", end="")
+        with open(state_name + "_precinct_to_block.pickle", "wb") as f:
+            pickle.dump(precinct_to_blocks, f)
+    else:
+        with open(state_name + "_precinct_to_block.pickle", "rb") as f:
+            precinct_to_blocks = pickle.load(f)
+
+    # When loading from pickles, references for precinct_to_blocks and block_list are seperate!
+    # This needs to be done so that the right blocks are updated with vote counts. 
+    ids_to_blocks = {block.id : block for block in block_list}
+
     for precinct in precinct_list:
         precinct_blocks = precinct_to_blocks[precinct.id]
         # print(precinct_blocks)
@@ -518,16 +537,16 @@ def create_graph(state_name):
             print("NEGATIVE BLOCK AREAS! BIG PROBLEM")
         elif block_pop_sum == 0:
             for block in precinct_blocks:
-                block.rep_votes = 0
-                block.dem_votes = 0
-                block.total_votes = 0
-                block.other_votes = 0
+                ids_to_blocks[block.id].rep_votes = 0
+                ids_to_blocks[block.id].dem_votes = 0
+                ids_to_blocks[block.id].total_votes = 0
+                ids_to_blocks[block.id].other_votes = 0
         else:
             for block in precinct_blocks:
                 try:
-                    block.rep_votes = precinct.rep_votes * block.pop/block_pop_sum
-                    block.dem_votes = precinct.dem_votes * block.pop/block_pop_sum
-                    block.total_votes = precinct.total_votes * block.pop/block_pop_sum
+                    ids_to_blocks[block.id].rep_votes = precinct.rep_votes * block.pop/block_pop_sum
+                    ids_to_blocks[block.id].dem_votes = precinct.dem_votes * block.pop/block_pop_sum
+                    ids_to_blocks[block.id].total_votes = precinct.total_votes * block.pop/block_pop_sum
                 except:
                     print([block.pop for block in precinct_blocks], precinct.id)
             # for block in block_list:
@@ -538,10 +557,12 @@ def create_graph(state_name):
     #     pickle.dump(block_list, f)
     # with open("vermont.pickle", "rb") as f:
     #     block_list = pickle.load(f)
-    
-    # for block in block_list:
-    #     if block.total_votes < block.rep_votes + block.dem_votes:
-    #         print("it happens before line 544")
+    del precinct_to_blocks
+    del precinct_list
+
+    for block in block_list:
+        if block.rep_votes == None:
+            print("it happens before line 544")
     # Split blocks which are not contiguous
     split_multipolygons(block_list)
     # for block in block_list:
@@ -555,12 +576,13 @@ def create_graph(state_name):
     block_y_sorted = block_list
     block_y_sorted.sort(key=lambda x : x.min_y)
 
-    possible_borders= []
     edges = []
     edges_created = 0
     if block_x_sorted[-1].max_x - block_x_sorted[0].min_x > block_y_sorted[-1].max_y - block_y_sorted[0].min_y:
+        del block_y_sorted
         active = [block_x_sorted[0]]
         for i, block in  enumerate(block_x_sorted):
+            possible_borders= []
             if i == 0:
                 continue
             active_blocks_to_remove = []
@@ -575,19 +597,21 @@ def create_graph(state_name):
             active.append(block)
             print(f"\rBlocks checked: {i}", end="")
             sys.stdout.flush()
-        print("\n", end="")
-        for pairing in possible_borders:
-            if pairing[0].max_y < pairing[1].min_y or pairing[1].max_y < pairing[0].min_y:
-                continue
-            # if abs(pairing[0].coords.intersection(pairing[1].coords).area - 0) < 0.05*min(pairing[0].coords.area, pairing[1].coords.area):
-            if pairing[0].coords.intersection(pairing[1].coords).area == 0:
-                edges.append(pairing)
-                edges_created += 1
-                print(f"\rEdges Created: {edges_created}", end="")
-                sys.stdout.flush()
+            print("\n", end="")
+            for pairing in possible_borders:
+                if pairing[0].max_y < pairing[1].min_y or pairing[1].max_y < pairing[0].min_y:
+                    continue
+                # if abs(pairing[0].coords.intersection(pairing[1].coords).area - 0) < 0.05*min(pairing[0].coords.area, pairing[1].coords.area):
+                if pairing[0].coords.intersection(pairing[1].coords).area == 0:
+                    edges.append(pairing)
+                    edges_created += 1
+                    print(f"\rEdges Created: {edges_created}", end="")
+                    sys.stdout.flush()
     else:
+        del block_x_sorted
         active = [block_y_sorted[0]]
         for i, block in  enumerate(block_y_sorted):
+            possible_borders = []
             if i == 0:
                 continue
             active_blocks_to_remove = []
@@ -602,22 +626,22 @@ def create_graph(state_name):
             active.append(block)
             print(f"\rBlocks Checked: {i}/{block_num}, {round(100*i/block_num, 1)}%", end="")
             sys.stdout.flush()
-        print("\n", end="")
-        for pairing in possible_borders:
-            if pairing[0].max_x < pairing[1].min_x or pairing[1].max_x < pairing[0].min_x:
-                continue
-            intersection = pairing[0].coords.intersection(pairing[1].coords)
-            if intersection.is_empty:
-                continue
-            # if abs(pairing[0].coords.intersection(pairing[1].coords).area - 0) < 0.05*min(pairing[0].coords.area, pairing[1].coords.area):
-            if intersection.area == 0:
-                ids = [pairing[0].id, pairing[1].id]
-                if "1000000US500070027013009" in ids and "1000000US500070027013025" in ids:
-                    print("wait this still shows up!")
-                edges.append(pairing)
-                edges_created += 1
-                print(f"\rEdges Created: {edges_created}", end="")
-                sys.stdout.flush()
+            print("\n", end="")
+            for pairing in possible_borders:
+                if pairing[0].max_x < pairing[1].min_x or pairing[1].max_x < pairing[0].min_x:
+                    continue
+                intersection = pairing[0].coords.intersection(pairing[1].coords)
+                if intersection.is_empty:
+                    continue
+                # if abs(pairing[0].coords.intersection(pairing[1].coords).area - 0) < 0.05*min(pairing[0].coords.area, pairing[1].coords.area):
+                if intersection.area == 0:
+                    ids = [pairing[0].id, pairing[1].id]
+                    if "1000000US500070027013009" in ids and "1000000US500070027013025" in ids:
+                        print("wait this still shows up!")
+                    edges.append(pairing)
+                    edges_created += 1
+                    print(f"\rEdges Created: {edges_created}", end="")
+                    sys.stdout.flush()
     # for block in block_list:
     #     if block.total_votes < block.rep_votes + block.dem_votes:
     #         print("it happens before line 612")
@@ -645,16 +669,24 @@ def create_graph(state_name):
     # with open("vermont_graph.pickle", "rb") as f:
     #     block_graph = pickle.load(f)
     connect_islands(block_graph)
-    with open("vermont_list.pickle", "wb") as f:
+    with open(state_name + "_block_list.pickle", "wb") as f:
         pickle.dump(block_list, f)
     json_string = create_json(block_list)
-    with open("serialized.json", "w") as f:
+    with open(state_name + "_serialized.json", "w") as f:
         f.write(json_string)
     return block_graph
 
 if __name__ == "__main__":
-    block_graph = create_graph(sys.argv[1])
-
+    try:
+        mode = sys.argv[2]
+    except:
+        block_graph = create_graph(sys.argv[1])
+    else:
+        if mode not in ["beginning", "block_matching", "block_vote_assignment"]:
+            raise Exception("The checkpoint should be one of 'beginning, block_matching, or block_vote_assignment'.")
+        else:
+            block_graph = create_graph(sys.argv[1], mode)
+    print("Serialization Completed. The following time is used for visualizing the graph, which is not essential.")
     # with open(sys.argv[2], "wb+") as f:
     #     pickle.dump(block_graph, f)
     # print(SOURCE_DIR)

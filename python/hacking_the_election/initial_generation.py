@@ -1,6 +1,9 @@
 """
 Contains various functions and algorithms to generate the initial configuration for the community creation algorithm
-Each function takes in a path to a .json or .pickle file and returns a list of Commmunity objects
+Each function takes in a path to a .json or .pickle file and returns a list of Commmunity objects.
+
+Usage (from the python directory):
+python3 -m hacking_the_election.initial_generation [path_to_serialized.json] [state_name]
 """
 
 import sys
@@ -146,8 +149,10 @@ def random_generation(path, state):
     return community_list
 
 if __name__ == "__main__":
-    community_list = random_generation("serialized.json", "vermont")
-    with open("community_list.pickle", "wb") as f:
+    if len(sys.argv) != 3:
+        raise Exception("Either there are too many or too few arguments. ")
+    community_list = random_generation(sys.argv[1], sys.argv[2])
+    with open(sys.argv[2] + "_community_list.pickle", "wb") as f:
         pickle.dump(community_list, f)
     
     visualize_map(community_list, "./community_visualization.jpg")

@@ -10,7 +10,7 @@ if sys.argv[1:3] == ['build_ext', '--inplace']:
 
     setup(
         ext_modules=cythonize('hacking_the_election/utils/*.pyx'),
-        include_dirs=[np.get_include]
+        include_dirs=[np.get_include()]
     )
 
 else:
