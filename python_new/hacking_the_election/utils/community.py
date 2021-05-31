@@ -3,6 +3,7 @@ Contains a class which represents a political community, as well as functions to
 """
 from math import log
 from shapely.ops import unary_union
+import networkx as nx
 
 from hacking_the_election.utils.geometry import geojson_to_shapely
 
@@ -40,11 +41,17 @@ class Community:
         self.id = id
         # list of Block objects
         self.blocks = blocks
+        # Contains a graph of nodes and edges, used for calculating 
+        self.graph = nx.Graph()
+        # Set of nodes which represent articulation points
+        self.articulation_points = None
+        # dictionary with keys being blocks and values being lists of ids of communities which the block can be given to
+        self.giveable_blocks = {}
         # shapely.geometry.Polygon or MultiPolygon
         self.coords = unary_union([block.coords for block in self.blocks])
         self.centroid = list(self.coords.centroid.coords[0])
         # Dictionary, keys being integers, values being Block objects
-        self.block_ids = [block.id for block in self.blocks]
+        self.block_ids = {block.id : block for block in self.blocks}
 
         # Aggregates stats for the community
         self.pop = sum([block.pop for block in self.blocks])
@@ -94,6 +101,9 @@ class Community:
 
         # Contains list of blocks, subset of self.blocks, which represent blocks at the border of this community
         self.border = None
+        # Contains a list of lists, with each list enclosing two block ids, repreesenting
+        # one edge between a block in the community and one not in the community
+        self.border_edges = None
         # list of integers, representing the ids of the neighboring communities
         self.neighbors = None
 
@@ -103,20 +113,45 @@ class Community:
         # If we choose to use density
         # self.density_similarity = None
 
-    def find_neighbors_and_border(self, id_to_block):
+    def find_neighbors_and_border(self):
         """
         Finds the communities which border this community, and finds the blocks of this community which are on the border of other communities
         """
         border = []
+        border_edges = []
         neighbors = []
         for block in self.blocks:
             for neighbor in block.neighbors:
-                if id_to_block[neighbor].community != self.id:
+                neighboring_community = self.block_ids[neighbor].community
+                if neighboring_community != self.id:
                     border.append(block)
-                    if id_to_block[neighbor].community not in neighbors:
-                        neighbors.append(id_to_block[neighbor].community)
+                    giveable = False
+                    if block.id not in self.articulation_points:
+                        self.giveable_blocks[block] = []
+                        giveable = True
+                    border_edges.append([block.id, neighbor])
+                    if neighboring_community not in neighbors:
+                        neighbors.append(neighboring_community)
+                        if giveable == True:
+                            self.giveable_blocks[block].append(neighbor_community)
+
         self.border = border
         self.neighbors = neighbors
+        self.giveable_blocks = giveable_blocks
+        self.border_edges = border_edges
+    
+    def initialize_graph(self):
+        """
+        Creates the induced subgraph of this community, necessary for calculating the
+        articulation points of this community. 
+        """
+        for block in block_list:
+            self.graph.add_node(block.id, block=block)
+        for block in block_list:
+            for neighbor in block.neighbors:
+                if id_to_block[neighbor].community == self.id:
+                    self.graph.add_edge(block.id, neighbor.id)
+        self.articulation_points = set(nx.articulation_points(self.graph))
     
     def merge_community(self, community):
         """
@@ -124,7 +159,7 @@ class Community:
         """
         self.blocks.extend(community.blocks)
         # self.coords = self.coords.union(community.coords)
-        self.block_ids.extend(community.block_ids)
+        self.block_ids = {**self.block_ids, **community.block_ids}
         for block in community.blocks:
             block.community = self.id
         attributes_to_update = ["pop", "total_votes", "dem_votes", "rep_votes", "other_votes", "white", "black", "hispanic", "aapi", "aian", "other"]
@@ -158,6 +193,14 @@ class Community:
 
             self.percent_minority = 1 - self.percent_white
         
+        self.graph = nx.Graph()
+        initialize_graph()
+
+        self.find_neighbors_and_border()
+        for community in community.neighbors:
+            # Since some neighbors may not exist anymore
+            community.find_neighbors_and_border()
+        
 
     def calculate_race_similarity(self):
         """
@@ -178,7 +221,6 @@ class Community:
 
             race_distributions.append(race_distribution)
         race_similarity = jensen_shannon(race_distributions)
-        self.race_similarity = race_similarity
         return race_similarity
     
     def calculate_political_similarity(self):
@@ -196,5 +238,10 @@ class Community:
 
             political_distributions.append(political_distribution)
         political_similarity = jensen_shannon(political_distributions)
-        self.partisanship_similarity = political_similarity
         return political_similarity
+
+    def calculate_graphical_compactness(self):
+        border_edges_num = 0
+        for id_array in self.border_edges:
+            border_edges_num += len(id_array)
+        return border_edges_num/len(block_list)

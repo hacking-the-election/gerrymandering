@@ -83,6 +83,8 @@ def random_generation(path, state):
             print(index)
     community_list = []
     community_id = 0
+    block_num = len(block_dict)
+    blocks_used = 0
     while len(block_dict) > 0:
         community_id += 1
         try:
@@ -117,15 +119,16 @@ def random_generation(path, state):
         created_community = Community(state, community_id, blocks)
         for block in blocks:
             block.community = community_id
+        blocks_used += len(blocks)
         community_list.append(created_community)
-        print(f"\rCommunities created: {community_id}", end="")
+        print(f"\rCommunities created: {community_id}, {round(100*blocks_used/block_num, 1)}%", end="")
         sys.stdout.flush()
     print("\n", end="")
     # print(block_dict)
     # Calcualate borders and neighbors for all communities
-    ids_to_blocks = {block.id: block for block in block_dict.values()}
+    # ids_to_blocks = {block.id: block for block in block_dict.values()}
     for community in community_list:
-        community.find_neighbors_and_border(ids_to_blocks)
+        community.find_neighbors_and_border()
 
     start_merge_time = time.time()
     # Remove small communities
@@ -141,14 +144,12 @@ def random_generation(path, state):
     end_merge_time = time.time()-start_merge_time
     print(f"Time needed for merging: {end_merge_time}, an average of {end_merge_time/len(to_remove)} seconds per merge")
 
-    # Calcualate borders and neighbors for all communities
-    ids_to_blocks = {block.id: block for block in block_dict.values()}
+    # Renumber communities
     for i, community in enumerate(community_list):
-        community.find_neighbors_and_border(ids_to_blocks)
-        # Renumber communities
         community.id = i
         for block in community.blocks:
             block.community = i
+
     print(f"Final number of communities: {len(community_list)}")
     print(f"Time required, excluding deserialization: {time.time()-t} seconds")
     return community_list

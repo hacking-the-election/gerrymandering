@@ -3,7 +3,7 @@ Contains functions for visualizing communities.
 
 Usage (in python directory):
 
-python3 -m hacking_the_election.visualization.visualization [path_to_community_list.pickle] [color]
+python3 -m hacking_the_election.visualization.community_visualization [path_to_community_list.pickle] [color]
 """
 
 from PIL import Image, ImageDraw
@@ -17,12 +17,13 @@ from shapely.geometry import Point, MultiPolygon, Polygon
 from hacking_the_election.utils.geometry import shapely_to_geojson
 from hacking_the_election.utils.visualization import get_community_colors, modify_coords
 
-def visualize_map(communities, output_path, quality=8192, color="random"):
+def visualize_map(communities, output_path, quality=8192, color="random", outline=True):
     """
     Visualizes map of communities.
     Takes in a list of communities, a path to output the picture to,
     and a quality which should be the resolution of the image. 
     """
+    print(outline)
     image = Image.new("RGB", (quality,quality), "white")
     draw = ImageDraw.Draw(image, "RGB")
 
@@ -149,9 +150,15 @@ def visualize_map(communities, output_path, quality=8192, color="random"):
         # for polygon in modified_coords[i]:
         #     print(polygon)
         if color == "block_partisanship":
-            draw.polygon([tuple(point) for point in block], fill=colors[i], outline=(0, 0, 0))
+            if outline:
+                draw.polygon([tuple(point) for point in block], fill=colors[i], outline=(0, 0, 0))
+            else:
+                draw.polygon([tuple(point) for point in block], fill=colors[i])
         else:
-            draw.polygon([tuple(point) for point in block], fill=colors[block_list[i].community], outline=(0, 0, 0))
+            if outline:
+                draw.polygon([tuple(point) for point in block], fill=colors[block_list[i].community], outline=(0, 0, 0))
+            else:
+                draw.polygon([tuple(point) for point in block], fill=colors[block_list[i].community])
             # _draw_polygon(draw, polygon, colors[i])
 
     last_slash =output_path.rfind("/")
@@ -171,5 +178,22 @@ if __name__ == '__main__':
     except:
         visualize_map(community_list, "docs/images/" + color + "_community_visualization.jpg", color=color)
     else:
-        visualize_map(community_list, "docs/images/" + color + "_community_visualization.jpg", color=color, quality=quality)
-
+        try:
+            _ = int(quality)
+        except:
+            outline = quality
+            if outline.lower() in ["true", "false"]:
+                print("ayooo???", outline)
+                visualize_map(community_list, "docs/images/" + color + "_community_visualization.jpg", color=color, outline=bool(outline))
+            else:
+                raise Exception("Outline argument must be 'true' or 'false'!")
+        else:
+            try:
+                outline = sys.argv[4]
+            except:
+                visualize_map(community_list, "docs/images/" + color + "_community_visualization.jpg", color=color, quality=quality)
+            else:
+                if outline.lower() in ["true", "false"]:
+                    visualize_map(community_list, "docs/images/" + color + "_community_visualization.jpg", color=color, quality=quality, outline=bool(outline))
+                else:
+                    raise Exception("Outline argument must be 'true' or 'false'!")

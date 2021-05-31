@@ -647,17 +647,15 @@ def create_graph(state_name, check_point="beginning"):
     #         print("it happens before line 612")
     print("\n", end="")
     block_graph = nx.Graph()
-    block_to_index = {}
     for i, block in enumerate(block_list):
-        block_to_index[block] = i
-        block_graph.add_node(i, block=block)
+        block_graph.add_node(block.id, block=block)
     # node_num = len(block_graph.nodes())
     # print(f"Number of blocks/nodes: {node_num}")
     print("Nodes added to graph")
 
     edges_num = len(edges)
     for edge in edges:
-        block_graph.add_edge(block_to_index[edge[0]], block_to_index[edge[1]])
+        block_graph.add_edge(edge[0].id, edge[1].id)
         edge[0].neighbors.append(edge[1].id)
         edge[1].neighbors.append(edge[0].id)
         print(f"\rEdges added to graph: {edges_created}/{edges_num}, {round(100*edges_created/edges_num, 1)}%", end="")
