@@ -41,7 +41,8 @@ class Community:
         # list of Block objects
         self.blocks = blocks
         # shapely.geometry.Polygon or MultiPolygon
-        # self.coords = unary_union([block.coords for block in self.blocks])
+        self.coords = unary_union([block.coords for block in self.blocks])
+        self.centroid = list(self.coords.centroid.coords[0])
         # Dictionary, keys being integers, values being Block objects
         self.block_ids = [block.id for block in self.blocks]
 
