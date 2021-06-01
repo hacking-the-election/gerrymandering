@@ -37,7 +37,7 @@ class Community:
     def __init__(self, state, id, blocks):
         # string, e.g. "vermont"
         self.state = state
-        # positive integer, at least 1
+        # nonnegative integer 
         self.id = id
         # list of Block objects
         self.blocks = blocks
@@ -48,8 +48,8 @@ class Community:
         # dictionary with keys being blocks and values being lists of ids of communities which the block can be given to
         self.giveable_blocks = {}
         # shapely.geometry.Polygon or MultiPolygon
-        self.coords = unary_union([block.coords for block in self.blocks])
-        self.centroid = list(self.coords.centroid.coords[0])
+        # self.coords = unary_union([block.coords for block in self.blocks])
+        # self.centroid = list(self.coords.centroid.coords[0])
         # Dictionary, keys being integers, values being Block objects
         self.block_ids = {block.id : block for block in self.blocks}
 
@@ -113,51 +113,58 @@ class Community:
         # If we choose to use density
         # self.density_similarity = None
 
-    def find_neighbors_and_border(self):
+    def find_neighbors_and_border(self, id_to_block):
         """
         Finds the communities which border this community, and finds the blocks of this community which are on the border of other communities
         """
         border = []
         border_edges = []
         neighbors = []
+        giveable_blocks = {}
         for block in self.blocks:
+            giveable_blocks[block] = []
             for neighbor in block.neighbors:
-                neighboring_community = self.block_ids[neighbor].community
+                neighboring_community = id_to_block[neighbor].community
                 if neighboring_community != self.id:
+
                     border.append(block)
-                    giveable = False
+
                     if block.id not in self.articulation_points:
-                        self.giveable_blocks[block] = []
-                        giveable = True
+                        giveable_blocks[block].append(neighboring_community)
+
                     border_edges.append([block.id, neighbor])
                     if neighboring_community not in neighbors:
                         neighbors.append(neighboring_community)
-                        if giveable == True:
-                            self.giveable_blocks[block].append(neighbor_community)
+                        # if giveable == True:
 
         self.border = border
         self.neighbors = neighbors
-        self.giveable_blocks = giveable_blocks
         self.border_edges = border_edges
-    
-    def initialize_graph(self):
+        self.giveable_blocks = giveable_blocks
+
+    def initialize_graph(self, id_to_block):
         """
         Creates the induced subgraph of this community, necessary for calculating the
         articulation points of this community. 
         """
-        for block in block_list:
+        for block in self.blocks:
             self.graph.add_node(block.id, block=block)
-        for block in block_list:
+        for block in self.blocks:
             for neighbor in block.neighbors:
                 if id_to_block[neighbor].community == self.id:
-                    self.graph.add_edge(block.id, neighbor.id)
+                    self.graph.add_edge(block.id, neighbor)
         self.articulation_points = set(nx.articulation_points(self.graph))
     
-    def merge_community(self, community):
+    def merge_community(self, community, id_to_block, id_to_community, for_real=True):
         """
         Merges another community into this one and updates attributes.
         """
+        original_blocks = self.blocks
         self.blocks.extend(community.blocks)
+        if not for_real:
+            score = self.calculate_score()
+            self.blocks = original_blocks
+            return score
         # self.coords = self.coords.union(community.coords)
         self.block_ids = {**self.block_ids, **community.block_ids}
         for block in community.blocks:
@@ -193,14 +200,115 @@ class Community:
 
             self.percent_minority = 1 - self.percent_white
         
-        self.graph = nx.Graph()
-        initialize_graph()
+        self.graph.update(community.graph)
+        for edge in self.border_edges:
+            if id_to_block[edge[1]] in self.blocks:
+                self.graph.add_edge(edge[0], edge[1])
+        self.articulation_points = set(nx.articulation_points(self.graph))
 
-        self.find_neighbors_and_border()
-        for community in community.neighbors:
+        self.find_neighbors_and_border(id_to_block)
+        for other_community in community.neighbors:
             # Since some neighbors may not exist anymore
-            community.find_neighbors_and_border()
-        
+            # id_to_community[community].find_neighbors_and_border(id_to_block)
+            other_community_neighbors = id_to_community[other_community].neighbors
+            print(other_community_neighbors, community.id)
+            other_community_neighbors.remove(community.id)
+            if self.id not in other_community_neighbors:
+                if other_community.id != self.id:
+                    id_to_community[other_community].neighbors.append(self.id)
+
+    def update_attributes(self, block, id_to_block, taking):
+        if taking:
+            # Taking a block
+            block_ids[block.id] = block
+            attributes_to_update = ["pop", "total_votes", "dem_votes", "rep_votes", "other_votes", "white", "black", "hispanic", "aapi", "aian", "other"]
+            for attribute in attributes_to_update:
+                exec("self." + attribute + " += block." + attribute)
+            if self.total_votes == 0:
+                self.percent_dem = None
+                self.percent_rep = None
+                self.percent_other = None
+            else:
+                self.percent_dem = self.dem_votes/self.total_votes
+                self.percent_rep = self.rep_votes/self.total_votes
+                self.percent_other = self.other_votes/self.total_votes
+            
+            if self.pop == 0:
+                self.percent_white = None
+                self.percent_black = None
+                self.percent_hispanic = None
+                self.percent_apai = None
+                self.percent_aian = None
+                self.percent_other = None
+
+                self.percent_minority = None
+            else: 
+                self.percent_white = self.white / self.pop
+                self.percent_black = self.black / self.pop
+                self.percent_hispanic = self.hispanic / self.pop
+                self.percent_aapi = self.aapi / self.pop
+                self.percent_aian = self.aian / self.pop
+                self.percent_other = self.other / self.pop
+
+                self.percent_minority = 1 - self.percent_white
+
+            self.graph.add_node(block.id, block=block)
+            for neighbor in block.neighbors:
+                if id_to_block[neighbor] in self.blocks:
+                    self.graph.add_edge(block.id, neighbor)
+            self.articulation_points = set(nx.articulation_points(self.graph))
+            # for neighbor in block.neighbors:
+            #     if id_to_block[neighbor].community == self.id:
+            #         # if id_to_block[neighbor] in self.border:
+            #         remove_from_border = True
+            #         for neighbor_neighbor in id_to_block[neighbor].neighbors:
+            #             if id_to_block[neighbor_neighbor].community != self.id:
+            #                 remove_from_border = False
+            #         if remove_from_border:
+            #             self.border.remove(id_to_block[neighbor])
+            self.find_neighbors_and_border()
+
+        else:
+            # Giving a block
+            block_ids[block.id] = block
+            attributes_to_update = ["pop", "total_votes", "dem_votes", "rep_votes", "other_votes", "white", "black", "hispanic", "aapi", "aian", "other"]
+            for attribute in attributes_to_update:
+                exec("self." + attribute + " -= block." + attribute)
+            if self.total_votes == 0:
+                self.percent_dem = None
+                self.percent_rep = None
+                self.percent_other = None
+            else:
+                self.percent_dem = self.dem_votes/self.total_votes
+                self.percent_rep = self.rep_votes/self.total_votes
+                self.percent_other = self.other_votes/self.total_votes
+            
+            if self.pop == 0:
+                self.percent_white = None
+                self.percent_black = None
+                self.percent_hispanic = None
+                self.percent_apai = None
+                self.percent_aian = None
+                self.percent_other = None
+
+                self.percent_minority = None
+            else: 
+                self.percent_white = self.white / self.pop
+                self.percent_black = self.black / self.pop
+                self.percent_hispanic = self.hispanic / self.pop
+                self.percent_aapi = self.aapi / self.pop
+                self.percent_aian = self.aian / self.pop
+                self.percent_other = self.other / self.pop
+
+                self.percent_minority = 1 - self.percent_white
+
+            self.graph.remove_node(block.id)
+            self.articulation_points = set(nx.articulation_points(self.graph))
+            for neighbor in block.neighbors:
+                if id_to_block[neighbor].community == self.id:
+                    if id_to_block[neighbor] not in self.border:
+                        self.border.append(id_to_block[neighbor])
+            self.find_neighbors_and_border()
 
     def calculate_race_similarity(self):
         """
@@ -241,7 +349,7 @@ class Community:
         return political_similarity
 
     def calculate_graphical_compactness(self):
-        border_edges_num = 0
-        for id_array in self.border_edges:
-            border_edges_num += len(id_array)
-        return border_edges_num/len(block_list)
+        return len(self.border_edges)/len(block_list)
+
+    def calculate_score(self):
+        return self.calculate_political_similarity()*self.calculate_race_similarity()*self.calculate_graphical_compactness()

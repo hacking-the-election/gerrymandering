@@ -23,7 +23,7 @@ def visualize_map(communities, output_path, quality=8192, color="random", outlin
     Takes in a list of communities, a path to output the picture to,
     and a quality which should be the resolution of the image. 
     """
-    print(outline)
+
     image = Image.new("RGB", (quality,quality), "white")
     draw = ImageDraw.Draw(image, "RGB")
 
@@ -32,13 +32,12 @@ def visualize_map(communities, output_path, quality=8192, color="random", outlin
     x_values = []
     y_values = []
     blocks = []
-    flatten_to_block_indexes = {}
     block_list = []
     for community in communities:
         state_name = community.state
         for block in community.blocks:
             block_list.append(block)
-    counter = 0
+
     block_num = len(block_list)
     for i, block in enumerate(block_list):
         # print(shapely_to_geojson(block.coords)[0])
@@ -50,8 +49,7 @@ def visualize_map(communities, output_path, quality=8192, color="random", outlin
             y_coords.append(coord[1])
             flattened_x.append(coord[0])
             flattened_y.append(coord[1])
-            flatten_to_block_indexes[counter] = i
-            counter += 1
+
         # x_values.append(x_coords)
         x_values.append(np.array(x_coords))
         # y_values.append(y_coords)
@@ -92,22 +90,6 @@ def visualize_map(communities, output_path, quality=8192, color="random", outlin
         sys.stdout.flush()
     print("\n", end="")        
 
-    # flattened_x = np.subtract(flattened_x, np.array(min_x))
-    # flattened_y = np.subtract(flattened_y, np.array(min_y))
-
-    # flattened_x *= 0.95*quality/dilation
-    # flattened_y *= 0.95*quality/dilation
-
-    # flattened_y = np.negative(flattened_y) + quality
-
-    # flattened_x = np.add(flattened_x, (quality - flattened_x.max()) / 2)
-    # flattened_y = np.subtract(flattened_y, flattened_y.min()/2)
-
-    # flattened_x, flattened_y = flattened_x.tolist(), flattened_y.tolist()
-
-    # with open("./" + "modified_coords.pickle", "wb") as f:
-        # pickle.dump(blocks, f)
-
     colors = []
     if color == "block_partisanship":
         for block in block_list:
@@ -130,36 +112,17 @@ def visualize_map(communities, output_path, quality=8192, color="random", outlin
             elif color  == "random":
                 colors.append((randint(5,250),randint(5,250),randint(5,250)))
 
-    # block_tracker = 0
-    # blocks = []
-    # block_holder = []
-    # coord_num = len(flattened_x)
-    # for i in range(len(flattened_x)):
-    #     if flatten_to_block_indexes[i] == block_tracker:
-    #         block_holder.append([flattened_x[i], flattened_y[i]])
-    #     else:
-    #         blocks.append(block_holder)
-    #         block_holder = [[flattened_x[i], flattened_y[i]]]
-    #         block_tracker += 1
-    #     print(f"\rCoords Unflattened: {i}/{coord_num}, {round(100*i/coord_num, 1)}%", end="")
-    #     sys.stdout.flush()
-    # print("\n", end="")
-
-    # for i, block in enumerate(blocks):
     for i, block in enumerate(modified_coords):
-        # for polygon in modified_coords[i]:
-        #     print(polygon)
         if color == "block_partisanship":
-            if outline:
+            if outline == "true":
                 draw.polygon([tuple(point) for point in block], fill=colors[i], outline=(0, 0, 0))
             else:
                 draw.polygon([tuple(point) for point in block], fill=colors[i])
         else:
-            if outline:
+            if outline == "true":
                 draw.polygon([tuple(point) for point in block], fill=colors[block_list[i].community], outline=(0, 0, 0))
             else:
                 draw.polygon([tuple(point) for point in block], fill=colors[block_list[i].community])
-            # _draw_polygon(draw, polygon, colors[i])
 
     last_slash =output_path.rfind("/")
     modified_output_path = output_path[:last_slash+1] + state_name + "_" + output_path[last_slash+1:]
@@ -183,8 +146,7 @@ if __name__ == '__main__':
         except:
             outline = quality
             if outline.lower() in ["true", "false"]:
-                print("ayooo???", outline)
-                visualize_map(community_list, "docs/images/" + color + "_community_visualization.jpg", color=color, outline=bool(outline))
+                visualize_map(community_list, "docs/images/" + color + "_community_visualization.jpg", color=color, outline=outline.lower())
             else:
                 raise Exception("Outline argument must be 'true' or 'false'!")
         else:
@@ -194,6 +156,6 @@ if __name__ == '__main__':
                 visualize_map(community_list, "docs/images/" + color + "_community_visualization.jpg", color=color, quality=quality)
             else:
                 if outline.lower() in ["true", "false"]:
-                    visualize_map(community_list, "docs/images/" + color + "_community_visualization.jpg", color=color, quality=quality, outline=bool(outline))
+                    visualize_map(community_list, "docs/images/" + color + "_community_visualization.jpg", color=color, quality=quality, outline=outline.lower())
                 else:
                     raise Exception("Outline argument must be 'true' or 'false'!")

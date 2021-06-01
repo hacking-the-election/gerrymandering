@@ -125,10 +125,12 @@ def random_generation(path, state):
         sys.stdout.flush()
     print("\n", end="")
     # print(block_dict)
-    # Calcualate borders and neighbors for all communities
-    # ids_to_blocks = {block.id: block for block in block_dict.values()}
+    # Calcualate borders and neighbors for all communities, and
+    # initialize the graph 
+    ids_to_blocks = {block.id: block for block in block_dict.values()}
     for community in community_list:
-        community.find_neighbors_and_border()
+        community.initialize_graph(ids_to_blocks)
+        community.find_neighbors_and_border(ids_to_blocks)
 
     start_merge_time = time.time()
     # Remove small communities
@@ -136,7 +138,7 @@ def random_generation(path, state):
     to_remove = [community for community in community_list if community.pop < 5000]
     for i, community in enumerate(to_remove):
         neighboring_community_id = choice(community.neighbors)
-        id_to_community[neighboring_community_id].merge_community(community)
+        id_to_community[neighboring_community_id].merge_community(community, ids_to_blocks, id_to_community)
         print(f"\rCommunities merged: {i+1}/{len(to_remove)}, {round(100*(i+1)/len(to_remove), 1)}%", end="")
         sys.stdout.flush()
         community_list.remove(community)
@@ -161,4 +163,4 @@ if __name__ == "__main__":
     with open(sys.argv[2] + "_community_list.pickle", "wb") as f:
         pickle.dump(community_list, f)
     
-    visualize_map(community_list, "docs/images/community_visualization.jpg")
+    visualize_map(community_list, "docs/images/random_community_visualization.jpg")
