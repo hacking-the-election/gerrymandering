@@ -39,6 +39,7 @@ class Block:
 
         if self.total_votes != None:
             if self.total_votes == 0:
+                self.other_votes = 0
                 self.percent_rep = None
                 self.percent_dem = None
                 self.percent_other = None

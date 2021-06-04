@@ -151,6 +151,9 @@ def random_generation(path, state):
         community.id = i
         for block in community.blocks:
             block.community = i
+    # Refind neighbors and borders with updated numbering
+    for community in community_list:
+        community.find_neighbors_and_border(ids_to_blocks)
 
     print(f"Final number of communities: {len(community_list)}")
     print(f"Time required, excluding deserialization: {time.time()-t} seconds")

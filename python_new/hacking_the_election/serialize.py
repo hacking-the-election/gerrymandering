@@ -595,9 +595,8 @@ def create_graph(state_name, check_point="beginning"):
             for index in active_blocks_to_remove:
                 active.pop(index)
             active.append(block)
-            print(f"\rBlocks checked: {i}", end="")
+            # print(f"\rBlocks checked: {i}", end="")
             sys.stdout.flush()
-            print("\n", end="")
             for pairing in possible_borders:
                 if pairing[0].max_y < pairing[1].min_y or pairing[1].max_y < pairing[0].min_y:
                     continue
@@ -605,7 +604,7 @@ def create_graph(state_name, check_point="beginning"):
                 if pairing[0].coords.intersection(pairing[1].coords).area == 0:
                     edges.append(pairing)
                     edges_created += 1
-                    print(f"\rEdges Created: {edges_created}", end="")
+                    print(f"\rEdges Created: {edges_created}, {round(100*i/block_num, 1)}%", end="")
                     sys.stdout.flush()
     else:
         del block_x_sorted
@@ -624,9 +623,9 @@ def create_graph(state_name, check_point="beginning"):
             for index in active_blocks_to_remove:
                 active.pop(index)
             active.append(block)
-            print(f"\rBlocks Checked: {i}/{block_num}, {round(100*i/block_num, 1)}%", end="")
+            # print(f"\rBlocks Checked: {i}/{block_num}, {round(100*i/block_num, 1)}%", end="")
             sys.stdout.flush()
-            print("\n", end="")
+            # print("\n", end="")
             for pairing in possible_borders:
                 if pairing[0].max_x < pairing[1].min_x or pairing[1].max_x < pairing[0].min_x:
                     continue
@@ -640,8 +639,9 @@ def create_graph(state_name, check_point="beginning"):
                         print("wait this still shows up!")
                     edges.append(pairing)
                     edges_created += 1
-                    print(f"\rEdges Created: {edges_created}", end="")
+                    print(f"\rEdges Created: {edges_created}, {round(100*i/block_num, 1)}%", end="")
                     sys.stdout.flush()
+    print("\n", end="")
     # for block in block_list:
     #     if block.total_votes < block.rep_votes + block.dem_votes:
     #         print("it happens before line 612")

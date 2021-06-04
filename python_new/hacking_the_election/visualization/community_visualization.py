@@ -33,6 +33,7 @@ def visualize_map(communities, output_path, quality=8192, color="random", outlin
     y_values = []
     blocks = []
     block_list = []
+    community_id_to_index = {communities[i].id : i for i in range(len(communities))}
     for community in communities:
         state_name = community.state
         for block in community.blocks:
@@ -95,8 +96,12 @@ def visualize_map(communities, output_path, quality=8192, color="random", outlin
         for block in block_list:
             percent_dem = block.percent_dem
             percent_rep = block.percent_rep
-            if block.pop != 0:
+            if percent_dem:
+                # print(block.id)
+                # try:
                 colors.append((round(percent_rep*255),0,round(percent_dem*255)))
+                # except:
+                    # print(block.id, block.pop, block.racial_data, block.total_votes, block.dem_votes, block.percent_dem)
             else:
                 colors.append((128,128,128))
     elif color in ["community_partisanship", "random"]:
@@ -120,9 +125,9 @@ def visualize_map(communities, output_path, quality=8192, color="random", outlin
                 draw.polygon([tuple(point) for point in block], fill=colors[i])
         else:
             if outline == "true":
-                draw.polygon([tuple(point) for point in block], fill=colors[block_list[i].community], outline=(0, 0, 0))
+                draw.polygon([tuple(point) for point in block], fill=colors[community_id_to_index[block_list[i].community]], outline=(0, 0, 0))
             else:
-                draw.polygon([tuple(point) for point in block], fill=colors[block_list[i].community])
+                draw.polygon([tuple(point) for point in block], fill=colors[community_id_to_index[block_list[i].community]])
 
     last_slash =output_path.rfind("/")
     modified_output_path = output_path[:last_slash+1] + state_name + "_" + output_path[last_slash+1:]

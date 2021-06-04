@@ -14,6 +14,8 @@ def kullback_leibler(p, q, base=2):
     """
     divergence = 0
     for i in range(len(p)):
+        if p[i] == 0 or q[i] == 0:
+            continue
         divergence += p[i]*log(p[i]/q[i], base)
     return divergence
 
@@ -23,7 +25,7 @@ def jensen_shannon(block_probability_distributions):
     and returns the jensen shannon divergence, a float from 0-1 which denotes similarity, 1 being the best.
     """
     distribution_num = len(block_probability_distributions)
-    mixture = [sum([distribution[i] for distribution in block_probability_distributions]) for i in range(distribution_num)]
+    mixture = [sum([distribution[i] for distribution in block_probability_distributions])/len(block_probability_distributions) for i in range(len(block_probability_distributions[0]))]
     divergence = 0
     for distribution in block_probability_distributions:
         divergence += kullback_leibler(distribution, mixture)/distribution_num
@@ -113,27 +115,37 @@ class Community:
         # If we choose to use density
         # self.density_similarity = None
 
-    def find_neighbors_and_border(self, id_to_block):
+    def find_neighbors_and_border(self, id_to_block, update=False):
         """
         Finds the communities which border this community, and finds the blocks of this community which are on the border of other communities
+        
+        update - If update is set to True, updates everything except border, otherwise updates everything
         """
         border = []
+        if update:
+            block_search_space = self.border
+        else:
+            block_search_space = self.blocks
         border_edges = []
         neighbors = []
         giveable_blocks = {}
-        for block in self.blocks:
-            giveable_blocks[block] = []
+        for block in block_search_space: 
             for neighbor in block.neighbors:
                 neighboring_community = id_to_block[neighbor].community
                 if neighboring_community != self.id:
-
-                    border.append(block)
+                    
+                    if block not in border:
+                        border.append(block)
 
                     if block.id not in self.articulation_points:
-                        giveable_blocks[block].append(neighboring_community)
+                        try:
+                            giveable_blocks[block].append(neighboring_community)
+                        except:
+                            giveable_blocks[block] = [neighboring_community]
 
                     border_edges.append([block.id, neighbor])
                     if neighboring_community not in neighbors:
+                        # print(neighboring_community, neighbor, block.id, "this is what find found")
                         neighbors.append(neighboring_community)
                         # if giveable == True:
 
@@ -141,6 +153,9 @@ class Community:
         self.neighbors = neighbors
         self.border_edges = border_edges
         self.giveable_blocks = giveable_blocks
+
+    # def update_neighbors(self, id_to_block):
+
 
     def initialize_graph(self, id_to_block):
         """
@@ -160,15 +175,26 @@ class Community:
         Merges another community into this one and updates attributes.
         """
         original_blocks = self.blocks
+        # for block in original_blocks:
+        #     if block.id == "1000000US500110105004037":
+        #         print("this should be it", block.community)
         self.blocks.extend(community.blocks)
         if not for_real:
             score = self.calculate_score()
             self.blocks = original_blocks
             return score
+
         # self.coords = self.coords.union(community.coords)
         self.block_ids = {**self.block_ids, **community.block_ids}
         for block in community.blocks:
             block.community = self.id
+        #     if block.id == "1000000US500110105004037":
+        #         print(block.community, "let's see!")
+        # for block in self.blocks:
+        #     if block.id == "1000000US500110105004037":
+        #         print(block.community, self.id, " 21 culprit ")
+        #     if block.community != self.id:
+                # print("heyyy so this is still happening")
         attributes_to_update = ["pop", "total_votes", "dem_votes", "rep_votes", "other_votes", "white", "black", "hispanic", "aapi", "aian", "other"]
         for attribute in attributes_to_update:
             exec("self." + attribute + " += community." + attribute)
@@ -207,23 +233,35 @@ class Community:
         self.articulation_points = set(nx.articulation_points(self.graph))
 
         self.find_neighbors_and_border(id_to_block)
-        for other_community in community.neighbors:
+        # print(self.neighbors, "neighbors we found:")
+        for other_community in self.neighbors:
             # Since some neighbors may not exist anymore
             # id_to_community[community].find_neighbors_and_border(id_to_block)
-            other_community_neighbors = id_to_community[other_community].neighbors
-            print(other_community_neighbors, community.id)
-            other_community_neighbors.remove(community.id)
-            if self.id not in other_community_neighbors:
-                if other_community.id != self.id:
-                    id_to_community[other_community].neighbors.append(self.id)
+            id_to_community[other_community].find_neighbors_and_border(id_to_block, update=True)
+            # if other_community != community.id:
+            #     print(community.id, community.neighbors, other_community, id_to_community[other_community].neighbors, "which stuff is being checked for merge")
+            #     id_to_community[other_community].neighbors.remove(community.id)
+            # # try:
+            # # except:
+            #     # pass
+            # if self.id not in id_to_community[other_community].neighbors:
+            #     if id_to_community[other_community].id != self.id:
+            #         id_to_community[other_community].neighbors.append(self.id)
+            # print(other_community, id_to_community[other_community].neighbors)
+                    
 
     def update_attributes(self, block, id_to_block, taking):
         if taking:
             # Taking a block
-            block_ids[block.id] = block
+            self.block_ids[block.id] = block
+            block.community = self.id
             attributes_to_update = ["pop", "total_votes", "dem_votes", "rep_votes", "other_votes", "white", "black", "hispanic", "aapi", "aian", "other"]
             for attribute in attributes_to_update:
-                exec("self." + attribute + " += block." + attribute)
+                try:
+                    exec("self." + attribute + " += block." + attribute)
+                except:
+                    exec("print(block." +attribute + ")")
+                    print("none attribute block")
             if self.total_votes == 0:
                 self.percent_dem = None
                 self.percent_rep = None
@@ -257,23 +295,29 @@ class Community:
                 if id_to_block[neighbor] in self.blocks:
                     self.graph.add_edge(block.id, neighbor)
             self.articulation_points = set(nx.articulation_points(self.graph))
-            # for neighbor in block.neighbors:
-            #     if id_to_block[neighbor].community == self.id:
-            #         # if id_to_block[neighbor] in self.border:
-            #         remove_from_border = True
-            #         for neighbor_neighbor in id_to_block[neighbor].neighbors:
-            #             if id_to_block[neighbor_neighbor].community != self.id:
-            #                 remove_from_border = False
-            #         if remove_from_border:
-            #             self.border.remove(id_to_block[neighbor])
-            self.find_neighbors_and_border()
+
+            for neighbor in block.neighbors:
+                if id_to_block[neighbor].community == self.id:
+                    # if id_to_block[neighbor] in self.border:
+                    remove_from_border = True
+                    for neighbor_neighbor in id_to_block[neighbor].neighbors:
+                        if id_to_block[neighbor_neighbor].community != self.id:
+                            remove_from_border = False
+                    if remove_from_border:
+                        self.border.remove(id_to_block[neighbor])
+            self.border.append(block)
+            self.find_neighbors_and_border(id_to_block, update=True)
 
         else:
             # Giving a block
-            block_ids[block.id] = block
+            # self.block_ids[block.id] = block
+            del self.block_ids[block.id]
             attributes_to_update = ["pop", "total_votes", "dem_votes", "rep_votes", "other_votes", "white", "black", "hispanic", "aapi", "aian", "other"]
             for attribute in attributes_to_update:
-                exec("self." + attribute + " -= block." + attribute)
+                try:
+                    exec("self." + attribute + " -= block." + attribute)
+                except:
+                    print(block.id, block.pop, block.total_votes, "None attribute block")
             if self.total_votes == 0:
                 self.percent_dem = None
                 self.percent_rep = None
@@ -308,7 +352,8 @@ class Community:
                 if id_to_block[neighbor].community == self.id:
                     if id_to_block[neighbor] not in self.border:
                         self.border.append(id_to_block[neighbor])
-            self.find_neighbors_and_border()
+            self.border.remove(block)
+            self.find_neighbors_and_border(id_to_block, update=True)
 
     def calculate_race_similarity(self):
         """
@@ -349,7 +394,7 @@ class Community:
         return political_similarity
 
     def calculate_graphical_compactness(self):
-        return len(self.border_edges)/len(block_list)
+        return len(self.border_edges)/len(self.blocks)
 
     def calculate_score(self):
         return self.calculate_political_similarity()*self.calculate_race_similarity()*self.calculate_graphical_compactness()
