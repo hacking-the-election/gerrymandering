@@ -25,7 +25,11 @@ def jensen_shannon(block_probability_distributions):
     and returns the jensen shannon divergence, a float from 0-1 which denotes similarity, 1 being the best.
     """
     distribution_num = len(block_probability_distributions)
-    mixture = [sum([distribution[i] for distribution in block_probability_distributions])/len(block_probability_distributions) for i in range(len(block_probability_distributions[0]))]
+    try:
+        mixture = [sum([distribution[i] for distribution in block_probability_distributions])/len(block_probability_distributions) for i in range(len(block_probability_distributions[0]))]
+    except:
+        print(block_probability_distributions)
+        raise Exception()
     divergence = 0
     for distribution in block_probability_distributions:
         divergence += kullback_leibler(distribution, mixture)/distribution_num
@@ -126,12 +130,19 @@ class Community:
             block_search_space = self.border
         else:
             block_search_space = self.blocks
+        # print(block_search_space)
         border_edges = []
         neighbors = []
         giveable_blocks = {}
         for block in block_search_space: 
             for neighbor in block.neighbors:
-                neighboring_community = id_to_block[neighbor].community
+                try:
+                    # print(id_to_block[neighbor], id_to_block[neighbor].community)
+                    neighboring_community = id_to_block[neighbor].community
+                except:
+                    continue
+                # print(neighboring_community)
+                # print("some stuff is happening")
                 if neighboring_community != self.id:
                     
                     if block not in border:
@@ -145,10 +156,13 @@ class Community:
 
                     border_edges.append([block.id, neighbor])
                     if neighboring_community not in neighbors:
+                        # print("stuff!")
+                        # if neighboring_community == 10:
+                            # print(block.id, block.community, neighbor, "this is where 10 is coming from")
                         # print(neighboring_community, neighbor, block.id, "this is what find found")
                         neighbors.append(neighboring_community)
                         # if giveable == True:
-
+        # print(neighbors)
         self.border = border
         self.neighbors = neighbors
         self.border_edges = border_edges
@@ -166,15 +180,19 @@ class Community:
             self.graph.add_node(block.id, block=block)
         for block in self.blocks:
             for neighbor in block.neighbors:
-                if id_to_block[neighbor].community == self.id:
-                    self.graph.add_edge(block.id, neighbor)
+                try:
+                    neighbor_community = id_to_block[neighbor].community
+                    if id_to_block[neighbor].community == self.id:
+                        self.graph.add_edge(block.id, neighbor)
+                except:
+                    pass
         self.articulation_points = set(nx.articulation_points(self.graph))
     
     def merge_community(self, community, id_to_block, id_to_community, for_real=True):
         """
         Merges another community into this one and updates attributes.
         """
-        original_blocks = self.blocks
+        original_blocks = list(self.blocks)
         # for block in original_blocks:
         #     if block.id == "1000000US500110105004037":
         #         print("this should be it", block.community)
@@ -234,10 +252,15 @@ class Community:
 
         self.find_neighbors_and_border(id_to_block)
         # print(self.neighbors, "neighbors we found:")
-        for other_community in self.neighbors:
+        for other_community_id in self.neighbors:
             # Since some neighbors may not exist anymore
             # id_to_community[community].find_neighbors_and_border(id_to_block)
-            id_to_community[other_community].find_neighbors_and_border(id_to_block, update=True)
+            try: 
+                other_community = id_to_community[other_community_id]
+            except:
+                continue
+            else:
+                other_community.find_neighbors_and_border(id_to_block, update=True)
             # if other_community != community.id:
             #     print(community.id, community.neighbors, other_community, id_to_community[other_community].neighbors, "which stuff is being checked for merge")
             #     id_to_community[other_community].neighbors.remove(community.id)

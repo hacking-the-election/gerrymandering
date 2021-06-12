@@ -9,9 +9,13 @@ python3 -m hacking_the_election.initial_generation [path_to_serialized.json] [st
 import sys
 import json
 import pickle
+import random
 from random import choice
 import time
 import networkx as nx
+
+random.seed(0)
+
 # from shapely.geometry import Polygon
 
 from hacking_the_election.utils.block import Block
@@ -64,25 +68,34 @@ def _deserialize(path):
     print("\n", end="")
     return block_graph
 
-def random_generation(path, state):
+def random_generation(path, state, graph=None, full_ids_to_blocks=None, full_ids_to_communities=None):
     """
     Creates a random configuration of communities based on the "custom nation" model of EU4, starts with
     random starting block and adds neighbors. Continues until all blocks are used
     """
-    block_graph = _deserialize(path)
+    if graph:
+        block_graph = graph
+    else:
+        block_graph = _deserialize(path)
     print("Block graph deserialized. ")
     t = time.time()
     block_dict = nx.get_node_attributes(block_graph, 'block')
     # print(block_dict)
-    indexes = {i:block_dict[i] for i in range(len(block_dict))}
-    ids_to_indexes = {block.id : i for i, block in indexes.items()}
-    for index in ids_to_indexes.values():
-        try:
-            _ = indexes[index]
-        except:
-            print(index)
+    try:
+        indexes = {i:block_dict[i] for i in range(len(block_dict))}
+        ids_to_indexes = {block.id : i for i, block in indexes.items()}
+    except:
+        keys = list(block_dict.keys())
+        indexes = {i:block_dict[keys[i]] for i in range(len(block_dict))}
+        ids_to_indexes = {keys[i] : i for i in range(len(keys))}
+        # print(ids_to_indexes)
+    # for index in ids_to_indexes.values():
+    #     try:
+    #         _ = indexes[index]
+    #     except:
+    #         print(index)
     community_list = []
-    community_id = 0
+    community_id = max(list(full_ids_to_communities.keys()))+1
     block_num = len(block_dict)
     blocks_used = 0
     while len(block_dict) > 0:
@@ -93,10 +106,27 @@ def random_generation(path, state):
             break
         starting_block = indexes[starting_index]
         del indexes[starting_index]
-        neighbor_indexes = [id for id in starting_block.neighbors if ids_to_indexes[id] in indexes]
+        # try:
+        neighbor_indexes = []
+        for neighbor in starting_block.neighbors:
+            try:
+                neighbor_index = ids_to_indexes[neighbor]
+            except:
+                continue
+            else:
+                if neighbor_index in indexes:
+                    neighbor_indexes.append(neighbor)
+                    # id for id in starting_block.neighbors if ids_to_indexes[id] in indexes]
+        # except:
+            # neighbor_indexes = [id for id in starting_block.neighbors if id in indexes]
         blocks = [starting_block]
         community_population = starting_block.pop
-        while community_population <= 20000:
+        if graph:
+            initial_pop_limit = sum([block.pop for block in block_dict.values()])/2
+            # print(initial_pop_limit)
+        else:
+            initial_pop_limit = 20000
+        while community_population <= initial_pop_limit:
             try:
                 # Choose neighbor randomly, or go in order?
                 # neighbor_id = choice(neighbor_indexes)
@@ -113,39 +143,61 @@ def random_generation(path, state):
             blocks.append(neighbor_block)
             community_population += neighbor_block.pop
             for neighbor in neighbor_block.neighbors:
-                if ids_to_indexes[neighbor] in indexes:
-                    neighbor_indexes.append(neighbor)
+                try:
+                    neighbor_index = ids_to_indexes[neighbor]
+                except:
+                    continue
+                else:
+                    if neighbor_index in indexes:
+                        neighbor_indexes.append(neighbor)
 
         created_community = Community(state, community_id, blocks)
         for block in blocks:
             block.community = community_id
         blocks_used += len(blocks)
         community_list.append(created_community)
-        print(f"\rCommunities created: {community_id}, {round(100*blocks_used/block_num, 1)}%", end="")
-        sys.stdout.flush()
-    print("\n", end="")
+        if not graph:
+            print(f"\rCommunities created: {community_id}, {round(100*blocks_used/block_num, 1)}%", end="")
+            sys.stdout.flush()
+    if not graph:
+        print("\n", end="")
     # print(block_dict)
     # Calcualate borders and neighbors for all communities, and
     # initialize the graph 
     ids_to_blocks = {block.id: block for block in block_dict.values()}
     for community in community_list:
-        community.initialize_graph(ids_to_blocks)
-        community.find_neighbors_and_border(ids_to_blocks)
+        if full_ids_to_blocks:
+            community.initialize_graph(full_ids_to_blocks)
+            community.find_neighbors_and_border(full_ids_to_blocks)
+        else:
+            community.initialize_graph(ids_to_blocks)
+            community.find_neighbors_and_border(ids_to_blocks)
 
     start_merge_time = time.time()
     # Remove small communities
     id_to_community = {community.id:community for community in community_list}
-    to_remove = [community for community in community_list if community.pop < 5000]
+    if graph:
+        to_remove = sorted(community_list, key=lambda x: x.pop)[:-2]
+    else:
+        to_remove = [community for community in community_list if community.pop < 5000]
+    print(list(id_to_community.keys()), "ids_to_community")
     for i, community in enumerate(to_remove):
-        neighboring_community_id = choice(community.neighbors)
-        id_to_community[neighboring_community_id].merge_community(community, ids_to_blocks, id_to_community)
-        print(f"\rCommunities merged: {i+1}/{len(to_remove)}, {round(100*(i+1)/len(to_remove), 1)}%", end="")
-        sys.stdout.flush()
+        print(community.neighbors, community.id)
+        possible_community_neighbors = [neighbor for neighbor in community.neighbors if neighbor in list(id_to_community.keys())]
+        neighboring_community_id = choice(possible_community_neighbors)
+        if graph:
+            id_to_community[neighboring_community_id].merge_community(community, full_ids_to_blocks, id_to_community)
+        else:
+            id_to_community[neighboring_community_id].merge_community(community, ids_to_blocks, id_to_community)
+            print(f"\rCommunities merged: {i+1}/{len(to_remove)}, {round(100*(i+1)/len(to_remove), 1)}%", end="")
+            sys.stdout.flush()
         community_list.remove(community)
     print("\n", end="")
     end_merge_time = time.time()-start_merge_time
-    print(f"Time needed for merging: {end_merge_time}, an average of {end_merge_time/len(to_remove)} seconds per merge")
+    # print(f"Time needed for merging: {end_merge_time}, an average of {end_merge_time/len(to_remove)} seconds per merge")
 
+    if graph:
+        return (community_list[0].blocks, community_list[1].blocks)
     # Renumber communities
     for i, community in enumerate(community_list):
         community.id = i
