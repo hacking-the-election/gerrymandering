@@ -283,7 +283,8 @@ class Community:
                 try:
                     exec("self." + attribute + " += block." + attribute)
                 except:
-                    exec("print(block." +attribute + ")")
+                    print(attribute)
+                    # exec("print(block." +attribute + ")")
                     print("none attribute block")
             if self.total_votes == 0:
                 self.percent_dem = None

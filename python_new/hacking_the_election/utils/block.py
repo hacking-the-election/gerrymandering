@@ -84,6 +84,7 @@ class Block:
     
     def create_election_data(self):
         if self.total_votes == 0:
+            self.total_votes = 0
             self.percent_rep = None
             self.percent_dem = None
             self.percent_other = None
