@@ -136,6 +136,7 @@ def random_generation(path, state):
     # Remove small communities
     id_to_community = {community.id:community for community in community_list}
     to_remove = [community for community in community_list if community.pop < 5000]
+    # to_remove = community_list[1:]
     for i, community in enumerate(to_remove):
         neighboring_community_id = choice(community.neighbors)
         id_to_community[neighboring_community_id].merge_community(community, ids_to_blocks, id_to_community)

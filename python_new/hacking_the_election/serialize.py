@@ -338,7 +338,7 @@ def create_graph(state_name, check_point="beginning"):
             block["geometry"]["coordinates"] 
             for block in block_geodata["features"]
         }
-
+        # print(precinct_coordinates["440010301001"])
         precinct_list = []
 
         # Precinct/census group ids, pandas Series
@@ -360,10 +360,15 @@ def create_graph(state_name, check_point="beginning"):
                 print("BIG BIG BIG BIG PROBLEM!!!")
             # In addition to total population, racial data needs to be added as well
             total_pop = demographics[demographics["GEOID10"] == geo_id]["Tot_2010_tot"].item()
+            # print(geo_id, "440010301001")
+            # print(type(geo_id))
+            # print(precinct_coordinates["440010301001"])
+            try:
+                coordinate_data = geojson_to_shapely(precinct_coordinates[geo_id])
+            except:
+                coordinate_data = geojson_to_shapely(precinct_coordinates[str(geo_id)])
 
-            coordinate_data = geojson_to_shapely(precinct_coordinates[geo_id])
-
-            precinct = Precinct(total_pop, coordinate_data, state_name, geo_id, total_votes, rep_votes, dem_votes)
+            precinct = Precinct(total_pop, coordinate_data, state_name, str(geo_id), total_votes, rep_votes, dem_votes)
             precinct_list.append(precinct)
             precincts_created += 1
             print(f"\rPrecincts Created: {precincts_created}/{precincts_num}, {round(100*precincts_created/precincts_num, 1)}%", end="")
@@ -601,7 +606,10 @@ def create_graph(state_name, check_point="beginning"):
                 if pairing[0].max_y < pairing[1].min_y or pairing[1].max_y < pairing[0].min_y:
                     continue
                 # if abs(pairing[0].coords.intersection(pairing[1].coords).area - 0) < 0.05*min(pairing[0].coords.area, pairing[1].coords.area):
-                if pairing[0].coords.intersection(pairing[1].coords).area == 0:
+                intersection = pairing[0].coords.intersection(pairing[1].coords)
+                if intersection.is_empty or isinstance(intersection, Point):
+                    continue
+                if pairing[0].coords.intersection(pairing[1].coords).area == 0 :
                     edges.append(pairing)
                     edges_created += 1
                     print(f"\rEdges Created: {edges_created}, {round(100*i/block_num, 1)}%", end="")
@@ -630,7 +638,7 @@ def create_graph(state_name, check_point="beginning"):
                 if pairing[0].max_x < pairing[1].min_x or pairing[1].max_x < pairing[0].min_x:
                     continue
                 intersection = pairing[0].coords.intersection(pairing[1].coords)
-                if intersection.is_empty:
+                if intersection.is_empty or isinstance(intersection, Point):
                     continue
                 # if abs(pairing[0].coords.intersection(pairing[1].coords).area - 0) < 0.05*min(pairing[0].coords.area, pairing[1].coords.area):
                 if intersection.area == 0:
@@ -666,6 +674,13 @@ def create_graph(state_name, check_point="beginning"):
     #         print("it happens before line 635")
     # with open("vermont_graph.pickle", "rb") as f:
     #     block_graph = pickle.load(f)
+    # visualize_graph(
+    #     block_graph,
+    #     f'./{sys.argv[1]}_no_linking_graph.jpg',
+    #     lambda n : block_graph.nodes[n]['block'].centroid,
+    #     # sizes=(lambda n : block_graph.nodes[n]['precinct'].pop/500),
+    #     show=True
+    # )
     connect_islands(block_graph)
     with open(state_name + "_block_list.pickle", "wb") as f:
         pickle.dump(block_list, f)

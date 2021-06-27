@@ -65,7 +65,7 @@ class Block:
             self.percent_white = None
             self.percent_black = None
             self.percent_hispanic = None
-            self.percent_apai = None
+            self.percent_aapi = None
             self.percent_aian = None
             self.percent_other = None
 

@@ -23,7 +23,7 @@ def visualize_map(communities, output_path, quality=8192, color="random", outlin
     Takes in a list of communities, a path to output the picture to,
     and a quality which should be the resolution of the image. 
     """
-
+    quality = int(quality)
     image = Image.new("RGB", (quality,quality), "white")
     draw = ImageDraw.Draw(image, "RGB")
 

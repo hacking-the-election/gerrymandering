@@ -10,7 +10,7 @@ import random
 import sys
 import math
 
-# random.seed(1)
+# random.seed(0)
 
 import networkx as nx
 from networkx.algorithms import community as nx_algorithms
@@ -20,7 +20,7 @@ from hacking_the_election.visualization.community_visualization import visualize
 
 T_MAX = 1
 EPOCHS = 40000
-ALPHA = 0.99976
+ALPHA = 0.9998
 
 def _probability(temp, current_energy, new_energy):
     """The probability of doing an exchange.
@@ -29,7 +29,8 @@ def _probability(temp, current_energy, new_energy):
         # Always do exchanges that are good.
         return 1
     else:
-        return temp
+        # return temp
+        return 0
         # return math.exp((new_energy - current_energy) / temp)
 
 def create_block_graph(communities_list):
@@ -70,6 +71,7 @@ def _contract(G, t):
     # print(G.nodes[new_node]['contracted nodes'], new_node)
 
 def karger_stein(block_graph):
+    k_start_time = time.time()
     # G = _light_copy(precinct_graph)
     temporary_ids_to_block_ids = {}
     temporary_block_ids_to_ids = {}
@@ -82,6 +84,7 @@ def karger_stein(block_graph):
     for e in block_graph.edges:
         if not G2.has_edge(temporary_block_ids_to_ids[e[0]], temporary_block_ids_to_ids[e[1]]):
             G2.add_edge(temporary_block_ids_to_ids[e[0]], temporary_block_ids_to_ids[e[1]])
+    print(f"Time elapsed: {time.time()-k_start_time}")
     # print(G2.nodes)
     # print(G2.edges(64))
     while len(G2.nodes) > 2:
@@ -91,23 +94,28 @@ def karger_stein(block_graph):
         for i in range(min(20, len(edges))):
             e = random.choice(edges)
         # e = random.choice(edges)
+        # e = random.choice(list(G2.edges))
             # print(e)
             attr_lengths[e] = (len(G2.nodes[e[0]])
                              + len(G2.nodes[e[1]]))
         # print(e)
+        # _contract(G2, e)
         _contract(G2, min(attr_lengths))
-    # print(G2.nodes)
+    print(G2.nodes)
     # Create community objects from nodes.
     # communities = [Community(i, precinct_graph) for i in range(n_communities)]
+    print(f"Time elapsed: {time.time()-k_start_time}")
     partitioned_blocks = []
     for i, node in enumerate(G2.nodes):
         # print(G2.nodes[node], node)
+        # continue
         contracted_nodes = G2.nodes[node]['contracted nodes']
         actual_nodes = []
         for node in contracted_nodes:
             actual_nodes.append(temporary_ids_to_block_ids[node])
         # partitioned_blocks.append(G.nodes[node]['contracted nodes'])
         partitioned_blocks.append(actual_nodes)
+    print(f"Time elapsed: {time.time()-k_start_time}")
             
 
     return partitioned_blocks
@@ -125,6 +133,7 @@ def _get_random_block_exchange(communities_list, id_to_community):
     community = random.choice(possible_community_list)
     # while len(community.giveable_blocks) == 0:
     #     community = random.choice(communities_list)
+    community_giveable_blocks = [block for block in community.giveable_blocks if block not in community.articulation_points]
     block_to_give = random.choice(list(community.giveable_blocks.keys()))
     community_to_give_to = random.choice(community.giveable_blocks[block_to_give])
     # print(block_to_give, community_to_give_to)
@@ -154,95 +163,117 @@ def _get_random_split(communities_list, id_to_block, id_to_community):
         chosen_community = random.choice(possible_community_list)
     # print(chosen_community.neighbors, "old community neighbors")
     # print(chosen_community.block_ids)
-    actual_block_ids = chosen_community.block_ids
-    # partition = nx_algorithms.kernighan_lin_bisection(community.graph)
-    # partition = karger_stein(community.graph)
+    # partition = nx_algorithms.kernighan_lin_bisection(chosen_community.graph)
+    # cutset = nx.minimum_edge_cut(chosen_community.graph)
+    # print(cutset)
+    # new_graph = nx.Graph()
+    # new_graph.add_nodes_from(chosen_community.graph)
+    # new_graph.add_edges_from(chosen_community.graph.edges)
+    # new_graph.remove_edges_from(cutset)
+    # subgraphs = list(new_graph.subgraph(c) for c in nx.connected_components(new_graph))
+    # print(subgraphs)
+    partition = karger_stein(chosen_community.graph)
+    # print(partition)
     # print(community.neighbors, "neighbors of the community")
     # block_list = []
-    community_id = max(list(id_to_community.keys()))
-    block_ids = dict(chosen_community.block_ids)
-    collections_of_blocks = []
-    created_communities = []
-    keys = list(block_ids.keys())
+
+
+    # graph_start_time = time.time()
+
     # actual_block_ids = chosen_community.block_ids
-    # print(random.choice(keys))
-    # print(len(block_ids), "when the blocks are ids" )
-    while len(block_ids) > 0:
-        community_id += 1
-        try:
-            starting_index = random.choice(list(block_ids.keys()))
-        except:
-            # print("nooo")
-            break
-        starting_block = block_ids[starting_index]
-        del block_ids[starting_index]
-        neighbor_ids = [id for id in starting_block.neighbors if id in block_ids]
-        blocks = [starting_block]
-        community_population = starting_block.pop
-        # print(community_population, community.pop/2)
-        # print(chosen_community.pop/2)
-        while community_population < chosen_community.pop/2:
-            # print(community_population)
-            # print(len(blocks))
-            if len(blocks) > len(chosen_community.blocks)/2:
-                break
-            try:
-                # Choose neighbor randomly, or go in order?
-                # neighbor_id = choice(neighbor_ids)
-                neighbor_id = neighbor_ids[0]
-            except:
-                break
-            neighbor_ids.remove(neighbor_id)
-            try:
-                neighbor_block = block_ids[neighbor_id]
-            except:
-                continue
-            else:
-                del block_ids[neighbor_id]
-            blocks.append(neighbor_block)
-            community_population += neighbor_block.pop
-            for neighbor in neighbor_block.neighbors:
-                if neighbor in block_ids:
-                    neighbor_ids.append(neighbor)
-        created_community = Community(chosen_community.state, community_id, blocks)
-        for block in blocks:
-            block.community = community_id
-        # community_id += 1
-        created_communities.append(created_community)
-    # print(len(chosen_community.blocks))
-    # print(created_communities)
-        # collections_of_blocks.append(blocks)
-    # print(actual_block_ids)
-    # print(list(actual_block_ids.keys()))
-    # print(keys)
-    # for block in created_communities[0].blocks:
-        # for neighbor in block.neighbors:
-            # print(neighbor)
-            # print(chosen_community.block_ids)
-            # print(list(chosen_community.block_ids.keys()))
-            # if neighbor in list(actual_block_ids.keys()):
-            # if neighbor in keys:
-                # print(neighbor.community, "therea re neighbors!")
-    # ids_to_blocks = {block.id: block for block in block_dict.values()}
-    for community in created_communities:
-        community.initialize_graph(chosen_community.block_ids)
-        # community.initialize_graph(id_to_block)
-        community.find_neighbors_and_border(chosen_community.block_ids)
-        # community.find_neighbors_and_border(id_to_block)
-    id_to_community = {community.id:community for community in created_communities}
-    # to_remove = [community for community in created_communities if community.pop < 5000]
-    created_communities = sorted(created_communities, key=lambda x : x.pop, reverse=True)
-    to_remove = created_communities[2:]
-    # print(to_remove)
-    for i, community in enumerate(to_remove):
-        neighboring_community_id = random.choice(community.neighbors)
-        id_to_community[neighboring_community_id].merge_community(community, chosen_community.block_ids, id_to_community)
-        created_communities.remove(community)
-    # partition = random_generation("", community.state, community.graph, id_to_block, id_to_community)
-    for community in created_communities:
-        community.initialize_graph(chosen_community.block_ids)
-        # community.initialize_graph(id_to_block)
-        community.find_neighbors_and_border(chosen_community.block_ids)
+    # community_id = max(list(id_to_community.keys()))
+    # block_ids = dict(chosen_community.block_ids)
+    # collections_of_blocks = []
+    # created_communities = []
+    # keys = list(block_ids.keys())
+    # # actual_block_ids = chosen_community.block_ids
+    # # print(random.choice(keys))
+    # # print(len(block_ids), "when the blocks are ids" )
+    # while len(block_ids) > 0:
+    #     community_id += 1
+    #     try:
+    #         starting_index = random.choice(list(block_ids.keys()))
+    #     except:
+    #         # print("nooo")
+    #         break
+    #     starting_block = block_ids[starting_index]
+    #     del block_ids[starting_index]
+    #     neighbor_ids = [id for id in starting_block.neighbors if id in block_ids]
+    #     blocks = [starting_block]
+    #     community_population = starting_block.pop
+    #     # print(community_population, community.pop/2)
+    #     # print(chosen_community.pop/2)
+    #     while community_population < chosen_community.pop/2:
+    #         # print(community_population)
+    #         # print(len(blocks))
+    #         if len(blocks) > len(chosen_community.blocks)/2:
+    #             break
+    #         try:
+    #             # Choose neighbor randomly, or go in order?
+    #             # neighbor_id = choice(neighbor_ids)
+    #             neighbor_id = neighbor_ids[0]
+    #         except:
+    #             break
+    #         neighbor_ids.remove(neighbor_id)
+    #         try:
+    #             neighbor_block = block_ids[neighbor_id]
+    #         except:
+    #             continue
+    #         else:
+    #             del block_ids[neighbor_id]
+    #         blocks.append(neighbor_block)
+    #         community_population += neighbor_block.pop
+    #         for neighbor in neighbor_block.neighbors:
+    #             if neighbor in block_ids:
+    #                 neighbor_ids.append(neighbor)
+    #     created_community = Community(chosen_community.state, community_id, blocks)
+    #     for block in blocks:
+    #         block.community = community_id
+    #     # community_id += 1
+    #     created_communities.append(created_community)
+    # # print(len(chosen_community.blocks))
+    # # print(created_communities)
+    #     # collections_of_blocks.append(blocks)
+    # # print(actual_block_ids)
+    # # print(list(actual_block_ids.keys()))
+    # # print(keys)
+    # # for block in created_communities[0].blocks:
+    #     # for neighbor in block.neighbors:
+    #         # print(neighbor)
+    #         # print(chosen_community.block_ids)
+    #         # print(list(chosen_community.block_ids.keys()))
+    #         # if neighbor in list(actual_block_ids.keys()):
+    #         # if neighbor in keys:
+    #             # print(neighbor.community, "therea re neighbors!")
+    # # ids_to_blocks = {block.id: block for block in block_dict.values()}
+    # print(f"Time needed: {time.time()-graph_start_time}")
+    # print(len(created_communities))
+    # for community in created_communities:
+    #     community.initialize_graph(chosen_community.block_ids)
+    #     # community.initialize_graph(id_to_block)
+    #     community.find_neighbors_and_border(chosen_community.block_ids)
+    #     # community.find_neighbors_and_border(id_to_block)
+    # print(f"Time needed: {time.time()-graph_start_time}")
+    # id_to_community = {community.id:community for community in created_communities}
+    # # to_remove = [community for community in created_communities if community.pop < 5000]
+    # created_communities = sorted(created_communities, key=lambda x : x.pop, reverse=True)
+    # to_remove = created_communities[2:]
+    # # print(to_remove)
+    # print(len(to_remove))
+    # for i, community in enumerate(to_remove):
+    #     neighboring_community_id = random.choice(community.neighbors)
+    #     id_to_community[neighboring_community_id].merge_community(community, chosen_community.block_ids, id_to_community)
+    #     created_communities.remove(community)
+    # print(f"Time needed: {time.time()-graph_start_time}")
+    # # partition = random_generation("", community.state, community.graph, id_to_block, id_to_community)
+    # for community in created_communities:
+    #     community.initialize_graph(chosen_community.block_ids)
+    #     # community.initialize_graph(id_to_block)
+    #     community.find_neighbors_and_border(chosen_community.block_ids)
+
+    # print(f"Time needed: {time.time()-graph_start_time}")
+
+
     # print(created_communities)
     # if "1000000US500019604002000" in list(chosen_community.block_ids.keys()):
     #     print(chosen_community.block_ids["1000000US500019604002000"].community, "it's missing from other stuff")
@@ -254,21 +285,28 @@ def _get_random_split(communities_list, id_to_block, id_to_community):
     #     if block.id == "1000000US500019604002000":
     #         print("ayoooo?", created_communities[1].id)
     #     block.community = created_communities[1].id
-    # community_1_blocks = [id_to_block[block_id] for block_id in partition[0]]
     # community_1_blocks = partition[0]
     # community_2_blocks = partition[1]
-    # community_1_blocks = collections_of_blocks[0]
-    # community_2_blocks = collections_of_blocks[1]
-    # # print(id_to_block)
-    # # community_2_blocks = [id_to_block[block_id] for block_id in partition[1]]
+    # # community_1_blocks = collections_of_blocks[0]
+    # # community_2_blocks = collections_of_blocks[1]
+    # # # print(id_to_block)
+    max_id = max(id_to_community)
+    community_1_blocks = [id_to_block[block_id] for block_id in partition[0]]
+    community_2_blocks = [id_to_block[block_id] for block_id in partition[1]]
+    for block in community_1_blocks:
+        block.community = max_id+1
+    for block in community_2_blocks:
+        block.community = max_id+2
     # # print(community_1_blocks)
-    # community_1 = Community(community.state, max_id+1, community_1_blocks)
-    # community_2 = Community(community.state, max_id+2, community_2_blocks)
-    # return community, community_1, community_2
-    # try:
-    # exce
+    community_1 = Community(chosen_community.state, max_id+1, community_1_blocks)
+    community_2 = Community(chosen_community.state, max_id+2, community_2_blocks)
+    community_1.initialize_graph(chosen_community.block_ids)
+    community_1.find_neighbors_and_border(chosen_community.block_ids)
+    community_2.initialize_graph(id_to_block)
+    community_2.find_neighbors_and_border(chosen_community.block_ids)
+    return chosen_community, community_1, community_2
     # print(len(created_communities), "hello")
-    return chosen_community, created_communities[0], created_communities[1]
+    # return chosen_community, created_communities[0], created_communities[1]
 
 
 def generate_communities(initial_communities_path, evaluation="community"):
@@ -291,24 +329,29 @@ def generate_communities(initial_communities_path, evaluation="community"):
         scores = {}
         for community in communities_list:
             scores[community.id] = community.calculate_score()
+            # scores[community.id] = community.calculate_political_similarity()*community.calculate_race_similarity()
+            # scores[community.id] = community.calculate_graphical_compactness()
     
     temp = T_MAX
 
     if evaluation == "community":
         current_energy = sum(list(scores.values()))/communities_num
-        print(current_energy ** 0.25)
+        print(current_energy)
     # TODO: implement saving best state, not just end state
     energies = []
     start_time = time.time()
+    merge_num = 0
+    split_num = 0
+    exchange_num = 0
     try:
         for epoch in range(EPOCHS):
             # try:
             #     print(id_to_block["1000000US500019604002000"].community, "offender's community")
             # except:
             #     pass
-            energies.append(current_energy ** 0.25)
-            # if epoch % 100 == 0 and epoch != 0:
-                # visualize_map(communities_list, "docs/images/tests/random_" + str(epoch) + "_optimized_community_visualization.jpg")
+            energies.append(current_energy)
+            if epoch % 100 == 0 and epoch != 0:
+                visualize_map(communities_list, "docs/images/tests/random_" + str(epoch) + "_optimized_community_visualization.jpg")
             print(len(list(scores.keys())), end="")
             # print(list(scores.keys()))
             # try:
@@ -318,6 +361,8 @@ def generate_communities(initial_communities_path, evaluation="community"):
 
             rng = random.random()
             if rng < 1/3:
+            # if rng:
+                exchange_start_time = time.time()
                 print("block exchange", end="")
                 block_to_give, community_to_give_to = _get_random_block_exchange(communities_list, id_to_community)
                 community_to_give_to.blocks.append(block_to_give)
@@ -331,7 +376,11 @@ def generate_communities(initial_communities_path, evaluation="community"):
                     continue    
                 # See below for TODO!
                 new_community_1_score = community_to_give_to.calculate_score()
+                # new_community_1_score = community_to_give_to.calculate_political_similarity()*community_to_give_to.calculate_race_similarity()
+                # new_community_1_score = community_to_give_to.calculate_graphical_compactness()
                 new_community_2_score = community_to_take_from.calculate_score()
+                # new_community_2_score = community_to_take_from.calculate_political_similarity()*community_to_take_from.calculate_race_similarity()
+                # new_community_2_score = community_to_take_from.calculate_graphical_compactness()
                 new_energy = (sum(list(scores.values()))-scores[community_to_give_to.id]+new_community_2_score-scores[community_to_take_from.id]+new_community_2_score)/(communities_num)
                 if _probability(temp, current_energy, new_energy) > random.random():
                     # print("probabilities do be added tho!")
@@ -344,17 +393,20 @@ def generate_communities(initial_communities_path, evaluation="community"):
                         current_energy = sum(list(scores.values()))/communities_num
                     if evaluation == "border":
                         current_energy = border_evaluation(block_graph)
+                    exchange_num += 1
                 else:
                     # Ungive the block
                     community_to_give_to.blocks.remove(block_to_give)
                     community_to_take_from.blocks.append(block_to_give)
+                print(f"Exchange time elapsed: {time.time()-exchange_start_time}")
             elif rng < 2/3:
+                merge_start_time = time.time()
                 print("community merge", end="")
-                if len(communities_list) < 15:
+                if len(communities_list) < 5:
                     print("we definitely want more communities than that")
                     continue
                 communities_to_merge = _get_random_merge(communities_list, id_to_community)
-                # print(communities_to_merge[0].id, communities_to_merge[1].id)
+                print(communities_to_merge[0].id, communities_to_merge[1].id)
                 # Note: this is for community optimiziation only! 
                 # TODO: add way to measure this for border optimization
                 # for block in communities_to_merge[0].blocks:
@@ -363,7 +415,14 @@ def generate_communities(initial_communities_path, evaluation="community"):
                 # print(len(communities_to_merge[0].blocks), len(communities_to_merge[1].blocks))
                 new_community_score = communities_to_merge[0].merge_community(communities_to_merge[1], id_to_block, id_to_community, False)
                 # print(len(communities_to_merge[0].blocks), len(communities_to_merge[1].blocks))
-                new_energy = (sum(list(scores.values()))-new_community_score)/(communities_num-1)
+                print(new_community_score, scores[communities_to_merge[0].id], scores[communities_to_merge[1].id])
+                print(2*new_community_score-scores[communities_to_merge[0].id]-scores[communities_to_merge[1].id])
+                print(sum(list(scores.values()))+new_community_score-scores[communities_to_merge[0].id]-scores[communities_to_merge[1].id])
+                yes = sum(list(scores.values()))+new_community_score-scores[communities_to_merge[0].id]-scores[communities_to_merge[1].id]
+                print(sum(list(scores.values())))
+                new_energy = (sum(list(scores.values()))+2*new_community_score-scores[communities_to_merge[0].id]-scores[communities_to_merge[1].id])/(communities_num)
+                print(communities_num-1)
+                print(current_energy, new_energy)
                 if _probability(temp, current_energy, new_energy) > random.random():
                     # print("probabilities do be added tho!")
                     # print("THERE IS STUFF!")
@@ -377,6 +436,7 @@ def generate_communities(initial_communities_path, evaluation="community"):
                         #     if block.id == "1000000US500019604002000":
                         #         print(block.community, "this is the og, before merge, and in the first one")
                         communities_to_merge[0].merge_community(communities_to_merge[1], id_to_block, id_to_community)
+                        print(communities_to_merge[0].calculate_political_similarity(), "<- polisim", communities_to_merge[0].calculate_race_similarity(), "<- racesim", communities_to_merge[0].calculate_graphical_compactness(), "<-- grapsim")
                         del scores[communities_to_merge[1].id]
                         # print(list(scores.keys()))
                         communities_list.remove(communities_to_merge[1])
@@ -384,6 +444,7 @@ def generate_communities(initial_communities_path, evaluation="community"):
                         del id_to_community[communities_to_merge[1].id]
                         scores[communities_to_merge[0].id] = new_community_score
                         current_energy = sum(list(scores.values()))/communities_num
+                        print(f"Now current energy: {current_energy}")
                         # for other_community in communities_to_merge[0].neighbors:
                         #     neighbors = set()
                         #     for choice, arr in id_to_community[other_community].giveable_blocks.items():
@@ -392,10 +453,13 @@ def generate_communities(initial_communities_path, evaluation="community"):
                         #     print(neighbors, "here are the possible communities to give")
                         #     print(other_community, id_to_community[other_community].neighbors, "final check")
                         # current_energy = sum(list(scores.values()))/communities_num
+                        merge_num += 1
                     if evaluation == "border":
                         current_energy = border_evaluation(block_graph)
                     # print(list(scores.keys()))
+                print(f"Merge time elapsed: {time.time()-merge_start_time}")
             else:
+                split_start_time = time.time()
                 print("community split", end="")
                 old_community, new_community_1, new_community_2 = _get_random_split(communities_list, id_to_block, id_to_community)
                 if old_community == "no moves":
@@ -418,10 +482,21 @@ def generate_communities(initial_communities_path, evaluation="community"):
                 # See above for TODO!
                 # print(old_community.id, new_community_1.id, new_community_2.id)
                 # print(len(old_community.blocks), len(new_community_1.blocks), len(new_community_2.blocks), "lengths")
+                # print(new_community_1.calculate_political_similarity(), new_community_1.calculate_race_similarity(), new_community_1.calculate_graphical_compactness())
+                # print(len(old_community.border_edges), len(old_community.border), len(old_community.blocks))
+                # print(len(new_community_1.border_edges), len(new_community_1.border), len(new_community_1.blocks))
                 new_community_1_score = new_community_1.calculate_score()
+                # new_community_1_score = new_community_1.calculate_political_similarity()*new_community_1.calculate_race_similarity()
+                # new_community_1_score = new_community_1.calculate_graphical_compactness()
                 new_community_2_score = new_community_2.calculate_score()
+                # new_community_2_score = new_community_2.calculate_political_similarity()*new_community_2.calculate_race_similarity()
+                # new_community_2_score = new_community_2.calculate_graphical_compactness()
+                print(new_community_1_score, new_community_2_score, scores[old_community.id], "ok!")
                 # print(scores[old_community.id])
-                new_energy = (sum(list(scores.values()))-scores[old_community.id]+new_community_1_score+new_community_2_score)/(communities_num+1)
+                new_energy = (sum(list(scores.values()))-2*scores[old_community.id]+new_community_1_score+new_community_2_score)/(communities_num)
+                print(current_energy, new_energy)
+                # print(new_community_1_score, new_community_2_score)
+                # print(scores[old_community.id], new_community_1_score+new_community_2_score/2)
                 if _probability(temp, current_energy, new_energy) > random.random():
                     # print("probabilities do be added tho!")
                     # Keep the change!
@@ -480,6 +555,7 @@ def generate_communities(initial_communities_path, evaluation="community"):
                                 id_to_community[neighbor].find_neighbors_and_border(id_to_block, update=True)
                                 # print(id_to_community[neighbor].neighbors, "neighbor neighbors")
                         current_energy = sum(list(scores.values()))/communities_num
+                        print(f"Now current energy: {current_energy}")
                         # for block in new_community_1.blocks:
                         #     if block not in old_community.blocks:
                         #         print("see this also doesn't work ")
@@ -493,12 +569,15 @@ def generate_communities(initial_communities_path, evaluation="community"):
                         #     _ = id_to_block[block.id]
                     if evaluation == "border":
                         current_energy = border_evaluation(block_graph)
+                    split_num += 1
                 else:
                     for block in old_community.blocks:
                         block.community = old_community.id
+                print(f"Split time elapsed: {time.time()-split_start_time}")
             temp *= ALPHA
-            # print(f"TEMPERATURE: {temp}", end="")
-            print(f"\rEpoch: {epoch}, {round(100*epoch/EPOCHS, 1)}% Current Energy: {current_energy ** 0.25} ", end="")
+            print(f"TEMPERATURE: {temp}", end="")
+            print(f"\rEpoch: {epoch}, {round(100*epoch/EPOCHS, 1)}% Current Energy: {current_energy} Ex: {exchange_num}, M: {merge_num}, S: {split_num} ", end="")
+            # print(f"\rEpoch: {epoch}, {round(100*epoch/EPOCHS, 1)}% Current Energy: {current_energy} ", end="")
             sys.stdout.flush()
         print("\n", end="")
         return communities_list, energies

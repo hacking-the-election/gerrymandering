@@ -2,6 +2,8 @@
 Contains a class which represents a political community, as well as functions to help calcualate metrics
 """
 from math import log
+import statistics as stats
+
 from shapely.ops import unary_union
 import networkx as nx
 
@@ -116,6 +118,7 @@ class Community:
         # Below attributes use Jensen-Shannon divergence to measure how similar the community is, for community-based evaluation
         self.race_similarity = None
         self.partisanship_similarity = None
+        self.graphical_compactness = None
         # If we choose to use density
         # self.density_similarity = None
 
@@ -199,6 +202,8 @@ class Community:
         self.blocks.extend(community.blocks)
         if not for_real:
             score = self.calculate_score()
+            # score = self.calculate_political_similarity()*self.calculate_race_similarity()
+            # score = self.calculate_graphical_compactness()
             self.blocks = original_blocks
             return score
 
@@ -258,7 +263,7 @@ class Community:
             try: 
                 other_community = id_to_community[other_community_id]
             except:
-                continue
+                print("This community was not found!")
             else:
                 other_community.find_neighbors_and_border(id_to_block, update=True)
             # if other_community != community.id:
@@ -397,7 +402,7 @@ class Community:
             race_distribution.append(block.percent_other)
 
             race_distributions.append(race_distribution)
-        race_similarity = jensen_shannon(race_distributions)
+        race_similarity = 1 - jensen_shannon(race_distributions)
         return race_similarity
     
     def calculate_political_similarity(self):
@@ -414,11 +419,24 @@ class Community:
             political_distribution.append(block.percent_other)
 
             political_distributions.append(political_distribution)
-        political_similarity = jensen_shannon(political_distributions)
+        political_similarity = 1 - jensen_shannon(political_distributions)
         return political_similarity
 
     def calculate_graphical_compactness(self):
-        return len(self.border_edges)/len(self.blocks)
+        # return len(self.blocks)/len(self.border_edges)
+        # return 1 - len(self.border_edges)/len(self.blocks)
+        return 1 - len(self.border)/len(self.blocks)
 
     def calculate_score(self):
-        return self.calculate_political_similarity()*self.calculate_race_similarity()*self.calculate_graphical_compactness()
+        # return self.calculate_political_similarity()*self.calculate_race_similarity()*self.calculate_graphical_compactness()
+        # block_percent_dems = [block.percent_dem for block in self.blocks if block.percent_dem != None]
+        # block_whites = [block.percent_white for block in self.blocks if block.percent_white != None]
+        # block_blacks = [block.percent_black for block in self.blocks if block.percent_black != None]
+        # block_hispanics = [block.percent_hispanic for block in self.blocks if block.percent_hispanic != None]
+        # block_aapis = [block.percent_aapi for block in self.blocks if block.percent_aapi != None]
+        # block_aians = [block.percent_aian for block in self.blocks if block.percent_aian != None]
+        # block_others = [block.percent_other for block in self.blocks if block.percent_other != None]
+        # racial_stdev = 1-(stats.stdev(block_whites)+stats.stdev(block_blacks)+stats.stdev(block_hispanics)+stats.stdev(block_aapis)+stats.stdev(block_aians)+stats.stdev(block_others)/6)
+        # political_stdev = 1-stats.stdev(block_percent_dems)
+        return (self.calculate_political_similarity()*self.calculate_race_similarity()*self.calculate_graphical_compactness()) ** (1/3)
+        # return political_stdev*racial_stdev*self.calculate_graphical_compactness()
