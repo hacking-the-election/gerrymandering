@@ -27,14 +27,21 @@ def jensen_shannon(block_probability_distributions):
     and returns the jensen shannon divergence, a float from 0-1 which denotes similarity, 1 being the best.
     """
     distribution_num = len(block_probability_distributions)
+    # try:
     try:
         mixture = [sum([distribution[i] for distribution in block_probability_distributions])/len(block_probability_distributions) for i in range(len(block_probability_distributions[0]))]
     except:
         print(block_probability_distributions)
-        raise Exception()
+    # divergence = 0
+    # for distribution in block_probability_distributions:
+        # divergence += kullback_leibler(distribution, mixture, base=distribution_num)/distribution_num
+    # print(divergence)
     divergence = 0
     for distribution in block_probability_distributions:
-        divergence += kullback_leibler(distribution, mixture)/distribution_num
+        # divergence += kullback_leibler(distribution, mixture)/distribution_num
+        divergence += kullback_leibler(mixture, distribution)/distribution_num
+    # print(divergence)
+    # return divergence/log(distribution_num, 2)
     return divergence
 
 class Community:
@@ -179,6 +186,7 @@ class Community:
         Creates the induced subgraph of this community, necessary for calculating the
         articulation points of this community. 
         """
+        self.graph = nx.Graph()
         for block in self.blocks:
             self.graph.add_node(block.id, block=block)
         for block in self.blocks:
@@ -264,6 +272,7 @@ class Community:
                 other_community = id_to_community[other_community_id]
             except:
                 print("This community was not found!")
+                raise Exception(f"This fucked up: community {other_community_id}")
             else:
                 other_community.find_neighbors_and_border(id_to_block, update=True)
             # if other_community != community.id:
@@ -403,6 +412,11 @@ class Community:
 
             race_distributions.append(race_distribution)
         race_similarity = 1 - jensen_shannon(race_distributions)
+        if len(race_distributions) == 0:
+            # Fix this as well!
+            return 0
+        # if race_similarity < 0:
+            # print(race_distributions, "race distribution")
         return race_similarity
     
     def calculate_political_similarity(self):
@@ -419,6 +433,10 @@ class Community:
             political_distribution.append(block.percent_other)
 
             political_distributions.append(political_distribution)
+        if len(political_distributions) == 0:
+            # raise Exception(block.percent_dem, block.pop)
+            # This needs to be fixed soon though!
+            return 0
         political_similarity = 1 - jensen_shannon(political_distributions)
         return political_similarity
 
@@ -436,7 +454,13 @@ class Community:
         # block_aapis = [block.percent_aapi for block in self.blocks if block.percent_aapi != None]
         # block_aians = [block.percent_aian for block in self.blocks if block.percent_aian != None]
         # block_others = [block.percent_other for block in self.blocks if block.percent_other != None]
-        # racial_stdev = 1-(stats.stdev(block_whites)+stats.stdev(block_blacks)+stats.stdev(block_hispanics)+stats.stdev(block_aapis)+stats.stdev(block_aians)+stats.stdev(block_others)/6)
+        # print(stats.stdev(block_whites)+stats.stdev(block_blacks)+stats.stdev(block_hispanics)+stats.stdev(block_aapis)+stats.stdev(block_aians)+stats.stdev(block_others))
+        # racial_stdev = 1-((stats.stdev(block_whites)+stats.stdev(block_blacks)+stats.stdev(block_hispanics)+stats.stdev(block_aapis)+stats.stdev(block_aians)+stats.stdev(block_others))/6)
+        # print(racial_stdev, "racial stdev")
         # political_stdev = 1-stats.stdev(block_percent_dems)
-        return (self.calculate_political_similarity()*self.calculate_race_similarity()*self.calculate_graphical_compactness()) ** (1/3)
+        # print(self.calculate_political_similarity(), "<- polisim", self.calculate_race_similarity(), "<- racesim", self.calculate_graphical_compactness(), "<-- grapsim")
+        # print((self.calculate_political_similarity()*self.calculate_race_similarity()*self.calculate_graphical_compactness()) ** (1/3))
+        # return (self.calculate_political_similarity()*self.calculate_race_similarity()*self.calculate_graphical_compactness()) ** (1/3)
+        return (self.calculate_political_similarity()*self.calculate_race_similarity())**(1/2)
         # return political_stdev*racial_stdev*self.calculate_graphical_compactness()
+        # return political_stdev*racial_stdev

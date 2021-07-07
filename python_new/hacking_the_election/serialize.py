@@ -260,6 +260,8 @@ def connect_islands(block_graph):
             except ValueError:
                 break
             block_graph.add_edge(*edge_to_add)
+            block_graph.nodes[edge_to_add[0]]['block'].neighbors.append(block_graph.nodes[edge_to_add[1]]['block'].id)
+            block_graph.nodes[edge_to_add[1]]['block'].neighbors.append(block_graph.nodes[edge_to_add[0]]['block'].id)
             print(f"\rConnecting islands progress: {100 - round(100 * (len(graph_components)-1)/original_graph_components_num, 2)}%")
 
             # print('yo', block_graph.nodes[edge_to_add[0]]['block'].id, block_graph.nodes[edge_to_add[1]]['block'].id)

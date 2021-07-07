@@ -14,9 +14,13 @@ import math
 
 import networkx as nx
 from networkx.algorithms import community as nx_algorithms
+from networkx.algorithms import edge_betweenness_centrality
+from networkx.algorithms.distance_measures import center
 from hacking_the_election.utils.community import Community
 from hacking_the_election.initial_generation import random_generation
 from hacking_the_election.visualization.community_visualization import visualize_map
+from hacking_the_election.visualization.graph_visualization import visualize_graph
+
 
 T_MAX = 1
 EPOCHS = 40000
@@ -29,8 +33,8 @@ def _probability(temp, current_energy, new_energy):
         # Always do exchanges that are good.
         return 1
     else:
-        # return temp
-        return 0
+        return temp
+        # return 0
         # return math.exp((new_energy - current_energy) / temp)
 
 def create_block_graph(communities_list):
@@ -154,16 +158,20 @@ def _get_random_merge(communities_list, id_to_community):
     return (community, neighbor_community)
 
 def _get_random_split(communities_list, id_to_block, id_to_community):
+    graph_start_time = time.time()
     # print("split created!")
     max_blocks = max([len(community.blocks) for community in communities_list])
     possible_community_list = [community for community in communities_list if len(community.blocks) > max_blocks/2]
-    if len(possible_community_list) == 0:
-        return "no moves", "ok", "boomer"
-    else:
-        chosen_community = random.choice(possible_community_list)
+    # if len(possible_community_list) == 0:
+    #     return "no moves", "ok", "boomer"
+    # else:
+    chosen_community = random.choice(possible_community_list)
+    print(chosen_community.neighbors, "chosen_community neighbors")
+    
     # print(chosen_community.neighbors, "old community neighbors")
     # print(chosen_community.block_ids)
     # partition = nx_algorithms.kernighan_lin_bisection(chosen_community.graph)
+
     # cutset = nx.minimum_edge_cut(chosen_community.graph)
     # print(cutset)
     # new_graph = nx.Graph()
@@ -172,13 +180,286 @@ def _get_random_split(communities_list, id_to_block, id_to_community):
     # new_graph.remove_edges_from(cutset)
     # subgraphs = list(new_graph.subgraph(c) for c in nx.connected_components(new_graph))
     # print(subgraphs)
-    partition = karger_stein(chosen_community.graph)
+
+    # partition = karger_stein(chosen_community.graph)
+    # # community_1_blocks = partition[0]
+    # # community_2_blocks = partition[1]
+    # community_1_blocks = [id_to_block[block_id] for block_id in partition[0]]
+    # community_2_blocks = [id_to_block[block_id] for block_id in partition[1]]
+    # max_id = max(id_to_community)
+    # for block in community_1_blocks:
+    #     block.community = max_id+1
+    # for block in community_2_blocks:
+    #     block.community = max_id+2
+    # community_1 = Community(chosen_community.state, max_id+1, community_1_blocks)
+    # community_2 = Community(chosen_community.state, max_id+2, community_2_blocks)
+    # community_1.initialize_graph(id_to_block)
+    # # WHICH OF THE FOLLOWING IS USED, THE ENTIRE MAP OR JUST THE CHOSEN COMMUNITY, MATTERS A LOT ACTUALLY
+    # # community_1.find_neighbors_and_border(chosen_community.block_ids)
+    # community_1.find_neighbors_and_border(id_to_block)
+    # community_2.initialize_graph(id_to_block)
+    # # community_2.find_neighbors_and_border(chosen_community.block_ids)
+    # community_2.find_neighbors_and_border(id_to_block)
+    # print(len(chosen_community.blocks))
+    # print(len(chosen_community.border))
+    # print(len(community_1.border), len(community_1.blocks), "border/blocks com 1")
+    # print(len(community_2.border), len(community_2.blocks), "border/blocks com 2")
+    # # print(len(community_2_blocks), len(community_2_blocks)+len(community_1_blocks), "blocks")
+    # print(chosen_community.id)
+    # print(chosen_community.neighbors, "chosen_community neighbors")
+    # print(community_1.neighbors)
+    # print(community_2.neighbors)
+    # return chosen_community, community_1, community_2
     # print(partition)
     # print(community.neighbors, "neighbors of the community")
     # block_list = []
 
+    starting_1_block, starting_2_block = random.sample(chosen_community.blocks, 2)
+    community_1_blocks = [starting_1_block]
+    community_2_blocks = [starting_2_block]
+    neighbors_1 = [id for id in starting_1_block.neighbors if id_to_block[id].community == chosen_community.id]
+    neighbors_2 = [id for id in starting_2_block.neighbors if id_to_block[id].community == chosen_community.id]
+    i = 0
+    while len(community_1_blocks) + len(community_2_blocks) < len(chosen_community.blocks):
+        if i % 2 == 0:
+        # if random.random() < 1/2:
+            if len(neighbors_1) == 0:
+                i += 1
+                continue
+            # Add to community_1
+            next_neighbor_id = neighbors_1.pop(0)
+            next_neighbor_block = id_to_block[next_neighbor_id]
+            # either the while loop or the line 200 if function needs to go
+            no_neighbors_left = False
+            while next_neighbor_block in community_1_blocks or next_neighbor_block in community_2_blocks:
+                try:
+                    next_neighbor_id = neighbors_1.pop(0)
+                except:
+                    no_neighbors_left = True
+                    break
+                next_neighbor_block = id_to_block[next_neighbor_id]
+            if no_neighbors_left:
+                # print("there were no n 1")
+                i += 1
+                continue
+            community_1_blocks.append(next_neighbor_block)
+            for neighbor in next_neighbor_block.neighbors:
+                if id_to_block[neighbor] in community_1_blocks or id_to_block[neighbor] in community_2_blocks:
+                    continue
+                else:
+                    if id_to_block[neighbor].community == chosen_community.id:
+                        neighbors_1.append(neighbor)
+        else:
+            # print("ok it started")
+            if len(neighbors_2) == 0:
+                i += 1
+                continue
+            # Add to community_2
+            next_neighbor_id = neighbors_2.pop(0)
+            next_neighbor_block = id_to_block[next_neighbor_id]
+            # either the while loop or the line 200 if function needs to go
+            no_neighbors_left = False
+            while next_neighbor_block in community_1_blocks or next_neighbor_block in community_2_blocks:
+                try:
+                    next_neighbor_id = neighbors_2.pop(0)
+                except:
+                    no_neighbors_left = True
+                    break
+                next_neighbor_block = id_to_block[next_neighbor_id]
+            if no_neighbors_left:
+                # print("there were no n 2")
+                i += 1
+                # if (len(community_1_blocks) + len(community_2_blocks) + 1 == len(chosen_community.blocks)):
+                #     for block in chosen_community.blocks:
+                #         if block not in community_2_blocks or block not in community_1_blocks:
+                #             print(block.id, block.neighbors)
+                continue
+                # break
+            community_2_blocks.append(next_neighbor_block)
+            for neighbor in next_neighbor_block.neighbors:
+                if id_to_block[neighbor] in community_1_blocks or id_to_block[neighbor] in community_2_blocks:
+                    continue
+                else:
+                    if id_to_block[neighbor].community == chosen_community.id:
+                        neighbors_2.append(neighbor)
+        i += 1
+        # print(len(community_1_blocks), len(community_2_blocks), len(chosen_community.blocks))
+        # print(len(neighbors_1), len(neighbors_2))
+        # print(i, "i")
 
-    # graph_start_time = time.time()
+    print(f"Time needed: {time.time()-graph_start_time}")
+
+    max_id = max(id_to_community)
+    # print(community_2_blocks)
+    for block in community_1_blocks:
+        block.community = max_id+1
+    for block in community_2_blocks:
+        block.community = max_id+2
+    community_1 = Community(chosen_community.state, max_id+1, community_1_blocks)
+    community_2 = Community(chosen_community.state, max_id+2, community_2_blocks)
+    community_1.initialize_graph(id_to_block)
+    # community_1.find_neighbors_and_border(chosen_community.block_ids)
+    community_1.find_neighbors_and_border(id_to_block)
+    community_2.initialize_graph(id_to_block)
+    # community_2.find_neighbors_and_border(chosen_community.block_ids)
+    community_2.find_neighbors_and_border(id_to_block)
+
+    print(f"Time needed: {time.time()-graph_start_time}")
+
+    # visualize_graph(
+    #     chosen_community.graph,
+    #     f'./chosen_community_graph.jpg',
+    #     lambda n : chosen_community.graph.nodes[n]['block'].centroid,
+    #     # colors=(lambda n : spanning_tree.nodes[n]['color']),
+    #     # sizes=(lambda n : spanning_tree.nodes[n]['size']),
+    #     # sizes=(lambda n : block_graph.nodes[n]['precinct'].pop/500),
+    #     show=False
+    # )
+    # # print(list(community_1.graph.nodes)[0])
+    # for node in community_1.graph.nodes:
+    #     try:
+    #         _ = community_1.graph.nodes[node]['block']
+    #     except:
+    #         print(node)
+    #         if node not in community_1.block_ids:
+    #             print("wait up, 1")
+    # for node in community_2.graph.nodes:
+    #     try:
+    #         _ = community_2.graph.nodes[node]['block']
+    #     except:
+    #         print(node)
+    #         if node not in community_2.block_ids:
+    #             print("wait up, 2")
+    # print(community_1.graph.nodes[list(community_1.graph.nodes)[0]])
+    # visualize_graph(
+    #     community_1.graph,
+    #     f'./community_1_graph.jpg',
+    #     lambda n : community_1.graph.nodes[n]['block'].centroid,
+    #     # colors=(lambda n : spanning_tree.nodes[n]['color']),
+    #     # sizes=(lambda n : spanning_tree.nodes[n]['size']),
+    #     # sizes=(lambda n : block_graph.nodes[n]['precinct'].pop/500),
+    #     show=False
+    # )
+    # visualize_graph(
+    #     community_2.graph,
+    #     f'./community_2_graph.jpg',
+    #     lambda n : community_2.graph.nodes[n]['block'].centroid,
+    #     # colors=(lambda n : spanning_tree.nodes[n]['color']),
+    #     # sizes=(lambda n : spanning_tree.nodes[n]['size']),
+    #     # sizes=(lambda n : block_graph.nodes[n]['precinct'].pop/500),
+    #     show=False
+    # )
+
+    print(len(chosen_community.blocks))
+    print(len(community_2_blocks), len(community_1_blocks), len(community_2_blocks)+len(community_1_blocks), "blocks")
+    print(chosen_community.id)
+    print(chosen_community.neighbors, "chosen_community neighbors")
+    print(community_1.neighbors)
+    print(community_2.neighbors)
+    return chosen_community, community_1, community_2
+
+
+    # spanning_tree = nx.Graph()
+    # starting_block = random.choice(chosen_community.blocks).id
+    # spanning_tree.add_node(starting_block, block=id_to_block[starting_block], color=(0,0,255), size=1)
+    # neighbors = {id : starting_block for id in id_to_block[starting_block].neighbors}
+    # print(starting_block, "starting block")
+    # # first_neighbor = id_to_block[starting_block].neighbors[0]
+    # # second_neighbor = id_to_block[starting_block].neighbors[1]
+    # total_block_num = len(chosen_community.graph.nodes)
+    # while (len(spanning_tree.nodes) < total_block_num):
+    #     # print(len(spanning_tree.nodes), total_block_num)
+    #     next_neighbor = list(neighbors.keys())[0]
+    #     # next_neighbor = random.choice(list(neighbors.keys()))
+    #     # print(next_neighbor)
+    #     if next_neighbor not in spanning_tree.nodes:
+    #         # if next_neighbor == first_neighbor:
+    #             # print(neighbors)
+    #             # print("oh cool!", first_neighbor, neighbors[first_neighbor])
+    #         # if next_neighbor == second_neighbor:
+    #             # print(neighbors)
+    #             # print("oh cool!", second_neighbor, neighbors[second_neighbor])
+    #         # print("haha yes")
+    #         spanning_tree.add_node(next_neighbor, block=id_to_block[next_neighbor], color=(255,0,0), size=1)
+    #         spanning_tree.add_edge(neighbors[next_neighbor], next_neighbor)
+    #         added_neighbors_dict = {neighbor : next_neighbor for neighbor in id_to_block[next_neighbor].neighbors}
+    #         # print(neighbors, added_neighbors_dict, "p")
+    #         # neighbors = {**neighbors, **added_neighbors_dict}
+    #         neighbors = {**added_neighbors_dict, **neighbors}
+    #         del neighbors[next_neighbor]
+    #     else:
+    #         del neighbors[next_neighbor]
+    # # for edge in chosen_community.graph.edges:
+    # #     edge[weight] = 1
+    # # spanning_tree = nx.minimum_spanning_tree(chosen_community.graph, weight='weight')
+    # # edge_to_remove = random.choice(list(spanning_tree.edges))
+    # print(f"Time needed: {time.time()-graph_start_time}")
+    # c = center(spanning_tree)
+    # central_node = random.choice(list(c))
+    # edge_to_remove = random.choice(list(spanning_tree.edges(central_node)))
+    # print(f"Time needed: {time.time()-graph_start_time}")
+
+    # # edges_to_centrality = edge_betweenness_centrality(spanning_tree)
+    # # centrality_to_edges = {}
+    # # for edge, centrality in edges_to_centrality.items():
+    #     # centrality_to_edges[centrality] = edge
+    # # edge_to_remove = (starting_block, first_neighbor)
+    # # edge_to_remove = centrality_to_edges[max(centrality_to_edges.keys())]
+    # # del edges[edge_to_remove]
+    # spanning_tree.nodes[edge_to_remove[0]]['color'] = (0,0,255)
+    # spanning_tree.nodes[edge_to_remove[0]]['size'] = 5
+    # spanning_tree.nodes[edge_to_remove[1]]['color'] = (0,0,255)
+    # spanning_tree.nodes[edge_to_remove[1]]['size'] = 5
+    # visualize_graph(
+    #     spanning_tree,
+    #     f'./spanning_tree_graph.jpg',
+    #     lambda n : spanning_tree.nodes[n]['block'].centroid,
+    #     colors=(lambda n : spanning_tree.nodes[n]['color']),
+    #     sizes=(lambda n : spanning_tree.nodes[n]['size']),
+    #     # sizes=(lambda n : block_graph.nodes[n]['precinct'].pop/500),
+    #     show=False
+    # )
+    # # print(edge_to_remove)
+    # spanning_tree.remove_edge(edge_to_remove[0], edge_to_remove[1])
+    # partition = list(spanning_tree.subgraph(c) for c in nx.connected_components(spanning_tree))
+    # for node in list(partition[0].nodes):
+    #     spanning_tree.nodes[node]['color'] = (255, 0, 0)
+    # for node in list(partition[1].nodes):
+    #     spanning_tree.nodes[node]['color'] = (0, 255, 0)
+    # visualize_graph(
+    #     spanning_tree,
+    #     f'./spanning_tree_after_graph.jpg',
+    #     lambda n : spanning_tree.nodes[n]['block'].centroid,
+    #     colors=(lambda n : spanning_tree.nodes[n]['color']),
+    #     sizes=(lambda n : spanning_tree.nodes[n]['size']),
+    #     # sizes=(lambda n : block_graph.nodes[n]['precinct'].pop/500),
+    #     show=False
+    # )
+
+    # max_id = max(id_to_community)
+    # community_1_blocks = [id_to_block[block_id] for block_id in list(partition[0].nodes)]
+    # community_2_blocks = [id_to_block[block_id] for block_id in list(partition[1].nodes)]
+    # # print(community_2_blocks)
+    # for block in community_1_blocks:
+    #     block.community = max_id+1
+    # for block in community_2_blocks:
+    #     block.community = max_id+2
+    # community_1 = Community(chosen_community.state, max_id+1, community_1_blocks)
+    # community_2 = Community(chosen_community.state, max_id+2, community_2_blocks)
+    # community_1.initialize_graph(id_to_block)
+
+    # # community_1.find_neighbors_and_border(chosen_community.block_ids)
+    # community_1.find_neighbors_and_border(id_to_block)
+    # community_2.initialize_graph(id_to_block)
+    # # community_2.find_neighbors_and_border(chosen_community.block_ids)
+    # community_2.find_neighbors_and_border(id_to_block)
+    # print(len(chosen_community.blocks))
+    # print(len(community_2_blocks), len(community_2_blocks)+len(community_1_blocks), "blocks")
+    # print(chosen_community.id)
+    # print(chosen_community.neighbors, "chosen_community neighbors")
+    # print(community_1.neighbors)
+    # print(community_2.neighbors)
+    # return chosen_community, community_1, community_2
 
     # actual_block_ids = chosen_community.block_ids
     # community_id = max(list(id_to_community.keys()))
@@ -271,8 +552,7 @@ def _get_random_split(communities_list, id_to_block, id_to_community):
     #     # community.initialize_graph(id_to_block)
     #     community.find_neighbors_and_border(chosen_community.block_ids)
 
-    # print(f"Time needed: {time.time()-graph_start_time}")
-
+    print(f"Time needed: {time.time()-graph_start_time}")
 
     # print(created_communities)
     # if "1000000US500019604002000" in list(chosen_community.block_ids.keys()):
@@ -287,24 +567,40 @@ def _get_random_split(communities_list, id_to_block, id_to_community):
     #     block.community = created_communities[1].id
     # community_1_blocks = partition[0]
     # community_2_blocks = partition[1]
+    # community_2_blocks = list(partition[0].nodes)
+    # print(type(community_2_blocks[0]))
+    # for block_id in list(partition[0].nodes):
+    #     print(block_id)
+    #     _ = id_to_block[block_id]
+    #     print("ok")
+    # community_1_blocks = [id_to_block[block_id] for block_id in list(partition[0].nodes)]
+    # community_2_blocks = [id_to_block[block_id] for block_id in list(partition[1].nodes)]
+    # print(community_1_blocks)
+    # print("hello!")
+    # print(partition)
     # # community_1_blocks = collections_of_blocks[0]
     # # community_2_blocks = collections_of_blocks[1]
     # # # print(id_to_block)
-    max_id = max(id_to_community)
-    community_1_blocks = [id_to_block[block_id] for block_id in partition[0]]
-    community_2_blocks = [id_to_block[block_id] for block_id in partition[1]]
-    for block in community_1_blocks:
-        block.community = max_id+1
-    for block in community_2_blocks:
-        block.community = max_id+2
-    # # print(community_1_blocks)
-    community_1 = Community(chosen_community.state, max_id+1, community_1_blocks)
-    community_2 = Community(chosen_community.state, max_id+2, community_2_blocks)
-    community_1.initialize_graph(chosen_community.block_ids)
-    community_1.find_neighbors_and_border(chosen_community.block_ids)
-    community_2.initialize_graph(id_to_block)
-    community_2.find_neighbors_and_border(chosen_community.block_ids)
-    return chosen_community, community_1, community_2
+    # max_id = max(id_to_community)
+    # # community_1_blocks = [id_to_block[block_id] for block_id in partition[0]]
+    # # community_2_blocks = [id_to_block[block_id] for block_id in partition[1]]
+    # for block in community_1_blocks:
+    #     block.community = max_id+1
+    # for block in community_2_blocks:
+    #     block.community = max_id+2
+    # community_1 = Community(chosen_community.state, max_id+1, community_1_blocks)
+    # community_2 = Community(chosen_community.state, max_id+2, community_2_blocks)
+    # community_1.initialize_graph(chosen_community.block_ids)
+    # community_1.find_neighbors_and_border(chosen_community.block_ids)
+    # community_2.initialize_graph(id_to_block)
+    # community_2.find_neighbors_and_border(chosen_community.block_ids)
+    # print(len(chosen_community.blocks))
+    # print(len(community_2_blocks), len(community_2_blocks)+len(community_1_blocks), "blocks")
+    # print(chosen_community.id)
+    # print(chosen_community.neighbors, "chosen_community neighbors")
+    # print(community_1.neighbors)
+    # print(community_2.neighbors)
+    # return chosen_community, community_1, community_2
     # print(len(created_communities), "hello")
     # return chosen_community, created_communities[0], created_communities[1]
 
@@ -314,6 +610,7 @@ def generate_communities(initial_communities_path, evaluation="community"):
     Given a initial set of communities, optimizes them with simulated annealing. 
     Returns a list of optimized communities. 
     """
+    very_start_time = time.time()
     with open(initial_communities_path, "rb") as f:
         communities_list = pickle.load(f)
 
@@ -336,23 +633,39 @@ def generate_communities(initial_communities_path, evaluation="community"):
 
     if evaluation == "community":
         current_energy = sum(list(scores.values()))/communities_num
+        print(sum(list(scores.values())))
+        print(communities_num)
         print(current_energy)
     # TODO: implement saving best state, not just end state
     energies = []
+    temperatures = []
+    number_of_communities_list = []
+    ear = []
+    mar = []
+    sar = []
     start_time = time.time()
     merge_num = 0
+    attempted_merge_num = 0
     split_num = 0
+    attempted_split_num = 0
     exchange_num = 0
+    attempted_exchange_num = 0
+
+    iterations_without_movement = 0
+    epoch = 1
+
     try:
-        for epoch in range(EPOCHS):
+        # for epoch in range(EPOCHS):
+        while True:
+            epoch += 1
+            if iterations_without_movement > 500:
+                break
             # try:
             #     print(id_to_block["1000000US500019604002000"].community, "offender's community")
             # except:
             #     pass
-            energies.append(current_energy)
-            if epoch % 100 == 0 and epoch != 0:
-                visualize_map(communities_list, "docs/images/tests/random_" + str(epoch) + "_optimized_community_visualization.jpg")
-            print(len(list(scores.keys())), end="")
+            # if epoch % 500 == 0 and epoch != 0:
+                # visualize_map(communities_list, "docs/images/tests/random_" + str(epoch) + "_optimized_community_visualization.jpg")
             # print(list(scores.keys()))
             # try:
             #     print(id_to_community[64].neighbors, "id 64 com neighbors")
@@ -383,6 +696,8 @@ def generate_communities(initial_communities_path, evaluation="community"):
                 # new_community_2_score = community_to_take_from.calculate_graphical_compactness()
                 new_energy = (sum(list(scores.values()))-scores[community_to_give_to.id]+new_community_2_score-scores[community_to_take_from.id]+new_community_2_score)/(communities_num)
                 if _probability(temp, current_energy, new_energy) > random.random():
+                    
+                    iterations_without_movement = 0
                     # print("probabilities do be added tho!")
                     # Keep the change!
                     if evaluation == "community":
@@ -398,11 +713,12 @@ def generate_communities(initial_communities_path, evaluation="community"):
                     # Ungive the block
                     community_to_give_to.blocks.remove(block_to_give)
                     community_to_take_from.blocks.append(block_to_give)
+                attempted_exchange_num += 1
                 print(f"Exchange time elapsed: {time.time()-exchange_start_time}")
             elif rng < 2/3:
                 merge_start_time = time.time()
                 print("community merge", end="")
-                if len(communities_list) < 5:
+                if len(communities_list) < 1:
                     print("we definitely want more communities than that")
                     continue
                 communities_to_merge = _get_random_merge(communities_list, id_to_community)
@@ -424,6 +740,8 @@ def generate_communities(initial_communities_path, evaluation="community"):
                 print(communities_num-1)
                 print(current_energy, new_energy)
                 if _probability(temp, current_energy, new_energy) > random.random():
+
+                    iterations_without_movement = 0
                     # print("probabilities do be added tho!")
                     # print("THERE IS STUFF!")
                     # Keep the change!
@@ -457,9 +775,11 @@ def generate_communities(initial_communities_path, evaluation="community"):
                     if evaluation == "border":
                         current_energy = border_evaluation(block_graph)
                     # print(list(scores.keys()))
+                attempted_merge_num += 1
                 print(f"Merge time elapsed: {time.time()-merge_start_time}")
             else:
                 split_start_time = time.time()
+                # graph_start_time = time.time()
                 print("community split", end="")
                 old_community, new_community_1, new_community_2 = _get_random_split(communities_list, id_to_block, id_to_community)
                 if old_community == "no moves":
@@ -491,6 +811,10 @@ def generate_communities(initial_communities_path, evaluation="community"):
                 new_community_2_score = new_community_2.calculate_score()
                 # new_community_2_score = new_community_2.calculate_political_similarity()*new_community_2.calculate_race_similarity()
                 # new_community_2_score = new_community_2.calculate_graphical_compactness()
+                print(old_community.calculate_political_similarity(), "<- polisim", old_community.calculate_race_similarity(), "<- racesim", old_community.calculate_graphical_compactness(), "<-- grapsim")
+                print(new_community_1.calculate_political_similarity(), "<- polisim", new_community_1.calculate_race_similarity(), "<- racesim", new_community_1.calculate_graphical_compactness(), "<-- grapsim")
+                print(new_community_2.calculate_political_similarity(), "<- polisim", new_community_2.calculate_race_similarity(), "<- racesim", new_community_2.calculate_graphical_compactness(), "<-- grapsim")
+
                 print(new_community_1_score, new_community_2_score, scores[old_community.id], "ok!")
                 # print(scores[old_community.id])
                 new_energy = (sum(list(scores.values()))-2*scores[old_community.id]+new_community_1_score+new_community_2_score)/(communities_num)
@@ -498,6 +822,8 @@ def generate_communities(initial_communities_path, evaluation="community"):
                 # print(new_community_1_score, new_community_2_score)
                 # print(scores[old_community.id], new_community_1_score+new_community_2_score/2)
                 if _probability(temp, current_energy, new_energy) > random.random():
+
+                    iterations_without_movement = 0
                     # print("probabilities do be added tho!")
                     # Keep the change!
                     if evaluation == "community":
@@ -567,31 +893,61 @@ def generate_communities(initial_communities_path, evaluation="community"):
                         #         print("BIGGO PROBLEMS!")
                         # for block in old_community.blocks:
                         #     _ = id_to_block[block.id]
+                        split_num += 1
                     if evaluation == "border":
                         current_energy = border_evaluation(block_graph)
-                    split_num += 1
                 else:
                     for block in old_community.blocks:
                         block.community = old_community.id
+                attempted_split_num += 1
                 print(f"Split time elapsed: {time.time()-split_start_time}")
-            temp *= ALPHA
+
+            iterations_without_movement += 1
+            energies.append(100 * current_energy)
+            temperatures.append(100 * temp)
+            number_of_communities_list.append(len(list(communities_list)))
+            ear.append(round(100*exchange_num/max(attempted_exchange_num,1), 1))
+            mar.append(round(100*merge_num/max(attempted_merge_num,1), 1))
+            sar.append(round(100*split_num/max(attempted_split_num,1), 1))
             print(f"TEMPERATURE: {temp}", end="")
-            print(f"\rEpoch: {epoch}, {round(100*epoch/EPOCHS, 1)}% Current Energy: {current_energy} Ex: {exchange_num}, M: {merge_num}, S: {split_num} ", end="")
+            print(f"\rEpoch: {epoch}, {round(100*epoch/EPOCHS, 1)}% Current Energy: {current_energy} Communities #: {len(list(communities_list))} Ex: {exchange_num}, {round(100*exchange_num/max(attempted_exchange_num,1), 1)}% M: {merge_num}, {round(100*merge_num/max(attempted_merge_num,1), 1)}% S: {split_num} {round(100*split_num/max(attempted_split_num,1), 1)}% nc no graphical compactness ", end="")
+            
+            temp *= ALPHA
             # print(f"\rEpoch: {epoch}, {round(100*epoch/EPOCHS, 1)}% Current Energy: {current_energy} ", end="")
             sys.stdout.flush()
         print("\n", end="")
-        return communities_list, energies
+        print(f"{iterations_without_movement} iterations without change in communities.")
+        print(f"Run ended at epoch {epoch}. {round(time.time()-very_start_time)} seconds elapsed for an average of {epoch/(time.time()-very_start_time)} epochs per second.")
+        return communities_list, energies, temperatures, number_of_communities_list, mar, sar, ear
     except KeyboardInterrupt:
-        # print()
-        # print("Save metrics?")
-        text_to_write = "Energies\n"
-        text_to_write += str(energies) + "\n"
-        with open("community_generation_metrics.txt", "w") as f:
-            f.write(text_to_write)
+        print("\n", end="")
+        print(f"Run ended at epoch {epoch}. {round(time.time()-very_start_time)} seconds elapsed for an average of {epoch/(time.time()-very_start_time)} epochs per second.")
+        return None, energies, temperatures, number_of_communities_list, mar, sar, ear
 
 if __name__ == "__main__":
-    optimized_communities_list, energies = generate_communities(sys.argv[1], evaluation="community")
-    with open(sys.argv[2] + "_optimized_community_list.pickle", "wb") as f:
-        pickle.dump(optimized_communities_list, f)
+    optimized_communities_list, energies, temperatures, number_of_communities_list, mar, sar, ear = generate_communities(sys.argv[1], evaluation="community")
+    
+    print("\nSaving metrics to 'community_generation_metrics.txt' ")
+    # print("Save metrics?")
+    text_to_write = "Energies\n"
+    text_to_write += str(energies) + "\n"
+    text_to_write += "Temperatures\n"
+    text_to_write += str(temperatures) + "\n"
+    text_to_write += "Number of Communities\n"
+    text_to_write += str(number_of_communities_list) + "\n"
+    text_to_write += "Merge Acceptance Rate\n"
+    text_to_write += str(mar) + "\n"
+    text_to_write += "Split Acceptance Rate\n"
+    text_to_write += str(sar) + "\n"
+    text_to_write += "Exchange Acceptance Rate\n"
+    text_to_write += str(ear) + "\n"
+    with open("community_generation_metrics.txt", "w") as f:
+        f.write(text_to_write)
 
-    visualize_map(optimized_communities_list, "docs/images/random_optimized_community_visualization.jpg")
+    if optimized_communities_list != None:
+
+        print("Saving optimized communities to pickle")
+        with open(sys.argv[2] + "_optimized_community_list.pickle", "wb") as f:
+            pickle.dump(optimized_communities_list, f)
+        print("Visualizing map")
+        visualize_map(optimized_communities_list, "docs/images/optimized_random_community_visualization.jpg")

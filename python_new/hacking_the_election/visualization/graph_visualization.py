@@ -40,7 +40,11 @@ def visualize_graph(graph, output_path, coords, colors=None, sizes=None, show=Fa
 
     graph_nodes = list(graph.nodes())
     graph_edges = list(graph.edges())
-
+    for node in graph_nodes:
+        try: 
+            _ = coords(node)
+        except:
+            print(node, graph_nodes[node])
     modified_coords = modify_coords(
         [coords(node) for node in graph_nodes], [1000, 1000]
     )
