@@ -1,1000 +1,773 @@
-/*=======================================
- parse.cpp:                     k-vernooy
- last modified:               Sun, Jun 21
+#include <iostream> 
+#include <algorithm>
+#include <fstream>
 
- Definitions of state methods for parsing
- from geodata and election data (see data
- specs in root directory for information)
-========================================*/
+#include "../include/hte_common.h"
 
-#include <iostream>      // std::cout and cin
-#include <algorithm>     // for std::find and std::distance
-#include <numeric>       // include std::iota
-#include <iomanip>       // setprecision for debug
-#include <iterator>      // for find algorithms
+#ifdef HTE_DATA_BUILD
+#include "../lib/rapidjson/include/rapidjson/rapidjson.h"
+#endif
 
-// for the rapidjson parser
-#include "../lib/rapidjson/include/rapidjson/document.h"
-#include "../lib/rapidjson/include/rapidjson/writer.h"
-#include "../lib/rapidjson/include/rapidjson/stringbuffer.h"
-#include "../include/hte.h"
+namespace hte {
 
-#define VERBOSE 1
-#define TEXAS_COORDS
+// vector<vector<string> > parseSV(string tsv, string delimiter) {
+//     stringstream file(tsv);
+//     string line;
+//     vector<vector<string> > data;
 
-using namespace rapidjson;
-using namespace std;
-using namespace hte;
+//     while (getline(file, line)) {
+//         vector<string> row;
+//         size_t pos = 0;
 
-// the number to multiply floating coordinates by
-const long int COORD_SCALER = pow(2, 18);
+//         while ((pos = line.find(delimiter)) != string::npos) {
+//             row.push_back(line.substr(0, pos));
+//             line.erase(0, pos + delimiter.length());
+//         }
 
-// identifications for files
-map<IdType, string> idHeaders;
-map<PoliticalParty, string> electionHeaders;
-const vector<string> nonPrecinctIds = {"9999", "WV", "ZZZZZ", "LAKE", "WWWWWW", "1808904150", "1812700460", "39095123ZZZ", "39043043ACN", "39123123ZZZ", "39043043ZZZ", "39093093999", "39035007999", "3908500799", "3900700799"};
+//         row.push_back(line);
+//         data.push_back(row);
+//     }
+
+//     return data;
+// }
 
 
-class NodePair {
-    public:
-        array<int, 2> nodeIds;
-        double distance;
-        NodePair() {};
+// map<string, map<PoliticalParty, int> > parseVoterData(string voterData) {
+//     vector<vector<string> > dataList = parseSV(voterData, "\t");
+//     int precinctIdCol = -1;
 
-        bool operator<(const NodePair& l2) const {
-            return this->distance < l2.distance;
-        }
-};
+//     map<PoliticalParty, int> electionCols;
 
+//     for (int i = 0; i < dataList[0].size(); i++) {
+//         string val = dataList[0][i];
+//         if (val == idHeaders[IdType::ELECTIONID])
+//             precinctIdCol = i;
 
-vector<vector<string> > hte::parseSV(string tsv, string delimiter) {
-    /*
-        @desc:
-            takes a tsv file as string, finds two
-            dimensional array of cells and rows
+//         for (auto& vid : electionHeaders) {
+//             if (vid.second == val) {
+//                 electionCols[vid.first] = i;
+//             }
+//         }
+//     }
 
-        @params:
-            `string` tsv: A delimiter separated file
-            `string` delimiter: A delimiter to split by
-        
-        @return: `vector<vector<string> >` parsed array of data
+//     map<string, map<PoliticalParty, int> > parsedData;
 
-        @warn:
-            for some reason this will glitch
-            when the id's are at the end of the line
-    */
+//     // iterate over each precinct, skipping header
+//     for (int x = 1; x < dataList.size(); x++) {
+//         string id;
 
-    stringstream file(tsv);
-    string line;
-    vector<vector<string> > data;
-
-    while (getline(file, line)) {
-        vector<string> row;
-        size_t pos = 0;
-
-        while ((pos = line.find(delimiter)) != string::npos) {
-            row.push_back(line.substr(0, pos));
-            line.erase(0, pos + delimiter.length());
-        }
-
-        row.push_back(line);
-        data.push_back(row);
-    }
-
-    return data;
-}
-
-
-map<string, map<PoliticalParty, int> > parseVoterData(string voterData) {
-    /*
-        @desc:
-            from a string in the specified format,
-            creates a map with the key of the precinct
-            name and vector as `"name": {dem_vote, rep vote}`
-
-        @params: `string` voter_data: tab separated voting file
-        @return: `map<string, array<int, 2>>` parsed data
-    */
-
-    vector<vector<string> > dataList // two dimensional
-        = parseSV(voterData, "\t"); // array of voter data
-
-    int precinctIdCol = -1; // the column index that holds precinct id's
-    map<PoliticalParty, int> electionCols;
-
-    for (int i = 0; i < dataList[0].size(); i++) {
-        // val holds header string
-        string val = dataList[0][i];
-        if (val == idHeaders[IdType::ELECTIONID])
-            precinctIdCol = i;
-
-        for (auto& vid : electionHeaders) {
-            if (vid.second == val) {
-                electionCols[vid.first] = i;
-            }
-        }
-    }
-
-    map<string, map<PoliticalParty, int> > parsedData;
-
-    // iterate over each precinct, skipping header
-    for (int x = 1; x < dataList.size(); x++) {
-        string id;
-
-        // remove quotes from string
-        if (dataList[x][precinctIdCol].substr(0, 1) == "\"")
-            id = Split(dataList[x][precinctIdCol], "\"")[1];
-        else id = dataList[x][precinctIdCol];
+//         // remove quotes from string
+//         if (dataList[x][precinctIdCol].substr(0, 1) == "\"")
+//             id = Split(dataList[x][precinctIdCol], "\"")[1];
+//         else id = dataList[x][precinctIdCol];
                 
-        map<PoliticalParty, int> precinctVoterData;
+//         map<PoliticalParty, int> precinctVoterData;
 
-        // get the right voter columns, add to party total
-        for (auto& partyCol : electionCols) {
-            string d = dataList[x][partyCol.second];
+//         // get the right voter columns, add to party total
+//         for (auto& partyCol : electionCols) {
+//             string d = dataList[x][partyCol.second];
 
-            if (IsNumber(d)) precinctVoterData[partyCol.first] += stoi(d);
-        }
+//             if (IsNumber(d)) precinctVoterData[partyCol.first] += stoi(d);
+//         }
 
-        parsedData[id] = precinctVoterData;
-        // set the voter data of the precinct in the map
-    }
+//         parsedData[id] = precinctVoterData;
+//         // set the voter data of the precinct in the map
+//     }
 
-    return parsedData; // return the filled map
-}
-
-
-Polygon hte::StringToPoly(string str, bool texasCoord) {
-    /*
-        @desc: takes a json array string and returns a parsed shape object
-        @params: `string` str: data to be parsed
-        @return: `Polygon` parsed shape
-
-        @warn:
-            this function is so screwed up right now
-            it takes stringified JSON as input and then 
-            CONVERTS IT RIGHT BACK TO JSON WTH
-
-            but I guess speed is really not important for
-            a one time operation so not going to change this
-
-            oohhhh yeah i forgot how to deduce types so this
-            monstrosity happened
-    */
-
-    Polygon v;
-    Document mp;
-    mp.Parse(str.c_str());
-
-    LinearRing hull;
-    for (int i = 0; i < mp[0].Size(); i++) {
-        double x, y;
-        if (!texasCoord) {
-            x = mp[0][i][0].GetDouble() * COORD_SCALER;
-            y = mp[0][i][1].GetDouble() * COORD_SCALER;
-        }
-        else {
-            x = mp[0][i][0].GetDouble();
-            y = mp[0][i][1].GetDouble();
-        }
-
-        hull.border.push_back({static_cast<long>(x), static_cast<long>(y)});
-    }
-
-    // make sure that hole forms a complete LinearRing
-    if (mp[0][0][0] != mp[0][mp[0].Size() - 1][0] || 
-        mp[0][0][1] != mp[0][mp[0].Size() - 1][1]) {       
-        hull.border.push_back(hull.border[0]);
-    }
-
-    v.hull = hull;
-
-    for (int i = 1; i < mp.Size(); i++) {
-        LinearRing hole;
-        for (int j = 0; j < mp[i].Size(); j++) {
-            if (!texasCoord) {
-                hole.border.push_back({
-                    static_cast<long>(mp[i][j][0].GetDouble() * COORD_SCALER),
-                    static_cast<long>(mp[i][j][1].GetDouble() * COORD_SCALER)
-                });
-            }
-            else {
-                hole.border.push_back({
-                    static_cast<long>(mp[i][j][0].GetDouble()),
-                    static_cast<long>(mp[i][j][1].GetDouble())
-                });
-            }
-        }
-
-        // make sure that all holes are closed
-        if (mp[i][0][0] != mp[i][mp[i].Size() - 1][0] || 
-            mp[i][0][1] != mp[i][mp[i].Size() - 1][1]) {       
-            hole.border.push_back(hole.border[0]);
-        }
-
-        v.holes.push_back(hole);
-    }
-
-    return v;
-}
+//     return parsedData; // return the filled map
+// }
 
 
-MultiPolygon hte::StringToMultiPoly(string str, bool texasCoord) {
-    /*
-        @desc: takes a json array string and returns a parsed multishape
-        @params: `string` str: data to be parsed
-        @return: `Polygon` parsed multishape
-    */
+// std::vector<GeoUnit> DataParser::parseGeoUnits(const std::string& jsonFile) {
+//     std::ifstream ifs(jsonFile.c_str());
+//     rapidjson::IStreamWrapper isw(ifs);
+//     rapidjson::Document d;
+//     d.ParseStream(isw);
 
-    MultiPolygon v;
+//     std::vector<GeoUnit> units;
 
-    Document mp;
-    mp.Parse(str.c_str());
+//     for (int i = 0; i < shapes["features"].Size(); i++) {
+//         // see if the geoJSON contains the shape id
+//         // if (shapes["features"][i]["properties"].HasMember() {
+//         //     if (shapes["features"][i]["properties"][idHeaders[IdType::GEOID].c_str()].IsInt()) {
+//         //         id = std::to_string(shapes["features"][i]["properties"][idHeaders[IdType::GEOID].c_str()].GetInt());
+//         //     }
+//         //     else if (shapes["features"][i]["properties"][idHeaders[IdType::GEOID].c_str()].IsString()) {
+//         //         id = shapes["features"][i]["properties"][idHeaders[IdType::GEOID].c_str()].GetString();
+//         //     }
+//         // }
+//         // else {
+//         //     std::cout << "\e[31merror: \e[0mYou have no precinct id." << endl;
+//         // }
 
-    for (int i = 0; i < mp.Size(); i++) {
-        // for each polygon
-        StringBuffer buffer;
-        buffer.Clear();
-        Writer<rapidjson::StringBuffer> writer(buffer);
-        mp[i].Accept(writer);
+//         // get voter data from geodata
+//         std::unordered_map<PoliticalParty, int> voterData;
 
-        Polygon polygon = hte::StringToPoly(buffer.GetString(), texasCoord);
-        v.border.push_back(polygon);
-    }
-
-    return v;
-}
-
-
-vector<Precinct> ParsePrecinctData(string geoJSON) {
-    /* 
-        @desc:
-            Parses a geoJSON file into an array of Polygon
-            objects - finds ID using top-level defined constants,
-            and splits multipolygons into separate shapes (of the same id)
-    
-        @params: `string` geoJSON: geojson precincts to be parsed
-        @return: `vector<Polygon>` precinct objects with all data
-    */
-
-    Document shapes;
-    shapes.Parse(geoJSON.c_str()); // parse json
-
-    // vector of shapes to be returned
-    vector<Precinct> shapesVector;
-
-    for (int i = 0; i < shapes["features"].Size(); i++) {
-        string coords;
-        string id = "";
-        int pop = 0;
-
-        // see if the geoJSON contains the shape id
-        if (shapes["features"][i]["properties"].HasMember(idHeaders[IdType::GEOID].c_str())) {
-            if (shapes["features"][i]["properties"][idHeaders[IdType::GEOID].c_str()].IsInt()) {
-                id = std::to_string(shapes["features"][i]["properties"][idHeaders[IdType::GEOID].c_str()].GetInt());
-            }
-            else if (shapes["features"][i]["properties"][idHeaders[IdType::GEOID].c_str()].IsString()) {
-                id = shapes["features"][i]["properties"][idHeaders[IdType::GEOID].c_str()].GetString();
-            }
-        }
-        else {
-            std::cout << "\e[31merror: \e[0mYou have no precinct id." << endl;
-            std::cout << "If future k-vernooy runs into this error, it means that GEOID10 in your geoJSON in your voter data is missing. To fix... maybe try a loose comparison of the names?" << endl;
-        }
-
-        // get voter data from geodata
-        map<PoliticalParty, int> voterData;
-
-        // get all democrat data from JSON, and add it to the total
-        for (auto& partyHeader : electionHeaders) {
-            int vote = -1;
-            if (shapes["features"][i]["properties"].HasMember(partyHeader.second.c_str())) {
-                if (shapes["features"][i]["properties"][partyHeader.second.c_str()].IsInt()) {
-                    vote = shapes["features"][i]["properties"][partyHeader.second.c_str()].GetInt();
-                }
-                else if (shapes["features"][i]["properties"][partyHeader.second.c_str()].IsDouble()) {
-                    vote = (int) shapes["features"][i]["properties"][partyHeader.second.c_str()].GetDouble();
-                }
-                else if (shapes["features"][i]["properties"][partyHeader.second.c_str()].IsString()) {
-                    string str = shapes["features"][i]["properties"][partyHeader.second.c_str()].GetString();
-                    if (str != "NA" && str != "" && str != " ")
-                        vote = stoi(shapes["features"][i]["properties"][partyHeader.second.c_str()].GetString());
-                }
-                else std::cout << "VOTER DATA IN UNRECOGNIZED OR UNPARSABLE TYPE." << endl;
-            }
-            else std::cout << "\e[31merror: \e[0mNo voter data near parse.cpp:314 " << partyHeader.second << endl;
-            voterData[partyHeader.first] = vote;
-        }
+//         // get all democrat data from JSON, and add it to the total
+//         for (auto& partyHeader : electionHeaders) {
+//             int vote = -1;
+//             if (shapes["features"][i]["properties"].HasMember(partyHeader.second.c_str())) {
+//                 if (shapes["features"][i]["properties"][partyHeader.second.c_str()].IsInt()) {
+//                     vote = shapes["features"][i]["properties"][partyHeader.second.c_str()].GetInt();
+//                 }
+//                 else if (shapes["features"][i]["properties"][partyHeader.second.c_str()].IsDouble()) {
+//                     vote = (int) shapes["features"][i]["properties"][partyHeader.second.c_str()].GetDouble();
+//                 }
+//                 else if (shapes["features"][i]["properties"][partyHeader.second.c_str()].IsString()) {
+//                     string str = shapes["features"][i]["properties"][partyHeader.second.c_str()].GetString();
+//                     if (str != "NA" && str != "" && str != " ")
+//                         vote = stoi(shapes["features"][i]["properties"][partyHeader.second.c_str()].GetString());
+//                 }
+//                 else std::cout << "VOTER DATA IN UNRECOGNIZED OR UNPARSABLE TYPE." << endl;
+//             }
+//             else std::cout << "\e[31merror: \e[0mNo voter data near parse.cpp:314 " << partyHeader.second << endl;
+//             voterData[partyHeader.first] = vote;
+//         }
         
 
-        // get the population data from geodata
-        if (shapes["features"][i]["properties"].HasMember(idHeaders[IdType::POPUID].c_str())) {
-            if (shapes["features"][i]["properties"][idHeaders[IdType::POPUID].c_str()].IsInt()) {
-                pop = shapes["features"][i]["properties"][idHeaders[IdType::POPUID].c_str()].GetInt();
-            }
-            else if (shapes["features"][i]["properties"][idHeaders[IdType::POPUID].c_str()].IsString()) {
-                string test = shapes["features"][i]["properties"][idHeaders[IdType::POPUID].c_str()].GetString();
-                if (test != "" && test != "NA") {
-                    pop = stoi(test);
-                }
-            }
-        }
-        else std::cout << "\e[31merror: \e[0mNo population data" << endl;
+//         // get the population data from geodata
+//         if (shapes["features"][i]["properties"].HasMember(idHeaders[IdType::POPUID].c_str())) {
+//             if (shapes["features"][i]["properties"][idHeaders[IdType::POPUID].c_str()].IsInt()) {
+//                 pop = shapes["features"][i]["properties"][idHeaders[IdType::POPUID].c_str()].GetInt();
+//             }
+//             else if (shapes["features"][i]["properties"][idHeaders[IdType::POPUID].c_str()].IsString()) {
+//                 string test = shapes["features"][i]["properties"][idHeaders[IdType::POPUID].c_str()].GetString();
+//                 if (test != "" && test != "NA") {
+//                     pop = stoi(test);
+//                 }
+//             }
+//         }
+//         else std::cout << "\e[31merror: \e[0mNo population data" << endl;
 
-        bool texasCoordinates = false;
-        #ifdef TEXAS_COORDS
-        texasCoordinates = true;
-        #endif
-
-        // create empty string buffer
-        StringBuffer buffer;
-        buffer.Clear();
-        Writer<rapidjson::StringBuffer> writer(buffer);
-
-        // write the coordinate array to a string
-        shapes["features"][i]["geometry"]["coordinates"].Accept(writer);
-        coords = buffer.GetString();
-
-        if (shapes["features"][i]["geometry"]["type"] == "Polygon") {
-            // vector parsed from coordinate string
-            Polygon geo = StringToPoly(coords, texasCoordinates);
-            Precinct precinct(geo.hull, pop, id);
-            precinct.shapeId = id;
-
-            if (electionHeaders.find(PoliticalParty::Other) == electionHeaders.end()) {
-                if (electionHeaders.find(PoliticalParty::Total) != electionHeaders.end()) {
-                    int other = voterData[PoliticalParty::Total];
-                    for (auto& party : electionHeaders) {
-                        if (party.first != PoliticalParty::Total) {
-                            other -= voterData[party.first];
-                        }
-                    }
-                    voterData[PoliticalParty::Other] = other;
-                }
-            }
-
-            precinct.voterData = voterData;
-
-            for (int i = 0; i < geo.holes.size(); i++)
-                precinct.holes.push_back(geo.holes[i]);
-
-            shapesVector.push_back(precinct);
-        }
-        else {
-            MultiPolygon geo = StringToMultiPoly(coords, texasCoordinates);
-            geo.shapeId = id;
-
-            // calculate area of multipolygon
-            double totalArea = abs(geo.getSignedArea());
-            int append = 0;
-
-            for (Polygon s : geo.border) {
-                double fract = abs(s.getSignedArea()) / totalArea;
-                pop = round(static_cast<double>(pop) * static_cast<double>(fract));
-
-                map<PoliticalParty, int> adjusted;
-                for (auto& partyData : voterData) {
-                    adjusted[partyData.first] = static_cast<int>(static_cast<double>(partyData.second) * fract);
-                }
-
-                if (electionHeaders.find(PoliticalParty::Other) == electionHeaders.end()) {
-                    if (electionHeaders.find(PoliticalParty::Total) != electionHeaders.end()) {
-                        int other = adjusted[PoliticalParty::Total];
-
-                        for (auto& party : electionHeaders) {
-                            if (party.first != PoliticalParty::Total) {
-                                other -= adjusted[party.first];
-                            }
-                        }
-
-                        adjusted[PoliticalParty::Other] = other;
-                    }
-                }
-
-                Precinct precinct(s.hull, pop, (id + "_s" + std::to_string(append)));
-                precinct.holes = s.holes;
-                precinct.voterData = adjusted;
-                shapesVector.push_back(precinct);
-                append++;
-            }
-        }
-    }
-
-    return shapesVector;
-}
-
-
-vector<Polygon> ParsePrecinctCoordinates(string geoJSON) {
-    /* 
-        @desc:
-            Parses a geoJSON file into an array of Polygon
-            objects - finds ID using top-level defined constants,
-            and splits multipolygons into separate shapes (of the same id)
-    
-        @params: `string` geoJSON: geojson precincts to be parsed
-        @return: `vector<Polygon>` precinct objects with coordinate data
-    */
-
-    Document shapes;
-    shapes.Parse(geoJSON.c_str()); // parse json
-
-    // vector of shapes to be returned
-    vector<Polygon> shapesVector;
-
-    for ( int i = 0; i < shapes["features"].Size(); i++ ) {
-        string coords;
-        string id = "";
-        int pop = 0;
- 
-        // see if the geoJSON contains the shape id
-        if (shapes["features"][i]["properties"].HasMember(idHeaders[IdType::GEOID].c_str())) {
-            if (shapes["features"][i]["properties"][idHeaders[IdType::GEOID].c_str()].IsInt()) {
-                id = std::to_string(shapes["features"][i]["properties"][idHeaders[IdType::GEOID].c_str()].GetInt());
-            }
-            else if (shapes["features"][i]["properties"][idHeaders[IdType::GEOID].c_str()].IsString()) {
-                id = shapes["features"][i]["properties"][idHeaders[IdType::GEOID].c_str()].GetString();
-            }
-        }
-        else {
-            std::cout << idHeaders[IdType::GEOID] << endl;
-            std::cout << "\e[31merror: \e[0mYou have no precinct id." << endl;
-        }
-
-        // get the population from geodata
-        if (shapes["features"][i]["properties"].HasMember(idHeaders[IdType::POPUID].c_str())) {
-            if (shapes["features"][i]["properties"][idHeaders[IdType::POPUID].c_str()].IsInt())
-                pop = shapes["features"][i]["properties"][idHeaders[IdType::POPUID].c_str()].GetInt();
-            else if (shapes["features"][i]["properties"][idHeaders[IdType::POPUID].c_str()].IsString()){
-                string tmp = shapes["features"][i]["properties"][idHeaders[IdType::POPUID].c_str()].GetString();
-                if (tmp != "" && tmp != "NA") pop = stoi(tmp);
-            }
-            else {
-                std::cout << "Population data in unparseable format." << endl;
-            }
-        }
-        else {
-            cerr << idHeaders[IdType::POPUID] << endl;
-            cerr << "\e[31merror: \e[0mNo population data" << endl;
-        }
-
-        bool texasCoordinates = false;
-        #ifdef TEXAS_COORDS
-            texasCoordinates = true;
-        #endif
         
-        // create empty string buffer
-        StringBuffer buffer;
-        buffer.Clear();
-        Writer<rapidjson::StringBuffer> writer(buffer);
 
-        // write the coordinate array to a string
-        shapes["features"][i]["geometry"]["coordinates"].Accept(writer);
-        coords = buffer.GetString();
+//         if (shapes["features"][i]["geometry"]["type"] == "Polygon") {
+//             // vector parsed from coordinate string
+//             Polygon geo = StringToPoly(coords, texasCoordinates);
+//             Precinct precinct(geo.hull, pop, id);
+//             precinct.shapeId = id;
 
+//             if (electionHeaders.find(PoliticalParty::Other) == electionHeaders.end()) {
+//                 if (electionHeaders.find(PoliticalParty::Total) != electionHeaders.end()) {
+//                     int other = voterData[PoliticalParty::Total];
+//                     for (auto& party : electionHeaders) {
+//                         if (party.first != PoliticalParty::Total) {
+//                             other -= voterData[party.first];
+//                         }
+//                     }
+//                     voterData[PoliticalParty::Other] = other;
+//                 }
+//             }
 
-        if (shapes["features"][i]["geometry"]["type"] == "Polygon") {
-            // vector parsed from coordinate string
-            Polygon geo = StringToPoly(coords, texasCoordinates);
-            LinearRing border = geo.hull;
-            Polygon shape(border, id);
-            shape.pop = pop;
-            shape.shapeId = id;
+//             precinct.voterData = voterData;
 
-            for (int i = 0; i < geo.holes.size(); i++)
-                shape.holes.push_back(geo.holes[i]);
-            shapesVector.push_back(shape);
-        }
-        else {
-            MultiPolygon geo = StringToMultiPoly(coords, texasCoordinates);
-            geo.shapeId = id;
-            double totalArea = abs(geo.getSignedArea());
+//             for (int i = 0; i < geo.holes.size(); i++)
+//                 precinct.holes.push_back(geo.holes[i]);
 
-            // create many shapes with the same ID, add them to the array            
-            int append = 0;
-            for (Polygon s : geo.border) {
-                Polygon shape(s.hull, s.holes, id);
-                shape.isPartOfMultiPolygon = append;
-                double fract = abs(shape.getSignedArea()) / totalArea;
-                shape.pop = static_cast<int>(round(pop * fract));
-                shapesVector.push_back(shape);
-                append++;
-            }
-        }
-    }
+//             shapesVector.push_back(precinct);
+//         }
+//         else {
+//             MultiPolygon geo = StringToMultiPoly(coords, texasCoordinates);
+//             geo.shapeId = id;
 
-    return shapesVector;
-}
+//             // calculate area of multipolygon
+//             double totalArea = abs(geo.getSignedArea());
+//             int append = 0;
 
+//             for (Polygon s : geo.border) {
+//                 double fract = abs(s.getSignedArea()) / totalArea;
+//                 pop = round(static_cast<double>(pop) * static_cast<double>(fract));
 
-vector<MultiPolygon> ParseDistrictCoordinates(string geoJSON) {
-    /* 
-        @desc: Parses a geoJSON file into an array of MultiPolygon district objects
-        @params: `string` geoJSON: geojson precincts to be parsed
-        @return: `vector<MultiPolygon>` district objects with coordinate data
-    */
+//                 map<PoliticalParty, int> adjusted;
+//                 for (auto& partyData : voterData) {
+//                     adjusted[partyData.first] = static_cast<int>(static_cast<double>(partyData.second) * fract);
+//                 }
 
-    Document shapes;
-    shapes.Parse(geoJSON.c_str()); // parse json
+//                 if (electionHeaders.find(PoliticalParty::Other) == electionHeaders.end()) {
+//                     if (electionHeaders.find(PoliticalParty::Total) != electionHeaders.end()) {
+//                         int other = adjusted[PoliticalParty::Total];
 
-    // vector of shapes to be returned
-    vector<MultiPolygon> shapesVector;
+//                         for (auto& party : electionHeaders) {
+//                             if (party.first != PoliticalParty::Total) {
+//                                 other -= adjusted[party.first];
+//                             }
+//                         }
 
-    for ( int i = 0; i < shapes["features"].Size(); i++ ) {
-        string coords;
-        int pop = 0;
+//                         adjusted[PoliticalParty::Other] = other;
+//                     }
+//                 }
 
-        // create empty string buffer
-        StringBuffer buffer;
-        buffer.Clear();
-        Writer<StringBuffer> writer(buffer);
+//                 Precinct precinct(s.hull, pop, (id + "_s" + std::to_string(append)));
+//                 precinct.holes = s.holes;
+//                 precinct.voterData = adjusted;
+//                 shapesVector.push_back(precinct);
+//                 append++;
+//             }
+//         }
+//     }
 
-        // write the coordinate array to a string
-        shapes["features"][i]["geometry"]["coordinates"].Accept(writer);
-        coords = buffer.GetString();
-
-        if (shapes["features"][i]["geometry"]["type"] == "Polygon") {
-            // vector parsed from coordinate string
-            Polygon border = StringToPoly(coords, false);
-            MultiPolygon ms({border});
-            shapesVector.push_back(ms);
-        }
-        else {
-            MultiPolygon borders = StringToMultiPoly(coords, false);
-            shapesVector.push_back(borders);
-        }
-    }
-
-    return shapesVector;
-}
+//     return shapesVector;
+// }
 
 
-vector<Precinct> MergeData(vector<Polygon> precinctShapes, map<string, map<PoliticalParty, int> > voterData) {
-    /*
-        @desc:
-            returns an array of precinct objects given
-            geodata (shape objects) and voter data
-            in the form of a map for a list of precincts
+// vector<MultiPolygon> ParseDistrictCoordinates(string geoJSON) {
+//     Document shapes;
+//     shapes.Parse(geoJSON.c_str()); // parse json
 
-        @params:
-            `vector<Polygon>` precinct_shapes: coordinate data with id's
-            `map<string, vector<int>>` voter_data: voting data with id's
-    */
+//     // vector of shapes to be returned
+//     vector<MultiPolygon> shapesVector;
 
-    vector<Precinct> precincts;
+//     for ( int i = 0; i < shapes["features"].Size(); i++ ) {
+//         string coords;
+//         int pop = 0;
 
-    int x = 0;
+//         // create empty string buffer
+//         StringBuffer buffer;
+//         buffer.Clear();
+//         Writer<StringBuffer> writer(buffer);
 
-    for (Polygon precinctShape : precinctShapes) {
-        // iterate over shapes array, get the id of the current shape
-        string pId = precinctShape.shapeId;
-        map<PoliticalParty, int> pData = {}; // the voter data to be filled
+//         // write the coordinate array to a string
+//         shapes["features"][i]["geometry"]["coordinates"].Accept(writer);
+//         coords = buffer.GetString();
 
-        if (voterData.find(pId) == voterData.end() ) {
-            // there is no matching id in the voter data
-            std::cout << "error: the id \e[41m" << pId << "\e[0m, has no matching key in voter_data, will not be filled" << endl;
-        }
-        else {
-            // get the voter data of the precinct
-            pData = voterData[pId];
-        }
+//         if (shapes["features"][i]["geometry"]["type"] == "Polygon") {
+//             // vector parsed from coordinate string
+//             Polygon border = StringToPoly(coords, false);
+//             MultiPolygon ms({border});
+//             shapesVector.push_back(ms);
+//         }
+//         else {
+//             MultiPolygon borders = StringToMultiPoly(coords, false);
+//             shapesVector.push_back(borders);
+//         }
+//     }
 
-        // create a precinct object and add it to the array
-        if (precinctShape.isPartOfMultiPolygon != -1) {
-            double totalArea = abs(precinctShape.getSignedArea());
+//     return shapesVector;
+// }
 
-            for (int i = 0; i < precinctShapes.size(); i++) {
-                if (i != x && precinctShapes[i].shapeId == pId) {
-                    totalArea += abs(precinctShapes[i].getSignedArea());
-                }
-            }
 
-            double ratio = abs(precinctShape.getSignedArea()) / totalArea;
+// vector<Precinct> MergeData(vector<Polygon> precinctShapes, map<string, map<PoliticalParty, int> > voterData) {
+//     /*
+//         @desc:
+//             returns an array of precinct objects given
+//             geodata (shape objects) and voter data
+//             in the form of a map for a list of precincts
 
-            Precinct precinct = Precinct(
-                precinctShape.hull, 
-                precinctShape.holes, 
-                pId + "_s" + std::to_string(precinctShape.isPartOfMultiPolygon)
-            );
+//         @params:
+//             `vector<Polygon>` precinct_shapes: coordinate data with id's
+//             `map<string, vector<int>>` voter_data: voting data with id's
+//     */
+
+//     vector<Precinct> precincts;
+
+//     int x = 0;
+
+//     for (Polygon precinctShape : precinctShapes) {
+//         // iterate over shapes array, get the id of the current shape
+//         string pId = precinctShape.shapeId;
+//         map<PoliticalParty, int> pData = {}; // the voter data to be filled
+
+//         if (voterData.find(pId) == voterData.end() ) {
+//             // there is no matching id in the voter data
+//             std::cout << "error: the id \e[41m" << pId << "\e[0m, has no matching key in voter_data, will not be filled" << endl;
+//         }
+//         else {
+//             // get the voter data of the precinct
+//             pData = voterData[pId];
+//         }
+
+//         // create a precinct object and add it to the array
+//         if (precinctShape.isPartOfMultiPolygon != -1) {
+//             double totalArea = abs(precinctShape.getSignedArea());
+
+//             for (int i = 0; i < precinctShapes.size(); i++) {
+//                 if (i != x && precinctShapes[i].shapeId == pId) {
+//                     totalArea += abs(precinctShapes[i].getSignedArea());
+//                 }
+//             }
+
+//             double ratio = abs(precinctShape.getSignedArea()) / totalArea;
+
+//             Precinct precinct = Precinct(
+//                 precinctShape.hull, 
+//                 precinctShape.holes, 
+//                 pId + "_s" + std::to_string(precinctShape.isPartOfMultiPolygon)
+//             );
             
-            for (auto const& x : pData) {
-                precinct.voterData[x.first] = static_cast<int>(static_cast<double>(x.second) * static_cast<double>(ratio));
-            }
+//             for (auto const& x : pData) {
+//                 precinct.voterData[x.first] = static_cast<int>(static_cast<double>(x.second) * static_cast<double>(ratio));
+//             }
 
-            if (electionHeaders.find(PoliticalParty::Other) == electionHeaders.end()) {
-                if (electionHeaders.find(PoliticalParty::Total) != electionHeaders.end()) {
-                    int other = precinct.voterData[PoliticalParty::Total];
-                    for (auto& party : electionHeaders) {
-                        if (party.first != PoliticalParty::Total) {
-                            other -= precinct.voterData[party.first];
-                        }
-                    }
-                    precinct.voterData[PoliticalParty::Other] = other;
-                }
-            }
+//             if (electionHeaders.find(PoliticalParty::Other) == electionHeaders.end()) {
+//                 if (electionHeaders.find(PoliticalParty::Total) != electionHeaders.end()) {
+//                     int other = precinct.voterData[PoliticalParty::Total];
+//                     for (auto& party : electionHeaders) {
+//                         if (party.first != PoliticalParty::Total) {
+//                             other -= precinct.voterData[party.first];
+//                         }
+//                     }
+//                     precinct.voterData[PoliticalParty::Other] = other;
+//                 }
+//             }
 
-            precinct.pop = precinctShape.pop;
-            precincts.push_back(precinct);
-        }
-        else {
-            Precinct precinct = 
-                Precinct(precinctShape.hull, precinctShape.holes, pId);
+//             precinct.pop = precinctShape.pop;
+//             precincts.push_back(precinct);
+//         }
+//         else {
+//             Precinct precinct = 
+//                 Precinct(precinctShape.hull, precinctShape.holes, pId);
             
-            if (electionHeaders.find(PoliticalParty::Other) == electionHeaders.end()) {
-                if (electionHeaders.find(PoliticalParty::Total) != electionHeaders.end()) {
-                    int other = pData[PoliticalParty::Total];
+//             if (electionHeaders.find(PoliticalParty::Other) == electionHeaders.end()) {
+//                 if (electionHeaders.find(PoliticalParty::Total) != electionHeaders.end()) {
+//                     int other = pData[PoliticalParty::Total];
 
-                    for (auto& party : electionHeaders) {
-                        if (party.first != PoliticalParty::Total) {
-                            other -= pData[party.first];
-                        }
-                    }
+//                     for (auto& party : electionHeaders) {
+//                         if (party.first != PoliticalParty::Total) {
+//                             other -= pData[party.first];
+//                         }
+//                     }
 
-                    pData[PoliticalParty::Other] = other;
-                }
-            }
+//                     pData[PoliticalParty::Other] = other;
+//                 }
+//             }
 
-            precinct.voterData = pData;
-            precinct.pop = precinctShape.pop;
-            precincts.push_back(precinct);
-        }
-        x++;
-    }
+//             precinct.voterData = pData;
+//             precinct.pop = precinctShape.pop;
+//             precincts.push_back(precinct);
+//         }
+//         x++;
+//     }
 
-    return precincts; // return precincts array
-}
-
-
-PrecinctGroup CombineHoles(PrecinctGroup pg) {
-    /*
-        Takes a precinct group, iterates through precincts
-        with holes, and combines internal precinct data to
-        eliminate holes from the precinct group
-    */
-
-    vector<Precinct> precincts;
-    vector<int> precinctsToIgnore;
-
-    vector<BoundingBox> bounds;
-    for (Precinct p : pg.precincts) {
-        bounds.push_back(p.getBoundingBox());
-    }
+//     return precincts; // return precincts array
+// }
 
 
-    for (int x = 0; x < pg.precincts.size(); x++) {
-        // for each precinct in the pg array
-        Precinct p = pg.precincts[x];
+// PrecinctGroup CombineHoles(PrecinctGroup pg) {
+//     /*
+//         Takes a precinct group, iterates through precincts
+//         with holes, and combines internal precinct data to
+//         eliminate holes from the precinct group
+//     */
 
-        // define starting precinct metadata
-        LinearRing precinctBorder = p.hull;
-        string id = p.shapeId;
-        map<PoliticalParty, int> voter = p.voterData;
-        int pop = p.pop;
+//     vector<Precinct> precincts;
+//     vector<int> precinctsToIgnore;
 
-        if (p.holes.size() > 0) {
-            // need to remove precinct holes
-            int interior_pre = 0; // precincts inside the hole
-            for (int j = 0; j < pg.precincts.size(); j++) {
-                // check all other precincts for if they're inside
-                Precinct pC = pg.precincts[j];
-
-                if (GetBoundOverlap(bounds[x], bounds[j])) {
-                    if (j != x && GetInside(pC.hull, p.hull)) {
-                        // precinct j is inside precinct x,
-                        // add the appropriate data from j to x
-                        for (auto const& x : pg.precincts[j].voterData) {
-                            voter[x.first] += x.second;
-                        }
-
-                        // demv += pg.precincts[j].dem;
-                        // repv += pg.precincts[j].rep;
-                        pop += pg.precincts[j].pop;
-
-                        // this precinct will not be returned
-                        precinctsToIgnore.push_back(j);
-                        interior_pre++;
-                    }
-                }
-            }
-        }
-
-        // create new precinct from updated data
-        Precinct np = Precinct(precinctBorder, pop, id);
-        np.voterData = voter;
-        precincts.push_back(np);
-    }
-
-    vector<Precinct> newPre; // the new precinct array to return
-
-    for (int i = 0; i < precincts.size(); i++) {
-        if (!(std::find(precinctsToIgnore.begin(), precinctsToIgnore.end(), i) != precinctsToIgnore.end())) {
-            // it is not a hole precinct, so add it
-            newPre.push_back(precincts[i]);
-        }
-    }
-
-    return PrecinctGroup(newPre);
-}
+//     vector<BoundingBox> bounds;
+//     for (Precinct p : pg.precincts) {
+//         bounds.push_back(p.getBoundingBox());
+//     }
 
 
-/**
- * \brief Determines the network graph of a given precinct group
- * 
- * Given a list of precincts, determines their connection network
- * and links islands.
- * \param pg: A Precinct_Group to get graph of
- * \return: A graph of the connection network
-*/
-Graph GenerateGraph(PrecinctGroup pg) {
-    // assign all precincts to be nodes
-    Graph graph;
+//     for (int x = 0; x < pg.precincts.size(); x++) {
+//         // for each precinct in the pg array
+//         Precinct p = pg.precincts[x];
 
-    for (int i = 0; i < pg.precincts.size(); i++) {
-        // create all vertices with no edges
-        Node n(&pg.precincts[i]);
-        n.id = i;
-        // assign precinct to node
-        n.precinct = &pg.precincts[i];
-        graph.vertices[n.id] = n;
-    }
+//         // define starting precinct metadata
+//         LinearRing precinctBorder = p.hull;
+//         string id = p.shapeId;
+//         map<PoliticalParty, int> voter = p.voterData;
+//         int pop = p.pop;
 
-    // get bounding boxes for border-checks
-    vector<BoundingBox> boundingBoxes;
-    for (Precinct p : pg.precincts) {
-        boundingBoxes.push_back(p.getBoundingBox());
-    }
+//         if (p.holes.size() > 0) {
+//             // need to remove precinct holes
+//             int interior_pre = 0; // precincts inside the hole
+//             for (int j = 0; j < pg.precincts.size(); j++) {
+//                 // check all other precincts for if they're inside
+//                 Precinct pC = pg.precincts[j];
 
-    // add bordering precincts as edges to the graph
-    for (int i = 0; i < pg.precincts.size(); i++) {
-        // check all unique combinations of precincts with get_bordering
-        for (int j = i + 1; j < pg.precincts.size(); j++) {
-            // check bounding box overlapping
-            if (GetBoundOverlap(boundingBoxes[i], boundingBoxes[j])) {
-                // check clip because bounding boxes overlap
-                if (GetBordering(pg.precincts[i], pg.precincts[j])) {
-                    graph.addEdge({j, i});
-                }
-            }
-        }
-    }
+//                 if (GetBoundOverlap(bounds[x], bounds[j])) {
+//                     if (j != x && GetInside(pC.hull, p.hull)) {
+//                         // precinct j is inside precinct x,
+//                         // add the appropriate data from j to x
+//                         for (auto const& x : pg.precincts[j].voterData) {
+//                             voter[x.first] += x.second;
+//                         }
 
-    // link components with closest precincts
-    if (graph.getNumComponents() > 1) {
-        // determine all centers of precincts
-        std::map<int, Point2d> centers;
-        for (int i = 0; i < graph.vertices.size(); i++) {
-            // add center of precinct to the map
-            int key = (graph.vertices.begin() + i).key();
-            Node pre = (graph.vertices[key]);
-            Point2d center = (graph.vertices.begin() + i).value().precinct->getCentroid();
-            centers.insert({key, center});
-        }
+//                         // demv += pg.precincts[j].dem;
+//                         // repv += pg.precincts[j].rep;
+//                         pop += pg.precincts[j].pop;
 
-        while (!graph.isConnected()) {
-            // add edges between two precincts on two islands
-            // until `graph` is connected
-            vector<Graph> components = graph.getComponents();
-            Edge shortestPair;
-            double shortestDistance = 100000000000;
+//                         // this precinct will not be returned
+//                         precinctsToIgnore.push_back(j);
+//                         interior_pre++;
+//                     }
+//                 }
+//             }
+//         }
 
-            for (size_t i = 0; i < components.size(); i++) {
-                for (size_t j = i + 1; j < components.size(); j++) {
-                    // for each distinct combination of islands
-                    for (size_t p = 0; p < components[i].vertices.size(); p++) {
-                        for (size_t q = 0; q < components[j].vertices.size(); q++) {
-                            // for each distinct precinct combination of the
-                            // two current islands, determine distance between centers
-                            int keyi = (components[i].vertices.begin() + p).key(), keyj = (components[j].vertices.begin() + q).key();
-                            double distance = GetDistance(centers[keyi], centers[keyj]);
+//         // create new precinct from updated data
+//         Precinct np = Precinct(precinctBorder, pop, id);
+//         np.voterData = voter;
+//         precincts.push_back(np);
+//     }
+
+//     vector<Precinct> newPre; // the new precinct array to return
+
+//     for (int i = 0; i < precincts.size(); i++) {
+//         if (!(std::find(precinctsToIgnore.begin(), precinctsToIgnore.end(), i) != precinctsToIgnore.end())) {
+//             // it is not a hole precinct, so add it
+//             newPre.push_back(precincts[i]);
+//         }
+//     }
+
+//     return PrecinctGroup(newPre);
+// }
+
+
+// /**
+//  * \brief Determines the network graph of a given precinct group
+//  * 
+//  * Given a list of precincts, determines their connection network
+//  * and links islands.
+//  * \param pg: A Precinct_Group to get graph of
+//  * \return: A graph of the connection network
+// */
+// Graph GenerateGraph(PrecinctGroup pg) {
+//     // assign all precincts to be nodes
+//     Graph graph;
+
+//     for (int i = 0; i < pg.precincts.size(); i++) {
+//         // create all vertices with no edges
+//         Node n(&pg.precincts[i]);
+//         n.id = i;
+//         // assign precinct to node
+//         n.precinct = &pg.precincts[i];
+//         graph.vertices[n.id] = n;
+//     }
+
+//     // get bounding boxes for border-checks
+//     vector<BoundingBox> boundingBoxes;
+//     for (Precinct p : pg.precincts) {
+//         boundingBoxes.push_back(p.getBoundingBox());
+//     }
+
+//     // add bordering precincts as edges to the graph
+//     for (int i = 0; i < pg.precincts.size(); i++) {
+//         // check all unique combinations of precincts with get_bordering
+//         for (int j = i + 1; j < pg.precincts.size(); j++) {
+//             // check bounding box overlapping
+//             if (GetBoundOverlap(boundingBoxes[i], boundingBoxes[j])) {
+//                 // check clip because bounding boxes overlap
+//                 if (GetBordering(pg.precincts[i], pg.precincts[j])) {
+//                     graph.addEdge({j, i});
+//                 }
+//             }
+//         }
+//     }
+
+//     // link components with closest precincts
+//     if (graph.getNumComponents() > 1) {
+//         // determine all centers of precincts
+//         std::map<int, Point2d> centers;
+//         for (int i = 0; i < graph.vertices.size(); i++) {
+//             // add center of precinct to the map
+//             int key = (graph.vertices.begin() + i).key();
+//             Node pre = (graph.vertices[key]);
+//             Point2d center = (graph.vertices.begin() + i).value().precinct->getCentroid();
+//             centers.insert({key, center});
+//         }
+
+//         while (!graph.isConnected()) {
+//             // add edges between two precincts on two islands
+//             // until `graph` is connected
+//             vector<Graph> components = graph.getComponents();
+//             Edge shortestPair;
+//             double shortestDistance = 100000000000;
+
+//             for (size_t i = 0; i < components.size(); i++) {
+//                 for (size_t j = i + 1; j < components.size(); j++) {
+//                     // for each distinct combination of islands
+//                     for (size_t p = 0; p < components[i].vertices.size(); p++) {
+//                         for (size_t q = 0; q < components[j].vertices.size(); q++) {
+//                             // for each distinct precinct combination of the
+//                             // two current islands, determine distance between centers
+//                             int keyi = (components[i].vertices.begin() + p).key(), keyj = (components[j].vertices.begin() + q).key();
+//                             double distance = GetDistance(centers[keyi], centers[keyj]);
                             
-                            if (distance < shortestDistance) {
-                                shortestDistance = distance;
-                                shortestPair = {keyi, keyj};
-                            }
-                        }
-                    }
-                }
-            }
+//                             if (distance < shortestDistance) {
+//                                 shortestDistance = distance;
+//                                 shortestPair = {keyi, keyj};
+//                             }
+//                         }
+//                     }
+//                 }
+//             }
 
-            // link the shortest pair
-            graph.addEdge(shortestPair);
-        }
-    } // else the graph is linked already
+//             // link the shortest pair
+//             graph.addEdge(shortestPair);
+//         }
+//     } // else the graph is linked already
 
-    return graph;
+//     return graph;
+// }
+
+
+// LinearRing BoundToRing(BoundingBox box) {
+//     return (LinearRing({{box[3], box[0]}, {box[3], box[1]}, {box[2], box[1]}, {box[2], box[0]}}));
+// }
+
+
+// void ScalePrecinctsToDistrict(State& state) {
+//     // determine bounding box of districts
+//     if (VERBOSE) std::cout << "scaling precincts to district bounds..." << endl;
+
+//     BoundingBox districtB {-214748364, 214748364, 214748364, -214748364};
+//     BoundingBox precinctB {-214748364, 214748364, 214748364, -214748364};
+
+//     for (MultiPolygon p : state.districts) {
+//         BoundingBox t = p.getBoundingBox();
+//         if (t[0] > districtB[0]) districtB[0] = t[0];
+//         if (t[1] < districtB[1]) districtB[1] = t[1];
+//         if (t[2] < districtB[2]) districtB[2] = t[2];
+//         if (t[3] > districtB[3]) districtB[3] = t[3];
+//     }
+
+//     for (Precinct p : state.precincts) {
+//         BoundingBox t = p.getBoundingBox();
+//         if (t[0] > precinctB[0]) precinctB[0] = t[0];
+//         if (t[1] < precinctB[1]) precinctB[1] = t[1];
+//         if (t[2] < precinctB[2]) precinctB[2] = t[2];
+//         if (t[3] > precinctB[3]) precinctB[3] = t[3];
+//     }
+
+//     // top distance of district / top distance of precinct
+//     double scaleTop = static_cast<double>(districtB[3] - districtB[2]) / static_cast<double>(precinctB[3] - precinctB[2]);
+//     double scaleRight = static_cast<double>(districtB[0] - districtB[1]) / static_cast<double>(precinctB[0] - precinctB[1]);
+
+//     precinctB[0] *= scaleRight;
+//     precinctB[1] *= scaleRight;
+//     precinctB[2] *= scaleTop;
+//     precinctB[3] *= scaleTop;
+
+//     int tu = districtB[1] - precinctB[1]; // how much to translate up
+//     int tr = districtB[2] - precinctB[2]; // how much to translate right
+
+//     for (int i = 0; i < state.precincts.size(); i++) {
+//         for (int j = 0; j < state.precincts[i].hull.border.size(); j++) {
+//             state.precincts[i].hull.border[j].y *= scaleRight;
+//             state.precincts[i].hull.border[j].x *= scaleTop;
+//             state.precincts[i].hull.border[j].x += tr;
+//             state.precincts[i].hull.border[j].y += tu;
+//         }
+//     }
+// }
+
+
+// State State::GenerateFromFile(string precinctGeoJSON, string voterData, string districtGeoJSON, map<PoliticalParty, string> pId, map<IdType, string> tId) {
+//     /*
+//         @desc:
+//             Parse precinct and district geojson, along with
+//             precinct voter data, into a State object.
+    
+//         @params:
+//             `string` precinct_geoJSON: A string file with geodata for precincts
+//             `string` voter_data: A string file with tab separated voter data
+//             `string` district_geoJSON: A string file with geodata for districts
+
+//         @return: `State` parsed state object
+//     */
+
+//     electionHeaders = pId;
+//     idHeaders = tId;
+
+//     // generate shapes from coordinates
+//     if (VERBOSE) std::cout << "generating coordinate arrays..." << endl;
+//     vector<Polygon> precinctShapes = ParsePrecinctCoordinates(precinctGeoJSON);
+//     vector<MultiPolygon> districtShapes = ParseDistrictCoordinates(districtGeoJSON);
+    
+//     // get voter data from election data file
+//     if (VERBOSE) std::cout << "parsing voter data from tsv..." << endl;
+//     map<string, map<PoliticalParty, int> > precinctVoterData = parseVoterData(voterData);
+
+//     // create a vector of precinct objects from border and voter data
+//     if (VERBOSE) std::cout << "merging geodata with voter data into precincts..." << endl;
+//     vector<Precinct> precincts = MergeData(precinctShapes, precinctVoterData);
+    
+//     // remove water precincts from data
+//     std::cout << "removing water precincts... ";
+
+//     int nRemoved = 0;
+//     for (int i = 0; i < precincts.size(); i++) {
+//         string id = precincts[i].shapeId;
+//         for (string str : nonPrecinctIds) {
+//             if (id.find(str) != string::npos) {
+//                 precincts.erase(precincts.begin() + i);
+//                 i--;
+//                 nRemoved++;
+//             }
+//         }
+//     }
+
+//     std::cout << nRemoved << endl;
+//     PrecinctGroup preGroup(precincts);
+
+//     if (VERBOSE) std::cout << "removing holes..." << endl;
+//     // remove holes from precinct data
+//     preGroup = CombineHoles(preGroup);
+//     vector<Polygon> stateShapeVec; // dummy exterior border
+
+//     // generate state data from files
+//     if (VERBOSE) std::cout << "generating state with precinct and district arrays..." << endl;
+//     State state = State(districtShapes, preGroup.precincts, stateShapeVec);
+
+//     #ifdef TEXAS_COORDS
+//         ScalePrecinctsToDistrict(state);
+//     #endif
+
+//     std::cout << "getting precinct centroids with boost" << endl;
+//     for (int i = 0; i < state.precincts.size(); i++) {
+//         BoostPoint2d center;
+//         boost::geometry::centroid(RingToBoostPoly(state.precincts[i].hull), center);
+//         state.precincts[i].hull.centroid = {center.x(), center.y()};
+//     }
+
+//     state.network = GenerateGraph(state);
+//     std::cout << "complete!" << endl;
+//     return state; // return the state object
+// }
+
+
+// State DataParser::GenerateFromFile(string precinctGeoJSON, string districtGeoJSON, map<PoliticalParty, string> pId, map<IdType, string> tId) {
+//     // generate shapes from coordinates
+//     vector<Precinct> precinctShapes = ParsePrecinctData(precinctGeoJSON);
+//     if (VERBOSE) std::cout << "generating coordinate array from district file..." << endl;
+//     vector<MultiPolygon> districtShapes = ParseDistrictCoordinates(districtGeoJSON);
+
+
+//     if (VERBOSE) std::cout << "removing water precincts... ";
+//     int nRemoved = 0;
+//     for (int i = 0; i < precinctShapes.size(); i++) {
+//         string id = precinctShapes[i].shapeId;
+//         for (string str : nonPrecinctIds) {
+//             if (id.find(str) != string::npos) {
+//                 precinctShapes.erase(precinctShapes.begin() + i);
+//                 i--;
+//                 nRemoved++;
+//             }
+//         }
+//     }
+
+//     std::cout << nRemoved << endl;
+
+
+//     // create a vector of precinct objects from border and voter data
+//     PrecinctGroup preGroup(precinctShapes);
+
+//     // remove holes from precinct data
+//     if (VERBOSE) std::cout << "combining holes in precinct geodata..." << endl;
+//     preGroup = CombineHoles(preGroup);
+
+//     vector<Polygon> stateShapeVec;  // dummy exterior border
+
+//     // generate state data from files
+//     if (VERBOSE) std::cout << "generating state with precinct and district arrays..." << endl;
+//     State state = State(districtShapes, preGroup.precincts, stateShapeVec);
+//     std::cout << "getting centroids of precincst" << endl; 
+
+//     for (int i = 0; i < state.precincts.size(); i++) {
+//         BoostPoint2d center;
+//         boost::geometry::centroid(RingToBoostPoly(state.precincts[i].hull), center);
+//         state.precincts[i].hull.centroid = {center.x(), center.y()};
+//     }
+
+//     state.network = GenerateGraph(state);
+//     if (VERBOSE) std::cout << "state serialized!" << endl;
+//     return state; // return the state object
+// }
+
+
+
+// const std::unordered_map<FileType, void (*)(const std::string&)> DataParser::parseFunctionPtrs = {
+//     // {FileType::BLOCK_GEO, parseGeometry}
+// };
+
+LinearRing<double> parseRing(const rapidjson::Value& coordinates)
+{
+    LinearRing<double> lr(coordinates.GetArray().Size());
+
+    for (const auto& coordinate : coordinates.GetArray())
+    {
+        lr.emplace_back(coordinate.GetArray()[0].GetDouble(), coordinate.GetArray()[1].GetDouble());
+    }
+    
+    return lr;
+}
+
+Polygon<double> parsePolygon(const rapidjson::Value& coordinates)
+{
+    Polygon<double> poly(coordinates.GetArray().Size());
+
+    for (const auto& arr : coordinates.GetArray())
+    {
+        poly.push_back(parseRing(arr));
+    }
+
+    return poly;
 }
 
 
-LinearRing BoundToRing(BoundingBox box) {
-    return (LinearRing({{box[3], box[0]}, {box[3], box[1]}, {box[2], box[1]}, {box[2], box[0]}}));
+MultiPolygon<double> parseMultiPolygon(const rapidjson::Value& coordinates)
+{
+    MultiPolygon<double> multipoly(coordinates.GetArray().Size());
+
+    for (const auto& arr : coordinates.GetArray())
+    {
+        multipoly.push_back(parsePolygon(arr));
+    }
+
+    return multipoly;
 }
 
 
-void ScalePrecinctsToDistrict(State& state) {
-    // determine bounding box of districts
-    if (VERBOSE) std::cout << "scaling precincts to district bounds..." << endl;
+void DataParser::parseGeoUnits(const std::string& filepath)
+{
+    std::cout << "parsing geo blocks from " << filepath << std::endl;
+    std::ifstream ifs(filepath);
 
-    BoundingBox districtB {-214748364, 214748364, 214748364, -214748364};
-    BoundingBox precinctB {-214748364, 214748364, 214748364, -214748364};
-
-    for (MultiPolygon p : state.districts) {
-        BoundingBox t = p.getBoundingBox();
-        if (t[0] > districtB[0]) districtB[0] = t[0];
-        if (t[1] < districtB[1]) districtB[1] = t[1];
-        if (t[2] < districtB[2]) districtB[2] = t[2];
-        if (t[3] > districtB[3]) districtB[3] = t[3];
+    if (!ifs.is_open())
+    {
+        std::cerr << "Failed to open file" << std::endl;
     }
 
-    for (Precinct p : state.precincts) {
-        BoundingBox t = p.getBoundingBox();
-        if (t[0] > precinctB[0]) precinctB[0] = t[0];
-        if (t[1] < precinctB[1]) precinctB[1] = t[1];
-        if (t[2] < precinctB[2]) precinctB[2] = t[2];
-        if (t[3] > precinctB[3]) precinctB[3] = t[3];
-    }
+    rapidjson::IStreamWrapper isw(ifs);
 
-    // top distance of district / top distance of precinct
-    double scaleTop = static_cast<double>(districtB[3] - districtB[2]) / static_cast<double>(precinctB[3] - precinctB[2]);
-    double scaleRight = static_cast<double>(districtB[0] - districtB[1]) / static_cast<double>(precinctB[0] - precinctB[1]);
+    rapidjson::Document doc;
+    doc.ParseStream(isw);
 
-    precinctB[0] *= scaleRight;
-    precinctB[1] *= scaleRight;
-    precinctB[2] *= scaleTop;
-    precinctB[3] *= scaleTop;
+    const rapidjson::Value& features = doc["features"];
+    assert(features.IsArray());
 
-    int tu = districtB[1] - precinctB[1]; // how much to translate up
-    int tr = districtB[2] - precinctB[2]; // how much to translate right
+    for (int i = 0; i < features.Size(); i++)
+    {
+        const rapidjson::Value& geometry = features[i]["geometry"];
+        const rapidjson::Value& coordinates = geometry["coordinates"];
 
-    for (int i = 0; i < state.precincts.size(); i++) {
-        for (int j = 0; j < state.precincts[i].hull.border.size(); j++) {
-            state.precincts[i].hull.border[j].y *= scaleRight;
-            state.precincts[i].hull.border[j].x *= scaleTop;
-            state.precincts[i].hull.border[j].x += tr;
-            state.precincts[i].hull.border[j].y += tu;
-        }
+        int polyCount = (geometry["type"] == "MultiPolygon") ? coordinates.Size() : 1;
+        
+        std::cout << features[i]["properties"]["GEOID10"].GetString() << std::endl;
+
+        if (polyCount != 1) parseMultiPolygon(coordinates);
+        else parsePolygon(coordinates);
     }
 }
 
 
-State State::GenerateFromFile(string precinctGeoJSON, string voterData, string districtGeoJSON, map<PoliticalParty, string> pId, map<IdType, string> tId) {
-    /*
-        @desc:
-            Parse precinct and district geojson, along with
-            precinct voter data, into a State object.
-    
-        @params:
-            `string` precinct_geoJSON: A string file with geodata for precincts
-            `string` voter_data: A string file with tab separated voter data
-            `string` district_geoJSON: A string file with geodata for districts
+void DataParser::parseToState(State& state)
+{
+    // for (auto it : fileLocations)
+    // {
+    //     parseFunctionPtrs.at(it.first)(it.second);
+    // }
+    parseGeoUnits(fileLocations[FileType::BLOCK_GEO]);
 
-        @return: `State` parsed state object
-    */
 
-    electionHeaders = pId;
-    idHeaders = tId;
+    // state.blocks = std::move(blocks);
 
-    // generate shapes from coordinates
-    if (VERBOSE) std::cout << "generating coordinate arrays..." << endl;
-    vector<Polygon> precinctShapes = ParsePrecinctCoordinates(precinctGeoJSON);
-    vector<MultiPolygon> districtShapes = ParseDistrictCoordinates(districtGeoJSON);
-    
-    // get voter data from election data file
-    if (VERBOSE) std::cout << "parsing voter data from tsv..." << endl;
-    map<string, map<PoliticalParty, int> > precinctVoterData = parseVoterData(voterData);
+    // fractionally assign race data
 
-    // create a vector of precinct objects from border and voter data
-    if (VERBOSE) std::cout << "merging geodata with voter data into precincts..." << endl;
-    vector<Precinct> precincts = MergeData(precinctShapes, precinctVoterData);
-    
-    // remove water precincts from data
-    std::cout << "removing water precincts... ";
+    // distribute votes to blocks
 
-    int nRemoved = 0;
-    for (int i = 0; i < precincts.size(); i++) {
-        string id = precincts[i].shapeId;
-        for (string str : nonPrecinctIds) {
-            if (id.find(str) != string::npos) {
-                precincts.erase(precincts.begin() + i);
-                i--;
-                nRemoved++;
-            }
-        }
-    }
-
-    std::cout << nRemoved << endl;
-    PrecinctGroup preGroup(precincts);
-
-    if (VERBOSE) std::cout << "removing holes..." << endl;
-    // remove holes from precinct data
-    preGroup = CombineHoles(preGroup);
-    vector<Polygon> stateShapeVec; // dummy exterior border
-
-    // generate state data from files
-    if (VERBOSE) std::cout << "generating state with precinct and district arrays..." << endl;
-    State state = State(districtShapes, preGroup.precincts, stateShapeVec);
-
-    #ifdef TEXAS_COORDS
-        ScalePrecinctsToDistrict(state);
-    #endif
-
-    std::cout << "getting precinct centroids with boost" << endl;
-    for (int i = 0; i < state.precincts.size(); i++) {
-        BoostPoint2d center;
-        boost::geometry::centroid(RingToBoostPoly(state.precincts[i].hull), center);
-        state.precincts[i].hull.centroid = {center.x(), center.y()};
-    }
-
-    state.network = GenerateGraph(state);
-    std::cout << "complete!" << endl;
-    return state; // return the state object
+    // create networks from block geometry;
 }
 
-
-State State::GenerateFromFile(string precinctGeoJSON, string districtGeoJSON, map<PoliticalParty, string> pId, map<IdType, string> tId) {
-
-    /*
-        @desc:
-            Parse precinct and district geojson, along with
-            precinct voter data, into a State object.
-
-        @params:
-            `string` precinct_geoJSON: A string file with geodata for precincts
-            `string` voter_data: A string file with tab separated voter data
-            `string` district_geoJSON: A string file with geodata for districts
-
-        @return: `State` parsed state object
-    */
-
-    electionHeaders = pId;
-    idHeaders = tId;
-
-    // generate shapes from coordinates
-    if (VERBOSE) std::cout << "generating coordinate array from precinct file..." << endl;
-    vector<Precinct> precinctShapes = ParsePrecinctData(precinctGeoJSON);
-    if (VERBOSE) std::cout << "generating coordinate array from district file..." << endl;
-    vector<MultiPolygon> districtShapes = ParseDistrictCoordinates(districtGeoJSON);
-
-
-    if (VERBOSE) std::cout << "removing water precincts... ";
-    int nRemoved = 0;
-    for (int i = 0; i < precinctShapes.size(); i++) {
-        string id = precinctShapes[i].shapeId;
-        for (string str : nonPrecinctIds) {
-            if (id.find(str) != string::npos) {
-                precinctShapes.erase(precinctShapes.begin() + i);
-                i--;
-                nRemoved++;
-            }
-        }
-    }
-
-    std::cout << nRemoved << endl;
-
-
-    // create a vector of precinct objects from border and voter data
-    PrecinctGroup preGroup(precinctShapes);
-
-    // remove holes from precinct data
-    if (VERBOSE) std::cout << "combining holes in precinct geodata..." << endl;
-    preGroup = CombineHoles(preGroup);
-
-    vector<Polygon> stateShapeVec;  // dummy exterior border
-
-    // generate state data from files
-    if (VERBOSE) std::cout << "generating state with precinct and district arrays..." << endl;
-    State state = State(districtShapes, preGroup.precincts, stateShapeVec);
-    
-    #ifdef TEXAS_COORDS
-        ScalePrecinctsToDistrict(state);
-    #endif
-
-    std::cout << "getting centroids of precincst" << endl; 
-
-    for (int i = 0; i < state.precincts.size(); i++) {
-        BoostPoint2d center;
-        boost::geometry::centroid(RingToBoostPoly(state.precincts[i].hull), center);
-        state.precincts[i].hull.centroid = {center.x(), center.y()};
-    }
-
-    state.network = GenerateGraph(state);
-    if (VERBOSE) std::cout << "state serialized!" << endl;
-    return state; // return the state object
 }
