@@ -23,6 +23,7 @@ settings.json
 *.dSYM/
 
 # c++
+cpp/include/legacy-graphics.h
 cpp/bin/
 cpp/test/test
 cpp/test_data/

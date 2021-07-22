@@ -1,11 +1,9 @@
 .PHONY: setup clean dependencies
-.ONESHELL: setup clean
-
 
 CXX := g++
-OFLAGS := -O3 -MMD -MP 
-CXXFLAGS := -O3 -Wall -pedantic -Wextra
-STDV := -std=c++14
+OFLAGS := -O3 -MMD -MP -ggdb
+CXXFLAGS := -O3 -Wall -pedantic -Wextra -ggdb
+STDV := -std=c++17
 SRC := src
 BIN := bin
 BUILD := build
@@ -14,13 +12,17 @@ OBJECTS := parse.o graphics.o geometry.o util.o shape.o graph.o community.o quan
 OBJECT_OUTPUTS = $(patsubst %, $(BUILD)/%, $(OBJECTS))
 DEPENDS := $(patsubst %.o,%.d,$(OBJECTS))
 
+.SECONDARY: $(OBJECT_OUTPUTS)
+
+GLFW := -lGL -lGLU -lglfw3 -lX11 -lXxf86vm -lXrandr -lXi -ldl
 BOOST := -lboost_serialization -lboost_filesystem -lboost_system
 SDL := `sdl2-config --cflags` `sdl2-config --libs`
-LIBS := $(BOOST) $(SDL)
+LIBS := -pthread $(GLFW) $(BOOST) $(SDL)
 
 
-generate_communities: $(BIN)/generate_communities
 serialize_state: $(BIN)/serialize_state
+sandbox: $(BIN)/sandbox
+
 dependencies: $(BUILD)/clipper.o
 
 
@@ -34,7 +36,6 @@ $(BUILD)/%.o: $(SRC)/%.cpp
 
 $(BUILD)/clipper.o: lib/Clipper/cpp/clipper.cpp
 	$(CXX) $(STDV) $(OFLAGS) -MT $@ $< -c -o $@
-
 
 setup:
 	mkdir -p $(BIN) $(BUILD)

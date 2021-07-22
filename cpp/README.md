@@ -1,16 +1,13 @@
 # gerrymandering/cpp
 
-This is all the C++ code for hacking the election. It's organized like a typical C++ project, with `include` and `src` directories for all files written by us.
+This directory represents the C++ codebase written for HtE. The directory structure is that of a standard C++ project.
 
 ## Installation
 
-`cd` into this directory, and perform the command:
-
+This project is dependent on c++17
 ```bash
-cd cpp
 make all
 ```
-If you don't want to compile all binaries and only want a selection, the following binaries
 
 ### Dependencies
 
