@@ -1,36 +1,23 @@
-/*=======================================
- sandbox.cpp:                   k-vernooy
- last modified:                Fri, Jun 19
- 
- A simple testing environment with the
- hacking-the-election library
-========================================*/
+#include "../include/hte_common.h"
+#include <fstream>
 
-#include <chrono>
-#include <iostream>
-#include <boost/filesystem.hpp>
-
-#include "../include/hte.h"
-#include "../lib/rapidjson/include/rapidjson/document.h"
-#include "../lib/rapidjson/include/rapidjson/writer.h"
-#include "../lib/rapidjson/include/rapidjson/stringbuffer.h"
-
-using namespace boost::filesystem;
 using namespace rapidjson;
-using namespace std;
-using namespace hte::Geometry;
-using namespace hte::Graphics;
-using namespace hte::Algorithm;
-using namespace hte::Util;
-using namespace hte::Data;
+using namespace hte;
 
 
-/**
-    A loaded environment with included namespaces ready for 
-    graphics programs testing, compiling random binaries, and other scripts
-*/
-int main(int argc, char* argv[]) {
-    srand(time(NULL));
-    cout << "hello world" << endl;
-    return 0;
+int main(int argc, const char** argv)
+{
+    // parse all data into state object
+    State state;
+
+    // define locations for each expected filetype
+    std::unordered_map<FileType, std::string> locations =
+    {
+        {FileType::BLOCK_GEO, argv[1]},
+        {FileType::BLOCK_DEMOGRAPHICS, argv[2]}
+    };
+
+    // parse data from locations
+    DataParser p(locations);
+    p.parseToState(state);
 }
