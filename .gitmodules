@@ -10,3 +10,6 @@
 [submodule "cpp/lib/Clipper"]
 	path = cpp/lib/Clipper
 	url = https://github.com/GeriBorbas/Clipper
+[submodule "cpp/lib/earcut.hpp"]
+	path = cpp/lib/earcut.hpp
+	url = https://github.com/mapbox/earcut.hpp
