@@ -15,21 +15,37 @@ import matplotlib.pyplot as plt
 def analyze_pickle(community_pickle):
     with open(community_pickle, "rb") as f:
         communities = pickle.load(f)
+    pop_sum = 0
+    political_similarities = []
+    racial_similarities = []
+    density_similarities = []
     for community in communities:
+        pop_sum += community.pop
         # for block in community.blocks:
         #     block.percent_dem = 0.5
         #     block.percent_rep = 0.3
         #     block.percent_other = 0.2
-        percent_dem = [block.percent_dem for block in community.blocks if block.percent_dem != None]
+        # percent_dems = [block.percent_dem for block in community.blocks if block.percent_dem != None]
         political_similarity = community.calculate_political_similarity()
-        print(f"Political Similarity: {political_similarity}")
-        print(f"Percent Dem standard deviation: {statistics.stdev(percent_dem)}")
+        political_similarities.append(political_similarity)
+        # print(f"Political Similarity: {political_similarity}")
+        # print(f"Percent Dem standard deviation: {statistics.stdev(percent_dem)}")
         racial_similarity = community.calculate_race_similarity()
-        print(f"Racial Similarity: {racial_similarity}")
-        graphical_compactness = community.calculate_graphical_compactness()
-        print(f"Graphical Compactness: {graphical_compactness}")
-        print(f"Population: {community.pop}")
-        print(f"Score: {(political_similarity*racial_similarity*graphical_compactness)**0.25}")
+        racial_similarities.append(racial_similarity)
+        density_similarity = community.calculate_density_similarity()
+        density_similarities.append(density_similarity)
+        # print(f"Racial Similarity: {racial_similarity}")
+        # graphical_compactness = community.calculate_graphical_compactness()
+        # print(f"Graphical Compactness: {graphical_compactness}")
+        # print(f"Population: {community.pop}")
+        # print(f"Score: {(political_similarity*racial_similarity*graphical_compactness)**0.25}")
+    print(f"Number of communities: {len(communities)}")
+    print(f"Average Population: {pop_sum/len(communities)}")
+    print(f"Smallest Community Population: {min([community.pop for community in communities])}")
+    print(f"Largest Community Population: {max([community.pop for community in communities])}")
+    print("Average Political Similarity: ", sum(political_similarities)/len(political_similarities))
+    print("Average Racial Similarity: ", sum(racial_similarities)/len(racial_similarities))
+    print("Average Density Similarity: ", sum(density_similarities)/len(density_similarities))
 
 def graph_metrics(file):
     to_plot_dict = {}
@@ -46,6 +62,7 @@ def graph_metrics(file):
     epochs = np.arange(1, max_epoch+1, step=round((max_epoch+1)/15))
 
     plt.figure(figsize=(12,15))
+    plt.subplots_adjust(hspace=0.3)
 
     plt.subplot(411)
     plt.plot(indexes, to_plot_dict["Number of Communities"])

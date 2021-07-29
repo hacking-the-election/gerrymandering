@@ -41,11 +41,12 @@ def geojson_to_shapely(geojson, int_coords=False):
         return LinearRing(point_list)
     elif type(geojson[0][0][0]) in [float, int]:
         # Polygon.
-        if int_coords:
-            polygon_list = [geojson_to_shapely(ring, int_coords=True) for ring in geojson]
-        else:
-            polygon_list = [geojson_to_shapely(ring) for ring in geojson]
-        return Polygon(polygon_list[0], polygon_list[1:])
+        # if int_coords:
+        #     polygon_list = [geojson_to_shapely(ring, int_coords=True) for ring in geojson]
+        # else:
+        #     polygon_list = [geojson_to_shapely(ring) for ring in geojson]
+        # return Polygon(polygon_list[0], polygon_list[1:])
+        return Polygon(geojson[0], geojson[1:])
     elif isinstance(geojson[0][0][0], list):
         # Multipolygon.
         if int_coords:

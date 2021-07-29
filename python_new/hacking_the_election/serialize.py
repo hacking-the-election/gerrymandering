@@ -3,10 +3,12 @@ Script for serializing block-level election, geo, and population data.
 Data is serialized into ".pickle" file containing graph with nodes containing Precinct objects
 
 Usage (from the python directory):
-python3 -m hacking_the_election.serialize [state_name] [check_point]
+python3 -m hacking_the_election.serialize [state_name] [(optional) check_point]
 """
 import sys
 import json
+# from types import new_class
+import time
 import pandas
 import subprocess
 from os.path import dirname, abspath
@@ -123,7 +125,17 @@ def split_multipolygons(block_list):
                 split_rep_votes = block.rep_votes * ratio
                 split_dem_votes = block.dem_votes * ratio
                 split_total_votes = block.total_votes * ratio
-                blocks_to_add.append(Block(pop, polygon, state, id, split_racial_data, split_total_votes, split_rep_votes, split_dem_votes))
+                new_split_block = Block(pop, polygon, state, id, split_racial_data, split_total_votes, split_rep_votes, split_dem_votes)
+                new_split_block.land = block.land * ratio
+                new_split_block.water = block.water * ratio
+                # try:
+                new_split_block.long = block.long * ratio
+                # except:
+                    # raise Exception(f"{block.long},{ratio}")
+                new_split_block.lat = block.lat * ratio
+                new_split_block.area = block.area * ratio
+                new_split_block.density = block.density * ratio
+                blocks_to_add.append(new_split_block)
     indexes_to_remove.sort(reverse=True)
     for index in indexes_to_remove:
         block_list.pop(index)
@@ -172,6 +184,12 @@ def combine_holypolygons(block_list):
                         holes.append(i)
                         found_area += check_block.coords.area
                         block.pop += check_block.pop
+                        block.land += check_block.land
+                        block.water += check_block.water
+                        block.long += check_block.long
+                        block.lat += check_block.lat
+                        block.area += check_block.area
+                        block.density += check_block.density
                         # This try/except can be removed once all blocks are matched!
                         try:
                             block.rep_votes += check_block.rep_votes
@@ -277,6 +295,13 @@ def create_json(block_list):
         json_string += f"\"STATE\" : \"{block.state}\", "
         json_string += f"\"ID\" : \"{block.id}\", "
         json_string += f"\"POP\" : \"{block.pop}\", "
+        json_string += f"\"LAND\" : \"{block.land}\", "
+        json_string += f"\"WATER\" : \"{block.water}\", "
+        json_string += f"\"LONG\" : \"{block.long}\", "
+        json_string += f"\"LAT\" : \"{block.lat}\", "
+        json_string += f"\"AREA\" : \"{block.area}\", "
+        json_string += f"\"DENSITY\" : \"{block.density}\", "
+
         json_string += f"\"CENTROID\" : \"{block.centroid}\", "
         json_string += f"\"NEIGHBORS\" : \"{block.neighbors}\", "
         # if block.total_votes < block.rep_votes + block.dem_votes:
@@ -315,22 +340,26 @@ def create_graph(state_name, check_point="beginning"):
             subprocess.run(["7za", "e", f"{SOURCE_DIR}/block_geodata.7z", f"-o{SOURCE_DIR}"])
         with open(f"{SOURCE_DIR}/block_geodata.json", "r") as f:
             block_geodata = json.load(f)
-
+        print("Block geodata loaded.")
         if not "geodata.json" in files:
             subprocess.run(["7za", "e", f"{SOURCE_DIR}/geodata.7z", f"-o{SOURCE_DIR}"])
         with open(f"{SOURCE_DIR}/geodata.json", "r") as f:
             geodata = json.load(f)
+        print("Precinct/Block Group geodata loaded.")
 
         if not "block_demographics.csv" in files:
             subprocess.run(["7za", "e", f"{SOURCE_DIR}/block_demographics.7z",f"-o{SOURCE_DIR}"])
         with open(f"{SOURCE_DIR}/block_demographics.csv", "r") as f:
             block_demographics = pandas.read_csv(f, header=1)
+        print("Block Demographics data loaded.")
 
         with open(f"{SOURCE_DIR}/demographics.csv", "r") as f:
             demographics = pandas.read_csv(f)
+        print("Precincts/Block Group Demographics data loaded.")
 
         with open(f"{SOURCE_DIR}/election_data.csv", "r") as f:
             election_data = pandas.read_csv(f)
+        print("Election data loaded.")
 
         precinct_coordinates = {precinct["properties"]["GEOID10"] :
             precinct["geometry"]["coordinates"] 
@@ -349,46 +378,62 @@ def create_graph(state_name, check_point="beginning"):
 
         precincts_num = len(precinct_ids)
         precincts_created = 0
-        for geo_id in precinct_ids:
-            rep_votes = election_data[election_data["GEOID10"] == geo_id]["Rep_2008_pres"]
+        for election_id in precinct_ids:
+            rep_votes = election_data[election_data["GEOID10"] == election_id]["Rep_2008_pres"]
             # if rep_votes.size == 2:
             rep_votes = rep_votes.max()
-            dem_votes = election_data[election_data["GEOID10"] == geo_id]["Dem_2008_pres"]
+            dem_votes = election_data[election_data["GEOID10"] == election_id]["Dem_2008_pres"]
             dem_votes = dem_votes.max()
 
-            total_votes = election_data[election_data["GEOID10"] == geo_id]["Tot_2008_pres"]
+            total_votes = election_data[election_data["GEOID10"] == election_id]["Tot_2008_pres"]
             total_votes = total_votes.max()
             if total_votes < rep_votes + dem_votes:
                 print("BIG BIG BIG BIG PROBLEM!!!")
             # In addition to total population, racial data needs to be added as well
-            total_pop = demographics[demographics["GEOID10"] == geo_id]["Tot_2010_tot"].item()
-            # print(geo_id, "440010301001")
-            # print(type(geo_id))
+            total_pop = demographics[demographics["GEOID10"] == election_id]["Tot_2010_tot"].item()
+            # print(election_id, "440010301001")
+            # print(type(election_id))
             # print(precinct_coordinates["440010301001"])
             try:
-                coordinate_data = geojson_to_shapely(precinct_coordinates[geo_id])
+                coordinate_data = geojson_to_shapely(precinct_coordinates[election_id])
             except:
-                coordinate_data = geojson_to_shapely(precinct_coordinates[str(geo_id)])
+                coordinate_data = geojson_to_shapely(precinct_coordinates[str(election_id)])
 
-            precinct = Precinct(total_pop, coordinate_data, state_name, str(geo_id), total_votes, rep_votes, dem_votes)
+            precinct = Precinct(total_pop, coordinate_data, state_name, str(election_id), total_votes, rep_votes, dem_votes)
             precinct_list.append(precinct)
             precincts_created += 1
             print(f"\rPrecincts Created: {precincts_created}/{precincts_num}, {round(100*precincts_created/precincts_num, 1)}%", end="")
             sys.stdout.flush()
         print("\n", end="")
         block_ids = block_demographics["id"]
+ 
+        beginning = time.time()
+        block_demographics_ids_to_rows = {id : block_demographics.iloc[i] for i, id in enumerate(block_ids)}
+        block_geodata_ids_to_properties = {block["properties"]["GEOID10"] : block["properties"] for block in block_geodata["features"]}
+        # print(block_demographics_ids_to_rows)
+        print(f"Time needed to create: {time.time()-beginning}")
         block_num = len(block_ids)
         block_list = []
         county_to_blocks = {}
         blocks_created = 0
         previous_county = None
-        for geo_id in block_ids:
-
-            row = block_demographics[block_demographics["id"] == geo_id]
-
+        # for i, demographic_id in enumerate(block_ids[107824:]):
+        for i, demographic_id in enumerate(block_ids):
+            # print(i)
+            # begin_time = time.time()
+            # row = block_demographics[block_demographics["id"] == demographic_id]
+            row = block_demographics_ids_to_rows[demographic_id]
+            # print(f"1, {time.time()-begin_time}")
+            # print(f"2, {time.time()-begin_time}")
             total_pop = row["Total"].item()
-            geo_id_beginning = geo_id.find("US")+2
-            coordinate_data  = geojson_to_shapely(block_coordinates[geo_id[geo_id_beginning:]])
+            demographic_id_beginning = demographic_id.find("US")+2
+            # print(f"3, {time.time()-begin_time}")
+            coordinate_data  = geojson_to_shapely(block_coordinates[demographic_id[demographic_id_beginning:]])
+            land = block_geodata_ids_to_properties[demographic_id[demographic_id_beginning:]]["ALAND10"]
+            water = block_geodata_ids_to_properties[demographic_id[demographic_id_beginning:]]["AWATER10"]
+            lat = block_geodata_ids_to_properties[demographic_id[demographic_id_beginning:]]["INTPTLAT10"]
+            long = block_geodata_ids_to_properties[demographic_id[demographic_id_beginning:]]["INTPTLON10"]
+            # print(f"4, {time.time()-begin_time}")
             racial_data = {}
 
             racial_data["hispanic"] = row["Total!!Hispanic or Latino"].item()
@@ -461,17 +506,33 @@ def create_graph(state_name, check_point="beginning"):
             racial_data["black:aian:asian:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of five races!!Black or African American; American Indian and Alaska Native; Asian; Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
 
             racial_data["white:black:aian:asian:nhpi:other"] = row["Total!!Not Hispanic or Latino!!Two or More Races!!Population of six races!!White; Black or African American; American Indian and Alaska Native; Asian; Native Hawaiian and Other Pacific Islander; Some Other Race"].item() 
+            # print(f"5, {time.time()-begin_time}")
             
             fractional_assignment(racial_data)
-            block = Block(total_pop, coordinate_data, state_name, geo_id, racial_data)
+            # print(f"6, {time.time()-begin_time}")
+            block = Block(total_pop, coordinate_data, state_name, demographic_id, racial_data)
+            # print(f"7, {time.time()-begin_time}")
+            block.land = float(land)
+            block.water = float(water)
+            block.long = float(long)
+            block.lat = float(lat)
+            block.area = block.water + block.land
+            block.density = block.pop/block.area
+            # print(f"8, {time.time()-begin_time}")
+            if block.id == "1000000US360470300001001":
+                print("\n")
+                print(i, demographic_id)
+                print(block_geodata_ids_to_properties[demographic_id[demographic_id_beginning:]]["ALAND10"], block_geodata_ids_to_properties[demographic_id[demographic_id_beginning:]]["properties"]["AWATER10"])
+                print(f"FIRST OK BIG THING:", block.pop, block.racial_data, block.area, block.density)
             block_list.append(block)
-            if previous_county == None or previous_county != geo_id[geo_id_beginning:geo_id_beginning+5]:
-                county_to_blocks[geo_id[geo_id_beginning:geo_id_beginning+5]] = [block]
+            if previous_county == None or previous_county != demographic_id[demographic_id_beginning:demographic_id_beginning+5]:
+                county_to_blocks[demographic_id[demographic_id_beginning:demographic_id_beginning+5]] = [block]
             else:
-                county_to_blocks[geo_id[geo_id_beginning:geo_id_beginning+5]].append(block)
-            previous_county = geo_id[geo_id_beginning:geo_id_beginning+5]
+                county_to_blocks[demographic_id[demographic_id_beginning:demographic_id_beginning+5]].append(block)
+            previous_county = demographic_id[demographic_id_beginning:demographic_id_beginning+5]
             # print(previous_county)
             blocks_created += 1
+            # print(f"9, {time.time()-begin_time}")
             print(f"\rBlocks Created: {blocks_created}/{block_num}, {round(100*blocks_created/block_num, 1)}%", end="")
             sys.stdout.flush()
         print("\n", end="")
@@ -488,7 +549,7 @@ def create_graph(state_name, check_point="beginning"):
             county_to_blocks = pickle.load(f)
         with open(state_name + "_unsplit_block_list.pickle", "rb") as f:
             block_list = pickle.load(f)
-
+    # print(time.time()-beginning)
     if check_point != "block_vote_assignment":
         block_num = len(block_list)
         seen_blocks = {}
@@ -532,7 +593,7 @@ def create_graph(state_name, check_point="beginning"):
         with open(state_name + "_precinct_to_block.pickle", "rb") as f:
             precinct_to_blocks = pickle.load(f)
 
-    # When loading from pickles, references for precinct_to_blocks and block_list are seperate!
+    # When loading from pickles, references for blocks in precinct_to_blocks and block_list are seperate!
     # This needs to be done so that the right blocks are updated with vote counts. 
     ids_to_blocks = {block.id : block for block in block_list}
 
@@ -550,12 +611,12 @@ def create_graph(state_name, check_point="beginning"):
                 ids_to_blocks[block.id].other_votes = 0
         else:
             for block in precinct_blocks:
-                try:
-                    ids_to_blocks[block.id].rep_votes = precinct.rep_votes * block.pop/block_pop_sum
-                    ids_to_blocks[block.id].dem_votes = precinct.dem_votes * block.pop/block_pop_sum
-                    ids_to_blocks[block.id].total_votes = precinct.total_votes * block.pop/block_pop_sum
-                except:
-                    print([block.pop for block in precinct_blocks], precinct.id)
+                # try:
+                ids_to_blocks[block.id].rep_votes = precinct.rep_votes * block.pop/block_pop_sum
+                ids_to_blocks[block.id].dem_votes = precinct.dem_votes * block.pop/block_pop_sum
+                ids_to_blocks[block.id].total_votes = precinct.total_votes * block.pop/block_pop_sum
+                # except:
+                    # print([block.pop for block in precinct_blocks], precinct.id)
             # for block in block_list:
             #     if block.total_votes < block.rep_votes + block.dem_votes:
             #         print("it happens before 537!")
@@ -568,7 +629,9 @@ def create_graph(state_name, check_point="beginning"):
     del precinct_list
 
     for block in block_list:
-        if block.rep_votes == None:
+        if block.id == "1000000US360470300001001":
+                print(f"OK BIG THING:", block.pop, block.land, block.water, block.area, block.density)
+        if block.rep_votes == None and block.dem_votes == None and block.other_votes == None:
             print("it happens before line 544")
     # Split blocks which are not contiguous
     split_multipolygons(block_list)
@@ -671,6 +734,10 @@ def create_graph(state_name, check_point="beginning"):
         print(f"\rEdges added to graph: {edges_created}/{edges_num}, {round(100*edges_created/edges_num, 1)}%", end="")
         sys.stdout.flush()
     print("\n")  
+
+    for block in block_list:
+        if block.id == "1000000US360470300001001":
+            print(f"OK BIG THING:", block.pop, block.land, block.water, block.area, block.density)
     # for block in block_list:
     #     if block.total_votes < block.rep_votes + block.dem_votes:
     #         print("it happens before line 635")

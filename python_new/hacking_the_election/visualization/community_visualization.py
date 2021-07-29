@@ -3,7 +3,7 @@ Contains functions for visualizing communities.
 
 Usage (in python directory):
 
-python3 -m hacking_the_election.visualization.community_visualization [path_to_community_list.pickle] [color]
+python3 -m hacking_the_election.visualization.community_visualization [path_to_community_list.pickle] [mode]
 """
 
 from PIL import Image, ImageDraw
@@ -17,7 +17,7 @@ from shapely.geometry import Point, MultiPolygon, Polygon
 from hacking_the_election.utils.geometry import shapely_to_geojson
 from hacking_the_election.utils.visualization import get_community_colors, modify_coords
 
-def visualize_map(communities, output_path, quality=8192, color="random", outline=True):
+def visualize_map(communities, output_path, quality=8192, mode="random", outline=True):
     """
     Visualizes map of communities.
     Takes in a list of communities, a path to output the picture to,
@@ -92,7 +92,7 @@ def visualize_map(communities, output_path, quality=8192, color="random", outlin
     print("\n", end="")        
 
     colors = []
-    if color == "block_partisanship":
+    if mode == "block_partisanship":
         for block in block_list:
             percent_dem = block.percent_dem
             percent_rep = block.percent_rep
@@ -104,21 +104,21 @@ def visualize_map(communities, output_path, quality=8192, color="random", outlin
                     # print(block.id, block.pop, block.racial_data, block.total_votes, block.dem_votes, block.percent_dem)
             else:
                 colors.append((128,128,128))
-    elif color in ["community_partisanship", "random"]:
+    elif mode in ["community_partisanship", "random"]:
         for i in range(len(communities)):
             # Ensure colors don't come too close to black or white
-            if color == "community_partisanship":
+            if mode == "community_partisanship":
                 percent_dem = communities[i].percent_dem
                 percent_rep = communities[i].percent_rep
                 if percent_dem:
                     colors.append((round(percent_rep*255),0,round(percent_dem*255)))
                 else:
                     colors.append((128,128,128))
-            elif color  == "random":
+            elif mode  == "random":
                 colors.append((randint(5,250),randint(5,250),randint(5,250)))
 
     for i, block in enumerate(modified_coords):
-        if color == "block_partisanship":
+        if mode == "block_partisanship":
             if outline == "true":
                 draw.polygon([tuple(point) for point in block], fill=colors[i], outline=(0, 0, 0))
             else:
@@ -138,29 +138,29 @@ if __name__ == '__main__':
     with open(sys.argv[1], "rb") as f:
         community_list = pickle.load(f)
 
-    color = sys.argv[2]
-    if color not in ["random", "community_partisanship", "block_partisanship"]:
-        raise Exception("Color argument needs to be 'random', 'block_partisanship', or 'community_partisanship'!")
+    mode = sys.argv[2]
+    if mode not in ["random", "community_partisanship", "block_partisanship"]:
+        raise Exception("Mode argument needs to be 'random', 'block_partisanship', or 'community_partisanship'!")
     try:
         quality = sys.argv[3]
     except:
-        visualize_map(community_list, "docs/images/" + color + "_community_visualization.jpg", color=color)
+        visualize_map(community_list, "docs/images/" + mode + "_community_visualization.jpg", mode=mode)
     else:
         try:
             _ = int(quality)
         except:
             outline = quality
             if outline.lower() in ["true", "false"]:
-                visualize_map(community_list, "docs/images/" + color + "_community_visualization.jpg", color=color, outline=outline.lower())
+                visualize_map(community_list, "docs/images/" + mode + "_community_visualization.jpg", mode=mode, outline=outline.lower())
             else:
                 raise Exception("Outline argument must be 'true' or 'false'!")
         else:
             try:
                 outline = sys.argv[4]
             except:
-                visualize_map(community_list, "docs/images/" + color + "_community_visualization.jpg", color=color, quality=quality)
+                visualize_map(community_list, "docs/images/" + mode + "_community_visualization.jpg", mode=mode, quality=quality)
             else:
                 if outline.lower() in ["true", "false"]:
-                    visualize_map(community_list, "docs/images/" + color + "_community_visualization.jpg", color=color, quality=quality, outline=outline.lower())
+                    visualize_map(community_list, "docs/images/" + mode + "_community_visualization.jpg", mode=mode, quality=quality, outline=outline.lower())
                 else:
                     raise Exception("Outline argument must be 'true' or 'false'!")

@@ -9,6 +9,16 @@ class Block:
 
         # Shapely polygon
         self.coords = coords
+        # In square meters
+        self.land = None
+        self.water = None
+        # Latitude and Longitude of internal point
+        self.long = None
+        self.lat = None
+        # Area, square meters
+        self.area = None
+        # People per square meter
+        self.density = None
         self.min_x, self.min_y, self.max_x, self.max_y = coords.bounds
 
         # x_length = self.max_x - self.min_x

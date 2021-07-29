@@ -3,7 +3,7 @@ Contains various functions and algorithms to generate the initial configuration 
 Each function takes in a path to a .json or .pickle file and returns a list of Commmunity objects.
 
 Usage (from the python directory):
-python3 -m hacking_the_election.initial_generation [path_to_serialized.json] [state_name]
+python3 -m hacking_the_election.initial_generation [path_to_serialized.json]
 """
 
 import sys
@@ -47,8 +47,17 @@ def _deserialize(path):
 
             pop = float(block["properties"]["POP"])
             created_block = Block(pop, coordinates, state, block_id, racial_data, total_votes, rep_votes, dem_votes)
+            created_block.land = float(block["properties"]["LAND"])
+            created_block.water = float(block["properties"]["WATER"])
+            created_block.long = float(block["properties"]["LONG"])
+            created_block.lat = float(block["properties"]["LAT"])
+            created_block.area = float(block["properties"]["AREA"])
+            created_block.density = float(block["properties"]["DENSITY"])
+            
             created_block.neighbors = neighbors
-            block_graph.add_node(i, block=created_block)
+            block_graph.add_node(created_block.id, block=created_block)
+            # if i == 0:
+            #     print(block_graph.nodes[0])
             block_list.append(created_block)
             block_to_index[created_block.id] = i
             print(f"\rBlocks added to graph: {i}", end="")
@@ -74,7 +83,8 @@ def random_generation(path, state):
     t = time.time()
     block_dict = nx.get_node_attributes(block_graph, 'block')
     # print(block_dict)
-    indexes = {i:block_dict[i] for i in range(len(block_dict))}
+    indexes = {i:block for i,block in enumerate(list(block_dict.values()))}
+    # print(indexes[0])
     ids_to_indexes = {block.id : i for i, block in indexes.items()}
     for index in ids_to_indexes.values():
         try:
@@ -129,10 +139,17 @@ def random_generation(path, state):
     # Calcualate borders and neighbors for all communities, and
     # initialize the graph 
     ids_to_blocks = {block.id: block for block in block_dict.values()}
+    # print(ids_to_blocks)
     for community in community_list:
         community.initialize_graph(ids_to_blocks)
         community.find_neighbors_and_border(ids_to_blocks)
-
+        try:
+            _ = community.border_edges[1]
+        except:
+            pass
+        else:
+            raise Exception("BIG UH OHHH!", community.border_edges)
+    # print(community_list[0].border_edges)
     start_merge_time = time.time()
     # Remove small communities
     id_to_community = {community.id:community for community in community_list}
@@ -144,6 +161,12 @@ def random_generation(path, state):
         print(f"\rCommunities merged: {i+1}/{len(to_remove)}, {round(100*(i+1)/len(to_remove), 1)}%", end="")
         sys.stdout.flush()
         community_list.remove(community)
+        try:
+            _ = id_to_community[neighboring_community_id].border_edges[1]
+        except:
+            pass
+        else:
+            raise Exception("BIG UH OHHH!", id_to_community[neighboring_community_id].border_edges)
     print("\n", end="")
     end_merge_time = time.time()-start_merge_time
     print(f"Time needed for merging: {end_merge_time}, an average of {end_merge_time/len(to_remove)} seconds per merge")
@@ -162,10 +185,15 @@ def random_generation(path, state):
     return community_list
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
+    file = sys.argv[1]
+    if len(sys.argv) != 2:
         raise Exception("Either there are too many or too few arguments. ")
-    community_list = random_generation(sys.argv[1], sys.argv[2])
-    with open(sys.argv[2] + "_community_list.pickle", "wb") as f:
+    try:
+        state_name = file[:file.find("serialized")-1]
+    except:
+        raise Exception("Argument passed in must be a _serialized.json file. ")
+    community_list = random_generation(file, state_name)
+    with open(state_name + "_community_list.pickle", "wb") as f:
         pickle.dump(community_list, f)
     
     visualize_map(community_list, "docs/images/random_community_visualization.jpg")

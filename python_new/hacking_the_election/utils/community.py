@@ -70,6 +70,12 @@ class Community:
 
         # Aggregates stats for the community
         self.pop = sum([block.pop for block in self.blocks])
+        self.land = sum([block.land for block in self.blocks])
+        self.water = sum([block.water for block in self.blocks])
+        self.area = self.land + self.water
+        # People per square meter
+        self.density = self.pop/self.area
+
         self.total_votes = sum([block.total_votes for block in self.blocks if block.total_votes != None])
         self.dem_votes = sum([block.dem_votes for block in self.blocks if block.dem_votes != None])
         self.rep_votes = sum([block.rep_votes for block in self.blocks if block.rep_votes != None])
@@ -188,18 +194,20 @@ class Community:
         """
         self.graph = nx.Graph()
         for block in self.blocks:
+            # print(block.id)
             self.graph.add_node(block.id, block=block)
         for block in self.blocks:
             for neighbor in block.neighbors:
                 try:
                     neighbor_community = id_to_block[neighbor].community
                     if id_to_block[neighbor].community == self.id:
+                        # print(block.id, neighbor)
                         self.graph.add_edge(block.id, neighbor)
                 except:
                     pass
         self.articulation_points = set(nx.articulation_points(self.graph))
     
-    def merge_community(self, community, id_to_block, id_to_community, for_real=True):
+    def merge_community(self, community, id_to_block, id_to_community, threshold=None, for_real=True):
         """
         Merges another community into this one and updates attributes.
         """
@@ -209,7 +217,10 @@ class Community:
         #         print("this should be it", block.community)
         self.blocks.extend(community.blocks)
         if not for_real:
-            score = self.calculate_score()
+            if threshold == None:
+                raise Exception("merge_community function needs a threshold given when not for real")
+            score = self.calculate_score(id_to_block,threshold)
+            # print(score)
             # score = self.calculate_political_similarity()*self.calculate_race_similarity()
             # score = self.calculate_graphical_compactness()
             self.blocks = original_blocks
@@ -258,9 +269,16 @@ class Community:
             self.percent_minority = 1 - self.percent_white
         
         self.graph.update(community.graph)
-        for edge in self.border_edges:
-            if id_to_block[edge[1]] in self.blocks:
-                self.graph.add_edge(edge[0], edge[1])
+        for pair in self.border_edges:
+            block = pair[0]
+            other_block = pair[1]
+            # print(edge[0],edge[1])
+            # try:
+            if id_to_block[other_block] in self.blocks:
+                self.graph.add_edge(block,other_block)
+            # except:
+                # print(self.block_ids, community.block_ids)
+                # raise Exception(edge[0],edge[1], self.border_edges)
         self.articulation_points = set(nx.articulation_points(self.graph))
 
         self.find_neighbors_and_border(id_to_block)
@@ -397,70 +415,135 @@ class Community:
         """
         Uses the Jensen-Shannon divergence metric to calculate the similarity of the communities' race distributions.
         """
-        race_distributions = []
-        for block in self.blocks:
-            race_distribution = []
-            # If there are no people in this block, no need to consider when calculating racial similarity
-            if block.percent_white == None or block.pop == 0:
-                continue
-            race_distribution.append(block.percent_white)
-            race_distribution.append(block.percent_black)
-            race_distribution.append(block.percent_hispanic)
-            race_distribution.append(block.percent_aapi)
-            race_distribution.append(block.percent_aian)
-            race_distribution.append(block.percent_other)
+        # race_distributions = []
+        # for block in self.blocks:
+        #     race_distribution = []
+        #     # If there are no people in this block, no need to consider when calculating racial similarity
+        #     if block.percent_white == None or block.pop == 0:
+        #         continue
+        #     race_distribution.append(block.percent_white)
+        #     race_distribution.append(block.percent_black)
+        #     race_distribution.append(block.percent_hispanic)
+        #     race_distribution.append(block.percent_aapi)
+        #     race_distribution.append(block.percent_aian)
+        #     race_distribution.append(block.percent_other)
 
-            race_distributions.append(race_distribution)
-        race_similarity = 1 - jensen_shannon(race_distributions)
-        if len(race_distributions) == 0:
-            # Fix this as well!
-            return 0
-        # if race_similarity < 0:
-            # print(race_distributions, "race distribution")
-        return race_similarity
+        #     race_distributions.append(race_distribution)
+        # race_similarity = 1 - jensen_shannon(race_distributions)
+        # if len(race_distributions) == 0:
+        #     # Fix this as well!
+        #     return 0
+        # # if race_similarity < 0:
+        #     # print(race_distributions, "race distribution")
+
+        block_whites = [block.percent_white for block in self.blocks if block.percent_white != None]
+        block_blacks = [block.percent_black for block in self.blocks if block.percent_black != None]
+        block_hispanics = [block.percent_hispanic for block in self.blocks if block.percent_hispanic != None]
+        block_aapis = [block.percent_aapi for block in self.blocks if block.percent_aapi != None]
+        block_aians = [block.percent_aian for block in self.blocks if block.percent_aian != None]
+        block_others = [block.percent_other for block in self.blocks if block.percent_other != None]
+        # print(stats.stdev(block_whites)+stats.stdev(block_blacks)+stats.stdev(block_hispanics)+stats.stdev(block_aapis)+stats.stdev(block_aians)+stats.stdev(block_others))
+        try:
+            racial_similarity = 1-((stats.stdev(block_whites)+stats.stdev(block_blacks)+stats.stdev(block_hispanics)+stats.stdev(block_aapis)+stats.stdev(block_aians)+stats.stdev(block_others))/6)
+        except:
+            racial_similarity = 0
+        return racial_similarity
     
     def calculate_political_similarity(self):
         """
         Uses the Jensen-Shannon divergence metric to calculate the similarity of the communities' partisanship distributions.
         """
-        political_distributions = []
-        for block in self.blocks:
-            political_distribution = []
-            if block.percent_dem == None or block.pop == 0:
-                continue
-            political_distribution.append(block.percent_dem)
-            political_distribution.append(block.percent_rep)
-            political_distribution.append(block.percent_other)
+        # political_distributions = []
+        # for block in self.blocks:
+        #     political_distribution = []
+        #     if block.percent_dem == None or block.pop == 0:
+        #         continue
+        #     political_distribution.append(block.percent_dem)
+        #     political_distribution.append(block.percent_rep)
+        #     political_distribution.append(block.percent_other)
 
-            political_distributions.append(political_distribution)
-        if len(political_distributions) == 0:
-            # raise Exception(block.percent_dem, block.pop)
-            # This needs to be fixed soon though!
-            return 0
-        political_similarity = 1 - jensen_shannon(political_distributions)
+        #     political_distributions.append(political_distribution)
+        # if len(political_distributions) == 0:
+        #     # raise Exception(block.percent_dem, block.pop)
+        #     # This needs to be fixed soon though!
+        #     return 0
+        # political_similarity = 1 - jensen_shannon(political_distributions)
+        block_percent_dem = [block.percent_dem for block in self.blocks if block.percent_dem != None]
+        block_percent_rep = [block.percent_rep for block in self.blocks if block.percent_rep != None]
+        block_percent_other = [block.percent_other for block in self.blocks if block.percent_other != None]
+        try:
+            political_similarity = 1-((stats.stdev(block_percent_dem)+stats.stdev(block_percent_rep)+stats.stdev(block_percent_other))/3)
+        except:
+            political_similarity = 0
         return political_similarity
-
-    def calculate_graphical_compactness(self):
+        
+    # def calculate_graphical_compactness(self):
         # return len(self.blocks)/len(self.border_edges)
         # return 1 - len(self.border_edges)/len(self.blocks)
-        return 1 - len(self.border)/len(self.blocks)
+        # return 1 - len(self.border)/len(self.blocks)
 
-    def calculate_score(self):
+    def calculate_density_similarity(self):
+        block_densities = [block.density for block in self.blocks]
+        try:
+            density_similarity = 1-stats.stdev(block_densities)
+        except:
+            density_similarity = 0
+        return density_similarity
+
+    def calculate_community_score(self):
         # return self.calculate_political_similarity()*self.calculate_race_similarity()*self.calculate_graphical_compactness()
-        # block_percent_dems = [block.percent_dem for block in self.blocks if block.percent_dem != None]
-        # block_whites = [block.percent_white for block in self.blocks if block.percent_white != None]
-        # block_blacks = [block.percent_black for block in self.blocks if block.percent_black != None]
-        # block_hispanics = [block.percent_hispanic for block in self.blocks if block.percent_hispanic != None]
-        # block_aapis = [block.percent_aapi for block in self.blocks if block.percent_aapi != None]
-        # block_aians = [block.percent_aian for block in self.blocks if block.percent_aian != None]
-        # block_others = [block.percent_other for block in self.blocks if block.percent_other != None]
-        # print(stats.stdev(block_whites)+stats.stdev(block_blacks)+stats.stdev(block_hispanics)+stats.stdev(block_aapis)+stats.stdev(block_aians)+stats.stdev(block_others))
-        # racial_stdev = 1-((stats.stdev(block_whites)+stats.stdev(block_blacks)+stats.stdev(block_hispanics)+stats.stdev(block_aapis)+stats.stdev(block_aians)+stats.stdev(block_others))/6)
         # print(racial_stdev, "racial stdev")
-        # political_stdev = 1-stats.stdev(block_percent_dems)
+        score = (self.calculate_political_similarity()+self.calculate_race_similarity()+self.calculate_density_similarity())/3
+        if score < 0.5:
+            print("OK: ", self.calculate_political_similarity(), self.calculate_race_similarity(), self.calculate_density_similarity())
+            for block in self.blocks:
+                if block.density > 1:
+                    print(block.area, block.pop, block.id)
+        return (self.calculate_political_similarity()+self.calculate_race_similarity()+self.calculate_density_similarity())/3
         # print(self.calculate_political_similarity(), "<- polisim", self.calculate_race_similarity(), "<- racesim", self.calculate_graphical_compactness(), "<-- grapsim")
         # print((self.calculate_political_similarity()*self.calculate_race_similarity()*self.calculate_graphical_compactness()) ** (1/3))
         # return (self.calculate_political_similarity()*self.calculate_race_similarity()*self.calculate_graphical_compactness()) ** (1/3)
-        return (self.calculate_political_similarity()*self.calculate_race_similarity())**(1/2)
-        # return political_stdev*racial_stdev*self.calculate_graphical_compactness()
+        # return (self.calculate_political_similarity()*self.calculate_race_similarity())**(1/2)
+        # return political_similarity*racial_similarity
         # return political_stdev*racial_stdev
+
+    def calculate_border_score(self, id_to_block):
+        block_stdevs = []
+        # print(self.border_edges)
+        for pair in self.border_edges:
+            block = id_to_block[pair[0]]
+            non_community_block = id_to_block[pair[1]]
+            if block.pop == 0 or non_community_block.pop == 0:
+                continue
+            # print(block, non_community_block)
+            # print([block.percent_dem, non_community_block.percent_dem],[block.percent_rep, non_community_block.percent_rep],[block.percent_other, non_community_block.percent_other])
+            try:
+                # political_difference = (stats.stdev([block.percent_dem, non_community_block.percent_dem])+stats.stdev([block.percent_rep, non_community_block.percent_rep])+stats.stdev([block.percent_other, non_community_block.percent_other]))/3
+                political_difference = (abs(block.percent_dem-non_community_block.percent_dem)+abs(block.percent_rep-non_community_block.percent_rep)+abs(block.percent_other-non_community_block.percent_other))/3
+            except:
+                political_difference = 0
+            # print([block.percent_white,non_community_block.percent_white], [block.percent_black, non_community_block.percent_black], [block.percent_hispanic, non_community_block.percent_hispanic], [block.percent_aapi, non_community_block.percent_aapi], [block.percent_aian, non_community_block.percent_aian], [block.percent_other, non_community_block.percent_other])
+            try:
+                # racial_difference = ((stats.stdev([block.percent_white, non_community_block.percent_white])+stats.stdev([block.percent_black, non_community_block.percent_black])+stats.stdev([block.percent_hispanics, non_community_block.percent_hispanics])+stats.stdev([block.percent_aapi, non_community_block.percent_aapi])+stats.stdev([block.percent_aian, non_community_block.percent_aian])+stats.stdev([block.percent_other, non_community_block.percent_other]))/6)
+                racial_difference = (abs(block.percent_white-non_community_block.percent_white)+abs(block.percent_black-non_community_block.percent_black)+abs(block.percent_hispanic-non_community_block.percent_hispanic)+abs(block.percent_aapi-non_community_block.percent_aapi)+abs(block.percent_aian-non_community_block.percent_aian)+abs(block.percent_other-non_community_block.percent_other))/6
+            except:
+                racial_difference = 0
+            # print(block.density, non_community_block.density, abs(block.density-non_community_block.density)/max(block.density, non_community_block.density))
+            try: 
+                # density_difference = stats.stdev([block.density, non_community_block.density])
+                if block.density != 0 or non_community_block.density != 0:
+                    density_difference = abs(block.density-non_community_block.density)/max(block.density, non_community_block.density)
+                else:
+                    density_difference = 0
+            except:
+                density_difference = 0
+            # print(political_difference, racial_difference, density_difference)
+            block_stdevs.append((political_difference+racial_difference+density_difference)/3)
+        return (sum(block_stdevs)/len(block_stdevs))
+
+    def calculate_score(self, id_to_block, threshold):
+        # print("called!", (self.calculate_community_score()+self.calculate_border_score())-threshold)
+        community_score = self.calculate_community_score()
+        border_score = self.calculate_border_score(id_to_block)
+        print(community_score, border_score, "scores!")
+        return ((community_score+border_score)/2)-threshold
