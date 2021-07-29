@@ -8,8 +8,11 @@
 #include <array>
 
 #include "../lib/Clipper/cpp/clipper.hpp"
+#include "../lib/earcut.hpp/include/mapbox/earcut.hpp"
 
 #define PI 3.14159265358979
+
+
 
 
 namespace hte {
@@ -27,20 +30,30 @@ struct Point2d
     T x, y;
 
 template<typename Ts>
-friend bool operator== (const Point2d<Ts>& l1, const Point2d<Ts>& l2);
+friend bool operator== (const Point2d<Ts>& l1, const Point2d<Ts>& l2)
+{
+    // TODO: we do a little floating-point handling
+    return (l1.x == l2.x && l1.y == l2.y);
+};
 
 template<typename Ts>
 friend bool operator!= (const Point2d<Ts>& l1, const Point2d<Ts>& l2);
+
+friend std::ostream& operator<< (std::ostream& out, const Point2d& pt) {
+    out << "{" << pt.x << ", " << pt.y << "}";
+    return out;
+}
+
 };
 
 
 enum class Bounds
 {
-    TopLeft, TopRight, BottomLeft, BottomRight
+    Top, Bottom, Left, Right
 };
 
 
-template <class It>
+template<typename It>
 struct PairwiseIterator
 {
     It it;
@@ -62,7 +75,7 @@ struct PairwiseIterator
 };
 
 
-template <class Container>
+template<typename Container>
 class PairwiseRange
 {
 public:
@@ -97,10 +110,12 @@ template<typename T>
 class LinearRing : public std::vector<Point2d<T>>
 {
 public:
-    LinearRing(std::initializer_list<Point2d<T>> points) : std::vector<Point2d<T>&>(std::move(points)) {/*initialize();*/}
+    LinearRing(std::initializer_list<Point2d<T>> points) : std::vector<Point2d<T>>(std::move(points)) {/*initialize();*/}
 
     template<class... Construct>
     LinearRing(Construct&&... args) : std::vector<Point2d<T>>(std::forward<Construct>(args)...) {/*initialize();*/}
+
+    using Vec = std::vector<Point2d<T>>;
 
     inline double getSignedArea() const {return signedArea;}
     inline double getPerimeter() const {return perimeter;}
@@ -108,12 +123,12 @@ public:
 
     void forceValid()
     {
-        if (!isValid()) push_back(this->at(0));
+        if (!isValid()) Vec::push_back(Vec::at(0));
     };
 
     inline bool isValid() const
     {
-        return (*(this->begin()) == *(this->rbegin()));
+        return (*(Vec::begin()) == *(Vec::rbegin()));
     };
 
 private:
@@ -211,7 +226,7 @@ friend bool operator!= (const MultiPolygon<Tl>& s1, const MultiPolygon<Tl>& s2);
 enum class ClipType {UNION, INTERSECTION, DIFFERENCE, XOR};
 
 
-class ClipperBuffer
+class GeometryBuffer
 {
     void performClip(ClipType clipType);
 
@@ -224,6 +239,20 @@ class ClipperBuffer
 
 template<typename T>
 double GetDistance(const Point2d<T>& c0, const Point2d<T>& c1);
+
+
+template<typename T>
+void CheckAndSetAABB(std::unordered_map<Bounds, T>& AABB, const Point2d<T>& check)
+{
+    // check X coordinate against bounding box, adjust box if necessary
+    if (check.x < AABB[Bounds::Left]) AABB[Bounds::Left] = check.x;
+    else if (check.x > AABB[Bounds::Right]) AABB[Bounds::Right] = check.x;
+
+    // check Y coordinate against bounding box, adjust box if necessary
+    if (check.y < AABB[Bounds::Bottom]) AABB[Bounds::Bottom] = check.y;
+    else if (check.y > AABB[Bounds::Top]) AABB[Bounds::Top] = check.y;
+}
+
 
 // bool GetBordering(Polygon, Polygon);
 // bool GetBoundOverlap(BoundingBox, BoundingBox);
@@ -239,7 +268,7 @@ double GetDistance(const Point2d<T>& c0, const Point2d<T>& c1);
 // Polygon GetNgon(Point2d center, double radius, int nSides);
 // MultiPolygon GenerateExteriorBorder(PrecinctGroup pg);
 
-// Segment CoordsToSegment(Point2d c1, Point2d c2);
+// !sussy baka!
 // LinearRing PathToRing(ClipperLib::Path path);
 // BoostPolygon RingToBoostPoly(LinearRing);
 // MultiPolygon PathsToMultiPolygon(ClipperLib::Paths paths);
@@ -247,5 +276,24 @@ double GetDistance(const Point2d<T>& c0, const Point2d<T>& c1);
 // ClipperLib::Path RingToPath(LinearRing ring);
 // ClipperLib::Paths PolygonToPaths(Polygon shape);
 }
+
+
+
+namespace mapbox {
+namespace util {
+
+template<typename T>
+struct nth<0, hte::Point2d<T>> {
+    inline static T get(const hte::Point2d<T>& t) {return t.x;};
+};
+
+template<typename T>
+struct nth<1, hte::Point2d<T>> {
+    inline static T get(const hte::Point2d<T>& t) {return t.y;};
+};
+
+}
+}
+
 
 #endif
