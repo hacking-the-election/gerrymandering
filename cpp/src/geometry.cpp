@@ -9,6 +9,12 @@
 namespace hte
 {
 
+template<>
+Point2d<double>::operator ClipperLib::IntPoint() const
+{
+    return ClipperLib::IntPoint((signed long long) (x * INT_CONVERSION_FACTOR),
+                                (signed long long) (y * INT_CONVERSION_FACTOR));
+}
 
 template<typename T>
 inline double GetDistanceSquared(const Point2d<T>& p1, const Point2d<T>& p2)
@@ -65,6 +71,23 @@ void Polygon<T>::updateSignedArea()
     for (const auto& h : getHoles()) signedArea -= h.getSignedArea();
 }
 
+
+/**
+ * Returns whether or not two polygons are bordering.
+ *
+ * Uses clipping, does not count a single-point intersection.
+ */
+template<typename T>
+bool GetBordering(const Polygon<T>& a, const Polygon<T>& b)
+{
+    MultiPolygon<T> abUnion;
+    ClipperLib::Clipper c;
+    c.AddPaths(a, ClipperLib::ptSubject, true);
+    c.AddPaths(b, ClipperLib::ptSubject, true);
+    c.Execute(ClipType::UNION, abUnion, ClipperLib::pftNonZero, ClipperLib::pftNonZero);
+
+    return (abUnion.size() == 1);
+}
 
 // double PrecinctGroup::getArea() {
 //     double sum = 0;
@@ -151,6 +174,12 @@ void Polygon<T>::updateSignedArea()
 //     MultiPolygon ms = PathsToMultiPolygon(solutions);
 //     return (ms.border.size() == 1);
 // }
+
+
+bool GetBordering(const Polygon& a, const Polygon& b)
+{
+    ClipperLib::Paths solution
+}
 
 
 // bool GetPointInRing(Point2d coord, LinearRing lr) {

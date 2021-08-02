@@ -2,7 +2,7 @@
 .DS_Store
 
 # python
-venv
+venv/
 *.pyc
 test*.json
 test*.pickle
@@ -19,7 +19,7 @@ python/build
 
 # vscode
 settings.json
-.vscode
+.vscode/
 *.dSYM/
 
 # c++
@@ -29,3 +29,6 @@ cpp/test/test
 cpp/test_data/
 cpp/build/*.o
 cpp/build/*.d
+
+# vim
+*.swp

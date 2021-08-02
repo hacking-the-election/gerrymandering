@@ -9,4 +9,7 @@
 	url = https://github.com/Tessil/ordered-map
 [submodule "cpp/lib/Clipper"]
 	path = cpp/lib/Clipper
-	url = https://github.com/GeriBorbas/Clipper
+	url = https://github.com/hacking-the-election/Clipper
+[submodule "Clipper"]
+	url = https://github.com/hacking-the-election/Clipper.git
+	branch = main

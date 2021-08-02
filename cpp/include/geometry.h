@@ -225,7 +225,8 @@ class ClipperBuffer
 template<typename T>
 double GetDistance(const Point2d<T>& c0, const Point2d<T>& c1);
 
-// bool GetBordering(Polygon, Polygon);
+template<typename T>
+bool GetBordering(const Polygon<T>& a, const Polygon<T>& b);
 // bool GetBoundOverlap(BoundingBox, BoundingBox);
 // bool GetBoundInside(BoundingBox, BoundingBox);
 // bool GetPointInRing(Point2d, LinearRing);
