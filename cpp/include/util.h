@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 
+#include "../lib/Clipper/cpp/clipper.hpp"
 
 // class Exceptions {
 //     struct LinearRingOpen : public std::exception {
@@ -10,6 +11,8 @@
 //         }
 //     };
 // };
+
+namespace hte { typedef signed long long Coord; }
 
 bool IsNumber(std::string token);
 void WriteFile(std::string contents, std::string path);
@@ -20,3 +23,5 @@ double RandUnitInterval();
 
 template<class T>
 double GetStdev(std::vector<T>& data);
+
+void PrintPaths(const ClipperLib::Paths& paths);

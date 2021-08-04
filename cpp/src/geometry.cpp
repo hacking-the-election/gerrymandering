@@ -10,10 +10,9 @@ namespace hte
 {
 
 template<>
-Point2d<double>::operator ClipperLib::IntPoint() const
+Point2d<Coord>::operator ClipperLib::IntPoint () const
 {
-    return ClipperLib::IntPoint((signed long long) (x * INT_CONVERSION_FACTOR),
-                                (signed long long) (y * INT_CONVERSION_FACTOR));
+    return ClipperLib::IntPoint(x, y);
 }
 
 template<typename T>
@@ -72,20 +71,50 @@ void Polygon<T>::updateSignedArea()
 }
 
 
-/**
- * Returns whether or not two polygons are bordering.
- *
- * Uses clipping, does not count a single-point intersection.
- */
-template<typename T>
-bool GetBordering(const Polygon<T>& a, const Polygon<T>& b)
+ClipperLib::Path ClipperBuffer::LinearRingToPath(const LinearRing<Coord>& ring)
 {
-    MultiPolygon<T> abUnion;
-    ClipperLib::Clipper c;
-    c.AddPaths(a, ClipperLib::ptSubject, true);
-    c.AddPaths(b, ClipperLib::ptSubject, true);
-    c.Execute(ClipType::UNION, abUnion, ClipperLib::pftNonZero, ClipperLib::pftNonZero);
+    ClipperLib::Path p;
+    p.reserve(ring.size());
+    for (const Point2d<Coord>& point : ring)
+        p.emplace_back(point.x, point.y);
+    return p;
+}
 
+
+void ClipperBuffer::addLinearRing(const LinearRing<Coord>& ring, PolyType polyType)
+{
+    clipper.AddPath(LinearRingToPath(ring), (ClipperLib::PolyType)polyType, true);
+}
+
+
+void ClipperBuffer::addPolygon(const Polygon<Coord>& polygon, PolyType polyType)
+{
+    ClipperLib::Paths paths;
+    paths.reserve(polygon.size());
+    for (const LinearRing<Coord>& ring : polygon)
+        paths.push_back(LinearRingToPath(ring));
+    clipper.AddPaths(paths, static_cast<ClipperLib::PolyType>(polyType), true);
+}
+
+
+void ClipperBuffer::performClip(ClipType clipType, ClipperLib::Paths& solution, PolyFillType subjFillType, PolyFillType clipFillType)
+{
+    clipper.Execute(static_cast<ClipperLib::ClipType>(clipType),
+                    solution,
+                    static_cast<ClipperLib::PolyFillType>(subjFillType),
+                    static_cast<ClipperLib::PolyFillType>(clipFillType));
+}
+
+
+bool GetBordering(const Polygon<Coord>& a, const Polygon<Coord>& b)
+{
+    ClipperLib::Paths abUnion;
+    ClipperBuffer buffer;
+    buffer.addLinearRing(a.getHull(), PolyType::SUBJ);
+    buffer.addLinearRing(b.getHull(), PolyType::SUBJ);
+    buffer.performClip(ClipType::UNION, abUnion,
+                       PolyFillType::NONZERO, PolyFillType::NONZERO);
+    PrintPaths(abUnion);
     return (abUnion.size() == 1);
 }
 
@@ -174,12 +203,6 @@ bool GetBordering(const Polygon<T>& a, const Polygon<T>& b)
 //     MultiPolygon ms = PathsToMultiPolygon(solutions);
 //     return (ms.border.size() == 1);
 // }
-
-
-bool GetBordering(const Polygon& a, const Polygon& b)
-{
-    ClipperLib::Paths solution
-}
 
 
 // bool GetPointInRing(Point2d coord, LinearRing lr) {
