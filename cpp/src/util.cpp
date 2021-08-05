@@ -3,19 +3,21 @@
 #include "../include/hte_common.h"
 
 
+namespace hte {
+
+void PrintPath(const ClipperLib::Path& path_)
+{
+    for (const ClipperLib::IntPoint& point : path_)
+        std::cout << "(" << point.X << ", " << point.Y << ") ";
+    std::cout << std::endl;
+}
+
 void PrintPaths(const ClipperLib::Paths& paths)
 {
     std::cout << paths.size() << std::endl;
     for (const ClipperLib::Path& path_ : paths)
-    {
-        for (const ClipperLib::IntPoint& point : path_)
-            std::cout << "(" << point.X << ", " << point.Y << ") ";
-        std::cout << std::endl;
-    }
+        PrintPath(path_);
 }
-
-
-namespace hte {
     // std::string GetProgressBar(double progress) {
     //     int length = 30;
     //     std::string bar = "[";

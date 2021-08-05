@@ -10,7 +10,7 @@ namespace hte
 {
 
 template<>
-Point2d<Coord>::operator ClipperLib::IntPoint () const
+Point2d<ClipperCoord>::operator ClipperLib::IntPoint () const
 {
     return ClipperLib::IntPoint(x, y);
 }
@@ -71,27 +71,27 @@ void Polygon<T>::updateSignedArea()
 }
 
 
-ClipperLib::Path ClipperBuffer::LinearRingToPath(const LinearRing<Coord>& ring)
+ClipperLib::Path ClipperBuffer::LinearRingToPath(const LinearRing<ClipperCoord>& ring)
 {
     ClipperLib::Path p;
     p.reserve(ring.size());
-    for (const Point2d<Coord>& point : ring)
+    for (const Point2d<ClipperCoord>& point : ring)
         p.emplace_back(point.x, point.y);
     return p;
 }
 
 
-void ClipperBuffer::addLinearRing(const LinearRing<Coord>& ring, PolyType polyType)
+void ClipperBuffer::addLinearRing(const LinearRing<ClipperCoord>& ring, PolyType polyType)
 {
-    clipper.AddPath(LinearRingToPath(ring), (ClipperLib::PolyType)polyType, true);
+    clipper.AddPath(LinearRingToPath(ring), static_cast<ClipperLib::PolyType>(polyType), true);
 }
 
 
-void ClipperBuffer::addPolygon(const Polygon<Coord>& polygon, PolyType polyType)
+void ClipperBuffer::addPolygon(const Polygon<ClipperCoord>& polygon, PolyType polyType)
 {
     ClipperLib::Paths paths;
     paths.reserve(polygon.size());
-    for (const LinearRing<Coord>& ring : polygon)
+    for (const LinearRing<ClipperCoord>& ring : polygon)
         paths.push_back(LinearRingToPath(ring));
     clipper.AddPaths(paths, static_cast<ClipperLib::PolyType>(polyType), true);
 }
@@ -106,15 +106,15 @@ void ClipperBuffer::performClip(ClipType clipType, ClipperLib::Paths& solution, 
 }
 
 
-bool GetBordering(const Polygon<Coord>& a, const Polygon<Coord>& b)
+bool GetBordering(const Polygon<ClipperCoord>& a, const Polygon<ClipperCoord>& b)
 {
     ClipperLib::Paths abUnion;
     ClipperBuffer buffer;
     buffer.addLinearRing(a.getHull(), PolyType::SUBJ);
-    buffer.addLinearRing(b.getHull(), PolyType::SUBJ);
+    buffer.addLinearRing(b.getHull(), PolyType::CLIP);
     buffer.performClip(ClipType::UNION, abUnion,
                        PolyFillType::NONZERO, PolyFillType::NONZERO);
-    PrintPaths(abUnion);
+    /* PrintPaths(abUnion); */
     return (abUnion.size() == 1);
 }
 

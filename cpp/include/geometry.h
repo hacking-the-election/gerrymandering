@@ -215,6 +215,7 @@ enum class ClipType {UNION, INTERSECTION, DIFFERENCE, XOR};
 enum class PolyFillType {EVENODD, NONZERO, POSITIVE, NEGATIVE};
 enum class PolyType {SUBJ, CLIP};
 
+typedef signed long long ClipperCoord;
 
 /**
  * A buffer for performing clipping operations on Polygons.
@@ -232,7 +233,7 @@ public:
      * @param ring A linear ring
      * @param type A PolyType (subject or clip)
      */
-    void addLinearRing(const LinearRing<Coord>& ring, PolyType polyType);
+    void addLinearRing(const LinearRing<ClipperCoord>& ring, PolyType polyType);
 
     /**
      * Adds a polygon to the buffer.
@@ -241,7 +242,7 @@ public:
      * @param polygon A polygon
      * @param type A PolyType (subject or clip)
      */
-    void addPolygon(const Polygon<Coord>& polygon, PolyType polyType);
+    void addPolygon(const Polygon<ClipperCoord>& polygon, PolyType polyType);
 
     /**
      * Performs a clipping operation on the shapes in the buffer.
@@ -262,7 +263,7 @@ private:
      *
      * @param ring A closed linear ring.
      */
-    static ClipperLib::Path LinearRingToPath(const LinearRing<Coord>& ring);
+    static ClipperLib::Path LinearRingToPath(const LinearRing<ClipperCoord>& ring);
 };
 
 
@@ -279,7 +280,7 @@ double GetDistance(const Point2d<T>& c0, const Point2d<T>& c1);
  * @param a A polygon.
  * @param b A polygon.
  */
-bool GetBordering(const Polygon<Coord>& a, const Polygon<Coord>& b);
+bool GetBordering(const Polygon<ClipperCoord>& a, const Polygon<ClipperCoord>& b);
 // bool GetBoundOverlap(BoundingBox, BoundingBox);
 // bool GetBoundInside(BoundingBox, BoundingBox);
 // bool GetPointInRing(Point2d, LinearRing);
