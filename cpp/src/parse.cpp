@@ -683,7 +683,8 @@ namespace hte {
 
 LinearRing<double> parseRing(const rapidjson::Value& coordinates)
 {
-    LinearRing<double> lr(coordinates.GetArray().Size());
+    LinearRing<double> lr = LinearRing<double>();
+    lr.reserve(coordinates.GetArray().Size());
 
     for (const auto& coordinate : coordinates.GetArray())
     {
@@ -697,9 +698,9 @@ Polygon<double> parsePolygon(const rapidjson::Value& coordinates)
 {
     Polygon<double> poly(coordinates.GetArray().Size());
 
-    for (const auto& arr : coordinates.GetArray())
+    for (size_t i = 0; i < coordinates.GetArray().Size(); i++)
     {
-        poly.push_back(parseRing(arr));
+        poly[i] = std::move(parseRing(coordinates.GetArray()[i]));
     }
 
     return poly;
@@ -716,6 +717,36 @@ MultiPolygon<double> parseMultiPolygon(const rapidjson::Value& coordinates)
     }
 
     return multipoly;
+}
+
+
+// template<typename T>
+// static void show(T vec)
+// {
+//   std::cout << vec;
+// }
+
+
+// template<typename T>
+// static void show(std::vector<T> vec)
+// {
+//   int size = vec.size();
+//   if (size <= 0) {
+//     std::cout << "invalid vector";
+//     return;
+//   }
+//   std::cout << '{';
+//   for (int l = 0; l < size - 1; l++) {
+//     show(vec[l]);
+//     std::cout << ',';
+//   }
+//   show(vec[size - 1]);
+//   std::cout << '}';
+// }
+
+inline float RandomFloat()
+{
+    return static_cast<float> (rand()) / static_cast<float> (RAND_MAX);
 }
 
 
@@ -737,17 +768,45 @@ void DataParser::parseGeoUnits(const std::string& filepath)
     const rapidjson::Value& features = doc["features"];
     assert(features.IsArray());
 
+    gl::Canvas* ctx = gl::Canvas::GetInstance();
+
     for (int i = 0; i < features.Size(); i++)
     {
         const rapidjson::Value& geometry = features[i]["geometry"];
         const rapidjson::Value& coordinates = geometry["coordinates"];
+    
+        gl::RGBColor c{RandomFloat(), RandomFloat(), RandomFloat()};
+        gl::RGBColor cdark{c.r * 0.5, c.g * 0.5, c.b * 0.5};
 
-        int polyCount = (geometry["type"] == "MultiPolygon") ? coordinates.Size() : 1;
-        
-        std::cout << features[i]["properties"]["GEOID10"].GetString() << std::endl;
+        if (geometry["type"] == "MultiPolygon") 
+        {
+            for (const auto& poly : parseMultiPolygon(coordinates))
+            {
+                ctx->pushGeometry(poly, gl::Style{1, true, cdark, true, c});
+            }
+        }
+        else
+        {
+            ctx->pushGeometry(parsePolygon(coordinates), gl::Style{1, true, cdark, true, c});
+        }
+    }
 
-        if (polyCount != 1) parseMultiPolygon(coordinates);
-        else parsePolygon(coordinates);
+    
+    double lastTime = glfwGetTime();
+    int nbFrames = 0;
+
+    while (!glfwWindowShouldClose(ctx->getWindow()))
+    {
+        double currentTime = glfwGetTime();
+        nbFrames++;
+
+        if (currentTime - lastTime >= 1.0) {
+            std::cout << 1000.0/double(nbFrames) << " ms/frame" << std::endl;
+            nbFrames = 0;
+            lastTime += 1.0;
+        }
+
+        ctx->renderCurrent();
     }
 }
 

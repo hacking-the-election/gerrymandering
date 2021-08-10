@@ -1,8 +1,56 @@
 #include "../include/graphics.h"
 
+#ifdef NVIDIA_DEDICATED
+extern "C" 
+{
+    __attribute__((visibility("default"))) unsigned long NvOptimusEnablement = 0x00000001;
+}
+#endif
+
 
 namespace hte {
 namespace gl {
+
+
+const std::string Canvas::vertexShader = R"(#version 330 core
+layout(location = 0) in vec4 position;
+layout(location = 1) in vec4 fillColor;
+layout(location = 2) in vec4 outlineColor;
+
+uniform mat4 MVP;
+
+out vec4 iFillColor;
+out vec4 iOutlineColor;
+
+#define PI 3.141592653589793238462f
+
+void main()
+{
+    iFillColor = fillColor;
+    iOutlineColor = outlineColor;
+    gl_Position = MVP * position;
+})";
+
+const std::string Canvas::fragmentShader = R"(#version 330 core
+out vec4 color;
+
+in vec4 iFillColor;
+in vec4 iOutlineColor;
+
+uniform int colorType;
+
+void main()
+{
+    if (colorType == 0) {
+        color = iFillColor;
+    }
+    else
+    {
+        color = iOutlineColor;
+    }
+
+    // color = iOutlineColor;
+})";
 
 
 GLBufferBase::GLBufferBase(GLuint type, const void* data, GLuint size) : bufferType(type)
@@ -66,7 +114,6 @@ void GLVertexArrayObject::unbind() const
 }
 
 
-
 void Canvas::init(const std::string& title)
 {
     if (!glfwInit())
@@ -80,7 +127,8 @@ void Canvas::init(const std::string& title)
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
     glfwWindowHint(GLFW_SAMPLES, 4);
 
-    window = glfwCreateWindow(600, 600, title.c_str(), NULL, NULL);
+    window = glfwCreateWindow(width, height, title.c_str(), NULL, NULL);
+    glfwSetErrorCallback(Canvas::errorCallback);
 
     if (!window)
     {
@@ -90,6 +138,8 @@ void Canvas::init(const std::string& title)
 
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
+
+    shaderProgram = CreateProgram(vertexShader, fragmentShader);
 }
 
 }

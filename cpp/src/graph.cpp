@@ -1,11 +1,10 @@
-#include <unordered_map>
-#include <algorithm>
-#include <numeric>
-#include "../include/hte_common.h"
+// #include <unordered_map>
+// #include <algorithm>
+// #include <numeric>
 
-using namespace hte;
-using namespace std;
+#include "../include/graph.h"
 
+namespace hte {
 
 // void Graph::removeNode(int id) {
 //     removeEdgesTo(id);
@@ -65,25 +64,18 @@ using namespace std;
 // }
 
 
-// void Graph::dfsRecursor(int v, std::unordered_map<int, bool>& visited, std::vector<int>* nodes) {
-//     /*
-//         @desc: recur seach for each adjacent node to index v
-        
-//         @params: 
-//             `int` v: index of node
-//             `std::vector<bool>&` visited: array of which
-//                 nodes have been visited
+// template<typename K, typename T>
+// template<typename Ret>
+// void AdjacencyListGraph<K, T>::dfsRecursor(const K v, const std::unordered_map<K, bool>& visited, const std::function<Ret(const K)>& f, bool doBreak)
+// {
+//     visited[v] = true;
+//     f(v);
 
-//         @return: void
-//     */
- 
-//     visited[v] = true; 
-//     nodes->push_back(v);
-
-//     for (Edge& e : vertices[v].edges) {
-//         int t_id = e[1];
-//         if (!visited[t_id]) { 
-//             dfsRecursor(t_id, visited, nodes);
+//     for (const K& neighbor : vertexMap[v])
+//     {
+//         if (!visited[neighbor])
+//         { 
+//             dfsRecursor(neighbor, visited, f, doBreak);
 //         }
 //     }
 // }
@@ -244,3 +236,5 @@ using namespace std;
 // // void Graph::remove_edge(Edge edge) {
     
 // }
+
+}

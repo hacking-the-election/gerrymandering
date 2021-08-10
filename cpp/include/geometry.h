@@ -39,7 +39,8 @@ friend bool operator== (const Point2d<Ts>& l1, const Point2d<Ts>& l2)
 template<typename Ts>
 friend bool operator!= (const Point2d<Ts>& l1, const Point2d<Ts>& l2);
 
-friend std::ostream& operator<< (std::ostream& out, const Point2d& pt) {
+template<typename Ts>
+friend std::ostream& operator<< (std::ostream& out, const Point2d<Ts>& pt) {
     out << "{" << pt.x << ", " << pt.y << "}";
     return out;
 }
@@ -244,6 +245,14 @@ double GetDistance(const Point2d<T>& c0, const Point2d<T>& c1);
 template<typename T>
 void CheckAndSetAABB(std::unordered_map<Bounds, T>& AABB, const Point2d<T>& check)
 {
+    if (AABB.size() == 0)
+    {
+        AABB[Bounds::Top] = check.y;
+        AABB[Bounds::Bottom] = check.y;
+        AABB[Bounds::Left] = check.x;
+        AABB[Bounds::Right] = check.x;
+    }
+    
     // check X coordinate against bounding box, adjust box if necessary
     if (check.x < AABB[Bounds::Left]) AABB[Bounds::Left] = check.x;
     else if (check.x > AABB[Bounds::Right]) AABB[Bounds::Right] = check.x;

@@ -13,12 +13,10 @@
 namespace hte {
 
 
-template<class K, class T>
+template<typename K, typename T>
 class GraphBase
 {
 public:
-
-    // do we want to make this unconstructable?
     GraphBase() {}
 
     virtual int getNumComponents() {}
@@ -39,36 +37,35 @@ public:
     virtual void addEdge(const K from, const K to) {}
     virtual void removeEdge(const K from, const K to) {}
 
-protected:
-    template<class Func>
-    void dfsRecursor(const K& v, Func&& f, bool doBreak = false) {};
-    std::unordered_map<K, T> vertexMap;
-
 private:
+    std::unordered_map<K, T> vertexMap;
 };
 
 
-template<class K, class T>
-class AdjacencyListGraph : GraphBase<K, T>
+template<typename K, typename T>
+class AdjacencyListGraph : public GraphBase<K, T>
 {
 public:
     AdjacencyListGraph() {}
 
 private:
     std::unordered_map<K, std::vector<K>> adjacencyList;
+
+    template<typename Ret>
+    void dfsRecursor(const K v, const std::unordered_map<K, bool>& visited, const std::function<Ret(const K)>& f, bool doBreak = false);
+
+    template<typename Func, typename... Args>
+    AdjacencyListGraph<K, T> getSubgraphIf(Func&& functor);
 };
 
 
-template<class K, class T, class M>
-class AdjacencyMatrixGraph : GraphBase<K, T>
+template<typename K, typename T, typename M>
+class AdjacencyMatrixGraph : public GraphBase<K, T>
 {
     AdjacencyMatrixGraph() {}
     AdjacencyMatrixGraph(const AdjacencyListGraph<K, T>& g);
 
     Eigen::SparseMatrix<K, Eigen::Dynamic> adjacencyMatrix;
-
-    template<class Func, class... Args>
-    AdjacencyMatrixGraph<K, T, M> getSubgraphIf(Func&& functor);
     // AdjacencyMatrixGraph<K, T, M> getSubgraphIf(std::function<bool(Args)...> functor);
 };
 

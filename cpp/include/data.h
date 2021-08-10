@@ -66,7 +66,7 @@ public:
 
 private:
     std::unordered_map<FileType, std::string> fileLocations;
-    static const std::unordered_map<FileType, void (*)(const std::string&) > parseFunctionPtrs;
+    // static const std::unordered_map<FileType, void (*)(const std::string&) > parseFunctionPtrs;
 
     void parseGeoUnits(const std::string&);
 
@@ -84,7 +84,7 @@ public:
 
 private:
     AdjacencyListGraph<std::shared_ptr<GeoUnit>, int> blockNetwork;
-    std::vector<GeoUnit> blocks;
+    std::vector<std::shared_ptr<GeoUnit>> blocks;
 
 friend class DataParser;
 };

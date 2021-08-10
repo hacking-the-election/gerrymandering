@@ -20,8 +20,8 @@ SDL := `sdl2-config --cflags` `sdl2-config --libs`
 LIBS := -pthread $(GLFW) $(BOOST) $(SDL)
 
 
-serialize_state: $(BIN)/serialize_state
 sandbox: $(BIN)/sandbox
+graphics_sandbox: $(BIN)/graphics_sandbox
 
 dependencies: $(BUILD)/clipper.o
 
