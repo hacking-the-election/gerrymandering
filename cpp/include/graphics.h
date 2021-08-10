@@ -4,7 +4,10 @@
 #define GL_GLEXT_PROTOTYPES 1
 #define GL3_PROTOTYPES 1
 
+#define NVIDIA_DEDICATED
+
 #include "geometry.h"
+#include "util.h"
 
 #include <GLFW/glfw3.h>
 #include <GL/gl.h>
@@ -13,21 +16,29 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include <cassert>
+// #include <algorithm>
+#include <numeric>
 
 
 namespace hte {
 namespace gl {
 
+struct RGBColor
+{
+    double r, g, b;
+};
+
 
 struct Style
 {
     int outlineThickness;
-    
+
     // use OpenGL structures for colors or shaders
     bool isFilled;
-    bool isOutlined;
+    RGBColor fill;
 
-    // RGBcolor outline;
+    bool isOutlined;
+    RGBColor outline;
 };
 
 
@@ -111,19 +122,6 @@ private:
 };
 
 
-template<typename T>
-void CheckAndSetAABB(std::unordered_map<Bounds, T>& AABB, const Point2d<T>& check)
-{
-    // check X coordinate against bounding box, adjust box if necessary
-    if (check.x < AABB[Bounds::Left]) AABB[Bounds::Left] = check.x;
-    else if (check.x > AABB[Bounds::Right]) AABB[Bounds::Right] = check.x;
-
-    // check Y coordinate against bounding box, adjust box if necessary
-    if (check.y < AABB[Bounds::Bottom]) AABB[Bounds::Bottom] = check.y;
-    else if (check.y > AABB[Bounds::Top]) AABB[Bounds::Top] = check.y;
-}
-
-
 class GeoBuffer
 {
 public:
@@ -132,8 +130,9 @@ public:
     template<typename T>
     void pushBuffer(const Polygon<T>& p, const Style& style = Style())
     {
+        // TODO: In the future, we're going to want to cache triangulation and handle vertices here
         buffer.push_back({p, style});
-    };
+    }
 
 
     template<typename T>
@@ -145,7 +144,7 @@ public:
     // void ();
 
     // this is the ugliest function signature known to man. please kill it
-    std::tuple<std::shared_ptr<GLVertexBuffer>, std::shared_ptr<GLIndexBuffer>, std::shared_ptr<GLIndexBuffer>, int, int> buildGLBuffers()
+    std::tuple<std::shared_ptr<GLVertexBuffer>, std::shared_ptr<GLIndexBuffer>, std::shared_ptr<GLIndexBuffer>, int, int, std::unordered_map<Bounds, double>> buildGLBuffers()
     {
         std::vector<GLuint> tri_indices, line_indices;
         std::vector<GLdouble> vertices;
@@ -169,6 +168,14 @@ public:
                     if (i == 0) CheckAndSetAABB(AABB, p);
                     vertices.push_back(p.x);
                     vertices.push_back(p.y);
+
+                    vertices.push_back(style.fill.r);
+                    vertices.push_back(style.fill.g);
+                    vertices.push_back(style.fill.b);
+
+                    vertices.push_back(style.outline.r);
+                    vertices.push_back(style.outline.g);
+                    vertices.push_back(style.outline.b);
                 }
             }
 
@@ -186,20 +193,35 @@ public:
             
             if (style.isOutlined)
             {
-                line_indices.resize(line_indices.size() + buffSize);
-                std::iota(std::prev(line_indices.end()) - buffSize, line_indices.end(), totalBuffSize);
+                int relBuffSize = 0;
+                for (const auto& ring : poly)
+                {
+                    for (int ind = totalBuffSize + relBuffSize; ind < totalBuffSize + relBuffSize + ring.size() - 1; ind++)
+                    {
+                        line_indices.push_back(ind);
+                        line_indices.push_back(ind + 1);
+                    }
+
+                    relBuffSize += ring.size();
+                }
             }
 
             totalBuffSize += buffSize;
         }
 
-        // sussy baka!
         std::shared_ptr<GLVertexBuffer> vb = std::make_shared<GLVertexBuffer>(vertices.data(), sizeof(double) * vertices.size());
+        
+        // add position attribute
         vb->addAttribute(2, GL_DOUBLE);
+
+        // two color attributes, fill/outline
+        vb->addAttribute(3, GL_DOUBLE);
+        vb->addAttribute(3, GL_DOUBLE);
 
         std::shared_ptr<GLIndexBuffer> tri_ib = std::make_shared<GLIndexBuffer>(tri_indices.data(), tri_indices.size() * sizeof(GLuint));
         std::shared_ptr<GLIndexBuffer> line_ib = std::make_shared<GLIndexBuffer>(line_indices.data(), line_indices.size() * sizeof(GLuint));
-        return {vb, tri_ib, line_ib, tri_indices.size(), line_indices.size()};
+
+        return {vb, tri_ib, line_ib, tri_indices.size(), line_indices.size(), AABB};
     };
 
     void clear() {buffer.clear();}
@@ -228,20 +250,20 @@ public:
 
     void renderCurrent()
     {
-        const auto [vb, tri_ib, line_ib, tri_count, line_count] = geoBuffer.buildGLBuffers();
+        auto [vb, tri_ib, line_ib, tri_count, line_count, AABB] = geoBuffer.buildGLBuffers();
 
         glClear(GL_COLOR_BUFFER_BIT);
         glUseProgram(shaderProgram);
 
         // if (width > height)
-        glm::mat4 ortho = glm::ortho(0.f, 10.f * width / height, 0.f, 10.f, -1.f, 1.f);
+        glm::mat4 ortho = glm::ortho(static_cast<float>(AABB[Bounds::Left]), static_cast<float>(AABB[Bounds::Left] + ((AABB[Bounds::Right] - AABB[Bounds::Left]) * 4.0 / 3.0)), static_cast<float>(AABB[Bounds::Bottom]), static_cast<float>(AABB[Bounds::Top]), -1.f, 1.f);
 
-        GLuint fragmentColorLocation = glGetUniformLocation(shaderProgram, "inColor");
-        glUniform4f(fragmentColorLocation, 1.f, 0.5f, 0.5f, 0.5f);
+        // GLuint fragmentColorLocation = glGetUniformLocation(shaderProgram, "inColorU");
+        // glUniform4f(fragmentColorLocation, 0.f, 1.f, 0.f, 1.f);
     
         glUniformMatrix4fv(glGetUniformLocation(shaderProgram, "MVP"), 1, GL_FALSE, &ortho[0][0]);
 
-        glLineWidth(8.f);
+        glLineWidth(1.f);
         glEnable(GL_LINE_SMOOTH);
         
         GLVertexArrayObject va;
@@ -249,10 +271,12 @@ public:
         va.addBuffer(*vb);
 
         tri_ib->bind();
+        glUniform1i(glGetUniformLocation(shaderProgram, "colorType"), 0);
         glDrawElements(GL_TRIANGLES, tri_count, GL_UNSIGNED_INT, 0);
 
         line_ib->bind();
-        glDrawElements(GL_LINE_STRIP, line_count, GL_UNSIGNED_INT, 0);
+        glUniform1i(glGetUniformLocation(shaderProgram, "colorType"), 1);
+        glDrawElements(GL_LINES, line_count, GL_UNSIGNED_INT, 0);
         
         
         glfwSwapBuffers(getWindow());
@@ -323,7 +347,8 @@ private:
     GLuint shaderProgram;
 
     GeoBuffer geoBuffer;
-    const static int width = 640, height = 480;
+    // const static int width = 640, height = 480;
+    const static int width = 1920, height = 1200;
 
 
     Canvas()
