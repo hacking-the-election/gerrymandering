@@ -1,10 +1,16 @@
 #ifndef _HTE_UTIL_H
 #define _HTE_UTIL_H
 
+
+#include <iostream>
 #include <exception>
-#include <string>
 #include <vector>
 
+#include "../lib/Clipper/cpp/clipper.hpp"
+
+
+namespace hte
+{
 
 // class Exceptions {
 //     struct LinearRingOpen : public std::exception {
@@ -13,6 +19,13 @@
 //         }
 //     };
 // };
+
+// Forward declarations.
+template<typename T>
+struct Point2d;
+
+template<typename T>
+class LinearRing;
 
 bool IsNumber(std::string token);
 void WriteFile(std::string contents, std::string path);
@@ -24,11 +37,15 @@ double RandUnitInterval();
 template<typename T>
 double GetStdev(std::vector<T>& data);
 
+
+// TODO: I think ostream operator overloading would be better suited for the following
+
 template<typename T>
 void PrintVec(const T& el)
 {
     std::cout << el;
 };
+
 
 template<typename T>
 void PrintVec(const hte::LinearRing<T>& vec)
@@ -44,6 +61,7 @@ void PrintVec(const hte::LinearRing<T>& vec)
     std::cout << "}";
 };
 
+
 template<typename T>
 void PrintVec(const hte::Polygon<T>& vec)
 {
@@ -57,6 +75,7 @@ void PrintVec(const hte::Polygon<T>& vec)
     PrintVec(vec.back());
     std::cout << "}";
 };
+
 
 template<typename T>
 void PrintVec(const std::vector<T>& vec)
@@ -73,5 +92,6 @@ void PrintVec(const std::vector<T>& vec)
     std::cout.flush();
 };
 
+}
 
 #endif

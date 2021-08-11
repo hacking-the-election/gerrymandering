@@ -1,7 +1,10 @@
+#include <iostream>
 #include <regex>
 #include "../include/hte_common.h"
 
+
 namespace hte {
+
     // std::string GetProgressBar(double progress) {
     //     int length = 30;
     //     std::string bar = "[";

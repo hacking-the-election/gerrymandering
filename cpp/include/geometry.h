@@ -9,10 +9,9 @@
 
 #include "../lib/Clipper/cpp/clipper.hpp"
 #include "../lib/earcut.hpp/include/mapbox/earcut.hpp"
+// #include "util.h"
 
 #define PI 3.14159265358979
-
-
 
 
 namespace hte {
@@ -21,30 +20,31 @@ namespace hte {
 template<typename T>
 struct Point2d
 {
+    T x, y;
+
     Point2d() : x(), y() {}
     Point2d(T x, T y) : x(x), y(y)
     {
         static_assert(std::is_arithmetic<T>::value, "Point2d must be instantiated with an arithmetic type.");
     }
 
-    T x, y;
+    template<typename Ts>
+    friend bool operator== (const Point2d<Ts>& l1, const Point2d<Ts>& l2)
+    {
+        // TODO: we do a little floating-point handling
+        return (l1.x == l2.x && l1.y == l2.y);
+    };
 
-template<typename Ts>
-friend bool operator== (const Point2d<Ts>& l1, const Point2d<Ts>& l2)
-{
-    // TODO: we do a little floating-point handling
-    return (l1.x == l2.x && l1.y == l2.y);
-};
+    template<typename Ts>
+    friend bool operator!= (const Point2d<Ts>& l1, const Point2d<Ts>& l2);
 
-template<typename Ts>
-friend bool operator!= (const Point2d<Ts>& l1, const Point2d<Ts>& l2);
+    operator ClipperLib::IntPoint () const;
 
-template<typename Ts>
-friend std::ostream& operator<< (std::ostream& out, const Point2d<Ts>& pt) {
-    out << "{" << pt.x << ", " << pt.y << "}";
-    return out;
-}
-
+    template<typename Ts>
+    friend std::ostream& operator<< (std::ostream& out, const Point2d<Ts>& pt) {
+        out << "{" << pt.x << ", " << pt.y << "}";
+        return out;
+    }
 };
 
 
@@ -165,7 +165,7 @@ public:
     template<class... Arg>
     Polygon(Arg&&... args) : std::vector<LinearRing<T>>(std::forward<Arg>(args)...) {}
 
-    const LinearRing<T>& getHull()
+    const LinearRing<T>& getHull() const 
     {
         return this->at(0);
     }
@@ -225,14 +225,58 @@ friend bool operator!= (const MultiPolygon<Tl>& s1, const MultiPolygon<Tl>& s2);
 
 
 enum class ClipType {UNION, INTERSECTION, DIFFERENCE, XOR};
+enum class PolyFillType {EVENODD, NONZERO, POSITIVE, NEGATIVE};
+enum class PolyType {SUBJ, CLIP};
 
+typedef signed long long ClipperCoord;
 
-class GeometryBuffer
+/**
+ * A buffer for performing clipping operations on Polygons.
+ * Assumes all linear rings are closed.
+ */
+class ClipperBuffer
 {
-    void performClip(ClipType clipType);
+public:
+    ClipperBuffer() {}
 
-    // buffer computationBuffer
-    // buffer displayBuffer
+    /**
+     * Adds a linear ring to the buffer.
+     * This can either be a subject, or a clipping object.
+     *
+     * @param ring A linear ring
+     * @param type A PolyType (subject or clip)
+     */
+    void addLinearRing(const LinearRing<ClipperCoord>& ring, PolyType polyType);
+
+    /**
+     * Adds a polygon to the buffer.
+     * This can either be a subject, or a clipping object.
+     *
+     * @param polygon A polygon
+     * @param type A PolyType (subject or clip)
+     */
+    void addPolygon(const Polygon<ClipperCoord>& polygon, PolyType polyType);
+
+    /**
+     * Performs a clipping operation on the shapes in the buffer.
+     *
+     * @param clipType The clipping operation to perform.
+     * @param solution Reference to a 2D vector of coords where the
+     *                 result of the operation will be stored.
+     * @param subjFillType The polygon filling method of the subjects.
+     * @param clipFillType The polygon filling method of the clip objects.
+     */
+    void performClip(ClipType clipType, ClipperLib::Paths& solution, PolyFillType subjFillType, PolyFillType clipFillType);
+
+private:
+    ClipperLib::Clipper clipper;
+
+    /**
+     * Converts hte::LinearRing to ClipperLib::Path.
+     *
+     * @param ring A closed linear ring.
+     */
+    static ClipperLib::Path LinearRingToPath(const LinearRing<ClipperCoord>& ring);
 };
 
 
@@ -264,6 +308,15 @@ void CheckAndSetAABB(std::unordered_map<Bounds, T>& AABB, const Point2d<T>& chec
 
 
 // bool GetBordering(Polygon, Polygon);
+/**
+ * Returns whether or not two polygons are bordering.
+ * Uses clipping, and polygons that are bordering by a single point
+ * are not considered bordering by this function.
+ *
+ * @param a A polygon.
+ * @param b A polygon.
+ */
+bool GetBordering(const Polygon<ClipperCoord>& a, const Polygon<ClipperCoord>& b);
 // bool GetBoundOverlap(BoundingBox, BoundingBox);
 // bool GetBoundInside(BoundingBox, BoundingBox);
 // bool GetPointInRing(Point2d, LinearRing);
@@ -302,6 +355,12 @@ struct nth<1, hte::Point2d<T>> {
 };
 
 }
+}
+
+
+std::ostream& operator<< (std::ostream& out, const ClipperLib::IntPoint& pt) {
+    out << "{" << pt.X << ", " << pt.Y << "}";
+    return out;
 }
 
 

@@ -9,6 +9,12 @@
 namespace hte
 {
 
+template<>
+Point2d<ClipperCoord>::operator ClipperLib::IntPoint () const
+{
+    return ClipperLib::IntPoint(x, y);
+}
+
 
 template<typename T>
 inline double GetDistanceSquared(const Point2d<T>& p1, const Point2d<T>& p2)
@@ -65,6 +71,53 @@ void Polygon<T>::updateSignedArea()
     for (const auto& h : getHoles()) signedArea -= h.getSignedArea();
 }
 
+
+ClipperLib::Path ClipperBuffer::LinearRingToPath(const LinearRing<ClipperCoord>& ring)
+{
+    ClipperLib::Path p;
+    p.reserve(ring.size());
+    for (const Point2d<ClipperCoord>& point : ring)
+        p.emplace_back(point.x, point.y);
+    return p;
+}
+
+
+void ClipperBuffer::addLinearRing(const LinearRing<ClipperCoord>& ring, PolyType polyType)
+{
+    clipper.AddPath(LinearRingToPath(ring), static_cast<ClipperLib::PolyType>(polyType), true);
+}
+
+
+void ClipperBuffer::addPolygon(const Polygon<ClipperCoord>& polygon, PolyType polyType)
+{
+    ClipperLib::Paths paths;
+    paths.reserve(polygon.size());
+    for (const LinearRing<ClipperCoord>& ring : polygon)
+        paths.push_back(LinearRingToPath(ring));
+    clipper.AddPaths(paths, static_cast<ClipperLib::PolyType>(polyType), true);
+}
+
+
+void ClipperBuffer::performClip(ClipType clipType, ClipperLib::Paths& solution, PolyFillType subjFillType, PolyFillType clipFillType)
+{
+    clipper.Execute(static_cast<ClipperLib::ClipType>(clipType),
+                    solution,
+                    static_cast<ClipperLib::PolyFillType>(subjFillType),
+                    static_cast<ClipperLib::PolyFillType>(clipFillType));
+}
+
+
+bool GetBordering(const Polygon<ClipperCoord>& a, const Polygon<ClipperCoord>& b)
+{
+    ClipperLib::Paths abUnion;
+    ClipperBuffer buffer;
+    buffer.addLinearRing(a.getHull(), PolyType::SUBJ);
+    buffer.addLinearRing(b.getHull(), PolyType::CLIP);
+    buffer.performClip(ClipType::UNION, abUnion,
+                       PolyFillType::NONZERO, PolyFillType::NONZERO);
+    /* PrintPaths(abUnion); */
+    return (abUnion.size() == 1);
+}
 
 // double PrecinctGroup::getArea() {
 //     double sum = 0;
