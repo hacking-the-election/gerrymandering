@@ -28,24 +28,26 @@ struct Point2d
         static_assert(std::is_arithmetic<T>::value, "Point2d must be instantiated with an arithmetic type.");
     }
 
-    template<typename Ts>
-    friend bool operator== (const Point2d<Ts>& l1, const Point2d<Ts>& l2)
-    {
-        // TODO: we do a little floating-point handling
-        return (l1.x == l2.x && l1.y == l2.y);
-    };
-
-    template<typename Ts>
-    friend bool operator!= (const Point2d<Ts>& l1, const Point2d<Ts>& l2);
-
-    operator ClipperLib::IntPoint () const;
-
-    template<typename Ts>
-    friend std::ostream& operator<< (std::ostream& out, const Point2d<Ts>& pt) {
-        out << "{" << pt.x << ", " << pt.y << "}";
-        return out;
-    }
+    operator ClipperLib::IntPoint() const;
 };
+
+template<typename Ts>
+bool operator== (const Point2d<Ts>& l1, const Point2d<Ts>& l2)
+{
+    // TODO: we do a little floating-point handling
+    return (l1.x == l2.x && l1.y == l2.y);
+};
+
+template<typename Ts>
+bool operator!= (const Point2d<Ts>& l1, const Point2d<Ts>& l2);
+
+
+template<typename Ts>
+std::ostream& operator<< (std::ostream& out, const Point2d<Ts>& pt)
+{
+    out << "{" << pt.x << ", " << pt.y << "}";
+    return out;
+}
 
 
 enum class Bounds
@@ -345,23 +347,20 @@ namespace mapbox {
 namespace util {
 
 template<typename T>
-struct nth<0, hte::Point2d<T>> {
+struct nth<0, hte::Point2d<T>>
+{
     inline static T get(const hte::Point2d<T>& t) {return t.x;};
 };
 
 template<typename T>
-struct nth<1, hte::Point2d<T>> {
+struct nth<1, hte::Point2d<T>>
+{
     inline static T get(const hte::Point2d<T>& t) {return t.y;};
 };
 
 }
 }
 
-
-std::ostream& operator<< (std::ostream& out, const ClipperLib::IntPoint& pt) {
-    out << "{" << pt.X << ", " << pt.Y << "}";
-    return out;
-}
-
+std::ostream& operator<<(std::ostream& out, const ClipperLib::IntPoint& pt);
 
 #endif

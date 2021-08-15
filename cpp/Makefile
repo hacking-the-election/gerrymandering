@@ -1,10 +1,7 @@
 .PHONY: setup clean
 
-#hmmm do we need this?
-# CXX := g++
-
 # Setup global parameters for the compiler
-CXXFLAGS := -std=c++17 -MMD -MP -O3 -w # -Wall -pedantic -Wextra -ggdb -Wno-int-to-pointer-cast -Wno-return-type
+CXXFLAGS := -std=c++17 -MMD -MP -O3 -Wall -pedantic -Wextra -ggdb -Wno-int-to-pointer-cast -Wno-return-type
 
 # Define library/dependency flags for CXXFLAGS
 GLFW := -lGL -lGLU -lglfw3 -lX11 -lXxf86vm -lXrandr -lXi -ldl -pthread

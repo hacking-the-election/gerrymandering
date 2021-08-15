@@ -139,7 +139,7 @@ public:
     void pushBuffer(const MultiPolygon<T>& mp, const Style& style = Style())
     {
         for (const Polygon<T>& p : mp) pushBuffer(p, style);
-    };
+    }
 
     // void ();
 
@@ -288,7 +288,10 @@ public:
     };
 
 
-    static void errorCallback(int code, const char* glfwMsg) {}
+    static void errorCallback(int code, const char* glfwMsg)
+    {
+        std::cerr << "GLFW failed with error code " << code << ": \"" << glfwMsg << "\"" << std::endl;
+    }
 
 
     static GLuint CompileShader(const std::string& shaderSource, GLuint type)

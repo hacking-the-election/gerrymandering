@@ -10,7 +10,7 @@ namespace hte
 {
 
 template<>
-Point2d<ClipperCoord>::operator ClipperLib::IntPoint () const
+Point2d<ClipperCoord>::operator ClipperLib::IntPoint() const
 {
     return ClipperLib::IntPoint(x, y);
 }
@@ -430,5 +430,12 @@ Polygon<double> GenerateGon(Point2d<T> c, double radius, int n)
 //     return (b1[0] < b2[0] && b1[1] > b2[1] && b1[2] > b2[2] && b1[3] < b2[3]);
 // }
 
+
+
+std::ostream& operator<<(std::ostream& out, const ClipperLib::IntPoint& pt)
+{
+    out << "{" << pt.X << ", " << pt.Y << "}";
+    return out;
+}
 
 }
