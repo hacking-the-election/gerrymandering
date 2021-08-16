@@ -25,9 +25,8 @@ settings.json
 # c++
 cpp/include/legacy-graphics.h
 cpp/bin/
+cpp/build/
 cpp/test/test
-cpp/build/*.o
-cpp/build/*.d
 
 # vim
 *.swp
