@@ -143,12 +143,6 @@ def random_generation(path, state):
     for community in community_list:
         community.initialize_graph(ids_to_blocks)
         community.find_neighbors_and_border(ids_to_blocks)
-        try:
-            _ = community.border_edges[1]
-        except:
-            pass
-        else:
-            raise Exception("BIG UH OHHH!", community.border_edges)
     # print(community_list[0].border_edges)
     start_merge_time = time.time()
     # Remove small communities
@@ -161,12 +155,7 @@ def random_generation(path, state):
         print(f"\rCommunities merged: {i+1}/{len(to_remove)}, {round(100*(i+1)/len(to_remove), 1)}%", end="")
         sys.stdout.flush()
         community_list.remove(community)
-        try:
-            _ = id_to_community[neighboring_community_id].border_edges[1]
-        except:
-            pass
-        else:
-            raise Exception("BIG UH OHHH!", id_to_community[neighboring_community_id].border_edges)
+
     print("\n", end="")
     end_merge_time = time.time()-start_merge_time
     print(f"Time needed for merging: {end_merge_time}, an average of {end_merge_time/len(to_remove)} seconds per merge")

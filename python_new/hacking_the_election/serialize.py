@@ -518,12 +518,8 @@ def create_graph(state_name, check_point="beginning"):
             block.lat = float(lat)
             block.area = block.water + block.land
             block.density = block.pop/block.area
+            block.create_racial_data()
             # print(f"8, {time.time()-begin_time}")
-            if block.id == "1000000US360470300001001":
-                print("\n")
-                print(i, demographic_id)
-                print(block_geodata_ids_to_properties[demographic_id[demographic_id_beginning:]]["ALAND10"], block_geodata_ids_to_properties[demographic_id[demographic_id_beginning:]]["properties"]["AWATER10"])
-                print(f"FIRST OK BIG THING:", block.pop, block.racial_data, block.area, block.density)
             block_list.append(block)
             if previous_county == None or previous_county != demographic_id[demographic_id_beginning:demographic_id_beginning+5]:
                 county_to_blocks[demographic_id[demographic_id_beginning:demographic_id_beginning+5]] = [block]
@@ -620,7 +616,7 @@ def create_graph(state_name, check_point="beginning"):
             # for block in block_list:
             #     if block.total_votes < block.rep_votes + block.dem_votes:
             #         print("it happens before 537!")
-                # block.create_election_data()
+                block.create_election_data()
     # with open("vermont.pickle", "wb") as f:
     #     pickle.dump(block_list, f)
     # with open("vermont.pickle", "rb") as f:
@@ -629,8 +625,6 @@ def create_graph(state_name, check_point="beginning"):
     del precinct_list
 
     for block in block_list:
-        if block.id == "1000000US360470300001001":
-                print(f"OK BIG THING:", block.pop, block.land, block.water, block.area, block.density)
         if block.rep_votes == None and block.dem_votes == None and block.other_votes == None:
             print("it happens before line 544")
     # Split blocks which are not contiguous
@@ -735,9 +729,6 @@ def create_graph(state_name, check_point="beginning"):
         sys.stdout.flush()
     print("\n")  
 
-    for block in block_list:
-        if block.id == "1000000US360470300001001":
-            print(f"OK BIG THING:", block.pop, block.land, block.water, block.area, block.density)
     # for block in block_list:
     #     if block.total_votes < block.rep_votes + block.dem_votes:
     #         print("it happens before line 635")

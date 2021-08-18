@@ -25,5 +25,5 @@ else:
             "python-graph-core"
             "networkx",
             "cython"
-        ]
+        ],
     )

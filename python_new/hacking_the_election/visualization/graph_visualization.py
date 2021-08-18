@@ -14,7 +14,7 @@ from hacking_the_election.utils.precinct import Precinct
 from hacking_the_election.utils.visualization import modify_coords
 
 
-def visualize_graph(graph, output_path, coords, colors=None, sizes=None, show=False):
+def visualize_graph(graph, output_path, coords, colors=None, edge_colors=None, sizes=None, show=False):
     """Creates an image of a graph and saves it to a file.
 
     :param graph: The graph you want to visualize.
@@ -35,7 +35,7 @@ def visualize_graph(graph, output_path, coords, colors=None, sizes=None, show=Fa
     :param show: whether or not to show the image once generated.
     :type show: bool
     """
-    graph_image = Image.new("RGB", (1000, 1000), "white")
+    graph_image = Image.new("RGB", (2000, 2000), "white")
     draw = ImageDraw.Draw(graph_image, "RGB")
 
     graph_nodes = list(graph.nodes())
@@ -46,13 +46,18 @@ def visualize_graph(graph, output_path, coords, colors=None, sizes=None, show=Fa
         except:
             print(node, graph_nodes[node])
     modified_coords = modify_coords(
-        [coords(node) for node in graph_nodes], [1000, 1000]
+        [coords(node) for node in graph_nodes], [2000, 2000]
     )
     
     if colors is not None:
         node_colors = [colors(node) for node in graph_nodes]
     else:
         node_colors = [(235, 64, 52) for _ in graph_nodes]
+        
+    # if edge_colors is not None:
+    #     edge_colors = [edge_colors(edge) for edge in graph_edges]
+    # else:
+    #     edge_colors = [(0,0,0) for _ in graph_edges]
 
     if sizes is not None:
         node_sizes = [sizes(node) for node in graph_nodes]
@@ -63,10 +68,13 @@ def visualize_graph(graph, output_path, coords, colors=None, sizes=None, show=Fa
 
         indices = [graph_nodes.index(v) for v in edge]
         centers = [tuple(modified_coords[i]) for i in indices]
-
+        if edge_colors is not None:
+            edge_color = edge_colors(edge)
+        else:
+            edge_color = (0,0,0)
         draw.line(
             centers,
-            fill=(0, 0, 0),
+            fill=edge_color,
             width=1
     )
 

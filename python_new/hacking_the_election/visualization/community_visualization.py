@@ -94,8 +94,8 @@ def visualize_map(communities, output_path, quality=8192, mode="random", outline
     colors = []
     if mode == "block_partisanship":
         for block in block_list:
-            percent_dem = block.percent_dem
-            percent_rep = block.percent_rep
+            percent_dem = block.percent_dem_votes
+            percent_rep = block.percent_rep_votes
             if percent_dem:
                 # print(block.id)
                 # try:
