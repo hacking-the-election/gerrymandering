@@ -155,7 +155,8 @@ class Community:
         giveable_blocks = {}
         for block in block_search_space: 
             if block.community != self.id:
-                raise Exception("WAIT THAT'S SO SUSSY")
+                # raise Exception("WAIT THAT'S SO SUSSY", block.community, self.id)
+                print("WAIT THAT'S SO SUSSY", block.community, self.id)
             # print("new stuff!", block.id)
             for neighbor in block.neighbors:
                     # print(id_to_block[neighbor], id_to_block[neighbor].community)

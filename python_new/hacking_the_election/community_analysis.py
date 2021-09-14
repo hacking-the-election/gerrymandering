@@ -38,6 +38,8 @@ def analyze_pickle(community_pickle):
     scores = []
     max_other = 0
     for community in communities:
+        community.initialize_graph(id_to_block)
+        community.find_neighbors_and_border(id_to_block)
         for block in community.blocks:
             if block.percent_other:
                 max_other = max(max_other, block.percent_other)

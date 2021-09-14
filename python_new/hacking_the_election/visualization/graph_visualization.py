@@ -35,7 +35,7 @@ def visualize_graph(graph, output_path, coords, colors=None, edge_colors=None, s
     :param show: whether or not to show the image once generated.
     :type show: bool
     """
-    graph_image = Image.new("RGB", (2000, 2000), "white")
+    graph_image = Image.new("RGB", (2000,2000), "white")
     draw = ImageDraw.Draw(graph_image, "RGB")
 
     graph_nodes = list(graph.nodes())

@@ -10,7 +10,8 @@ from shapely.geometry import (
     MultiLineString,
     LineString,
     Polygon,
-    GeometryCollection
+    GeometryCollection,
+    mapping
 )
 
 def _float_to_int(float_arg):
@@ -70,7 +71,8 @@ def shapely_to_geojson(shape, json_format=False):
     :return: `shape` represented as geojson.
     :rtype: list of list of list of float or list of list of list of list of float.
     """
-
+    return mapping(shape)['coordinates']
+    # raise Exception("SUSSY???", mapping(shape))
     geojson = []
     if isinstance(shape, MultiPolygon):
         for polygon in shape.geoms:

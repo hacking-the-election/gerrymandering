@@ -1097,43 +1097,15 @@ static CYTHON_INLINE void __Pyx_ErrFetchInState(PyThreadState *tstate, PyObject 
 /* RaiseException.proto */
 static void __Pyx_Raise(PyObject *type, PyObject *value, PyObject *tb, PyObject *cause);
 
-/* ListAppend.proto */
-#if CYTHON_USE_PYLIST_INTERNALS && CYTHON_ASSUME_SAFE_MACROS
-static CYTHON_INLINE int __Pyx_PyList_Append(PyObject* list, PyObject* x) {
-    PyListObject* L = (PyListObject*) list;
-    Py_ssize_t len = Py_SIZE(list);
-    if (likely(L->allocated > len) & likely(len > (L->allocated >> 1))) {
-        Py_INCREF(x);
-        PyList_SET_ITEM(list, len, x);
-        __Pyx_SET_SIZE(list, len + 1);
-        return 0;
-    }
-    return PyList_Append(list, x);
-}
+/* DictGetItem.proto */
+#if PY_MAJOR_VERSION >= 3 && !CYTHON_COMPILING_IN_PYPY
+static PyObject *__Pyx_PyDict_GetItem(PyObject *d, PyObject* key);
+#define __Pyx_PyObject_Dict_GetItem(obj, name)\
+    (likely(PyDict_CheckExact(obj)) ?\
+     __Pyx_PyDict_GetItem(obj, name) : PyObject_GetItem(obj, name))
 #else
-#define __Pyx_PyList_Append(L,x) PyList_Append(L,x)
-#endif
-
-/* PyObjectFormatSimple.proto */
-#if CYTHON_COMPILING_IN_PYPY
-    #define __Pyx_PyObject_FormatSimple(s, f) (\
-        likely(PyUnicode_CheckExact(s)) ? (Py_INCREF(s), s) :\
-        PyObject_Format(s, f))
-#elif PY_MAJOR_VERSION < 3
-    #define __Pyx_PyObject_FormatSimple(s, f) (\
-        likely(PyUnicode_CheckExact(s)) ? (Py_INCREF(s), s) :\
-        likely(PyString_CheckExact(s)) ? PyUnicode_FromEncodedObject(s, NULL, "strict") :\
-        PyObject_Format(s, f))
-#elif CYTHON_USE_TYPE_SLOTS
-    #define __Pyx_PyObject_FormatSimple(s, f) (\
-        likely(PyUnicode_CheckExact(s)) ? (Py_INCREF(s), s) :\
-        likely(PyLong_CheckExact(s)) ? PyLong_Type.tp_str(s) :\
-        likely(PyFloat_CheckExact(s)) ? PyFloat_Type.tp_str(s) :\
-        PyObject_Format(s, f))
-#else
-    #define __Pyx_PyObject_FormatSimple(s, f) (\
-        likely(PyUnicode_CheckExact(s)) ? (Py_INCREF(s), s) :\
-        PyObject_Format(s, f))
+#define __Pyx_PyDict_GetItem(d, key) PyObject_GetItem(d, key)
+#define __Pyx_PyObject_Dict_GetItem(obj, name)  PyObject_GetItem(obj, name)
 #endif
 
 /* GetTopmostException.proto */
@@ -1166,6 +1138,23 @@ static CYTHON_INLINE int __Pyx_PyErr_ExceptionMatchesInState(PyThreadState* tsta
 static int __Pyx__GetException(PyThreadState *tstate, PyObject **type, PyObject **value, PyObject **tb);
 #else
 static int __Pyx_GetException(PyObject **type, PyObject **value, PyObject **tb);
+#endif
+
+/* ListAppend.proto */
+#if CYTHON_USE_PYLIST_INTERNALS && CYTHON_ASSUME_SAFE_MACROS
+static CYTHON_INLINE int __Pyx_PyList_Append(PyObject* list, PyObject* x) {
+    PyListObject* L = (PyListObject*) list;
+    Py_ssize_t len = Py_SIZE(list);
+    if (likely(L->allocated > len) & likely(len > (L->allocated >> 1))) {
+        Py_INCREF(x);
+        PyList_SET_ITEM(list, len, x);
+        __Pyx_SET_SIZE(list, len + 1);
+        return 0;
+    }
+    return PyList_Append(list, x);
+}
+#else
+#define __Pyx_PyList_Append(L,x) PyList_Append(L,x)
 #endif
 
 /* FetchCommonType.proto */
@@ -1367,9 +1356,9 @@ int __pyx_module_is_main_hacking_the_election__utils__geometry = 0;
 /* Implementation of 'hacking_the_election.utils.geometry' */
 static PyObject *__pyx_builtin_round;
 static PyObject *__pyx_builtin_ValueError;
-static PyObject *__pyx_builtin_TypeError;
 static PyObject *__pyx_builtin_AttributeError;
 static PyObject *__pyx_builtin_any;
+static PyObject *__pyx_builtin_TypeError;
 static PyObject *__pyx_builtin_min;
 static PyObject *__pyx_builtin_enumerate;
 static const char __pyx_k_P[] = "P";
@@ -1381,7 +1370,6 @@ static const char __pyx_k_pi[] = "pi";
 static const char __pyx_k_any[] = "any";
 static const char __pyx_k_key[] = "key";
 static const char __pyx_k_min[] = "min";
-static const char __pyx_k_not[] = ", not ";
 static const char __pyx_k_area[] = "area";
 static const char __pyx_k_main[] = "__main__";
 static const char __pyx_k_math[] = "math";
@@ -1390,8 +1378,6 @@ static const char __pyx_k_miny[] = "miny";
 static const char __pyx_k_name[] = "__name__";
 static const char __pyx_k_ring[] = "ring";
 static const char __pyx_k_test[] = "__test__";
-static const char __pyx_k_type[] = "type";
-static const char __pyx_k_coord[] = "coord";
 static const char __pyx_k_geoms[] = "geoms";
 static const char __pyx_k_point[] = "point";
 static const char __pyx_k_round[] = "round";
@@ -1403,21 +1389,17 @@ static const char __pyx_k_points[] = "points";
 static const char __pyx_k_shape1[] = "shape1";
 static const char __pyx_k_shape2[] = "shape2";
 static const char __pyx_k_values[] = "values";
-static const char __pyx_k_Feature[] = "Feature";
 static const char __pyx_k_Polygon[] = "Polygon";
 static const char __pyx_k_geojson[] = "geojson";
+static const char __pyx_k_mapping[] = "mapping";
 static const char __pyx_k_polygon[] = "polygon";
 static const char __pyx_k_centroid[] = "centroid";
 static const char __pyx_k_district[] = "district";
 static const char __pyx_k_exterior[] = "exterior";
-static const char __pyx_k_features[] = "features";
-static const char __pyx_k_geometry[] = "geometry";
-static const char __pyx_k_interior[] = "interior";
 static const char __pyx_k_polygons[] = "polygons";
 static const char __pyx_k_TypeError[] = "TypeError";
 static const char __pyx_k_enumerate[] = "enumerate";
 static const char __pyx_k_float_arg[] = "float_arg";
-static const char __pyx_k_interiors[] = "interiors";
 static const char __pyx_k_left_area[] = "left_area";
 static const char __pyx_k_precincts[] = "precincts";
 static const char __pyx_k_LineString[] = "LineString";
@@ -1436,14 +1418,11 @@ static const char __pyx_k_intersection[] = "intersection";
 static const char __pyx_k_AttributeError[] = "AttributeError";
 static const char __pyx_k_MultiLineString[] = "MultiLineString";
 static const char __pyx_k_district_coords[] = "district_coords";
-static const char __pyx_k_exterior_coords[] = "exterior_coords";
 static const char __pyx_k_get_compactness[] = "get_compactness";
-static const char __pyx_k_interior_coords[] = "interior_coords";
 static const char __pyx_k_invalid_geojson[] = "invalid geojson";
 static const char __pyx_k_final_difference[] = "final_difference";
 static const char __pyx_k_get_if_bordering[] = "get_if_bordering";
 static const char __pyx_k_shapely_geometry[] = "shapely.geometry";
-static const char __pyx_k_FeatureCollection[] = "FeatureCollection";
 static const char __pyx_k_GeometryCollection[] = "GeometryCollection";
 static const char __pyx_k_cline_in_traceback[] = "cline_in_traceback";
 static const char __pyx_k_geojson_to_shapely[] = "geojson_to_shapely";
@@ -1452,13 +1431,10 @@ static const char __pyx_k_intersection_member[] = "intersection_member";
 static const char __pyx_k_get_compactness_locals_lambda[] = "get_compactness.<locals>.<lambda>";
 static const char __pyx_k_Various_useful_geometric_functi[] = "\nVarious useful geometric functions.\n";
 static const char __pyx_k_district_must_be_of_type_Polygo[] = "`district` must be of type Polygon or list of Polygon";
-static const char __pyx_k_shapely_to_geojson_only_accepts[] = "shapely_to_geojson only accepts arguments of type shapely.geometry.Polygon or shapely.geometry.MultiPolygon";
 static const char __pyx_k_hacking_the_election_utils_geome[] = "hacking_the_election.utils.geometry";
 static const char __pyx_k_outdated_reock_compactness_funct[] = "outdated! reock compactness function is no longer in use.";
 static const char __pyx_k_hacking_the_election_utils_geome_2[] = "hacking_the_election/utils/geometry.pyx";
 static PyObject *__pyx_n_s_AttributeError;
-static PyObject *__pyx_n_s_Feature;
-static PyObject *__pyx_n_s_FeatureCollection;
 static PyObject *__pyx_n_s_GeometryCollection;
 static PyObject *__pyx_n_s_LineString;
 static PyObject *__pyx_n_s_LinearRing;
@@ -1472,7 +1448,6 @@ static PyObject *__pyx_n_s_any;
 static PyObject *__pyx_n_s_area;
 static PyObject *__pyx_n_s_centroid;
 static PyObject *__pyx_n_s_cline_in_traceback;
-static PyObject *__pyx_n_s_coord;
 static PyObject *__pyx_n_s_coordinates;
 static PyObject *__pyx_n_s_coords;
 static PyObject *__pyx_n_s_difference;
@@ -1481,14 +1456,11 @@ static PyObject *__pyx_n_s_district_coords;
 static PyObject *__pyx_kp_s_district_must_be_of_type_Polygo;
 static PyObject *__pyx_n_s_enumerate;
 static PyObject *__pyx_n_s_exterior;
-static PyObject *__pyx_n_s_exterior_coords;
-static PyObject *__pyx_n_s_features;
 static PyObject *__pyx_n_s_final_difference;
 static PyObject *__pyx_n_s_float_arg;
 static PyObject *__pyx_n_s_float_to_int;
 static PyObject *__pyx_n_s_geojson;
 static PyObject *__pyx_n_s_geojson_to_shapely;
-static PyObject *__pyx_n_s_geometry;
 static PyObject *__pyx_n_s_geoms;
 static PyObject *__pyx_n_s_get_compactness;
 static PyObject *__pyx_n_s_get_compactness_locals_lambda;
@@ -1499,9 +1471,6 @@ static PyObject *__pyx_n_s_i;
 static PyObject *__pyx_n_s_import;
 static PyObject *__pyx_n_s_inside;
 static PyObject *__pyx_n_s_int_coords;
-static PyObject *__pyx_n_s_interior;
-static PyObject *__pyx_n_s_interior_coords;
-static PyObject *__pyx_n_s_interiors;
 static PyObject *__pyx_n_s_intersection;
 static PyObject *__pyx_n_s_intersection_member;
 static PyObject *__pyx_kp_s_invalid_geojson;
@@ -1510,12 +1479,12 @@ static PyObject *__pyx_n_s_key;
 static PyObject *__pyx_n_s_left_area;
 static PyObject *__pyx_n_s_linear_ring;
 static PyObject *__pyx_n_s_main;
+static PyObject *__pyx_n_s_mapping;
 static PyObject *__pyx_n_s_math;
 static PyObject *__pyx_n_s_min;
 static PyObject *__pyx_n_s_minx;
 static PyObject *__pyx_n_s_miny;
 static PyObject *__pyx_n_s_name;
-static PyObject *__pyx_kp_u_not;
 static PyObject *__pyx_kp_s_outdated_reock_compactness_funct;
 static PyObject *__pyx_n_s_p;
 static PyObject *__pyx_n_s_p1;
@@ -1535,13 +1504,11 @@ static PyObject *__pyx_n_s_shape1;
 static PyObject *__pyx_n_s_shape2;
 static PyObject *__pyx_n_s_shapely_geometry;
 static PyObject *__pyx_n_s_shapely_to_geojson;
-static PyObject *__pyx_kp_s_shapely_to_geojson_only_accepts;
 static PyObject *__pyx_n_s_test;
-static PyObject *__pyx_n_s_type;
 static PyObject *__pyx_n_s_values;
 static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry__float_to_int(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_float_arg); /* proto */
 static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_shapely(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_geojson, PyObject *__pyx_v_int_coords); /* proto */
-static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_4shapely_to_geojson(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_shape, PyObject *__pyx_v_json_format); /* proto */
+static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_4shapely_to_geojson(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_shape, CYTHON_UNUSED PyObject *__pyx_v_json_format); /* proto */
 static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_6get_if_bordering(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_shape1, PyObject *__pyx_v_shape2, PyObject *__pyx_v_inside); /* proto */
 static PyObject *__pyx_lambda_funcdef_lambda(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_p); /* proto */
 static PyObject *__pyx_lambda_funcdef_lambda1(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_p); /* proto */
@@ -1571,7 +1538,7 @@ static PyObject *__pyx_codeobj__14;
 static PyObject *__pyx_codeobj__16;
 /* Late includes */
 
-/* "hacking_the_election/utils/geometry.pyx":16
+/* "hacking_the_election/utils/geometry.pyx":17
  * )
  * 
  * def _float_to_int(float_arg):             # <<<<<<<<<<<<<<
@@ -1604,7 +1571,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry__float_to_int(
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("_float_to_int", 0);
 
-  /* "hacking_the_election/utils/geometry.pyx":20
+  /* "hacking_the_election/utils/geometry.pyx":21
  *     Converts float integer for geojson_to_shapely, if int_coords is True.
  *     """
  *     return round(float_arg * (2 ** 18))             # <<<<<<<<<<<<<<
@@ -1612,16 +1579,16 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry__float_to_int(
  * 
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyNumber_Multiply(__pyx_v_float_arg, __pyx_int_262144); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 20, __pyx_L1_error)
+  __pyx_t_1 = PyNumber_Multiply(__pyx_v_float_arg, __pyx_int_262144); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 21, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_builtin_round, __pyx_t_1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 20, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_CallOneArg(__pyx_builtin_round, __pyx_t_1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 21, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_r = __pyx_t_2;
   __pyx_t_2 = 0;
   goto __pyx_L0;
 
-  /* "hacking_the_election/utils/geometry.pyx":16
+  /* "hacking_the_election/utils/geometry.pyx":17
  * )
  * 
  * def _float_to_int(float_arg):             # <<<<<<<<<<<<<<
@@ -1641,7 +1608,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry__float_to_int(
   return __pyx_r;
 }
 
-/* "hacking_the_election/utils/geometry.pyx":23
+/* "hacking_the_election/utils/geometry.pyx":24
  * 
  * 
  * def geojson_to_shapely(geojson, int_coords=False):             # <<<<<<<<<<<<<<
@@ -1690,7 +1657,7 @@ static PyObject *__pyx_pw_20hacking_the_election_5utils_8geometry_3geojson_to_sh
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "geojson_to_shapely") < 0)) __PYX_ERR(0, 23, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "geojson_to_shapely") < 0)) __PYX_ERR(0, 24, __pyx_L3_error)
       }
     } else {
       switch (PyTuple_GET_SIZE(__pyx_args)) {
@@ -1706,7 +1673,7 @@ static PyObject *__pyx_pw_20hacking_the_election_5utils_8geometry_3geojson_to_sh
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("geojson_to_shapely", 0, 1, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 23, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("geojson_to_shapely", 0, 1, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 24, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("hacking_the_election.utils.geometry.geojson_to_shapely", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -1743,31 +1710,31 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("geojson_to_shapely", 0);
 
-  /* "hacking_the_election/utils/geometry.pyx":35
+  /* "hacking_the_election/utils/geometry.pyx":36
  *     """
  *     # If linear ring
  *     if type(geojson[0][0]) in [float, int]:             # <<<<<<<<<<<<<<
  *         if int_coords:
  *             point_list = [(_float_to_int(point[0]), _float_to_int(point[1])) for point in geojson]
  */
-  __pyx_t_1 = __Pyx_GetItemInt(__pyx_v_geojson, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 35, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_GetItemInt(__pyx_v_geojson, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 36, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_GetItemInt(__pyx_t_1, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 35, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_GetItemInt(__pyx_t_1, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 36, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __Pyx_INCREF(((PyObject *)Py_TYPE(__pyx_t_2)));
   __pyx_t_1 = ((PyObject *)Py_TYPE(__pyx_t_2));
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_2 = PyObject_RichCompare(((PyObject *)__pyx_t_1), ((PyObject *)(&PyFloat_Type)), Py_EQ); __Pyx_XGOTREF(__pyx_t_2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 35, __pyx_L1_error)
-  __pyx_t_4 = __Pyx_PyObject_IsTrue(__pyx_t_2); if (unlikely(__pyx_t_4 < 0)) __PYX_ERR(0, 35, __pyx_L1_error)
+  __pyx_t_2 = PyObject_RichCompare(((PyObject *)__pyx_t_1), ((PyObject *)(&PyFloat_Type)), Py_EQ); __Pyx_XGOTREF(__pyx_t_2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 36, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_IsTrue(__pyx_t_2); if (unlikely(__pyx_t_4 < 0)) __PYX_ERR(0, 36, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   if (!__pyx_t_4) {
   } else {
     __pyx_t_3 = __pyx_t_4;
     goto __pyx_L4_bool_binop_done;
   }
-  __pyx_t_2 = PyObject_RichCompare(((PyObject *)__pyx_t_1), ((PyObject *)(&PyInt_Type)), Py_EQ); __Pyx_XGOTREF(__pyx_t_2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 35, __pyx_L1_error)
-  __pyx_t_4 = __Pyx_PyObject_IsTrue(__pyx_t_2); if (unlikely(__pyx_t_4 < 0)) __PYX_ERR(0, 35, __pyx_L1_error)
+  __pyx_t_2 = PyObject_RichCompare(((PyObject *)__pyx_t_1), ((PyObject *)(&PyInt_Type)), Py_EQ); __Pyx_XGOTREF(__pyx_t_2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 36, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_IsTrue(__pyx_t_2); if (unlikely(__pyx_t_4 < 0)) __PYX_ERR(0, 36, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_t_3 = __pyx_t_4;
   __pyx_L4_bool_binop_done:;
@@ -1775,49 +1742,49 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
   __pyx_t_4 = (__pyx_t_3 != 0);
   if (__pyx_t_4) {
 
-    /* "hacking_the_election/utils/geometry.pyx":36
+    /* "hacking_the_election/utils/geometry.pyx":37
  *     # If linear ring
  *     if type(geojson[0][0]) in [float, int]:
  *         if int_coords:             # <<<<<<<<<<<<<<
  *             point_list = [(_float_to_int(point[0]), _float_to_int(point[1])) for point in geojson]
  *         else:
  */
-    __pyx_t_4 = __Pyx_PyObject_IsTrue(__pyx_v_int_coords); if (unlikely(__pyx_t_4 < 0)) __PYX_ERR(0, 36, __pyx_L1_error)
+    __pyx_t_4 = __Pyx_PyObject_IsTrue(__pyx_v_int_coords); if (unlikely(__pyx_t_4 < 0)) __PYX_ERR(0, 37, __pyx_L1_error)
     if (__pyx_t_4) {
 
-      /* "hacking_the_election/utils/geometry.pyx":37
+      /* "hacking_the_election/utils/geometry.pyx":38
  *     if type(geojson[0][0]) in [float, int]:
  *         if int_coords:
  *             point_list = [(_float_to_int(point[0]), _float_to_int(point[1])) for point in geojson]             # <<<<<<<<<<<<<<
  *         else:
  *             point_list = [tuple(point) for point in geojson]
  */
-      __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 37, __pyx_L1_error)
+      __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 38, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
       if (likely(PyList_CheckExact(__pyx_v_geojson)) || PyTuple_CheckExact(__pyx_v_geojson)) {
         __pyx_t_2 = __pyx_v_geojson; __Pyx_INCREF(__pyx_t_2); __pyx_t_5 = 0;
         __pyx_t_6 = NULL;
       } else {
-        __pyx_t_5 = -1; __pyx_t_2 = PyObject_GetIter(__pyx_v_geojson); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 37, __pyx_L1_error)
+        __pyx_t_5 = -1; __pyx_t_2 = PyObject_GetIter(__pyx_v_geojson); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 38, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_2);
-        __pyx_t_6 = Py_TYPE(__pyx_t_2)->tp_iternext; if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 37, __pyx_L1_error)
+        __pyx_t_6 = Py_TYPE(__pyx_t_2)->tp_iternext; if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 38, __pyx_L1_error)
       }
       for (;;) {
         if (likely(!__pyx_t_6)) {
           if (likely(PyList_CheckExact(__pyx_t_2))) {
             if (__pyx_t_5 >= PyList_GET_SIZE(__pyx_t_2)) break;
             #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-            __pyx_t_7 = PyList_GET_ITEM(__pyx_t_2, __pyx_t_5); __Pyx_INCREF(__pyx_t_7); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 37, __pyx_L1_error)
+            __pyx_t_7 = PyList_GET_ITEM(__pyx_t_2, __pyx_t_5); __Pyx_INCREF(__pyx_t_7); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 38, __pyx_L1_error)
             #else
-            __pyx_t_7 = PySequence_ITEM(__pyx_t_2, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 37, __pyx_L1_error)
+            __pyx_t_7 = PySequence_ITEM(__pyx_t_2, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 38, __pyx_L1_error)
             __Pyx_GOTREF(__pyx_t_7);
             #endif
           } else {
             if (__pyx_t_5 >= PyTuple_GET_SIZE(__pyx_t_2)) break;
             #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-            __pyx_t_7 = PyTuple_GET_ITEM(__pyx_t_2, __pyx_t_5); __Pyx_INCREF(__pyx_t_7); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 37, __pyx_L1_error)
+            __pyx_t_7 = PyTuple_GET_ITEM(__pyx_t_2, __pyx_t_5); __Pyx_INCREF(__pyx_t_7); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 38, __pyx_L1_error)
             #else
-            __pyx_t_7 = PySequence_ITEM(__pyx_t_2, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 37, __pyx_L1_error)
+            __pyx_t_7 = PySequence_ITEM(__pyx_t_2, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 38, __pyx_L1_error)
             __Pyx_GOTREF(__pyx_t_7);
             #endif
           }
@@ -1827,7 +1794,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
             PyObject* exc_type = PyErr_Occurred();
             if (exc_type) {
               if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
-              else __PYX_ERR(0, 37, __pyx_L1_error)
+              else __PYX_ERR(0, 38, __pyx_L1_error)
             }
             break;
           }
@@ -1835,9 +1802,9 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
         }
         __Pyx_XDECREF_SET(__pyx_v_point, __pyx_t_7);
         __pyx_t_7 = 0;
-        __Pyx_GetModuleGlobalName(__pyx_t_8, __pyx_n_s_float_to_int); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 37, __pyx_L1_error)
+        __Pyx_GetModuleGlobalName(__pyx_t_8, __pyx_n_s_float_to_int); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 38, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_8);
-        __pyx_t_9 = __Pyx_GetItemInt(__pyx_v_point, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 37, __pyx_L1_error)
+        __pyx_t_9 = __Pyx_GetItemInt(__pyx_v_point, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 38, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_9);
         __pyx_t_10 = NULL;
         if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_8))) {
@@ -1852,12 +1819,12 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
         __pyx_t_7 = (__pyx_t_10) ? __Pyx_PyObject_Call2Args(__pyx_t_8, __pyx_t_10, __pyx_t_9) : __Pyx_PyObject_CallOneArg(__pyx_t_8, __pyx_t_9);
         __Pyx_XDECREF(__pyx_t_10); __pyx_t_10 = 0;
         __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-        if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 37, __pyx_L1_error)
+        if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 38, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_7);
         __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
-        __Pyx_GetModuleGlobalName(__pyx_t_9, __pyx_n_s_float_to_int); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 37, __pyx_L1_error)
+        __Pyx_GetModuleGlobalName(__pyx_t_9, __pyx_n_s_float_to_int); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 38, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_9);
-        __pyx_t_10 = __Pyx_GetItemInt(__pyx_v_point, 1, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 37, __pyx_L1_error)
+        __pyx_t_10 = __Pyx_GetItemInt(__pyx_v_point, 1, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 38, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_10);
         __pyx_t_11 = NULL;
         if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_9))) {
@@ -1872,10 +1839,10 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
         __pyx_t_8 = (__pyx_t_11) ? __Pyx_PyObject_Call2Args(__pyx_t_9, __pyx_t_11, __pyx_t_10) : __Pyx_PyObject_CallOneArg(__pyx_t_9, __pyx_t_10);
         __Pyx_XDECREF(__pyx_t_11); __pyx_t_11 = 0;
         __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
-        if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 37, __pyx_L1_error)
+        if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 38, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_8);
         __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-        __pyx_t_9 = PyTuple_New(2); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 37, __pyx_L1_error)
+        __pyx_t_9 = PyTuple_New(2); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 38, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_9);
         __Pyx_GIVEREF(__pyx_t_7);
         PyTuple_SET_ITEM(__pyx_t_9, 0, __pyx_t_7);
@@ -1883,14 +1850,14 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
         PyTuple_SET_ITEM(__pyx_t_9, 1, __pyx_t_8);
         __pyx_t_7 = 0;
         __pyx_t_8 = 0;
-        if (unlikely(__Pyx_ListComp_Append(__pyx_t_1, (PyObject*)__pyx_t_9))) __PYX_ERR(0, 37, __pyx_L1_error)
+        if (unlikely(__Pyx_ListComp_Append(__pyx_t_1, (PyObject*)__pyx_t_9))) __PYX_ERR(0, 38, __pyx_L1_error)
         __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
       }
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
       __pyx_v_point_list = ((PyObject*)__pyx_t_1);
       __pyx_t_1 = 0;
 
-      /* "hacking_the_election/utils/geometry.pyx":36
+      /* "hacking_the_election/utils/geometry.pyx":37
  *     # If linear ring
  *     if type(geojson[0][0]) in [float, int]:
  *         if int_coords:             # <<<<<<<<<<<<<<
@@ -1900,7 +1867,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
       goto __pyx_L6;
     }
 
-    /* "hacking_the_election/utils/geometry.pyx":39
+    /* "hacking_the_election/utils/geometry.pyx":40
  *             point_list = [(_float_to_int(point[0]), _float_to_int(point[1])) for point in geojson]
  *         else:
  *             point_list = [tuple(point) for point in geojson]             # <<<<<<<<<<<<<<
@@ -1908,32 +1875,32 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
  *         return LinearRing(point_list)
  */
     /*else*/ {
-      __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 39, __pyx_L1_error)
+      __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 40, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
       if (likely(PyList_CheckExact(__pyx_v_geojson)) || PyTuple_CheckExact(__pyx_v_geojson)) {
         __pyx_t_2 = __pyx_v_geojson; __Pyx_INCREF(__pyx_t_2); __pyx_t_5 = 0;
         __pyx_t_6 = NULL;
       } else {
-        __pyx_t_5 = -1; __pyx_t_2 = PyObject_GetIter(__pyx_v_geojson); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 39, __pyx_L1_error)
+        __pyx_t_5 = -1; __pyx_t_2 = PyObject_GetIter(__pyx_v_geojson); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 40, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_2);
-        __pyx_t_6 = Py_TYPE(__pyx_t_2)->tp_iternext; if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 39, __pyx_L1_error)
+        __pyx_t_6 = Py_TYPE(__pyx_t_2)->tp_iternext; if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 40, __pyx_L1_error)
       }
       for (;;) {
         if (likely(!__pyx_t_6)) {
           if (likely(PyList_CheckExact(__pyx_t_2))) {
             if (__pyx_t_5 >= PyList_GET_SIZE(__pyx_t_2)) break;
             #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-            __pyx_t_9 = PyList_GET_ITEM(__pyx_t_2, __pyx_t_5); __Pyx_INCREF(__pyx_t_9); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 39, __pyx_L1_error)
+            __pyx_t_9 = PyList_GET_ITEM(__pyx_t_2, __pyx_t_5); __Pyx_INCREF(__pyx_t_9); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 40, __pyx_L1_error)
             #else
-            __pyx_t_9 = PySequence_ITEM(__pyx_t_2, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 39, __pyx_L1_error)
+            __pyx_t_9 = PySequence_ITEM(__pyx_t_2, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 40, __pyx_L1_error)
             __Pyx_GOTREF(__pyx_t_9);
             #endif
           } else {
             if (__pyx_t_5 >= PyTuple_GET_SIZE(__pyx_t_2)) break;
             #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-            __pyx_t_9 = PyTuple_GET_ITEM(__pyx_t_2, __pyx_t_5); __Pyx_INCREF(__pyx_t_9); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 39, __pyx_L1_error)
+            __pyx_t_9 = PyTuple_GET_ITEM(__pyx_t_2, __pyx_t_5); __Pyx_INCREF(__pyx_t_9); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 40, __pyx_L1_error)
             #else
-            __pyx_t_9 = PySequence_ITEM(__pyx_t_2, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 39, __pyx_L1_error)
+            __pyx_t_9 = PySequence_ITEM(__pyx_t_2, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 40, __pyx_L1_error)
             __Pyx_GOTREF(__pyx_t_9);
             #endif
           }
@@ -1943,7 +1910,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
             PyObject* exc_type = PyErr_Occurred();
             if (exc_type) {
               if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
-              else __PYX_ERR(0, 39, __pyx_L1_error)
+              else __PYX_ERR(0, 40, __pyx_L1_error)
             }
             break;
           }
@@ -1951,9 +1918,9 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
         }
         __Pyx_XDECREF_SET(__pyx_v_point, __pyx_t_9);
         __pyx_t_9 = 0;
-        __pyx_t_9 = __Pyx_PySequence_Tuple(__pyx_v_point); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 39, __pyx_L1_error)
+        __pyx_t_9 = __Pyx_PySequence_Tuple(__pyx_v_point); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 40, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_9);
-        if (unlikely(__Pyx_ListComp_Append(__pyx_t_1, (PyObject*)__pyx_t_9))) __PYX_ERR(0, 39, __pyx_L1_error)
+        if (unlikely(__Pyx_ListComp_Append(__pyx_t_1, (PyObject*)__pyx_t_9))) __PYX_ERR(0, 40, __pyx_L1_error)
         __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
       }
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
@@ -1962,7 +1929,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
     }
     __pyx_L6:;
 
-    /* "hacking_the_election/utils/geometry.pyx":41
+    /* "hacking_the_election/utils/geometry.pyx":42
  *             point_list = [tuple(point) for point in geojson]
  * 
  *         return LinearRing(point_list)             # <<<<<<<<<<<<<<
@@ -1970,7 +1937,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
  *         # Polygon.
  */
     __Pyx_XDECREF(__pyx_r);
-    __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_LinearRing); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 41, __pyx_L1_error)
+    __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_LinearRing); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 42, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __pyx_t_9 = NULL;
     if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_2))) {
@@ -1984,14 +1951,14 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
     }
     __pyx_t_1 = (__pyx_t_9) ? __Pyx_PyObject_Call2Args(__pyx_t_2, __pyx_t_9, __pyx_v_point_list) : __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_v_point_list);
     __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
-    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 41, __pyx_L1_error)
+    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 42, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __pyx_r = __pyx_t_1;
     __pyx_t_1 = 0;
     goto __pyx_L0;
 
-    /* "hacking_the_election/utils/geometry.pyx":35
+    /* "hacking_the_election/utils/geometry.pyx":36
  *     """
  *     # If linear ring
  *     if type(geojson[0][0]) in [float, int]:             # <<<<<<<<<<<<<<
@@ -2000,34 +1967,34 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
  */
   }
 
-  /* "hacking_the_election/utils/geometry.pyx":42
+  /* "hacking_the_election/utils/geometry.pyx":43
  * 
  *         return LinearRing(point_list)
  *     elif type(geojson[0][0][0]) in [float, int]:             # <<<<<<<<<<<<<<
  *         # Polygon.
  *         # if int_coords:
  */
-  __pyx_t_1 = __Pyx_GetItemInt(__pyx_v_geojson, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 42, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_GetItemInt(__pyx_v_geojson, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 43, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_GetItemInt(__pyx_t_1, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 42, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_GetItemInt(__pyx_t_1, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 43, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = __Pyx_GetItemInt(__pyx_t_2, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 42, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_GetItemInt(__pyx_t_2, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 43, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __Pyx_INCREF(((PyObject *)Py_TYPE(__pyx_t_1)));
   __pyx_t_2 = ((PyObject *)Py_TYPE(__pyx_t_1));
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = PyObject_RichCompare(((PyObject *)__pyx_t_2), ((PyObject *)(&PyFloat_Type)), Py_EQ); __Pyx_XGOTREF(__pyx_t_1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 42, __pyx_L1_error)
-  __pyx_t_3 = __Pyx_PyObject_IsTrue(__pyx_t_1); if (unlikely(__pyx_t_3 < 0)) __PYX_ERR(0, 42, __pyx_L1_error)
+  __pyx_t_1 = PyObject_RichCompare(((PyObject *)__pyx_t_2), ((PyObject *)(&PyFloat_Type)), Py_EQ); __Pyx_XGOTREF(__pyx_t_1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 43, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_IsTrue(__pyx_t_1); if (unlikely(__pyx_t_3 < 0)) __PYX_ERR(0, 43, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   if (!__pyx_t_3) {
   } else {
     __pyx_t_4 = __pyx_t_3;
     goto __pyx_L11_bool_binop_done;
   }
-  __pyx_t_1 = PyObject_RichCompare(((PyObject *)__pyx_t_2), ((PyObject *)(&PyInt_Type)), Py_EQ); __Pyx_XGOTREF(__pyx_t_1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 42, __pyx_L1_error)
-  __pyx_t_3 = __Pyx_PyObject_IsTrue(__pyx_t_1); if (unlikely(__pyx_t_3 < 0)) __PYX_ERR(0, 42, __pyx_L1_error)
+  __pyx_t_1 = PyObject_RichCompare(((PyObject *)__pyx_t_2), ((PyObject *)(&PyInt_Type)), Py_EQ); __Pyx_XGOTREF(__pyx_t_1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 43, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_IsTrue(__pyx_t_1); if (unlikely(__pyx_t_3 < 0)) __PYX_ERR(0, 43, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_t_4 = __pyx_t_3;
   __pyx_L11_bool_binop_done:;
@@ -2035,7 +2002,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
   __pyx_t_3 = (__pyx_t_4 != 0);
   if (__pyx_t_3) {
 
-    /* "hacking_the_election/utils/geometry.pyx":49
+    /* "hacking_the_election/utils/geometry.pyx":50
  *         #     polygon_list = [geojson_to_shapely(ring) for ring in geojson]
  *         # return Polygon(polygon_list[0], polygon_list[1:])
  *         return Polygon(geojson[0], geojson[1:])             # <<<<<<<<<<<<<<
@@ -2043,11 +2010,11 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
  *         # Multipolygon.
  */
     __Pyx_XDECREF(__pyx_r);
-    __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_Polygon); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 49, __pyx_L1_error)
+    __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_Polygon); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 50, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    __pyx_t_9 = __Pyx_GetItemInt(__pyx_v_geojson, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 49, __pyx_L1_error)
+    __pyx_t_9 = __Pyx_GetItemInt(__pyx_v_geojson, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 50, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_9);
-    __pyx_t_8 = __Pyx_PyObject_GetSlice(__pyx_v_geojson, 1, 0, NULL, NULL, &__pyx_slice_, 1, 0, 1); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 49, __pyx_L1_error)
+    __pyx_t_8 = __Pyx_PyObject_GetSlice(__pyx_v_geojson, 1, 0, NULL, NULL, &__pyx_slice_, 1, 0, 1); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 50, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_8);
     __pyx_t_7 = NULL;
     __pyx_t_12 = 0;
@@ -2064,7 +2031,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
     #if CYTHON_FAST_PYCALL
     if (PyFunction_Check(__pyx_t_1)) {
       PyObject *__pyx_temp[3] = {__pyx_t_7, __pyx_t_9, __pyx_t_8};
-      __pyx_t_2 = __Pyx_PyFunction_FastCall(__pyx_t_1, __pyx_temp+1-__pyx_t_12, 2+__pyx_t_12); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 49, __pyx_L1_error)
+      __pyx_t_2 = __Pyx_PyFunction_FastCall(__pyx_t_1, __pyx_temp+1-__pyx_t_12, 2+__pyx_t_12); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 50, __pyx_L1_error)
       __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
       __Pyx_GOTREF(__pyx_t_2);
       __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
@@ -2074,7 +2041,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
     #if CYTHON_FAST_PYCCALL
     if (__Pyx_PyFastCFunction_Check(__pyx_t_1)) {
       PyObject *__pyx_temp[3] = {__pyx_t_7, __pyx_t_9, __pyx_t_8};
-      __pyx_t_2 = __Pyx_PyCFunction_FastCall(__pyx_t_1, __pyx_temp+1-__pyx_t_12, 2+__pyx_t_12); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 49, __pyx_L1_error)
+      __pyx_t_2 = __Pyx_PyCFunction_FastCall(__pyx_t_1, __pyx_temp+1-__pyx_t_12, 2+__pyx_t_12); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 50, __pyx_L1_error)
       __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
       __Pyx_GOTREF(__pyx_t_2);
       __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
@@ -2082,7 +2049,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
     } else
     #endif
     {
-      __pyx_t_10 = PyTuple_New(2+__pyx_t_12); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 49, __pyx_L1_error)
+      __pyx_t_10 = PyTuple_New(2+__pyx_t_12); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 50, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_10);
       if (__pyx_t_7) {
         __Pyx_GIVEREF(__pyx_t_7); PyTuple_SET_ITEM(__pyx_t_10, 0, __pyx_t_7); __pyx_t_7 = NULL;
@@ -2093,7 +2060,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
       PyTuple_SET_ITEM(__pyx_t_10, 1+__pyx_t_12, __pyx_t_8);
       __pyx_t_9 = 0;
       __pyx_t_8 = 0;
-      __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_1, __pyx_t_10, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 49, __pyx_L1_error)
+      __pyx_t_2 = __Pyx_PyObject_Call(__pyx_t_1, __pyx_t_10, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 50, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_2);
       __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
     }
@@ -2102,7 +2069,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
     __pyx_t_2 = 0;
     goto __pyx_L0;
 
-    /* "hacking_the_election/utils/geometry.pyx":42
+    /* "hacking_the_election/utils/geometry.pyx":43
  * 
  *         return LinearRing(point_list)
  *     elif type(geojson[0][0][0]) in [float, int]:             # <<<<<<<<<<<<<<
@@ -2111,19 +2078,19 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
  */
   }
 
-  /* "hacking_the_election/utils/geometry.pyx":50
+  /* "hacking_the_election/utils/geometry.pyx":51
  *         # return Polygon(polygon_list[0], polygon_list[1:])
  *         return Polygon(geojson[0], geojson[1:])
  *     elif isinstance(geojson[0][0][0], list):             # <<<<<<<<<<<<<<
  *         # Multipolygon.
  *         if int_coords:
  */
-  __pyx_t_2 = __Pyx_GetItemInt(__pyx_v_geojson, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 50, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_GetItemInt(__pyx_v_geojson, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 51, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_1 = __Pyx_GetItemInt(__pyx_t_2, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 50, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_GetItemInt(__pyx_t_2, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 51, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_2 = __Pyx_GetItemInt(__pyx_t_1, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 50, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_GetItemInt(__pyx_t_1, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 51, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_t_3 = PyList_Check(__pyx_t_2); 
@@ -2131,49 +2098,49 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
   __pyx_t_4 = (__pyx_t_3 != 0);
   if (likely(__pyx_t_4)) {
 
-    /* "hacking_the_election/utils/geometry.pyx":52
+    /* "hacking_the_election/utils/geometry.pyx":53
  *     elif isinstance(geojson[0][0][0], list):
  *         # Multipolygon.
  *         if int_coords:             # <<<<<<<<<<<<<<
  *             polygons = [geojson_to_shapely(polygon, int_coords=True) for polygon in geojson]
  *         else:
  */
-    __pyx_t_4 = __Pyx_PyObject_IsTrue(__pyx_v_int_coords); if (unlikely(__pyx_t_4 < 0)) __PYX_ERR(0, 52, __pyx_L1_error)
+    __pyx_t_4 = __Pyx_PyObject_IsTrue(__pyx_v_int_coords); if (unlikely(__pyx_t_4 < 0)) __PYX_ERR(0, 53, __pyx_L1_error)
     if (__pyx_t_4) {
 
-      /* "hacking_the_election/utils/geometry.pyx":53
+      /* "hacking_the_election/utils/geometry.pyx":54
  *         # Multipolygon.
  *         if int_coords:
  *             polygons = [geojson_to_shapely(polygon, int_coords=True) for polygon in geojson]             # <<<<<<<<<<<<<<
  *         else:
  *             polygons = [geojson_to_shapely(polygon) for polygon in geojson]
  */
-      __pyx_t_2 = PyList_New(0); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 53, __pyx_L1_error)
+      __pyx_t_2 = PyList_New(0); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 54, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_2);
       if (likely(PyList_CheckExact(__pyx_v_geojson)) || PyTuple_CheckExact(__pyx_v_geojson)) {
         __pyx_t_1 = __pyx_v_geojson; __Pyx_INCREF(__pyx_t_1); __pyx_t_5 = 0;
         __pyx_t_6 = NULL;
       } else {
-        __pyx_t_5 = -1; __pyx_t_1 = PyObject_GetIter(__pyx_v_geojson); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 53, __pyx_L1_error)
+        __pyx_t_5 = -1; __pyx_t_1 = PyObject_GetIter(__pyx_v_geojson); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 54, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_1);
-        __pyx_t_6 = Py_TYPE(__pyx_t_1)->tp_iternext; if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 53, __pyx_L1_error)
+        __pyx_t_6 = Py_TYPE(__pyx_t_1)->tp_iternext; if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 54, __pyx_L1_error)
       }
       for (;;) {
         if (likely(!__pyx_t_6)) {
           if (likely(PyList_CheckExact(__pyx_t_1))) {
             if (__pyx_t_5 >= PyList_GET_SIZE(__pyx_t_1)) break;
             #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-            __pyx_t_10 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_5); __Pyx_INCREF(__pyx_t_10); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 53, __pyx_L1_error)
+            __pyx_t_10 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_5); __Pyx_INCREF(__pyx_t_10); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 54, __pyx_L1_error)
             #else
-            __pyx_t_10 = PySequence_ITEM(__pyx_t_1, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 53, __pyx_L1_error)
+            __pyx_t_10 = PySequence_ITEM(__pyx_t_1, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 54, __pyx_L1_error)
             __Pyx_GOTREF(__pyx_t_10);
             #endif
           } else {
             if (__pyx_t_5 >= PyTuple_GET_SIZE(__pyx_t_1)) break;
             #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-            __pyx_t_10 = PyTuple_GET_ITEM(__pyx_t_1, __pyx_t_5); __Pyx_INCREF(__pyx_t_10); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 53, __pyx_L1_error)
+            __pyx_t_10 = PyTuple_GET_ITEM(__pyx_t_1, __pyx_t_5); __Pyx_INCREF(__pyx_t_10); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 54, __pyx_L1_error)
             #else
-            __pyx_t_10 = PySequence_ITEM(__pyx_t_1, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 53, __pyx_L1_error)
+            __pyx_t_10 = PySequence_ITEM(__pyx_t_1, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 54, __pyx_L1_error)
             __Pyx_GOTREF(__pyx_t_10);
             #endif
           }
@@ -2183,7 +2150,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
             PyObject* exc_type = PyErr_Occurred();
             if (exc_type) {
               if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
-              else __PYX_ERR(0, 53, __pyx_L1_error)
+              else __PYX_ERR(0, 54, __pyx_L1_error)
             }
             break;
           }
@@ -2191,29 +2158,29 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
         }
         __Pyx_XDECREF_SET(__pyx_v_polygon, __pyx_t_10);
         __pyx_t_10 = 0;
-        __Pyx_GetModuleGlobalName(__pyx_t_10, __pyx_n_s_geojson_to_shapely); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 53, __pyx_L1_error)
+        __Pyx_GetModuleGlobalName(__pyx_t_10, __pyx_n_s_geojson_to_shapely); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 54, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_10);
-        __pyx_t_8 = PyTuple_New(1); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 53, __pyx_L1_error)
+        __pyx_t_8 = PyTuple_New(1); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 54, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_8);
         __Pyx_INCREF(__pyx_v_polygon);
         __Pyx_GIVEREF(__pyx_v_polygon);
         PyTuple_SET_ITEM(__pyx_t_8, 0, __pyx_v_polygon);
-        __pyx_t_9 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 53, __pyx_L1_error)
+        __pyx_t_9 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 54, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_9);
-        if (PyDict_SetItem(__pyx_t_9, __pyx_n_s_int_coords, Py_True) < 0) __PYX_ERR(0, 53, __pyx_L1_error)
-        __pyx_t_7 = __Pyx_PyObject_Call(__pyx_t_10, __pyx_t_8, __pyx_t_9); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 53, __pyx_L1_error)
+        if (PyDict_SetItem(__pyx_t_9, __pyx_n_s_int_coords, Py_True) < 0) __PYX_ERR(0, 54, __pyx_L1_error)
+        __pyx_t_7 = __Pyx_PyObject_Call(__pyx_t_10, __pyx_t_8, __pyx_t_9); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 54, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_7);
         __Pyx_DECREF(__pyx_t_10); __pyx_t_10 = 0;
         __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
         __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-        if (unlikely(__Pyx_ListComp_Append(__pyx_t_2, (PyObject*)__pyx_t_7))) __PYX_ERR(0, 53, __pyx_L1_error)
+        if (unlikely(__Pyx_ListComp_Append(__pyx_t_2, (PyObject*)__pyx_t_7))) __PYX_ERR(0, 54, __pyx_L1_error)
         __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
       }
       __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
       __pyx_v_polygons = ((PyObject*)__pyx_t_2);
       __pyx_t_2 = 0;
 
-      /* "hacking_the_election/utils/geometry.pyx":52
+      /* "hacking_the_election/utils/geometry.pyx":53
  *     elif isinstance(geojson[0][0][0], list):
  *         # Multipolygon.
  *         if int_coords:             # <<<<<<<<<<<<<<
@@ -2223,7 +2190,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
       goto __pyx_L13;
     }
 
-    /* "hacking_the_election/utils/geometry.pyx":55
+    /* "hacking_the_election/utils/geometry.pyx":56
  *             polygons = [geojson_to_shapely(polygon, int_coords=True) for polygon in geojson]
  *         else:
  *             polygons = [geojson_to_shapely(polygon) for polygon in geojson]             # <<<<<<<<<<<<<<
@@ -2231,32 +2198,32 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
  *     else:
  */
     /*else*/ {
-      __pyx_t_2 = PyList_New(0); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 55, __pyx_L1_error)
+      __pyx_t_2 = PyList_New(0); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 56, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_2);
       if (likely(PyList_CheckExact(__pyx_v_geojson)) || PyTuple_CheckExact(__pyx_v_geojson)) {
         __pyx_t_1 = __pyx_v_geojson; __Pyx_INCREF(__pyx_t_1); __pyx_t_5 = 0;
         __pyx_t_6 = NULL;
       } else {
-        __pyx_t_5 = -1; __pyx_t_1 = PyObject_GetIter(__pyx_v_geojson); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 55, __pyx_L1_error)
+        __pyx_t_5 = -1; __pyx_t_1 = PyObject_GetIter(__pyx_v_geojson); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 56, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_1);
-        __pyx_t_6 = Py_TYPE(__pyx_t_1)->tp_iternext; if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 55, __pyx_L1_error)
+        __pyx_t_6 = Py_TYPE(__pyx_t_1)->tp_iternext; if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 56, __pyx_L1_error)
       }
       for (;;) {
         if (likely(!__pyx_t_6)) {
           if (likely(PyList_CheckExact(__pyx_t_1))) {
             if (__pyx_t_5 >= PyList_GET_SIZE(__pyx_t_1)) break;
             #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-            __pyx_t_7 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_5); __Pyx_INCREF(__pyx_t_7); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 55, __pyx_L1_error)
+            __pyx_t_7 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_5); __Pyx_INCREF(__pyx_t_7); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 56, __pyx_L1_error)
             #else
-            __pyx_t_7 = PySequence_ITEM(__pyx_t_1, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 55, __pyx_L1_error)
+            __pyx_t_7 = PySequence_ITEM(__pyx_t_1, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 56, __pyx_L1_error)
             __Pyx_GOTREF(__pyx_t_7);
             #endif
           } else {
             if (__pyx_t_5 >= PyTuple_GET_SIZE(__pyx_t_1)) break;
             #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-            __pyx_t_7 = PyTuple_GET_ITEM(__pyx_t_1, __pyx_t_5); __Pyx_INCREF(__pyx_t_7); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 55, __pyx_L1_error)
+            __pyx_t_7 = PyTuple_GET_ITEM(__pyx_t_1, __pyx_t_5); __Pyx_INCREF(__pyx_t_7); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 56, __pyx_L1_error)
             #else
-            __pyx_t_7 = PySequence_ITEM(__pyx_t_1, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 55, __pyx_L1_error)
+            __pyx_t_7 = PySequence_ITEM(__pyx_t_1, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 56, __pyx_L1_error)
             __Pyx_GOTREF(__pyx_t_7);
             #endif
           }
@@ -2266,7 +2233,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
             PyObject* exc_type = PyErr_Occurred();
             if (exc_type) {
               if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
-              else __PYX_ERR(0, 55, __pyx_L1_error)
+              else __PYX_ERR(0, 56, __pyx_L1_error)
             }
             break;
           }
@@ -2274,7 +2241,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
         }
         __Pyx_XDECREF_SET(__pyx_v_polygon, __pyx_t_7);
         __pyx_t_7 = 0;
-        __Pyx_GetModuleGlobalName(__pyx_t_9, __pyx_n_s_geojson_to_shapely); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 55, __pyx_L1_error)
+        __Pyx_GetModuleGlobalName(__pyx_t_9, __pyx_n_s_geojson_to_shapely); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 56, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_9);
         __pyx_t_8 = NULL;
         if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_9))) {
@@ -2288,10 +2255,10 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
         }
         __pyx_t_7 = (__pyx_t_8) ? __Pyx_PyObject_Call2Args(__pyx_t_9, __pyx_t_8, __pyx_v_polygon) : __Pyx_PyObject_CallOneArg(__pyx_t_9, __pyx_v_polygon);
         __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
-        if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 55, __pyx_L1_error)
+        if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 56, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_7);
         __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-        if (unlikely(__Pyx_ListComp_Append(__pyx_t_2, (PyObject*)__pyx_t_7))) __PYX_ERR(0, 55, __pyx_L1_error)
+        if (unlikely(__Pyx_ListComp_Append(__pyx_t_2, (PyObject*)__pyx_t_7))) __PYX_ERR(0, 56, __pyx_L1_error)
         __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
       }
       __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
@@ -2300,7 +2267,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
     }
     __pyx_L13:;
 
-    /* "hacking_the_election/utils/geometry.pyx":56
+    /* "hacking_the_election/utils/geometry.pyx":57
  *         else:
  *             polygons = [geojson_to_shapely(polygon) for polygon in geojson]
  *         return MultiPolygon(polygons)             # <<<<<<<<<<<<<<
@@ -2308,7 +2275,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
  *         raise ValueError("invalid geojson")
  */
     __Pyx_XDECREF(__pyx_r);
-    __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_MultiPolygon); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 56, __pyx_L1_error)
+    __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_MultiPolygon); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 57, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __pyx_t_7 = NULL;
     if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_1))) {
@@ -2322,14 +2289,14 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
     }
     __pyx_t_2 = (__pyx_t_7) ? __Pyx_PyObject_Call2Args(__pyx_t_1, __pyx_t_7, __pyx_v_polygons) : __Pyx_PyObject_CallOneArg(__pyx_t_1, __pyx_v_polygons);
     __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
-    if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 56, __pyx_L1_error)
+    if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 57, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
     __pyx_r = __pyx_t_2;
     __pyx_t_2 = 0;
     goto __pyx_L0;
 
-    /* "hacking_the_election/utils/geometry.pyx":50
+    /* "hacking_the_election/utils/geometry.pyx":51
  *         # return Polygon(polygon_list[0], polygon_list[1:])
  *         return Polygon(geojson[0], geojson[1:])
  *     elif isinstance(geojson[0][0][0], list):             # <<<<<<<<<<<<<<
@@ -2338,7 +2305,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
  */
   }
 
-  /* "hacking_the_election/utils/geometry.pyx":58
+  /* "hacking_the_election/utils/geometry.pyx":59
  *         return MultiPolygon(polygons)
  *     else:
  *         raise ValueError("invalid geojson")             # <<<<<<<<<<<<<<
@@ -2346,14 +2313,14 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
  * 
  */
   /*else*/ {
-    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__2, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 58, __pyx_L1_error)
+    __pyx_t_2 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__2, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 59, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_Raise(__pyx_t_2, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __PYX_ERR(0, 58, __pyx_L1_error)
+    __PYX_ERR(0, 59, __pyx_L1_error)
   }
 
-  /* "hacking_the_election/utils/geometry.pyx":23
+  /* "hacking_the_election/utils/geometry.pyx":24
  * 
  * 
  * def geojson_to_shapely(geojson, int_coords=False):             # <<<<<<<<<<<<<<
@@ -2382,7 +2349,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_2geojson_to_sh
   return __pyx_r;
 }
 
-/* "hacking_the_election/utils/geometry.pyx":61
+/* "hacking_the_election/utils/geometry.pyx":62
  * 
  * 
  * def shapely_to_geojson(shape, json_format=False):             # <<<<<<<<<<<<<<
@@ -2396,7 +2363,7 @@ static char __pyx_doc_20hacking_the_election_5utils_8geometry_4shapely_to_geojso
 static PyMethodDef __pyx_mdef_20hacking_the_election_5utils_8geometry_5shapely_to_geojson = {"shapely_to_geojson", (PyCFunction)(void*)(PyCFunctionWithKeywords)__pyx_pw_20hacking_the_election_5utils_8geometry_5shapely_to_geojson, METH_VARARGS|METH_KEYWORDS, __pyx_doc_20hacking_the_election_5utils_8geometry_4shapely_to_geojson};
 static PyObject *__pyx_pw_20hacking_the_election_5utils_8geometry_5shapely_to_geojson(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_shape = 0;
-  PyObject *__pyx_v_json_format = 0;
+  CYTHON_UNUSED PyObject *__pyx_v_json_format = 0;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
@@ -2431,7 +2398,7 @@ static PyObject *__pyx_pw_20hacking_the_election_5utils_8geometry_5shapely_to_ge
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "shapely_to_geojson") < 0)) __PYX_ERR(0, 61, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "shapely_to_geojson") < 0)) __PYX_ERR(0, 62, __pyx_L3_error)
       }
     } else {
       switch (PyTuple_GET_SIZE(__pyx_args)) {
@@ -2447,7 +2414,7 @@ static PyObject *__pyx_pw_20hacking_the_election_5utils_8geometry_5shapely_to_ge
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("shapely_to_geojson", 0, 1, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 61, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("shapely_to_geojson", 0, 1, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 62, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("hacking_the_election.utils.geometry.shapely_to_geojson", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -2460,645 +2427,50 @@ static PyObject *__pyx_pw_20hacking_the_election_5utils_8geometry_5shapely_to_ge
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_4shapely_to_geojson(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_shape, PyObject *__pyx_v_json_format) {
-  PyObject *__pyx_v_geojson = NULL;
-  PyObject *__pyx_v_polygon = NULL;
-  PyObject *__pyx_v_exterior_coords = NULL;
-  PyObject *__pyx_v_coord = NULL;
-  PyObject *__pyx_v_interior = NULL;
-  PyObject *__pyx_v_interior_coords = NULL;
+static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_4shapely_to_geojson(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_shape, CYTHON_UNUSED PyObject *__pyx_v_json_format) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
-  int __pyx_t_2;
-  int __pyx_t_3;
-  PyObject *__pyx_t_4 = NULL;
-  Py_ssize_t __pyx_t_5;
-  PyObject *(*__pyx_t_6)(PyObject *);
-  PyObject *__pyx_t_7 = NULL;
-  PyObject *__pyx_t_8 = NULL;
-  int __pyx_t_9;
-  Py_ssize_t __pyx_t_10;
-  PyObject *__pyx_t_11 = NULL;
+  PyObject *__pyx_t_2 = NULL;
+  PyObject *__pyx_t_3 = NULL;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("shapely_to_geojson", 0);
 
   /* "hacking_the_election/utils/geometry.pyx":74
+ *     :rtype: list of list of list of float or list of list of list of list of float.
  *     """
- * 
- *     geojson = []             # <<<<<<<<<<<<<<
- *     if isinstance(shape, MultiPolygon):
- *         for polygon in shape.geoms:
- */
-  __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 74, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  __pyx_v_geojson = ((PyObject*)__pyx_t_1);
-  __pyx_t_1 = 0;
-
-  /* "hacking_the_election/utils/geometry.pyx":75
- * 
+ *     return mapping(shape)['coordinates']             # <<<<<<<<<<<<<<
+ *     raise Exception("SUSSY???", mapping(shape))
  *     geojson = []
- *     if isinstance(shape, MultiPolygon):             # <<<<<<<<<<<<<<
- *         for polygon in shape.geoms:
- *             geojson.append(shapely_to_geojson(polygon))
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_MultiPolygon); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 75, __pyx_L1_error)
+  __Pyx_XDECREF(__pyx_r);
+  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_mapping); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 74, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_3 = NULL;
+  if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_2))) {
+    __pyx_t_3 = PyMethod_GET_SELF(__pyx_t_2);
+    if (likely(__pyx_t_3)) {
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_2);
+      __Pyx_INCREF(__pyx_t_3);
+      __Pyx_INCREF(function);
+      __Pyx_DECREF_SET(__pyx_t_2, function);
+    }
+  }
+  __pyx_t_1 = (__pyx_t_3) ? __Pyx_PyObject_Call2Args(__pyx_t_2, __pyx_t_3, __pyx_v_shape) : __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_v_shape);
+  __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 74, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = PyObject_IsInstance(__pyx_v_shape, __pyx_t_1); if (unlikely(__pyx_t_2 == ((int)-1))) __PYX_ERR(0, 75, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __pyx_t_2 = __Pyx_PyObject_Dict_GetItem(__pyx_t_1, __pyx_n_s_coordinates); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 74, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_3 = (__pyx_t_2 != 0);
-  if (__pyx_t_3) {
+  __pyx_r = __pyx_t_2;
+  __pyx_t_2 = 0;
+  goto __pyx_L0;
 
-    /* "hacking_the_election/utils/geometry.pyx":76
- *     geojson = []
- *     if isinstance(shape, MultiPolygon):
- *         for polygon in shape.geoms:             # <<<<<<<<<<<<<<
- *             geojson.append(shapely_to_geojson(polygon))
- * 
- */
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_shape, __pyx_n_s_geoms); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 76, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_1);
-    if (likely(PyList_CheckExact(__pyx_t_1)) || PyTuple_CheckExact(__pyx_t_1)) {
-      __pyx_t_4 = __pyx_t_1; __Pyx_INCREF(__pyx_t_4); __pyx_t_5 = 0;
-      __pyx_t_6 = NULL;
-    } else {
-      __pyx_t_5 = -1; __pyx_t_4 = PyObject_GetIter(__pyx_t_1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 76, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_4);
-      __pyx_t_6 = Py_TYPE(__pyx_t_4)->tp_iternext; if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 76, __pyx_L1_error)
-    }
-    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-    for (;;) {
-      if (likely(!__pyx_t_6)) {
-        if (likely(PyList_CheckExact(__pyx_t_4))) {
-          if (__pyx_t_5 >= PyList_GET_SIZE(__pyx_t_4)) break;
-          #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-          __pyx_t_1 = PyList_GET_ITEM(__pyx_t_4, __pyx_t_5); __Pyx_INCREF(__pyx_t_1); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 76, __pyx_L1_error)
-          #else
-          __pyx_t_1 = PySequence_ITEM(__pyx_t_4, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 76, __pyx_L1_error)
-          __Pyx_GOTREF(__pyx_t_1);
-          #endif
-        } else {
-          if (__pyx_t_5 >= PyTuple_GET_SIZE(__pyx_t_4)) break;
-          #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-          __pyx_t_1 = PyTuple_GET_ITEM(__pyx_t_4, __pyx_t_5); __Pyx_INCREF(__pyx_t_1); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 76, __pyx_L1_error)
-          #else
-          __pyx_t_1 = PySequence_ITEM(__pyx_t_4, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 76, __pyx_L1_error)
-          __Pyx_GOTREF(__pyx_t_1);
-          #endif
-        }
-      } else {
-        __pyx_t_1 = __pyx_t_6(__pyx_t_4);
-        if (unlikely(!__pyx_t_1)) {
-          PyObject* exc_type = PyErr_Occurred();
-          if (exc_type) {
-            if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
-            else __PYX_ERR(0, 76, __pyx_L1_error)
-          }
-          break;
-        }
-        __Pyx_GOTREF(__pyx_t_1);
-      }
-      __Pyx_XDECREF_SET(__pyx_v_polygon, __pyx_t_1);
-      __pyx_t_1 = 0;
-
-      /* "hacking_the_election/utils/geometry.pyx":77
- *     if isinstance(shape, MultiPolygon):
- *         for polygon in shape.geoms:
- *             geojson.append(shapely_to_geojson(polygon))             # <<<<<<<<<<<<<<
- * 
- *     elif isinstance(shape, Polygon):
- */
-      __Pyx_GetModuleGlobalName(__pyx_t_7, __pyx_n_s_shapely_to_geojson); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 77, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_7);
-      __pyx_t_8 = NULL;
-      if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_7))) {
-        __pyx_t_8 = PyMethod_GET_SELF(__pyx_t_7);
-        if (likely(__pyx_t_8)) {
-          PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_7);
-          __Pyx_INCREF(__pyx_t_8);
-          __Pyx_INCREF(function);
-          __Pyx_DECREF_SET(__pyx_t_7, function);
-        }
-      }
-      __pyx_t_1 = (__pyx_t_8) ? __Pyx_PyObject_Call2Args(__pyx_t_7, __pyx_t_8, __pyx_v_polygon) : __Pyx_PyObject_CallOneArg(__pyx_t_7, __pyx_v_polygon);
-      __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
-      if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 77, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_1);
-      __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-      __pyx_t_9 = __Pyx_PyList_Append(__pyx_v_geojson, __pyx_t_1); if (unlikely(__pyx_t_9 == ((int)-1))) __PYX_ERR(0, 77, __pyx_L1_error)
-      __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-
-      /* "hacking_the_election/utils/geometry.pyx":76
- *     geojson = []
- *     if isinstance(shape, MultiPolygon):
- *         for polygon in shape.geoms:             # <<<<<<<<<<<<<<
- *             geojson.append(shapely_to_geojson(polygon))
- * 
- */
-    }
-    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-
-    /* "hacking_the_election/utils/geometry.pyx":75
- * 
- *     geojson = []
- *     if isinstance(shape, MultiPolygon):             # <<<<<<<<<<<<<<
- *         for polygon in shape.geoms:
- *             geojson.append(shapely_to_geojson(polygon))
- */
-    goto __pyx_L3;
-  }
-
-  /* "hacking_the_election/utils/geometry.pyx":79
- *             geojson.append(shapely_to_geojson(polygon))
- * 
- *     elif isinstance(shape, Polygon):             # <<<<<<<<<<<<<<
- *         exterior_coords = []
- *         for coord in list(shape.exterior.coords):
- */
-  __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_Polygon); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 79, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_3 = PyObject_IsInstance(__pyx_v_shape, __pyx_t_4); if (unlikely(__pyx_t_3 == ((int)-1))) __PYX_ERR(0, 79, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_2 = (__pyx_t_3 != 0);
-  if (__pyx_t_2) {
-
-    /* "hacking_the_election/utils/geometry.pyx":80
- * 
- *     elif isinstance(shape, Polygon):
- *         exterior_coords = []             # <<<<<<<<<<<<<<
- *         for coord in list(shape.exterior.coords):
- *             exterior_coords.append(list(coord))
- */
-    __pyx_t_4 = PyList_New(0); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 80, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_4);
-    __pyx_v_exterior_coords = ((PyObject*)__pyx_t_4);
-    __pyx_t_4 = 0;
-
-    /* "hacking_the_election/utils/geometry.pyx":81
- *     elif isinstance(shape, Polygon):
- *         exterior_coords = []
- *         for coord in list(shape.exterior.coords):             # <<<<<<<<<<<<<<
- *             exterior_coords.append(list(coord))
- *         geojson.append(exterior_coords)
- */
-    __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_v_shape, __pyx_n_s_exterior); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 81, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_4);
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_coords); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 81, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_1);
-    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __pyx_t_4 = PySequence_List(__pyx_t_1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 81, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_4);
-    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-    __pyx_t_1 = __pyx_t_4; __Pyx_INCREF(__pyx_t_1); __pyx_t_5 = 0;
-    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    for (;;) {
-      if (__pyx_t_5 >= PyList_GET_SIZE(__pyx_t_1)) break;
-      #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-      __pyx_t_4 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_5); __Pyx_INCREF(__pyx_t_4); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 81, __pyx_L1_error)
-      #else
-      __pyx_t_4 = PySequence_ITEM(__pyx_t_1, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 81, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_4);
-      #endif
-      __Pyx_XDECREF_SET(__pyx_v_coord, __pyx_t_4);
-      __pyx_t_4 = 0;
-
-      /* "hacking_the_election/utils/geometry.pyx":82
- *         exterior_coords = []
- *         for coord in list(shape.exterior.coords):
- *             exterior_coords.append(list(coord))             # <<<<<<<<<<<<<<
- *         geojson.append(exterior_coords)
- *         for interior in list(shape.interiors):
- */
-      __pyx_t_4 = PySequence_List(__pyx_v_coord); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 82, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_4);
-      __pyx_t_9 = __Pyx_PyList_Append(__pyx_v_exterior_coords, __pyx_t_4); if (unlikely(__pyx_t_9 == ((int)-1))) __PYX_ERR(0, 82, __pyx_L1_error)
-      __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-
-      /* "hacking_the_election/utils/geometry.pyx":81
- *     elif isinstance(shape, Polygon):
- *         exterior_coords = []
- *         for coord in list(shape.exterior.coords):             # <<<<<<<<<<<<<<
- *             exterior_coords.append(list(coord))
- *         geojson.append(exterior_coords)
- */
-    }
-    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-
-    /* "hacking_the_election/utils/geometry.pyx":83
- *         for coord in list(shape.exterior.coords):
- *             exterior_coords.append(list(coord))
- *         geojson.append(exterior_coords)             # <<<<<<<<<<<<<<
- *         for interior in list(shape.interiors):
- *             interior_coords = []
- */
-    __pyx_t_9 = __Pyx_PyList_Append(__pyx_v_geojson, __pyx_v_exterior_coords); if (unlikely(__pyx_t_9 == ((int)-1))) __PYX_ERR(0, 83, __pyx_L1_error)
-
-    /* "hacking_the_election/utils/geometry.pyx":84
- *             exterior_coords.append(list(coord))
- *         geojson.append(exterior_coords)
- *         for interior in list(shape.interiors):             # <<<<<<<<<<<<<<
- *             interior_coords = []
- *             for coord in list(interior.coords):
- */
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_shape, __pyx_n_s_interiors); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 84, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_1);
-    __pyx_t_4 = PySequence_List(__pyx_t_1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 84, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_4);
-    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-    __pyx_t_1 = __pyx_t_4; __Pyx_INCREF(__pyx_t_1); __pyx_t_5 = 0;
-    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    for (;;) {
-      if (__pyx_t_5 >= PyList_GET_SIZE(__pyx_t_1)) break;
-      #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-      __pyx_t_4 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_5); __Pyx_INCREF(__pyx_t_4); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 84, __pyx_L1_error)
-      #else
-      __pyx_t_4 = PySequence_ITEM(__pyx_t_1, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 84, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_4);
-      #endif
-      __Pyx_XDECREF_SET(__pyx_v_interior, __pyx_t_4);
-      __pyx_t_4 = 0;
-
-      /* "hacking_the_election/utils/geometry.pyx":85
- *         geojson.append(exterior_coords)
- *         for interior in list(shape.interiors):
- *             interior_coords = []             # <<<<<<<<<<<<<<
- *             for coord in list(interior.coords):
- *                 interior_coords.append(list(coord))
- */
-      __pyx_t_4 = PyList_New(0); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 85, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_4);
-      __Pyx_XDECREF_SET(__pyx_v_interior_coords, ((PyObject*)__pyx_t_4));
-      __pyx_t_4 = 0;
-
-      /* "hacking_the_election/utils/geometry.pyx":86
- *         for interior in list(shape.interiors):
- *             interior_coords = []
- *             for coord in list(interior.coords):             # <<<<<<<<<<<<<<
- *                 interior_coords.append(list(coord))
- *             geojson.append(interior_coords)
- */
-      __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_v_interior, __pyx_n_s_coords); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 86, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_4);
-      __pyx_t_7 = PySequence_List(__pyx_t_4); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 86, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_7);
-      __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-      __pyx_t_4 = __pyx_t_7; __Pyx_INCREF(__pyx_t_4); __pyx_t_10 = 0;
-      __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-      for (;;) {
-        if (__pyx_t_10 >= PyList_GET_SIZE(__pyx_t_4)) break;
-        #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-        __pyx_t_7 = PyList_GET_ITEM(__pyx_t_4, __pyx_t_10); __Pyx_INCREF(__pyx_t_7); __pyx_t_10++; if (unlikely(0 < 0)) __PYX_ERR(0, 86, __pyx_L1_error)
-        #else
-        __pyx_t_7 = PySequence_ITEM(__pyx_t_4, __pyx_t_10); __pyx_t_10++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 86, __pyx_L1_error)
-        __Pyx_GOTREF(__pyx_t_7);
-        #endif
-        __Pyx_XDECREF_SET(__pyx_v_coord, __pyx_t_7);
-        __pyx_t_7 = 0;
-
-        /* "hacking_the_election/utils/geometry.pyx":87
- *             interior_coords = []
- *             for coord in list(interior.coords):
- *                 interior_coords.append(list(coord))             # <<<<<<<<<<<<<<
- *             geojson.append(interior_coords)
- *     elif isinstance(shape, LinearRing):
- */
-        __pyx_t_7 = PySequence_List(__pyx_v_coord); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 87, __pyx_L1_error)
-        __Pyx_GOTREF(__pyx_t_7);
-        __pyx_t_9 = __Pyx_PyList_Append(__pyx_v_interior_coords, __pyx_t_7); if (unlikely(__pyx_t_9 == ((int)-1))) __PYX_ERR(0, 87, __pyx_L1_error)
-        __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-
-        /* "hacking_the_election/utils/geometry.pyx":86
- *         for interior in list(shape.interiors):
- *             interior_coords = []
- *             for coord in list(interior.coords):             # <<<<<<<<<<<<<<
- *                 interior_coords.append(list(coord))
- *             geojson.append(interior_coords)
- */
-      }
-      __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-
-      /* "hacking_the_election/utils/geometry.pyx":88
- *             for coord in list(interior.coords):
- *                 interior_coords.append(list(coord))
- *             geojson.append(interior_coords)             # <<<<<<<<<<<<<<
- *     elif isinstance(shape, LinearRing):
- *         exterior_coords = []
- */
-      __pyx_t_9 = __Pyx_PyList_Append(__pyx_v_geojson, __pyx_v_interior_coords); if (unlikely(__pyx_t_9 == ((int)-1))) __PYX_ERR(0, 88, __pyx_L1_error)
-
-      /* "hacking_the_election/utils/geometry.pyx":84
- *             exterior_coords.append(list(coord))
- *         geojson.append(exterior_coords)
- *         for interior in list(shape.interiors):             # <<<<<<<<<<<<<<
- *             interior_coords = []
- *             for coord in list(interior.coords):
- */
-    }
-    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-
-    /* "hacking_the_election/utils/geometry.pyx":79
- *             geojson.append(shapely_to_geojson(polygon))
- * 
- *     elif isinstance(shape, Polygon):             # <<<<<<<<<<<<<<
- *         exterior_coords = []
- *         for coord in list(shape.exterior.coords):
- */
-    goto __pyx_L3;
-  }
-
-  /* "hacking_the_election/utils/geometry.pyx":89
- *                 interior_coords.append(list(coord))
- *             geojson.append(interior_coords)
- *     elif isinstance(shape, LinearRing):             # <<<<<<<<<<<<<<
- *         exterior_coords = []
- *         for coord in shape.coords:
- */
-  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_LinearRing); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 89, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = PyObject_IsInstance(__pyx_v_shape, __pyx_t_1); if (unlikely(__pyx_t_2 == ((int)-1))) __PYX_ERR(0, 89, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_3 = (__pyx_t_2 != 0);
-  if (likely(__pyx_t_3)) {
-
-    /* "hacking_the_election/utils/geometry.pyx":90
- *             geojson.append(interior_coords)
- *     elif isinstance(shape, LinearRing):
- *         exterior_coords = []             # <<<<<<<<<<<<<<
- *         for coord in shape.coords:
- *             exterior_coords.append([coord[0], coord[1]])
- */
-    __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 90, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_1);
-    __pyx_v_exterior_coords = ((PyObject*)__pyx_t_1);
-    __pyx_t_1 = 0;
-
-    /* "hacking_the_election/utils/geometry.pyx":91
- *     elif isinstance(shape, LinearRing):
- *         exterior_coords = []
- *         for coord in shape.coords:             # <<<<<<<<<<<<<<
- *             exterior_coords.append([coord[0], coord[1]])
- *         return [exterior_coords]
- */
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_shape, __pyx_n_s_coords); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 91, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_1);
-    if (likely(PyList_CheckExact(__pyx_t_1)) || PyTuple_CheckExact(__pyx_t_1)) {
-      __pyx_t_4 = __pyx_t_1; __Pyx_INCREF(__pyx_t_4); __pyx_t_5 = 0;
-      __pyx_t_6 = NULL;
-    } else {
-      __pyx_t_5 = -1; __pyx_t_4 = PyObject_GetIter(__pyx_t_1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 91, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_4);
-      __pyx_t_6 = Py_TYPE(__pyx_t_4)->tp_iternext; if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 91, __pyx_L1_error)
-    }
-    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-    for (;;) {
-      if (likely(!__pyx_t_6)) {
-        if (likely(PyList_CheckExact(__pyx_t_4))) {
-          if (__pyx_t_5 >= PyList_GET_SIZE(__pyx_t_4)) break;
-          #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-          __pyx_t_1 = PyList_GET_ITEM(__pyx_t_4, __pyx_t_5); __Pyx_INCREF(__pyx_t_1); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 91, __pyx_L1_error)
-          #else
-          __pyx_t_1 = PySequence_ITEM(__pyx_t_4, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 91, __pyx_L1_error)
-          __Pyx_GOTREF(__pyx_t_1);
-          #endif
-        } else {
-          if (__pyx_t_5 >= PyTuple_GET_SIZE(__pyx_t_4)) break;
-          #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-          __pyx_t_1 = PyTuple_GET_ITEM(__pyx_t_4, __pyx_t_5); __Pyx_INCREF(__pyx_t_1); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 91, __pyx_L1_error)
-          #else
-          __pyx_t_1 = PySequence_ITEM(__pyx_t_4, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 91, __pyx_L1_error)
-          __Pyx_GOTREF(__pyx_t_1);
-          #endif
-        }
-      } else {
-        __pyx_t_1 = __pyx_t_6(__pyx_t_4);
-        if (unlikely(!__pyx_t_1)) {
-          PyObject* exc_type = PyErr_Occurred();
-          if (exc_type) {
-            if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
-            else __PYX_ERR(0, 91, __pyx_L1_error)
-          }
-          break;
-        }
-        __Pyx_GOTREF(__pyx_t_1);
-      }
-      __Pyx_XDECREF_SET(__pyx_v_coord, __pyx_t_1);
-      __pyx_t_1 = 0;
-
-      /* "hacking_the_election/utils/geometry.pyx":92
- *         exterior_coords = []
- *         for coord in shape.coords:
- *             exterior_coords.append([coord[0], coord[1]])             # <<<<<<<<<<<<<<
- *         return [exterior_coords]
- *     else:
- */
-      __pyx_t_1 = __Pyx_GetItemInt(__pyx_v_coord, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 92, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_1);
-      __pyx_t_7 = __Pyx_GetItemInt(__pyx_v_coord, 1, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 92, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_7);
-      __pyx_t_8 = PyList_New(2); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 92, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_8);
-      __Pyx_GIVEREF(__pyx_t_1);
-      PyList_SET_ITEM(__pyx_t_8, 0, __pyx_t_1);
-      __Pyx_GIVEREF(__pyx_t_7);
-      PyList_SET_ITEM(__pyx_t_8, 1, __pyx_t_7);
-      __pyx_t_1 = 0;
-      __pyx_t_7 = 0;
-      __pyx_t_9 = __Pyx_PyList_Append(__pyx_v_exterior_coords, __pyx_t_8); if (unlikely(__pyx_t_9 == ((int)-1))) __PYX_ERR(0, 92, __pyx_L1_error)
-      __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
-
-      /* "hacking_the_election/utils/geometry.pyx":91
- *     elif isinstance(shape, LinearRing):
- *         exterior_coords = []
- *         for coord in shape.coords:             # <<<<<<<<<<<<<<
- *             exterior_coords.append([coord[0], coord[1]])
- *         return [exterior_coords]
- */
-    }
-    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-
-    /* "hacking_the_election/utils/geometry.pyx":93
- *         for coord in shape.coords:
- *             exterior_coords.append([coord[0], coord[1]])
- *         return [exterior_coords]             # <<<<<<<<<<<<<<
- *     else:
- *         raise TypeError("shapely_to_geojson only accepts arguments of type "
- */
-    __Pyx_XDECREF(__pyx_r);
-    __pyx_t_4 = PyList_New(1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 93, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_4);
-    __Pyx_INCREF(__pyx_v_exterior_coords);
-    __Pyx_GIVEREF(__pyx_v_exterior_coords);
-    PyList_SET_ITEM(__pyx_t_4, 0, __pyx_v_exterior_coords);
-    __pyx_r = __pyx_t_4;
-    __pyx_t_4 = 0;
-    goto __pyx_L0;
-
-    /* "hacking_the_election/utils/geometry.pyx":89
- *                 interior_coords.append(list(coord))
- *             geojson.append(interior_coords)
- *     elif isinstance(shape, LinearRing):             # <<<<<<<<<<<<<<
- *         exterior_coords = []
- *         for coord in shape.coords:
- */
-  }
-
-  /* "hacking_the_election/utils/geometry.pyx":95
- *         return [exterior_coords]
- *     else:
- *         raise TypeError("shapely_to_geojson only accepts arguments of type "             # <<<<<<<<<<<<<<
- *                         "shapely.geometry.Polygon or shapely.geometry.MultiPolygon",
- *                         f", not {type(shape)}")
- */
-  /*else*/ {
-
-    /* "hacking_the_election/utils/geometry.pyx":97
- *         raise TypeError("shapely_to_geojson only accepts arguments of type "
- *                         "shapely.geometry.Polygon or shapely.geometry.MultiPolygon",
- *                         f", not {type(shape)}")             # <<<<<<<<<<<<<<
- *     if json_format:
- *         return {"type": "FeatureCollection", "features": [
- */
-    __pyx_t_4 = __Pyx_PyObject_FormatSimple(((PyObject *)Py_TYPE(__pyx_v_shape)), __pyx_empty_unicode); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 97, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_4);
-    __pyx_t_8 = __Pyx_PyUnicode_Concat(__pyx_kp_u_not, __pyx_t_4); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 97, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_8);
-    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-
-    /* "hacking_the_election/utils/geometry.pyx":95
- *         return [exterior_coords]
- *     else:
- *         raise TypeError("shapely_to_geojson only accepts arguments of type "             # <<<<<<<<<<<<<<
- *                         "shapely.geometry.Polygon or shapely.geometry.MultiPolygon",
- *                         f", not {type(shape)}")
- */
-    __pyx_t_4 = PyTuple_New(2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 95, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_4);
-    __Pyx_INCREF(__pyx_kp_s_shapely_to_geojson_only_accepts);
-    __Pyx_GIVEREF(__pyx_kp_s_shapely_to_geojson_only_accepts);
-    PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_kp_s_shapely_to_geojson_only_accepts);
-    __Pyx_GIVEREF(__pyx_t_8);
-    PyTuple_SET_ITEM(__pyx_t_4, 1, __pyx_t_8);
-    __pyx_t_8 = 0;
-    __pyx_t_8 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_t_4, NULL); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 95, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_8);
-    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __Pyx_Raise(__pyx_t_8, 0, 0, 0);
-    __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
-    __PYX_ERR(0, 95, __pyx_L1_error)
-  }
-  __pyx_L3:;
-
-  /* "hacking_the_election/utils/geometry.pyx":98
- *                         "shapely.geometry.Polygon or shapely.geometry.MultiPolygon",
- *                         f", not {type(shape)}")
- *     if json_format:             # <<<<<<<<<<<<<<
- *         return {"type": "FeatureCollection", "features": [
- *             {"type": "Feature", "geometry":{
- */
-  __pyx_t_3 = __Pyx_PyObject_IsTrue(__pyx_v_json_format); if (unlikely(__pyx_t_3 < 0)) __PYX_ERR(0, 98, __pyx_L1_error)
-  if (__pyx_t_3) {
-
-    /* "hacking_the_election/utils/geometry.pyx":99
- *                         f", not {type(shape)}")
- *     if json_format:
- *         return {"type": "FeatureCollection", "features": [             # <<<<<<<<<<<<<<
- *             {"type": "Feature", "geometry":{
- *                 "type": ("Polygon" if isinstance(shape, Polygon) else "MultiPolygon"),
- */
-    __Pyx_XDECREF(__pyx_r);
-    __pyx_t_8 = __Pyx_PyDict_NewPresized(2); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 99, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_8);
-    if (PyDict_SetItem(__pyx_t_8, __pyx_n_s_type, __pyx_n_s_FeatureCollection) < 0) __PYX_ERR(0, 99, __pyx_L1_error)
-
-    /* "hacking_the_election/utils/geometry.pyx":100
- *     if json_format:
- *         return {"type": "FeatureCollection", "features": [
- *             {"type": "Feature", "geometry":{             # <<<<<<<<<<<<<<
- *                 "type": ("Polygon" if isinstance(shape, Polygon) else "MultiPolygon"),
- *                 "coordinates": geojson
- */
-    __pyx_t_4 = __Pyx_PyDict_NewPresized(2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 100, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_4);
-    if (PyDict_SetItem(__pyx_t_4, __pyx_n_s_type, __pyx_n_s_Feature) < 0) __PYX_ERR(0, 100, __pyx_L1_error)
-
-    /* "hacking_the_election/utils/geometry.pyx":101
- *         return {"type": "FeatureCollection", "features": [
- *             {"type": "Feature", "geometry":{
- *                 "type": ("Polygon" if isinstance(shape, Polygon) else "MultiPolygon"),             # <<<<<<<<<<<<<<
- *                 "coordinates": geojson
- *             }}
- */
-    __pyx_t_7 = __Pyx_PyDict_NewPresized(2); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 101, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_7);
-    __Pyx_GetModuleGlobalName(__pyx_t_11, __pyx_n_s_Polygon); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 101, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_11);
-    __pyx_t_3 = PyObject_IsInstance(__pyx_v_shape, __pyx_t_11); if (unlikely(__pyx_t_3 == ((int)-1))) __PYX_ERR(0, 101, __pyx_L1_error)
-    __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
-    if ((__pyx_t_3 != 0)) {
-      __Pyx_INCREF(__pyx_n_s_Polygon);
-      __pyx_t_1 = __pyx_n_s_Polygon;
-    } else {
-      __Pyx_INCREF(__pyx_n_s_MultiPolygon);
-      __pyx_t_1 = __pyx_n_s_MultiPolygon;
-    }
-    if (PyDict_SetItem(__pyx_t_7, __pyx_n_s_type, __pyx_t_1) < 0) __PYX_ERR(0, 101, __pyx_L1_error)
-    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-
-    /* "hacking_the_election/utils/geometry.pyx":102
- *             {"type": "Feature", "geometry":{
- *                 "type": ("Polygon" if isinstance(shape, Polygon) else "MultiPolygon"),
- *                 "coordinates": geojson             # <<<<<<<<<<<<<<
- *             }}
- *         ]}
- */
-    if (PyDict_SetItem(__pyx_t_7, __pyx_n_s_coordinates, __pyx_v_geojson) < 0) __PYX_ERR(0, 101, __pyx_L1_error)
-    if (PyDict_SetItem(__pyx_t_4, __pyx_n_s_geometry, __pyx_t_7) < 0) __PYX_ERR(0, 100, __pyx_L1_error)
-    __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-
-    /* "hacking_the_election/utils/geometry.pyx":99
- *                         f", not {type(shape)}")
- *     if json_format:
- *         return {"type": "FeatureCollection", "features": [             # <<<<<<<<<<<<<<
- *             {"type": "Feature", "geometry":{
- *                 "type": ("Polygon" if isinstance(shape, Polygon) else "MultiPolygon"),
- */
-    __pyx_t_7 = PyList_New(1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 99, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_7);
-    __Pyx_GIVEREF(__pyx_t_4);
-    PyList_SET_ITEM(__pyx_t_7, 0, __pyx_t_4);
-    __pyx_t_4 = 0;
-    if (PyDict_SetItem(__pyx_t_8, __pyx_n_s_features, __pyx_t_7) < 0) __PYX_ERR(0, 99, __pyx_L1_error)
-    __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-    __pyx_r = __pyx_t_8;
-    __pyx_t_8 = 0;
-    goto __pyx_L0;
-
-    /* "hacking_the_election/utils/geometry.pyx":98
- *                         "shapely.geometry.Polygon or shapely.geometry.MultiPolygon",
- *                         f", not {type(shape)}")
- *     if json_format:             # <<<<<<<<<<<<<<
- *         return {"type": "FeatureCollection", "features": [
- *             {"type": "Feature", "geometry":{
- */
-  }
-
-  /* "hacking_the_election/utils/geometry.pyx":106
- *         ]}
- *     else:
- *         return geojson             # <<<<<<<<<<<<<<
- * 
- * 
- */
-  /*else*/ {
-    __Pyx_XDECREF(__pyx_r);
-    __Pyx_INCREF(__pyx_v_geojson);
-    __pyx_r = __pyx_v_geojson;
-    goto __pyx_L0;
-  }
-
-  /* "hacking_the_election/utils/geometry.pyx":61
+  /* "hacking_the_election/utils/geometry.pyx":62
  * 
  * 
  * def shapely_to_geojson(shape, json_format=False):             # <<<<<<<<<<<<<<
@@ -3109,25 +2481,17 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_4shapely_to_ge
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_XDECREF(__pyx_t_4);
-  __Pyx_XDECREF(__pyx_t_7);
-  __Pyx_XDECREF(__pyx_t_8);
-  __Pyx_XDECREF(__pyx_t_11);
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_XDECREF(__pyx_t_3);
   __Pyx_AddTraceback("hacking_the_election.utils.geometry.shapely_to_geojson", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
-  __Pyx_XDECREF(__pyx_v_geojson);
-  __Pyx_XDECREF(__pyx_v_polygon);
-  __Pyx_XDECREF(__pyx_v_exterior_coords);
-  __Pyx_XDECREF(__pyx_v_coord);
-  __Pyx_XDECREF(__pyx_v_interior);
-  __Pyx_XDECREF(__pyx_v_interior_coords);
   __Pyx_XGIVEREF(__pyx_r);
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-/* "hacking_the_election/utils/geometry.pyx":109
+/* "hacking_the_election/utils/geometry.pyx":111
  * 
  * 
  * def get_if_bordering(shape1, shape2, inside=False):             # <<<<<<<<<<<<<<
@@ -3175,7 +2539,7 @@ static PyObject *__pyx_pw_20hacking_the_election_5utils_8geometry_7get_if_border
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_shape2)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("get_if_bordering", 0, 2, 3, 1); __PYX_ERR(0, 109, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("get_if_bordering", 0, 2, 3, 1); __PYX_ERR(0, 111, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
@@ -3185,7 +2549,7 @@ static PyObject *__pyx_pw_20hacking_the_election_5utils_8geometry_7get_if_border
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "get_if_bordering") < 0)) __PYX_ERR(0, 109, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "get_if_bordering") < 0)) __PYX_ERR(0, 111, __pyx_L3_error)
       }
     } else {
       switch (PyTuple_GET_SIZE(__pyx_args)) {
@@ -3203,7 +2567,7 @@ static PyObject *__pyx_pw_20hacking_the_election_5utils_8geometry_7get_if_border
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("get_if_bordering", 0, 2, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 109, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("get_if_bordering", 0, 2, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 111, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("hacking_the_election.utils.geometry.get_if_bordering", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
@@ -3241,24 +2605,24 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_6get_if_border
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("get_if_bordering", 0);
 
-  /* "hacking_the_election/utils/geometry.pyx":124
+  /* "hacking_the_election/utils/geometry.pyx":126
  *     :rtype: bool
  *     """
  *     if inside:             # <<<<<<<<<<<<<<
  *         difference = shape1.difference(shape2)
  *         try:
  */
-  __pyx_t_1 = __Pyx_PyObject_IsTrue(__pyx_v_inside); if (unlikely(__pyx_t_1 < 0)) __PYX_ERR(0, 124, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_IsTrue(__pyx_v_inside); if (unlikely(__pyx_t_1 < 0)) __PYX_ERR(0, 126, __pyx_L1_error)
   if (__pyx_t_1) {
 
-    /* "hacking_the_election/utils/geometry.pyx":125
+    /* "hacking_the_election/utils/geometry.pyx":127
  *     """
  *     if inside:
  *         difference = shape1.difference(shape2)             # <<<<<<<<<<<<<<
  *         try:
  *             # The below code illustrated:
  */
-    __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_v_shape1, __pyx_n_s_difference); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 125, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_v_shape1, __pyx_n_s_difference); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 127, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __pyx_t_4 = NULL;
     if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_3))) {
@@ -3272,13 +2636,13 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_6get_if_border
     }
     __pyx_t_2 = (__pyx_t_4) ? __Pyx_PyObject_Call2Args(__pyx_t_3, __pyx_t_4, __pyx_v_shape2) : __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_v_shape2);
     __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
-    if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 125, __pyx_L1_error)
+    if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 127, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
     __pyx_v_difference = __pyx_t_2;
     __pyx_t_2 = 0;
 
-    /* "hacking_the_election/utils/geometry.pyx":126
+    /* "hacking_the_election/utils/geometry.pyx":128
  *     if inside:
  *         difference = shape1.difference(shape2)
  *         try:             # <<<<<<<<<<<<<<
@@ -3294,18 +2658,18 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_6get_if_border
       __Pyx_XGOTREF(__pyx_t_7);
       /*try:*/ {
 
-        /* "hacking_the_election/utils/geometry.pyx":144
+        /* "hacking_the_election/utils/geometry.pyx":146
  * 
  *             # The fill `!= (shape1 == shape2)` is an "exclusive or"
  *             final_difference = LinearRing(difference.exterior.coords).difference(shape2)             # <<<<<<<<<<<<<<
  *             return isinstance(final_difference, MultiLineString) != (shape1 == shape2)
  *         except AttributeError:
  */
-        __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_LinearRing); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 144, __pyx_L4_error)
+        __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_LinearRing); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 146, __pyx_L4_error)
         __Pyx_GOTREF(__pyx_t_4);
-        __pyx_t_8 = __Pyx_PyObject_GetAttrStr(__pyx_v_difference, __pyx_n_s_exterior); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 144, __pyx_L4_error)
+        __pyx_t_8 = __Pyx_PyObject_GetAttrStr(__pyx_v_difference, __pyx_n_s_exterior); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 146, __pyx_L4_error)
         __Pyx_GOTREF(__pyx_t_8);
-        __pyx_t_9 = __Pyx_PyObject_GetAttrStr(__pyx_t_8, __pyx_n_s_coords); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 144, __pyx_L4_error)
+        __pyx_t_9 = __Pyx_PyObject_GetAttrStr(__pyx_t_8, __pyx_n_s_coords); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 146, __pyx_L4_error)
         __Pyx_GOTREF(__pyx_t_9);
         __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
         __pyx_t_8 = NULL;
@@ -3321,10 +2685,10 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_6get_if_border
         __pyx_t_3 = (__pyx_t_8) ? __Pyx_PyObject_Call2Args(__pyx_t_4, __pyx_t_8, __pyx_t_9) : __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_t_9);
         __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
         __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-        if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 144, __pyx_L4_error)
+        if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 146, __pyx_L4_error)
         __Pyx_GOTREF(__pyx_t_3);
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-        __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_difference); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 144, __pyx_L4_error)
+        __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_difference); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 146, __pyx_L4_error)
         __Pyx_GOTREF(__pyx_t_4);
         __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
         __pyx_t_3 = NULL;
@@ -3339,13 +2703,13 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_6get_if_border
         }
         __pyx_t_2 = (__pyx_t_3) ? __Pyx_PyObject_Call2Args(__pyx_t_4, __pyx_t_3, __pyx_v_shape2) : __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_v_shape2);
         __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
-        if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 144, __pyx_L4_error)
+        if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 146, __pyx_L4_error)
         __Pyx_GOTREF(__pyx_t_2);
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
         __pyx_v_final_difference = __pyx_t_2;
         __pyx_t_2 = 0;
 
-        /* "hacking_the_election/utils/geometry.pyx":145
+        /* "hacking_the_election/utils/geometry.pyx":147
  *             # The fill `!= (shape1 == shape2)` is an "exclusive or"
  *             final_difference = LinearRing(difference.exterior.coords).difference(shape2)
  *             return isinstance(final_difference, MultiLineString) != (shape1 == shape2)             # <<<<<<<<<<<<<<
@@ -3353,21 +2717,21 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_6get_if_border
  *             return False
  */
         __Pyx_XDECREF(__pyx_r);
-        __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_MultiLineString); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 145, __pyx_L4_error)
+        __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_MultiLineString); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 147, __pyx_L4_error)
         __Pyx_GOTREF(__pyx_t_2);
-        __pyx_t_1 = PyObject_IsInstance(__pyx_v_final_difference, __pyx_t_2); if (unlikely(__pyx_t_1 == ((int)-1))) __PYX_ERR(0, 145, __pyx_L4_error)
+        __pyx_t_1 = PyObject_IsInstance(__pyx_v_final_difference, __pyx_t_2); if (unlikely(__pyx_t_1 == ((int)-1))) __PYX_ERR(0, 147, __pyx_L4_error)
         __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-        __pyx_t_2 = __Pyx_PyBool_FromLong(__pyx_t_1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 145, __pyx_L4_error)
+        __pyx_t_2 = __Pyx_PyBool_FromLong(__pyx_t_1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 147, __pyx_L4_error)
         __Pyx_GOTREF(__pyx_t_2);
-        __pyx_t_4 = PyObject_RichCompare(__pyx_v_shape1, __pyx_v_shape2, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 145, __pyx_L4_error)
-        __pyx_t_3 = PyObject_RichCompare(__pyx_t_2, __pyx_t_4, Py_NE); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 145, __pyx_L4_error)
+        __pyx_t_4 = PyObject_RichCompare(__pyx_v_shape1, __pyx_v_shape2, Py_EQ); __Pyx_XGOTREF(__pyx_t_4); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 147, __pyx_L4_error)
+        __pyx_t_3 = PyObject_RichCompare(__pyx_t_2, __pyx_t_4, Py_NE); __Pyx_XGOTREF(__pyx_t_3); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 147, __pyx_L4_error)
         __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
         __pyx_r = __pyx_t_3;
         __pyx_t_3 = 0;
         goto __pyx_L8_try_return;
 
-        /* "hacking_the_election/utils/geometry.pyx":126
+        /* "hacking_the_election/utils/geometry.pyx":128
  *     if inside:
  *         difference = shape1.difference(shape2)
  *         try:             # <<<<<<<<<<<<<<
@@ -3382,7 +2746,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_6get_if_border
       __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
       __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
 
-      /* "hacking_the_election/utils/geometry.pyx":146
+      /* "hacking_the_election/utils/geometry.pyx":148
  *             final_difference = LinearRing(difference.exterior.coords).difference(shape2)
  *             return isinstance(final_difference, MultiLineString) != (shape1 == shape2)
  *         except AttributeError:             # <<<<<<<<<<<<<<
@@ -3392,12 +2756,12 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_6get_if_border
       __pyx_t_10 = __Pyx_PyErr_ExceptionMatches(__pyx_builtin_AttributeError);
       if (__pyx_t_10) {
         __Pyx_AddTraceback("hacking_the_election.utils.geometry.get_if_bordering", __pyx_clineno, __pyx_lineno, __pyx_filename);
-        if (__Pyx_GetException(&__pyx_t_3, &__pyx_t_4, &__pyx_t_2) < 0) __PYX_ERR(0, 146, __pyx_L6_except_error)
+        if (__Pyx_GetException(&__pyx_t_3, &__pyx_t_4, &__pyx_t_2) < 0) __PYX_ERR(0, 148, __pyx_L6_except_error)
         __Pyx_GOTREF(__pyx_t_3);
         __Pyx_GOTREF(__pyx_t_4);
         __Pyx_GOTREF(__pyx_t_2);
 
-        /* "hacking_the_election/utils/geometry.pyx":147
+        /* "hacking_the_election/utils/geometry.pyx":149
  *             return isinstance(final_difference, MultiLineString) != (shape1 == shape2)
  *         except AttributeError:
  *             return False             # <<<<<<<<<<<<<<
@@ -3415,7 +2779,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_6get_if_border
       goto __pyx_L6_except_error;
       __pyx_L6_except_error:;
 
-      /* "hacking_the_election/utils/geometry.pyx":126
+      /* "hacking_the_election/utils/geometry.pyx":128
  *     if inside:
  *         difference = shape1.difference(shape2)
  *         try:             # <<<<<<<<<<<<<<
@@ -3441,7 +2805,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_6get_if_border
       goto __pyx_L0;
     }
 
-    /* "hacking_the_election/utils/geometry.pyx":124
+    /* "hacking_the_election/utils/geometry.pyx":126
  *     :rtype: bool
  *     """
  *     if inside:             # <<<<<<<<<<<<<<
@@ -3450,7 +2814,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_6get_if_border
  */
   }
 
-  /* "hacking_the_election/utils/geometry.pyx":152
+  /* "hacking_the_election/utils/geometry.pyx":154
  *         # always return false because their intersection would be a
  *         # Polygon, but they may still be bordering.
  *         intersection = shape1.intersection(shape2)             # <<<<<<<<<<<<<<
@@ -3458,7 +2822,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_6get_if_border
  *             return True
  */
   /*else*/ {
-    __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_v_shape1, __pyx_n_s_intersection); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 152, __pyx_L1_error)
+    __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_v_shape1, __pyx_n_s_intersection); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 154, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
     __pyx_t_3 = NULL;
     if (CYTHON_UNPACK_METHODS && likely(PyMethod_Check(__pyx_t_4))) {
@@ -3472,67 +2836,32 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_6get_if_border
     }
     __pyx_t_2 = (__pyx_t_3) ? __Pyx_PyObject_Call2Args(__pyx_t_4, __pyx_t_3, __pyx_v_shape2) : __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_v_shape2);
     __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
-    if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 152, __pyx_L1_error)
+    if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 154, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
     __pyx_v_intersection = __pyx_t_2;
     __pyx_t_2 = 0;
 
-    /* "hacking_the_election/utils/geometry.pyx":153
+    /* "hacking_the_election/utils/geometry.pyx":155
  *         # Polygon, but they may still be bordering.
  *         intersection = shape1.intersection(shape2)
  *         if isinstance(intersection, MultiLineString):             # <<<<<<<<<<<<<<
  *             return True
  *         elif isinstance(intersection, LineString):
  */
-    __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_MultiLineString); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 153, __pyx_L1_error)
+    __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_MultiLineString); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 155, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_1 = PyObject_IsInstance(__pyx_v_intersection, __pyx_t_2); if (unlikely(__pyx_t_1 == ((int)-1))) __PYX_ERR(0, 153, __pyx_L1_error)
+    __pyx_t_1 = PyObject_IsInstance(__pyx_v_intersection, __pyx_t_2); if (unlikely(__pyx_t_1 == ((int)-1))) __PYX_ERR(0, 155, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __pyx_t_11 = (__pyx_t_1 != 0);
     if (__pyx_t_11) {
 
-      /* "hacking_the_election/utils/geometry.pyx":154
- *         intersection = shape1.intersection(shape2)
- *         if isinstance(intersection, MultiLineString):
- *             return True             # <<<<<<<<<<<<<<
- *         elif isinstance(intersection, LineString):
- *             return True
- */
-      __Pyx_XDECREF(__pyx_r);
-      __Pyx_INCREF(Py_True);
-      __pyx_r = Py_True;
-      goto __pyx_L0;
-
-      /* "hacking_the_election/utils/geometry.pyx":153
- *         # Polygon, but they may still be bordering.
- *         intersection = shape1.intersection(shape2)
- *         if isinstance(intersection, MultiLineString):             # <<<<<<<<<<<<<<
- *             return True
- *         elif isinstance(intersection, LineString):
- */
-    }
-
-    /* "hacking_the_election/utils/geometry.pyx":155
- *         if isinstance(intersection, MultiLineString):
- *             return True
- *         elif isinstance(intersection, LineString):             # <<<<<<<<<<<<<<
- *             return True
- *         elif isinstance(intersection, GeometryCollection):
- */
-    __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_LineString); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 155, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_11 = PyObject_IsInstance(__pyx_v_intersection, __pyx_t_2); if (unlikely(__pyx_t_11 == ((int)-1))) __PYX_ERR(0, 155, __pyx_L1_error)
-    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __pyx_t_1 = (__pyx_t_11 != 0);
-    if (__pyx_t_1) {
-
       /* "hacking_the_election/utils/geometry.pyx":156
- *             return True
- *         elif isinstance(intersection, LineString):
+ *         intersection = shape1.intersection(shape2)
+ *         if isinstance(intersection, MultiLineString):
  *             return True             # <<<<<<<<<<<<<<
- *         elif isinstance(intersection, GeometryCollection):
- *             if any([isinstance(intersection_member, LineString) for intersection_member in intersection.geoms]):
+ *         elif isinstance(intersection, LineString):
+ *             return True
  */
       __Pyx_XDECREF(__pyx_r);
       __Pyx_INCREF(Py_True);
@@ -3540,6 +2869,41 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_6get_if_border
       goto __pyx_L0;
 
       /* "hacking_the_election/utils/geometry.pyx":155
+ *         # Polygon, but they may still be bordering.
+ *         intersection = shape1.intersection(shape2)
+ *         if isinstance(intersection, MultiLineString):             # <<<<<<<<<<<<<<
+ *             return True
+ *         elif isinstance(intersection, LineString):
+ */
+    }
+
+    /* "hacking_the_election/utils/geometry.pyx":157
+ *         if isinstance(intersection, MultiLineString):
+ *             return True
+ *         elif isinstance(intersection, LineString):             # <<<<<<<<<<<<<<
+ *             return True
+ *         elif isinstance(intersection, GeometryCollection):
+ */
+    __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_LineString); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 157, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __pyx_t_11 = PyObject_IsInstance(__pyx_v_intersection, __pyx_t_2); if (unlikely(__pyx_t_11 == ((int)-1))) __PYX_ERR(0, 157, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    __pyx_t_1 = (__pyx_t_11 != 0);
+    if (__pyx_t_1) {
+
+      /* "hacking_the_election/utils/geometry.pyx":158
+ *             return True
+ *         elif isinstance(intersection, LineString):
+ *             return True             # <<<<<<<<<<<<<<
+ *         elif isinstance(intersection, GeometryCollection):
+ *             if any([isinstance(intersection_member, LineString) for intersection_member in intersection.geoms]):
+ */
+      __Pyx_XDECREF(__pyx_r);
+      __Pyx_INCREF(Py_True);
+      __pyx_r = Py_True;
+      goto __pyx_L0;
+
+      /* "hacking_the_election/utils/geometry.pyx":157
  *         if isinstance(intersection, MultiLineString):
  *             return True
  *         elif isinstance(intersection, LineString):             # <<<<<<<<<<<<<<
@@ -3548,38 +2912,38 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_6get_if_border
  */
     }
 
-    /* "hacking_the_election/utils/geometry.pyx":157
+    /* "hacking_the_election/utils/geometry.pyx":159
  *         elif isinstance(intersection, LineString):
  *             return True
  *         elif isinstance(intersection, GeometryCollection):             # <<<<<<<<<<<<<<
  *             if any([isinstance(intersection_member, LineString) for intersection_member in intersection.geoms]):
  *                 return True
  */
-    __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_GeometryCollection); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 157, __pyx_L1_error)
+    __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_GeometryCollection); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 159, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_1 = PyObject_IsInstance(__pyx_v_intersection, __pyx_t_2); if (unlikely(__pyx_t_1 == ((int)-1))) __PYX_ERR(0, 157, __pyx_L1_error)
+    __pyx_t_1 = PyObject_IsInstance(__pyx_v_intersection, __pyx_t_2); if (unlikely(__pyx_t_1 == ((int)-1))) __PYX_ERR(0, 159, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __pyx_t_11 = (__pyx_t_1 != 0);
     if (__pyx_t_11) {
 
-      /* "hacking_the_election/utils/geometry.pyx":158
+      /* "hacking_the_election/utils/geometry.pyx":160
  *             return True
  *         elif isinstance(intersection, GeometryCollection):
  *             if any([isinstance(intersection_member, LineString) for intersection_member in intersection.geoms]):             # <<<<<<<<<<<<<<
  *                 return True
  *         return False
  */
-      __pyx_t_2 = PyList_New(0); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 158, __pyx_L1_error)
+      __pyx_t_2 = PyList_New(0); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 160, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_2);
-      __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_v_intersection, __pyx_n_s_geoms); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 158, __pyx_L1_error)
+      __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_v_intersection, __pyx_n_s_geoms); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 160, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_4);
       if (likely(PyList_CheckExact(__pyx_t_4)) || PyTuple_CheckExact(__pyx_t_4)) {
         __pyx_t_3 = __pyx_t_4; __Pyx_INCREF(__pyx_t_3); __pyx_t_12 = 0;
         __pyx_t_13 = NULL;
       } else {
-        __pyx_t_12 = -1; __pyx_t_3 = PyObject_GetIter(__pyx_t_4); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 158, __pyx_L1_error)
+        __pyx_t_12 = -1; __pyx_t_3 = PyObject_GetIter(__pyx_t_4); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 160, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
-        __pyx_t_13 = Py_TYPE(__pyx_t_3)->tp_iternext; if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 158, __pyx_L1_error)
+        __pyx_t_13 = Py_TYPE(__pyx_t_3)->tp_iternext; if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 160, __pyx_L1_error)
       }
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
       for (;;) {
@@ -3587,17 +2951,17 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_6get_if_border
           if (likely(PyList_CheckExact(__pyx_t_3))) {
             if (__pyx_t_12 >= PyList_GET_SIZE(__pyx_t_3)) break;
             #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-            __pyx_t_4 = PyList_GET_ITEM(__pyx_t_3, __pyx_t_12); __Pyx_INCREF(__pyx_t_4); __pyx_t_12++; if (unlikely(0 < 0)) __PYX_ERR(0, 158, __pyx_L1_error)
+            __pyx_t_4 = PyList_GET_ITEM(__pyx_t_3, __pyx_t_12); __Pyx_INCREF(__pyx_t_4); __pyx_t_12++; if (unlikely(0 < 0)) __PYX_ERR(0, 160, __pyx_L1_error)
             #else
-            __pyx_t_4 = PySequence_ITEM(__pyx_t_3, __pyx_t_12); __pyx_t_12++; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 158, __pyx_L1_error)
+            __pyx_t_4 = PySequence_ITEM(__pyx_t_3, __pyx_t_12); __pyx_t_12++; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 160, __pyx_L1_error)
             __Pyx_GOTREF(__pyx_t_4);
             #endif
           } else {
             if (__pyx_t_12 >= PyTuple_GET_SIZE(__pyx_t_3)) break;
             #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-            __pyx_t_4 = PyTuple_GET_ITEM(__pyx_t_3, __pyx_t_12); __Pyx_INCREF(__pyx_t_4); __pyx_t_12++; if (unlikely(0 < 0)) __PYX_ERR(0, 158, __pyx_L1_error)
+            __pyx_t_4 = PyTuple_GET_ITEM(__pyx_t_3, __pyx_t_12); __Pyx_INCREF(__pyx_t_4); __pyx_t_12++; if (unlikely(0 < 0)) __PYX_ERR(0, 160, __pyx_L1_error)
             #else
-            __pyx_t_4 = PySequence_ITEM(__pyx_t_3, __pyx_t_12); __pyx_t_12++; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 158, __pyx_L1_error)
+            __pyx_t_4 = PySequence_ITEM(__pyx_t_3, __pyx_t_12); __pyx_t_12++; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 160, __pyx_L1_error)
             __Pyx_GOTREF(__pyx_t_4);
             #endif
           }
@@ -3607,7 +2971,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_6get_if_border
             PyObject* exc_type = PyErr_Occurred();
             if (exc_type) {
               if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
-              else __PYX_ERR(0, 158, __pyx_L1_error)
+              else __PYX_ERR(0, 160, __pyx_L1_error)
             }
             break;
           }
@@ -3615,24 +2979,24 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_6get_if_border
         }
         __Pyx_XDECREF_SET(__pyx_v_intersection_member, __pyx_t_4);
         __pyx_t_4 = 0;
-        __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_LineString); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 158, __pyx_L1_error)
+        __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_LineString); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 160, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_4);
-        __pyx_t_11 = PyObject_IsInstance(__pyx_v_intersection_member, __pyx_t_4); if (unlikely(__pyx_t_11 == ((int)-1))) __PYX_ERR(0, 158, __pyx_L1_error)
+        __pyx_t_11 = PyObject_IsInstance(__pyx_v_intersection_member, __pyx_t_4); if (unlikely(__pyx_t_11 == ((int)-1))) __PYX_ERR(0, 160, __pyx_L1_error)
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-        __pyx_t_4 = __Pyx_PyBool_FromLong(__pyx_t_11); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 158, __pyx_L1_error)
+        __pyx_t_4 = __Pyx_PyBool_FromLong(__pyx_t_11); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 160, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_4);
-        if (unlikely(__Pyx_ListComp_Append(__pyx_t_2, (PyObject*)__pyx_t_4))) __PYX_ERR(0, 158, __pyx_L1_error)
+        if (unlikely(__Pyx_ListComp_Append(__pyx_t_2, (PyObject*)__pyx_t_4))) __PYX_ERR(0, 160, __pyx_L1_error)
         __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
       }
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-      __pyx_t_3 = __Pyx_PyObject_CallOneArg(__pyx_builtin_any, __pyx_t_2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 158, __pyx_L1_error)
+      __pyx_t_3 = __Pyx_PyObject_CallOneArg(__pyx_builtin_any, __pyx_t_2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 160, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_3);
       __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-      __pyx_t_11 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_11 < 0)) __PYX_ERR(0, 158, __pyx_L1_error)
+      __pyx_t_11 = __Pyx_PyObject_IsTrue(__pyx_t_3); if (unlikely(__pyx_t_11 < 0)) __PYX_ERR(0, 160, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
       if (__pyx_t_11) {
 
-        /* "hacking_the_election/utils/geometry.pyx":159
+        /* "hacking_the_election/utils/geometry.pyx":161
  *         elif isinstance(intersection, GeometryCollection):
  *             if any([isinstance(intersection_member, LineString) for intersection_member in intersection.geoms]):
  *                 return True             # <<<<<<<<<<<<<<
@@ -3644,7 +3008,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_6get_if_border
         __pyx_r = Py_True;
         goto __pyx_L0;
 
-        /* "hacking_the_election/utils/geometry.pyx":158
+        /* "hacking_the_election/utils/geometry.pyx":160
  *             return True
  *         elif isinstance(intersection, GeometryCollection):
  *             if any([isinstance(intersection_member, LineString) for intersection_member in intersection.geoms]):             # <<<<<<<<<<<<<<
@@ -3653,7 +3017,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_6get_if_border
  */
       }
 
-      /* "hacking_the_election/utils/geometry.pyx":157
+      /* "hacking_the_election/utils/geometry.pyx":159
  *         elif isinstance(intersection, LineString):
  *             return True
  *         elif isinstance(intersection, GeometryCollection):             # <<<<<<<<<<<<<<
@@ -3662,7 +3026,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_6get_if_border
  */
     }
 
-    /* "hacking_the_election/utils/geometry.pyx":160
+    /* "hacking_the_election/utils/geometry.pyx":162
  *             if any([isinstance(intersection_member, LineString) for intersection_member in intersection.geoms]):
  *                 return True
  *         return False             # <<<<<<<<<<<<<<
@@ -3675,7 +3039,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_6get_if_border
     goto __pyx_L0;
   }
 
-  /* "hacking_the_election/utils/geometry.pyx":109
+  /* "hacking_the_election/utils/geometry.pyx":111
  * 
  * 
  * def get_if_bordering(shape1, shape2, inside=False):             # <<<<<<<<<<<<<<
@@ -3702,7 +3066,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_6get_if_border
   return __pyx_r;
 }
 
-/* "hacking_the_election/utils/geometry.pyx":163
+/* "hacking_the_election/utils/geometry.pyx":165
  * 
  * 
  * def get_compactness(district):             # <<<<<<<<<<<<<<
@@ -3725,7 +3089,7 @@ static PyObject *__pyx_pw_20hacking_the_election_5utils_8geometry_9get_compactne
   return __pyx_r;
 }
 
-/* "hacking_the_election/utils/geometry.pyx":191
+/* "hacking_the_election/utils/geometry.pyx":193
  * 
  *     # Move points towards origin for better precision.
  *     cdef float minx = min(P, key=lambda p: p[0])[0]             # <<<<<<<<<<<<<<
@@ -3756,7 +3120,7 @@ static PyObject *__pyx_lambda_funcdef_lambda(CYTHON_UNUSED PyObject *__pyx_self,
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("lambda", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_GetItemInt(__pyx_v_p, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 191, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_GetItemInt(__pyx_v_p, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 193, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -3773,7 +3137,7 @@ static PyObject *__pyx_lambda_funcdef_lambda(CYTHON_UNUSED PyObject *__pyx_self,
   return __pyx_r;
 }
 
-/* "hacking_the_election/utils/geometry.pyx":192
+/* "hacking_the_election/utils/geometry.pyx":194
  *     # Move points towards origin for better precision.
  *     cdef float minx = min(P, key=lambda p: p[0])[0]
  *     cdef float miny = min(P, key=lambda p: p[1])[1]             # <<<<<<<<<<<<<<
@@ -3804,7 +3168,7 @@ static PyObject *__pyx_lambda_funcdef_lambda1(CYTHON_UNUSED PyObject *__pyx_self
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("lambda1", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_GetItemInt(__pyx_v_p, 1, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 192, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_GetItemInt(__pyx_v_p, 1, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 194, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -3821,7 +3185,7 @@ static PyObject *__pyx_lambda_funcdef_lambda1(CYTHON_UNUSED PyObject *__pyx_self
   return __pyx_r;
 }
 
-/* "hacking_the_election/utils/geometry.pyx":163
+/* "hacking_the_election/utils/geometry.pyx":165
  * 
  * 
  * def get_compactness(district):             # <<<<<<<<<<<<<<
@@ -3860,19 +3224,19 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_8get_compactne
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("get_compactness", 0);
 
-  /* "hacking_the_election/utils/geometry.pyx":175
+  /* "hacking_the_election/utils/geometry.pyx":177
  *     """
  * 
  *     cdef list P = []             # <<<<<<<<<<<<<<
  *     if isinstance(district, list):
  *         district_coords = [shapely_to_geojson(polygon) for polygon in district]
  */
-  __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 175, __pyx_L1_error)
+  __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 177, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_v_P = ((PyObject*)__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "hacking_the_election/utils/geometry.pyx":176
+  /* "hacking_the_election/utils/geometry.pyx":178
  * 
  *     cdef list P = []
  *     if isinstance(district, list):             # <<<<<<<<<<<<<<
@@ -3883,39 +3247,39 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_8get_compactne
   __pyx_t_3 = (__pyx_t_2 != 0);
   if (__pyx_t_3) {
 
-    /* "hacking_the_election/utils/geometry.pyx":177
+    /* "hacking_the_election/utils/geometry.pyx":179
  *     cdef list P = []
  *     if isinstance(district, list):
  *         district_coords = [shapely_to_geojson(polygon) for polygon in district]             # <<<<<<<<<<<<<<
  *         for polygon in district_coords:
  *             for linear_ring in polygon:
  */
-    __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 177, __pyx_L1_error)
+    __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 179, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     if (likely(PyList_CheckExact(__pyx_v_district)) || PyTuple_CheckExact(__pyx_v_district)) {
       __pyx_t_4 = __pyx_v_district; __Pyx_INCREF(__pyx_t_4); __pyx_t_5 = 0;
       __pyx_t_6 = NULL;
     } else {
-      __pyx_t_5 = -1; __pyx_t_4 = PyObject_GetIter(__pyx_v_district); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 177, __pyx_L1_error)
+      __pyx_t_5 = -1; __pyx_t_4 = PyObject_GetIter(__pyx_v_district); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 179, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_4);
-      __pyx_t_6 = Py_TYPE(__pyx_t_4)->tp_iternext; if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 177, __pyx_L1_error)
+      __pyx_t_6 = Py_TYPE(__pyx_t_4)->tp_iternext; if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 179, __pyx_L1_error)
     }
     for (;;) {
       if (likely(!__pyx_t_6)) {
         if (likely(PyList_CheckExact(__pyx_t_4))) {
           if (__pyx_t_5 >= PyList_GET_SIZE(__pyx_t_4)) break;
           #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-          __pyx_t_7 = PyList_GET_ITEM(__pyx_t_4, __pyx_t_5); __Pyx_INCREF(__pyx_t_7); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 177, __pyx_L1_error)
+          __pyx_t_7 = PyList_GET_ITEM(__pyx_t_4, __pyx_t_5); __Pyx_INCREF(__pyx_t_7); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 179, __pyx_L1_error)
           #else
-          __pyx_t_7 = PySequence_ITEM(__pyx_t_4, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 177, __pyx_L1_error)
+          __pyx_t_7 = PySequence_ITEM(__pyx_t_4, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 179, __pyx_L1_error)
           __Pyx_GOTREF(__pyx_t_7);
           #endif
         } else {
           if (__pyx_t_5 >= PyTuple_GET_SIZE(__pyx_t_4)) break;
           #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-          __pyx_t_7 = PyTuple_GET_ITEM(__pyx_t_4, __pyx_t_5); __Pyx_INCREF(__pyx_t_7); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 177, __pyx_L1_error)
+          __pyx_t_7 = PyTuple_GET_ITEM(__pyx_t_4, __pyx_t_5); __Pyx_INCREF(__pyx_t_7); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 179, __pyx_L1_error)
           #else
-          __pyx_t_7 = PySequence_ITEM(__pyx_t_4, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 177, __pyx_L1_error)
+          __pyx_t_7 = PySequence_ITEM(__pyx_t_4, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 179, __pyx_L1_error)
           __Pyx_GOTREF(__pyx_t_7);
           #endif
         }
@@ -3925,7 +3289,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_8get_compactne
           PyObject* exc_type = PyErr_Occurred();
           if (exc_type) {
             if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
-            else __PYX_ERR(0, 177, __pyx_L1_error)
+            else __PYX_ERR(0, 179, __pyx_L1_error)
           }
           break;
         }
@@ -3933,7 +3297,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_8get_compactne
       }
       __Pyx_XDECREF_SET(__pyx_v_polygon, __pyx_t_7);
       __pyx_t_7 = 0;
-      __Pyx_GetModuleGlobalName(__pyx_t_8, __pyx_n_s_shapely_to_geojson); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 177, __pyx_L1_error)
+      __Pyx_GetModuleGlobalName(__pyx_t_8, __pyx_n_s_shapely_to_geojson); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 179, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_8);
       __pyx_t_9 = NULL;
       if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_8))) {
@@ -3947,17 +3311,17 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_8get_compactne
       }
       __pyx_t_7 = (__pyx_t_9) ? __Pyx_PyObject_Call2Args(__pyx_t_8, __pyx_t_9, __pyx_v_polygon) : __Pyx_PyObject_CallOneArg(__pyx_t_8, __pyx_v_polygon);
       __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
-      if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 177, __pyx_L1_error)
+      if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 179, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_7);
       __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
-      if (unlikely(__Pyx_ListComp_Append(__pyx_t_1, (PyObject*)__pyx_t_7))) __PYX_ERR(0, 177, __pyx_L1_error)
+      if (unlikely(__Pyx_ListComp_Append(__pyx_t_1, (PyObject*)__pyx_t_7))) __PYX_ERR(0, 179, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
     }
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
     __pyx_v_district_coords = __pyx_t_1;
     __pyx_t_1 = 0;
 
-    /* "hacking_the_election/utils/geometry.pyx":178
+    /* "hacking_the_election/utils/geometry.pyx":180
  *     if isinstance(district, list):
  *         district_coords = [shapely_to_geojson(polygon) for polygon in district]
  *         for polygon in district_coords:             # <<<<<<<<<<<<<<
@@ -3968,15 +3332,15 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_8get_compactne
     for (;;) {
       if (__pyx_t_5 >= PyList_GET_SIZE(__pyx_t_1)) break;
       #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-      __pyx_t_4 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_5); __Pyx_INCREF(__pyx_t_4); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 178, __pyx_L1_error)
+      __pyx_t_4 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_5); __Pyx_INCREF(__pyx_t_4); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 180, __pyx_L1_error)
       #else
-      __pyx_t_4 = PySequence_ITEM(__pyx_t_1, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 178, __pyx_L1_error)
+      __pyx_t_4 = PySequence_ITEM(__pyx_t_1, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 180, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_4);
       #endif
       __Pyx_XDECREF_SET(__pyx_v_polygon, __pyx_t_4);
       __pyx_t_4 = 0;
 
-      /* "hacking_the_election/utils/geometry.pyx":179
+      /* "hacking_the_election/utils/geometry.pyx":181
  *         district_coords = [shapely_to_geojson(polygon) for polygon in district]
  *         for polygon in district_coords:
  *             for linear_ring in polygon:             # <<<<<<<<<<<<<<
@@ -3987,26 +3351,26 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_8get_compactne
         __pyx_t_4 = __pyx_v_polygon; __Pyx_INCREF(__pyx_t_4); __pyx_t_10 = 0;
         __pyx_t_6 = NULL;
       } else {
-        __pyx_t_10 = -1; __pyx_t_4 = PyObject_GetIter(__pyx_v_polygon); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 179, __pyx_L1_error)
+        __pyx_t_10 = -1; __pyx_t_4 = PyObject_GetIter(__pyx_v_polygon); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 181, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_4);
-        __pyx_t_6 = Py_TYPE(__pyx_t_4)->tp_iternext; if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 179, __pyx_L1_error)
+        __pyx_t_6 = Py_TYPE(__pyx_t_4)->tp_iternext; if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 181, __pyx_L1_error)
       }
       for (;;) {
         if (likely(!__pyx_t_6)) {
           if (likely(PyList_CheckExact(__pyx_t_4))) {
             if (__pyx_t_10 >= PyList_GET_SIZE(__pyx_t_4)) break;
             #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-            __pyx_t_7 = PyList_GET_ITEM(__pyx_t_4, __pyx_t_10); __Pyx_INCREF(__pyx_t_7); __pyx_t_10++; if (unlikely(0 < 0)) __PYX_ERR(0, 179, __pyx_L1_error)
+            __pyx_t_7 = PyList_GET_ITEM(__pyx_t_4, __pyx_t_10); __Pyx_INCREF(__pyx_t_7); __pyx_t_10++; if (unlikely(0 < 0)) __PYX_ERR(0, 181, __pyx_L1_error)
             #else
-            __pyx_t_7 = PySequence_ITEM(__pyx_t_4, __pyx_t_10); __pyx_t_10++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 179, __pyx_L1_error)
+            __pyx_t_7 = PySequence_ITEM(__pyx_t_4, __pyx_t_10); __pyx_t_10++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 181, __pyx_L1_error)
             __Pyx_GOTREF(__pyx_t_7);
             #endif
           } else {
             if (__pyx_t_10 >= PyTuple_GET_SIZE(__pyx_t_4)) break;
             #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-            __pyx_t_7 = PyTuple_GET_ITEM(__pyx_t_4, __pyx_t_10); __Pyx_INCREF(__pyx_t_7); __pyx_t_10++; if (unlikely(0 < 0)) __PYX_ERR(0, 179, __pyx_L1_error)
+            __pyx_t_7 = PyTuple_GET_ITEM(__pyx_t_4, __pyx_t_10); __Pyx_INCREF(__pyx_t_7); __pyx_t_10++; if (unlikely(0 < 0)) __PYX_ERR(0, 181, __pyx_L1_error)
             #else
-            __pyx_t_7 = PySequence_ITEM(__pyx_t_4, __pyx_t_10); __pyx_t_10++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 179, __pyx_L1_error)
+            __pyx_t_7 = PySequence_ITEM(__pyx_t_4, __pyx_t_10); __pyx_t_10++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 181, __pyx_L1_error)
             __Pyx_GOTREF(__pyx_t_7);
             #endif
           }
@@ -4016,7 +3380,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_8get_compactne
             PyObject* exc_type = PyErr_Occurred();
             if (exc_type) {
               if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
-              else __PYX_ERR(0, 179, __pyx_L1_error)
+              else __PYX_ERR(0, 181, __pyx_L1_error)
             }
             break;
           }
@@ -4025,7 +3389,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_8get_compactne
         __Pyx_XDECREF_SET(__pyx_v_linear_ring, __pyx_t_7);
         __pyx_t_7 = 0;
 
-        /* "hacking_the_election/utils/geometry.pyx":180
+        /* "hacking_the_election/utils/geometry.pyx":182
  *         for polygon in district_coords:
  *             for linear_ring in polygon:
  *                 for point in linear_ring:             # <<<<<<<<<<<<<<
@@ -4036,26 +3400,26 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_8get_compactne
           __pyx_t_7 = __pyx_v_linear_ring; __Pyx_INCREF(__pyx_t_7); __pyx_t_11 = 0;
           __pyx_t_12 = NULL;
         } else {
-          __pyx_t_11 = -1; __pyx_t_7 = PyObject_GetIter(__pyx_v_linear_ring); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 180, __pyx_L1_error)
+          __pyx_t_11 = -1; __pyx_t_7 = PyObject_GetIter(__pyx_v_linear_ring); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 182, __pyx_L1_error)
           __Pyx_GOTREF(__pyx_t_7);
-          __pyx_t_12 = Py_TYPE(__pyx_t_7)->tp_iternext; if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 180, __pyx_L1_error)
+          __pyx_t_12 = Py_TYPE(__pyx_t_7)->tp_iternext; if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 182, __pyx_L1_error)
         }
         for (;;) {
           if (likely(!__pyx_t_12)) {
             if (likely(PyList_CheckExact(__pyx_t_7))) {
               if (__pyx_t_11 >= PyList_GET_SIZE(__pyx_t_7)) break;
               #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-              __pyx_t_8 = PyList_GET_ITEM(__pyx_t_7, __pyx_t_11); __Pyx_INCREF(__pyx_t_8); __pyx_t_11++; if (unlikely(0 < 0)) __PYX_ERR(0, 180, __pyx_L1_error)
+              __pyx_t_8 = PyList_GET_ITEM(__pyx_t_7, __pyx_t_11); __Pyx_INCREF(__pyx_t_8); __pyx_t_11++; if (unlikely(0 < 0)) __PYX_ERR(0, 182, __pyx_L1_error)
               #else
-              __pyx_t_8 = PySequence_ITEM(__pyx_t_7, __pyx_t_11); __pyx_t_11++; if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 180, __pyx_L1_error)
+              __pyx_t_8 = PySequence_ITEM(__pyx_t_7, __pyx_t_11); __pyx_t_11++; if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 182, __pyx_L1_error)
               __Pyx_GOTREF(__pyx_t_8);
               #endif
             } else {
               if (__pyx_t_11 >= PyTuple_GET_SIZE(__pyx_t_7)) break;
               #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-              __pyx_t_8 = PyTuple_GET_ITEM(__pyx_t_7, __pyx_t_11); __Pyx_INCREF(__pyx_t_8); __pyx_t_11++; if (unlikely(0 < 0)) __PYX_ERR(0, 180, __pyx_L1_error)
+              __pyx_t_8 = PyTuple_GET_ITEM(__pyx_t_7, __pyx_t_11); __Pyx_INCREF(__pyx_t_8); __pyx_t_11++; if (unlikely(0 < 0)) __PYX_ERR(0, 182, __pyx_L1_error)
               #else
-              __pyx_t_8 = PySequence_ITEM(__pyx_t_7, __pyx_t_11); __pyx_t_11++; if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 180, __pyx_L1_error)
+              __pyx_t_8 = PySequence_ITEM(__pyx_t_7, __pyx_t_11); __pyx_t_11++; if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 182, __pyx_L1_error)
               __Pyx_GOTREF(__pyx_t_8);
               #endif
             }
@@ -4065,7 +3429,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_8get_compactne
               PyObject* exc_type = PyErr_Occurred();
               if (exc_type) {
                 if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
-                else __PYX_ERR(0, 180, __pyx_L1_error)
+                else __PYX_ERR(0, 182, __pyx_L1_error)
               }
               break;
             }
@@ -4074,16 +3438,16 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_8get_compactne
           __Pyx_XDECREF_SET(__pyx_v_point, __pyx_t_8);
           __pyx_t_8 = 0;
 
-          /* "hacking_the_election/utils/geometry.pyx":181
+          /* "hacking_the_election/utils/geometry.pyx":183
  *             for linear_ring in polygon:
  *                 for point in linear_ring:
  *                     P.append(point)             # <<<<<<<<<<<<<<
  *     elif isinstance(district, Polygon):
  *         district_coords = shapely_to_geojson(district)
  */
-          __pyx_t_13 = __Pyx_PyList_Append(__pyx_v_P, __pyx_v_point); if (unlikely(__pyx_t_13 == ((int)-1))) __PYX_ERR(0, 181, __pyx_L1_error)
+          __pyx_t_13 = __Pyx_PyList_Append(__pyx_v_P, __pyx_v_point); if (unlikely(__pyx_t_13 == ((int)-1))) __PYX_ERR(0, 183, __pyx_L1_error)
 
-          /* "hacking_the_election/utils/geometry.pyx":180
+          /* "hacking_the_election/utils/geometry.pyx":182
  *         for polygon in district_coords:
  *             for linear_ring in polygon:
  *                 for point in linear_ring:             # <<<<<<<<<<<<<<
@@ -4093,7 +3457,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_8get_compactne
         }
         __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
 
-        /* "hacking_the_election/utils/geometry.pyx":179
+        /* "hacking_the_election/utils/geometry.pyx":181
  *         district_coords = [shapely_to_geojson(polygon) for polygon in district]
  *         for polygon in district_coords:
  *             for linear_ring in polygon:             # <<<<<<<<<<<<<<
@@ -4103,7 +3467,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_8get_compactne
       }
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-      /* "hacking_the_election/utils/geometry.pyx":178
+      /* "hacking_the_election/utils/geometry.pyx":180
  *     if isinstance(district, list):
  *         district_coords = [shapely_to_geojson(polygon) for polygon in district]
  *         for polygon in district_coords:             # <<<<<<<<<<<<<<
@@ -4113,7 +3477,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_8get_compactne
     }
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-    /* "hacking_the_election/utils/geometry.pyx":176
+    /* "hacking_the_election/utils/geometry.pyx":178
  * 
  *     cdef list P = []
  *     if isinstance(district, list):             # <<<<<<<<<<<<<<
@@ -4123,28 +3487,28 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_8get_compactne
     goto __pyx_L3;
   }
 
-  /* "hacking_the_election/utils/geometry.pyx":182
+  /* "hacking_the_election/utils/geometry.pyx":184
  *                 for point in linear_ring:
  *                     P.append(point)
  *     elif isinstance(district, Polygon):             # <<<<<<<<<<<<<<
  *         district_coords = shapely_to_geojson(district)
  *         for linear_ring in district_coords:
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_Polygon); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 182, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_Polygon); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 184, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_3 = PyObject_IsInstance(__pyx_v_district, __pyx_t_1); if (unlikely(__pyx_t_3 == ((int)-1))) __PYX_ERR(0, 182, __pyx_L1_error)
+  __pyx_t_3 = PyObject_IsInstance(__pyx_v_district, __pyx_t_1); if (unlikely(__pyx_t_3 == ((int)-1))) __PYX_ERR(0, 184, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_t_2 = (__pyx_t_3 != 0);
   if (likely(__pyx_t_2)) {
 
-    /* "hacking_the_election/utils/geometry.pyx":183
+    /* "hacking_the_election/utils/geometry.pyx":185
  *                     P.append(point)
  *     elif isinstance(district, Polygon):
  *         district_coords = shapely_to_geojson(district)             # <<<<<<<<<<<<<<
  *         for linear_ring in district_coords:
  *             for point in linear_ring:
  */
-    __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_shapely_to_geojson); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 183, __pyx_L1_error)
+    __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_shapely_to_geojson); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 185, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
     __pyx_t_7 = NULL;
     if (CYTHON_UNPACK_METHODS && unlikely(PyMethod_Check(__pyx_t_4))) {
@@ -4158,13 +3522,13 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_8get_compactne
     }
     __pyx_t_1 = (__pyx_t_7) ? __Pyx_PyObject_Call2Args(__pyx_t_4, __pyx_t_7, __pyx_v_district) : __Pyx_PyObject_CallOneArg(__pyx_t_4, __pyx_v_district);
     __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
-    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 183, __pyx_L1_error)
+    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 185, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
     __pyx_v_district_coords = __pyx_t_1;
     __pyx_t_1 = 0;
 
-    /* "hacking_the_election/utils/geometry.pyx":184
+    /* "hacking_the_election/utils/geometry.pyx":186
  *     elif isinstance(district, Polygon):
  *         district_coords = shapely_to_geojson(district)
  *         for linear_ring in district_coords:             # <<<<<<<<<<<<<<
@@ -4175,26 +3539,26 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_8get_compactne
       __pyx_t_1 = __pyx_v_district_coords; __Pyx_INCREF(__pyx_t_1); __pyx_t_5 = 0;
       __pyx_t_6 = NULL;
     } else {
-      __pyx_t_5 = -1; __pyx_t_1 = PyObject_GetIter(__pyx_v_district_coords); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 184, __pyx_L1_error)
+      __pyx_t_5 = -1; __pyx_t_1 = PyObject_GetIter(__pyx_v_district_coords); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 186, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
-      __pyx_t_6 = Py_TYPE(__pyx_t_1)->tp_iternext; if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 184, __pyx_L1_error)
+      __pyx_t_6 = Py_TYPE(__pyx_t_1)->tp_iternext; if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 186, __pyx_L1_error)
     }
     for (;;) {
       if (likely(!__pyx_t_6)) {
         if (likely(PyList_CheckExact(__pyx_t_1))) {
           if (__pyx_t_5 >= PyList_GET_SIZE(__pyx_t_1)) break;
           #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-          __pyx_t_4 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_5); __Pyx_INCREF(__pyx_t_4); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 184, __pyx_L1_error)
+          __pyx_t_4 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_5); __Pyx_INCREF(__pyx_t_4); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 186, __pyx_L1_error)
           #else
-          __pyx_t_4 = PySequence_ITEM(__pyx_t_1, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 184, __pyx_L1_error)
+          __pyx_t_4 = PySequence_ITEM(__pyx_t_1, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 186, __pyx_L1_error)
           __Pyx_GOTREF(__pyx_t_4);
           #endif
         } else {
           if (__pyx_t_5 >= PyTuple_GET_SIZE(__pyx_t_1)) break;
           #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-          __pyx_t_4 = PyTuple_GET_ITEM(__pyx_t_1, __pyx_t_5); __Pyx_INCREF(__pyx_t_4); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 184, __pyx_L1_error)
+          __pyx_t_4 = PyTuple_GET_ITEM(__pyx_t_1, __pyx_t_5); __Pyx_INCREF(__pyx_t_4); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 186, __pyx_L1_error)
           #else
-          __pyx_t_4 = PySequence_ITEM(__pyx_t_1, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 184, __pyx_L1_error)
+          __pyx_t_4 = PySequence_ITEM(__pyx_t_1, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 186, __pyx_L1_error)
           __Pyx_GOTREF(__pyx_t_4);
           #endif
         }
@@ -4204,7 +3568,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_8get_compactne
           PyObject* exc_type = PyErr_Occurred();
           if (exc_type) {
             if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
-            else __PYX_ERR(0, 184, __pyx_L1_error)
+            else __PYX_ERR(0, 186, __pyx_L1_error)
           }
           break;
         }
@@ -4213,7 +3577,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_8get_compactne
       __Pyx_XDECREF_SET(__pyx_v_linear_ring, __pyx_t_4);
       __pyx_t_4 = 0;
 
-      /* "hacking_the_election/utils/geometry.pyx":185
+      /* "hacking_the_election/utils/geometry.pyx":187
  *         district_coords = shapely_to_geojson(district)
  *         for linear_ring in district_coords:
  *             for point in linear_ring:             # <<<<<<<<<<<<<<
@@ -4224,26 +3588,26 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_8get_compactne
         __pyx_t_4 = __pyx_v_linear_ring; __Pyx_INCREF(__pyx_t_4); __pyx_t_10 = 0;
         __pyx_t_12 = NULL;
       } else {
-        __pyx_t_10 = -1; __pyx_t_4 = PyObject_GetIter(__pyx_v_linear_ring); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 185, __pyx_L1_error)
+        __pyx_t_10 = -1; __pyx_t_4 = PyObject_GetIter(__pyx_v_linear_ring); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 187, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_4);
-        __pyx_t_12 = Py_TYPE(__pyx_t_4)->tp_iternext; if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 185, __pyx_L1_error)
+        __pyx_t_12 = Py_TYPE(__pyx_t_4)->tp_iternext; if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 187, __pyx_L1_error)
       }
       for (;;) {
         if (likely(!__pyx_t_12)) {
           if (likely(PyList_CheckExact(__pyx_t_4))) {
             if (__pyx_t_10 >= PyList_GET_SIZE(__pyx_t_4)) break;
             #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-            __pyx_t_7 = PyList_GET_ITEM(__pyx_t_4, __pyx_t_10); __Pyx_INCREF(__pyx_t_7); __pyx_t_10++; if (unlikely(0 < 0)) __PYX_ERR(0, 185, __pyx_L1_error)
+            __pyx_t_7 = PyList_GET_ITEM(__pyx_t_4, __pyx_t_10); __Pyx_INCREF(__pyx_t_7); __pyx_t_10++; if (unlikely(0 < 0)) __PYX_ERR(0, 187, __pyx_L1_error)
             #else
-            __pyx_t_7 = PySequence_ITEM(__pyx_t_4, __pyx_t_10); __pyx_t_10++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 185, __pyx_L1_error)
+            __pyx_t_7 = PySequence_ITEM(__pyx_t_4, __pyx_t_10); __pyx_t_10++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 187, __pyx_L1_error)
             __Pyx_GOTREF(__pyx_t_7);
             #endif
           } else {
             if (__pyx_t_10 >= PyTuple_GET_SIZE(__pyx_t_4)) break;
             #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-            __pyx_t_7 = PyTuple_GET_ITEM(__pyx_t_4, __pyx_t_10); __Pyx_INCREF(__pyx_t_7); __pyx_t_10++; if (unlikely(0 < 0)) __PYX_ERR(0, 185, __pyx_L1_error)
+            __pyx_t_7 = PyTuple_GET_ITEM(__pyx_t_4, __pyx_t_10); __Pyx_INCREF(__pyx_t_7); __pyx_t_10++; if (unlikely(0 < 0)) __PYX_ERR(0, 187, __pyx_L1_error)
             #else
-            __pyx_t_7 = PySequence_ITEM(__pyx_t_4, __pyx_t_10); __pyx_t_10++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 185, __pyx_L1_error)
+            __pyx_t_7 = PySequence_ITEM(__pyx_t_4, __pyx_t_10); __pyx_t_10++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 187, __pyx_L1_error)
             __Pyx_GOTREF(__pyx_t_7);
             #endif
           }
@@ -4253,7 +3617,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_8get_compactne
             PyObject* exc_type = PyErr_Occurred();
             if (exc_type) {
               if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
-              else __PYX_ERR(0, 185, __pyx_L1_error)
+              else __PYX_ERR(0, 187, __pyx_L1_error)
             }
             break;
           }
@@ -4262,16 +3626,16 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_8get_compactne
         __Pyx_XDECREF_SET(__pyx_v_point, __pyx_t_7);
         __pyx_t_7 = 0;
 
-        /* "hacking_the_election/utils/geometry.pyx":186
+        /* "hacking_the_election/utils/geometry.pyx":188
  *         for linear_ring in district_coords:
  *             for point in linear_ring:
  *                 P.append(point)             # <<<<<<<<<<<<<<
  *     else:
  *         raise TypeError("`district` must be of type Polygon or list of Polygon")
  */
-        __pyx_t_13 = __Pyx_PyList_Append(__pyx_v_P, __pyx_v_point); if (unlikely(__pyx_t_13 == ((int)-1))) __PYX_ERR(0, 186, __pyx_L1_error)
+        __pyx_t_13 = __Pyx_PyList_Append(__pyx_v_P, __pyx_v_point); if (unlikely(__pyx_t_13 == ((int)-1))) __PYX_ERR(0, 188, __pyx_L1_error)
 
-        /* "hacking_the_election/utils/geometry.pyx":185
+        /* "hacking_the_election/utils/geometry.pyx":187
  *         district_coords = shapely_to_geojson(district)
  *         for linear_ring in district_coords:
  *             for point in linear_ring:             # <<<<<<<<<<<<<<
@@ -4281,7 +3645,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_8get_compactne
       }
       __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-      /* "hacking_the_election/utils/geometry.pyx":184
+      /* "hacking_the_election/utils/geometry.pyx":186
  *     elif isinstance(district, Polygon):
  *         district_coords = shapely_to_geojson(district)
  *         for linear_ring in district_coords:             # <<<<<<<<<<<<<<
@@ -4291,7 +3655,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_8get_compactne
     }
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-    /* "hacking_the_election/utils/geometry.pyx":182
+    /* "hacking_the_election/utils/geometry.pyx":184
  *                 for point in linear_ring:
  *                     P.append(point)
  *     elif isinstance(district, Polygon):             # <<<<<<<<<<<<<<
@@ -4301,7 +3665,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_8get_compactne
     goto __pyx_L3;
   }
 
-  /* "hacking_the_election/utils/geometry.pyx":188
+  /* "hacking_the_election/utils/geometry.pyx":190
  *                 P.append(point)
  *     else:
  *         raise TypeError("`district` must be of type Polygon or list of Polygon")             # <<<<<<<<<<<<<<
@@ -4309,109 +3673,109 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_8get_compactne
  *     # Move points towards origin for better precision.
  */
   /*else*/ {
-    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple__3, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 188, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple__3, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 190, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_Raise(__pyx_t_1, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-    __PYX_ERR(0, 188, __pyx_L1_error)
+    __PYX_ERR(0, 190, __pyx_L1_error)
   }
   __pyx_L3:;
 
-  /* "hacking_the_election/utils/geometry.pyx":191
+  /* "hacking_the_election/utils/geometry.pyx":193
  * 
  *     # Move points towards origin for better precision.
  *     cdef float minx = min(P, key=lambda p: p[0])[0]             # <<<<<<<<<<<<<<
  *     cdef float miny = min(P, key=lambda p: p[1])[1]
  * 
  */
-  __pyx_t_1 = PyTuple_New(1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 191, __pyx_L1_error)
+  __pyx_t_1 = PyTuple_New(1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 193, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_INCREF(__pyx_v_P);
   __Pyx_GIVEREF(__pyx_v_P);
   PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_v_P);
-  __pyx_t_4 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 191, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 193, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_7 = __Pyx_CyFunction_New(&__pyx_mdef_20hacking_the_election_5utils_8geometry_15get_compactness_lambda, 0, __pyx_n_s_get_compactness_locals_lambda, NULL, __pyx_n_s_hacking_the_election_utils_geome, __pyx_d, NULL); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 191, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_CyFunction_New(&__pyx_mdef_20hacking_the_election_5utils_8geometry_15get_compactness_lambda, 0, __pyx_n_s_get_compactness_locals_lambda, NULL, __pyx_n_s_hacking_the_election_utils_geome, __pyx_d, NULL); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 193, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
-  if (PyDict_SetItem(__pyx_t_4, __pyx_n_s_key, __pyx_t_7) < 0) __PYX_ERR(0, 191, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_4, __pyx_n_s_key, __pyx_t_7) < 0) __PYX_ERR(0, 193, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-  __pyx_t_7 = __Pyx_PyObject_Call(__pyx_builtin_min, __pyx_t_1, __pyx_t_4); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 191, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyObject_Call(__pyx_builtin_min, __pyx_t_1, __pyx_t_4); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 193, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_4 = __Pyx_GetItemInt(__pyx_t_7, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 191, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_GetItemInt(__pyx_t_7, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 193, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-  __pyx_t_14 = __pyx_PyFloat_AsFloat(__pyx_t_4); if (unlikely((__pyx_t_14 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 191, __pyx_L1_error)
+  __pyx_t_14 = __pyx_PyFloat_AsFloat(__pyx_t_4); if (unlikely((__pyx_t_14 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 193, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __pyx_v_minx = __pyx_t_14;
 
-  /* "hacking_the_election/utils/geometry.pyx":192
+  /* "hacking_the_election/utils/geometry.pyx":194
  *     # Move points towards origin for better precision.
  *     cdef float minx = min(P, key=lambda p: p[0])[0]
  *     cdef float miny = min(P, key=lambda p: p[1])[1]             # <<<<<<<<<<<<<<
  * 
  *     P = [(p[0] - minx, p[1] - miny) for p in P]
  */
-  __pyx_t_4 = PyTuple_New(1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 192, __pyx_L1_error)
+  __pyx_t_4 = PyTuple_New(1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 194, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_INCREF(__pyx_v_P);
   __Pyx_GIVEREF(__pyx_v_P);
   PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_v_P);
-  __pyx_t_7 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 192, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 194, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
-  __pyx_t_1 = __Pyx_CyFunction_New(&__pyx_mdef_20hacking_the_election_5utils_8geometry_15get_compactness_1lambda1, 0, __pyx_n_s_get_compactness_locals_lambda, NULL, __pyx_n_s_hacking_the_election_utils_geome, __pyx_d, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 192, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_CyFunction_New(&__pyx_mdef_20hacking_the_election_5utils_8geometry_15get_compactness_1lambda1, 0, __pyx_n_s_get_compactness_locals_lambda, NULL, __pyx_n_s_hacking_the_election_utils_geome, __pyx_d, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 194, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_t_7, __pyx_n_s_key, __pyx_t_1) < 0) __PYX_ERR(0, 192, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_7, __pyx_n_s_key, __pyx_t_1) < 0) __PYX_ERR(0, 194, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_min, __pyx_t_4, __pyx_t_7); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 192, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_min, __pyx_t_4, __pyx_t_7); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 194, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-  __pyx_t_7 = __Pyx_GetItemInt(__pyx_t_1, 1, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 192, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_GetItemInt(__pyx_t_1, 1, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 194, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_14 = __pyx_PyFloat_AsFloat(__pyx_t_7); if (unlikely((__pyx_t_14 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 192, __pyx_L1_error)
+  __pyx_t_14 = __pyx_PyFloat_AsFloat(__pyx_t_7); if (unlikely((__pyx_t_14 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 194, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
   __pyx_v_miny = __pyx_t_14;
 
-  /* "hacking_the_election/utils/geometry.pyx":194
+  /* "hacking_the_election/utils/geometry.pyx":196
  *     cdef float miny = min(P, key=lambda p: p[1])[1]
  * 
  *     P = [(p[0] - minx, p[1] - miny) for p in P]             # <<<<<<<<<<<<<<
  * 
  *     # Get minimum bounding circle of district.
  */
-  __pyx_t_7 = PyList_New(0); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 194, __pyx_L1_error)
+  __pyx_t_7 = PyList_New(0); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 196, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   __pyx_t_1 = __pyx_v_P; __Pyx_INCREF(__pyx_t_1); __pyx_t_5 = 0;
   for (;;) {
     if (__pyx_t_5 >= PyList_GET_SIZE(__pyx_t_1)) break;
     #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-    __pyx_t_4 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_5); __Pyx_INCREF(__pyx_t_4); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 194, __pyx_L1_error)
+    __pyx_t_4 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_5); __Pyx_INCREF(__pyx_t_4); __pyx_t_5++; if (unlikely(0 < 0)) __PYX_ERR(0, 196, __pyx_L1_error)
     #else
-    __pyx_t_4 = PySequence_ITEM(__pyx_t_1, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 194, __pyx_L1_error)
+    __pyx_t_4 = PySequence_ITEM(__pyx_t_1, __pyx_t_5); __pyx_t_5++; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 196, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
     #endif
     __Pyx_XDECREF_SET(__pyx_v_p, __pyx_t_4);
     __pyx_t_4 = 0;
-    __pyx_t_4 = __Pyx_GetItemInt(__pyx_v_p, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 194, __pyx_L1_error)
+    __pyx_t_4 = __Pyx_GetItemInt(__pyx_v_p, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 196, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
-    __pyx_t_8 = PyFloat_FromDouble(__pyx_v_minx); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 194, __pyx_L1_error)
+    __pyx_t_8 = PyFloat_FromDouble(__pyx_v_minx); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 196, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_8);
-    __pyx_t_9 = PyNumber_Subtract(__pyx_t_4, __pyx_t_8); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 194, __pyx_L1_error)
+    __pyx_t_9 = PyNumber_Subtract(__pyx_t_4, __pyx_t_8); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 196, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_9);
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
     __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
-    __pyx_t_8 = __Pyx_GetItemInt(__pyx_v_p, 1, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 194, __pyx_L1_error)
+    __pyx_t_8 = __Pyx_GetItemInt(__pyx_v_p, 1, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 196, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_8);
-    __pyx_t_4 = PyFloat_FromDouble(__pyx_v_miny); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 194, __pyx_L1_error)
+    __pyx_t_4 = PyFloat_FromDouble(__pyx_v_miny); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 196, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
-    __pyx_t_15 = PyNumber_Subtract(__pyx_t_8, __pyx_t_4); if (unlikely(!__pyx_t_15)) __PYX_ERR(0, 194, __pyx_L1_error)
+    __pyx_t_15 = PyNumber_Subtract(__pyx_t_8, __pyx_t_4); if (unlikely(!__pyx_t_15)) __PYX_ERR(0, 196, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_15);
     __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __pyx_t_4 = PyTuple_New(2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 194, __pyx_L1_error)
+    __pyx_t_4 = PyTuple_New(2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 196, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
     __Pyx_GIVEREF(__pyx_t_9);
     PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_t_9);
@@ -4419,27 +3783,27 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_8get_compactne
     PyTuple_SET_ITEM(__pyx_t_4, 1, __pyx_t_15);
     __pyx_t_9 = 0;
     __pyx_t_15 = 0;
-    if (unlikely(__Pyx_ListComp_Append(__pyx_t_7, (PyObject*)__pyx_t_4))) __PYX_ERR(0, 194, __pyx_L1_error)
+    if (unlikely(__Pyx_ListComp_Append(__pyx_t_7, (PyObject*)__pyx_t_4))) __PYX_ERR(0, 196, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   }
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __Pyx_DECREF_SET(__pyx_v_P, ((PyObject*)__pyx_t_7));
   __pyx_t_7 = 0;
 
-  /* "hacking_the_election/utils/geometry.pyx":197
+  /* "hacking_the_election/utils/geometry.pyx":199
  * 
  *     # Get minimum bounding circle of district.
  *     raise Exception("outdated! reock compactness function is no longer in use.")             # <<<<<<<<<<<<<<
  *     mb = miniball.Miniball(P)
  *     cdef float squared_radius = mb.squared_radius()
  */
-  __pyx_t_7 = __Pyx_PyObject_Call(((PyObject *)(&((PyTypeObject*)PyExc_Exception)[0])), __pyx_tuple__4, NULL); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 197, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyObject_Call(((PyObject *)(&((PyTypeObject*)PyExc_Exception)[0])), __pyx_tuple__4, NULL); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 199, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
   __Pyx_Raise(__pyx_t_7, 0, 0, 0);
   __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-  __PYX_ERR(0, 197, __pyx_L1_error)
+  __PYX_ERR(0, 199, __pyx_L1_error)
 
-  /* "hacking_the_election/utils/geometry.pyx":163
+  /* "hacking_the_election/utils/geometry.pyx":165
  * 
  * 
  * def get_compactness(district):             # <<<<<<<<<<<<<<
@@ -4468,7 +3832,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_8get_compactne
   return __pyx_r;
 }
 
-/* "hacking_the_election/utils/geometry.pyx":211
+/* "hacking_the_election/utils/geometry.pyx":213
  * 
  * 
  * cpdef float get_imprecise_compactness(district):             # <<<<<<<<<<<<<<
@@ -4500,20 +3864,20 @@ static float __pyx_f_20hacking_the_election_5utils_8geometry_get_imprecise_compa
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("get_imprecise_compactness", 0);
 
-  /* "hacking_the_election/utils/geometry.pyx":221
+  /* "hacking_the_election/utils/geometry.pyx":223
  *     """
  * 
  *     cdef list center = district.centroid             # <<<<<<<<<<<<<<
  * 
  *     cdef float max_distance = 0.0
  */
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_district, __pyx_n_s_centroid); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 221, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_district, __pyx_n_s_centroid); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 223, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (!(likely(PyList_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "list", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(0, 221, __pyx_L1_error)
+  if (!(likely(PyList_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "list", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(0, 223, __pyx_L1_error)
   __pyx_v_center = ((PyObject*)__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "hacking_the_election/utils/geometry.pyx":223
+  /* "hacking_the_election/utils/geometry.pyx":225
  *     cdef list center = district.centroid
  * 
  *     cdef float max_distance = 0.0             # <<<<<<<<<<<<<<
@@ -4522,16 +3886,16 @@ static float __pyx_f_20hacking_the_election_5utils_8geometry_get_imprecise_compa
  */
   __pyx_v_max_distance = 0.0;
 
-  /* "hacking_the_election/utils/geometry.pyx":227
+  /* "hacking_the_election/utils/geometry.pyx":229
  *     cdef list centroid, precinct_points, point
  *     cpdef precinct
  *     for precinct in district.precincts.values():             # <<<<<<<<<<<<<<
  *         precinct_points = precinct.points
  *         for point in precinct_points:
  */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_district, __pyx_n_s_precincts); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 227, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_district, __pyx_n_s_precincts); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 229, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_values); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 227, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_values); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 229, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_t_2 = NULL;
@@ -4546,16 +3910,16 @@ static float __pyx_f_20hacking_the_election_5utils_8geometry_get_imprecise_compa
   }
   __pyx_t_1 = (__pyx_t_2) ? __Pyx_PyObject_CallOneArg(__pyx_t_3, __pyx_t_2) : __Pyx_PyObject_CallNoArg(__pyx_t_3);
   __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
-  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 227, __pyx_L1_error)
+  if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 229, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   if (likely(PyList_CheckExact(__pyx_t_1)) || PyTuple_CheckExact(__pyx_t_1)) {
     __pyx_t_3 = __pyx_t_1; __Pyx_INCREF(__pyx_t_3); __pyx_t_4 = 0;
     __pyx_t_5 = NULL;
   } else {
-    __pyx_t_4 = -1; __pyx_t_3 = PyObject_GetIter(__pyx_t_1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 227, __pyx_L1_error)
+    __pyx_t_4 = -1; __pyx_t_3 = PyObject_GetIter(__pyx_t_1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 229, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
-    __pyx_t_5 = Py_TYPE(__pyx_t_3)->tp_iternext; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 227, __pyx_L1_error)
+    __pyx_t_5 = Py_TYPE(__pyx_t_3)->tp_iternext; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 229, __pyx_L1_error)
   }
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   for (;;) {
@@ -4563,17 +3927,17 @@ static float __pyx_f_20hacking_the_election_5utils_8geometry_get_imprecise_compa
       if (likely(PyList_CheckExact(__pyx_t_3))) {
         if (__pyx_t_4 >= PyList_GET_SIZE(__pyx_t_3)) break;
         #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-        __pyx_t_1 = PyList_GET_ITEM(__pyx_t_3, __pyx_t_4); __Pyx_INCREF(__pyx_t_1); __pyx_t_4++; if (unlikely(0 < 0)) __PYX_ERR(0, 227, __pyx_L1_error)
+        __pyx_t_1 = PyList_GET_ITEM(__pyx_t_3, __pyx_t_4); __Pyx_INCREF(__pyx_t_1); __pyx_t_4++; if (unlikely(0 < 0)) __PYX_ERR(0, 229, __pyx_L1_error)
         #else
-        __pyx_t_1 = PySequence_ITEM(__pyx_t_3, __pyx_t_4); __pyx_t_4++; if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 227, __pyx_L1_error)
+        __pyx_t_1 = PySequence_ITEM(__pyx_t_3, __pyx_t_4); __pyx_t_4++; if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 229, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_1);
         #endif
       } else {
         if (__pyx_t_4 >= PyTuple_GET_SIZE(__pyx_t_3)) break;
         #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-        __pyx_t_1 = PyTuple_GET_ITEM(__pyx_t_3, __pyx_t_4); __Pyx_INCREF(__pyx_t_1); __pyx_t_4++; if (unlikely(0 < 0)) __PYX_ERR(0, 227, __pyx_L1_error)
+        __pyx_t_1 = PyTuple_GET_ITEM(__pyx_t_3, __pyx_t_4); __Pyx_INCREF(__pyx_t_1); __pyx_t_4++; if (unlikely(0 < 0)) __PYX_ERR(0, 229, __pyx_L1_error)
         #else
-        __pyx_t_1 = PySequence_ITEM(__pyx_t_3, __pyx_t_4); __pyx_t_4++; if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 227, __pyx_L1_error)
+        __pyx_t_1 = PySequence_ITEM(__pyx_t_3, __pyx_t_4); __pyx_t_4++; if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 229, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_1);
         #endif
       }
@@ -4583,7 +3947,7 @@ static float __pyx_f_20hacking_the_election_5utils_8geometry_get_imprecise_compa
         PyObject* exc_type = PyErr_Occurred();
         if (exc_type) {
           if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
-          else __PYX_ERR(0, 227, __pyx_L1_error)
+          else __PYX_ERR(0, 229, __pyx_L1_error)
         }
         break;
       }
@@ -4592,20 +3956,20 @@ static float __pyx_f_20hacking_the_election_5utils_8geometry_get_imprecise_compa
     __Pyx_XDECREF_SET(__pyx_v_precinct, __pyx_t_1);
     __pyx_t_1 = 0;
 
-    /* "hacking_the_election/utils/geometry.pyx":228
+    /* "hacking_the_election/utils/geometry.pyx":230
  *     cpdef precinct
  *     for precinct in district.precincts.values():
  *         precinct_points = precinct.points             # <<<<<<<<<<<<<<
  *         for point in precinct_points:
  *             distance = get_distance(center, point)
  */
-    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_precinct, __pyx_n_s_points); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 228, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_precinct, __pyx_n_s_points); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 230, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    if (!(likely(PyList_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "list", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(0, 228, __pyx_L1_error)
+    if (!(likely(PyList_CheckExact(__pyx_t_1))||((__pyx_t_1) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "list", Py_TYPE(__pyx_t_1)->tp_name), 0))) __PYX_ERR(0, 230, __pyx_L1_error)
     __Pyx_XDECREF_SET(__pyx_v_precinct_points, ((PyObject*)__pyx_t_1));
     __pyx_t_1 = 0;
 
-    /* "hacking_the_election/utils/geometry.pyx":229
+    /* "hacking_the_election/utils/geometry.pyx":231
  *     for precinct in district.precincts.values():
  *         precinct_points = precinct.points
  *         for point in precinct_points:             # <<<<<<<<<<<<<<
@@ -4614,22 +3978,22 @@ static float __pyx_f_20hacking_the_election_5utils_8geometry_get_imprecise_compa
  */
     if (unlikely(__pyx_v_precinct_points == Py_None)) {
       PyErr_SetString(PyExc_TypeError, "'NoneType' object is not iterable");
-      __PYX_ERR(0, 229, __pyx_L1_error)
+      __PYX_ERR(0, 231, __pyx_L1_error)
     }
     __pyx_t_1 = __pyx_v_precinct_points; __Pyx_INCREF(__pyx_t_1); __pyx_t_6 = 0;
     for (;;) {
       if (__pyx_t_6 >= PyList_GET_SIZE(__pyx_t_1)) break;
       #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-      __pyx_t_2 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_6); __Pyx_INCREF(__pyx_t_2); __pyx_t_6++; if (unlikely(0 < 0)) __PYX_ERR(0, 229, __pyx_L1_error)
+      __pyx_t_2 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_6); __Pyx_INCREF(__pyx_t_2); __pyx_t_6++; if (unlikely(0 < 0)) __PYX_ERR(0, 231, __pyx_L1_error)
       #else
-      __pyx_t_2 = PySequence_ITEM(__pyx_t_1, __pyx_t_6); __pyx_t_6++; if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 229, __pyx_L1_error)
+      __pyx_t_2 = PySequence_ITEM(__pyx_t_1, __pyx_t_6); __pyx_t_6++; if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 231, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_2);
       #endif
-      if (!(likely(PyList_CheckExact(__pyx_t_2))||((__pyx_t_2) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "list", Py_TYPE(__pyx_t_2)->tp_name), 0))) __PYX_ERR(0, 229, __pyx_L1_error)
+      if (!(likely(PyList_CheckExact(__pyx_t_2))||((__pyx_t_2) == Py_None)||(PyErr_Format(PyExc_TypeError, "Expected %.16s, got %.200s", "list", Py_TYPE(__pyx_t_2)->tp_name), 0))) __PYX_ERR(0, 231, __pyx_L1_error)
       __Pyx_XDECREF_SET(__pyx_v_point, ((PyObject*)__pyx_t_2));
       __pyx_t_2 = 0;
 
-      /* "hacking_the_election/utils/geometry.pyx":230
+      /* "hacking_the_election/utils/geometry.pyx":232
  *         precinct_points = precinct.points
  *         for point in precinct_points:
  *             distance = get_distance(center, point)             # <<<<<<<<<<<<<<
@@ -4638,7 +4002,7 @@ static float __pyx_f_20hacking_the_election_5utils_8geometry_get_imprecise_compa
  */
       __pyx_v_distance = __pyx_f_20hacking_the_election_5utils_8geometry_get_distance(__pyx_v_center, __pyx_v_point, 0);
 
-      /* "hacking_the_election/utils/geometry.pyx":231
+      /* "hacking_the_election/utils/geometry.pyx":233
  *         for point in precinct_points:
  *             distance = get_distance(center, point)
  *             if distance > max_distance:             # <<<<<<<<<<<<<<
@@ -4648,7 +4012,7 @@ static float __pyx_f_20hacking_the_election_5utils_8geometry_get_imprecise_compa
       __pyx_t_7 = ((__pyx_v_distance > __pyx_v_max_distance) != 0);
       if (__pyx_t_7) {
 
-        /* "hacking_the_election/utils/geometry.pyx":232
+        /* "hacking_the_election/utils/geometry.pyx":234
  *             distance = get_distance(center, point)
  *             if distance > max_distance:
  *                 max_distance = distance             # <<<<<<<<<<<<<<
@@ -4657,7 +4021,7 @@ static float __pyx_f_20hacking_the_election_5utils_8geometry_get_imprecise_compa
  */
         __pyx_v_max_distance = __pyx_v_distance;
 
-        /* "hacking_the_election/utils/geometry.pyx":231
+        /* "hacking_the_election/utils/geometry.pyx":233
  *         for point in precinct_points:
  *             distance = get_distance(center, point)
  *             if distance > max_distance:             # <<<<<<<<<<<<<<
@@ -4666,7 +4030,7 @@ static float __pyx_f_20hacking_the_election_5utils_8geometry_get_imprecise_compa
  */
       }
 
-      /* "hacking_the_election/utils/geometry.pyx":229
+      /* "hacking_the_election/utils/geometry.pyx":231
  *     for precinct in district.precincts.values():
  *         precinct_points = precinct.points
  *         for point in precinct_points:             # <<<<<<<<<<<<<<
@@ -4676,7 +4040,7 @@ static float __pyx_f_20hacking_the_election_5utils_8geometry_get_imprecise_compa
     }
     __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-    /* "hacking_the_election/utils/geometry.pyx":227
+    /* "hacking_the_election/utils/geometry.pyx":229
  *     cdef list centroid, precinct_points, point
  *     cpdef precinct
  *     for precinct in district.precincts.values():             # <<<<<<<<<<<<<<
@@ -4686,49 +4050,49 @@ static float __pyx_f_20hacking_the_election_5utils_8geometry_get_imprecise_compa
   }
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
-  /* "hacking_the_election/utils/geometry.pyx":235
+  /* "hacking_the_election/utils/geometry.pyx":237
  * 
  *     # max_distance is already squared.
  *     cdef float circle_area = max_distance * math.pi             # <<<<<<<<<<<<<<
  *     return district.area / circle_area
  * 
  */
-  __pyx_t_3 = PyFloat_FromDouble(__pyx_v_max_distance); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 235, __pyx_L1_error)
+  __pyx_t_3 = PyFloat_FromDouble(__pyx_v_max_distance); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 237, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_math); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 235, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_math); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 237, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_pi); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 235, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_pi); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 237, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = PyNumber_Multiply(__pyx_t_3, __pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 235, __pyx_L1_error)
+  __pyx_t_1 = PyNumber_Multiply(__pyx_t_3, __pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 237, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_8 = __pyx_PyFloat_AsFloat(__pyx_t_1); if (unlikely((__pyx_t_8 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 235, __pyx_L1_error)
+  __pyx_t_8 = __pyx_PyFloat_AsFloat(__pyx_t_1); if (unlikely((__pyx_t_8 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 237, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_v_circle_area = __pyx_t_8;
 
-  /* "hacking_the_election/utils/geometry.pyx":236
+  /* "hacking_the_election/utils/geometry.pyx":238
  *     # max_distance is already squared.
  *     cdef float circle_area = max_distance * math.pi
  *     return district.area / circle_area             # <<<<<<<<<<<<<<
  * 
  * 
  */
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_district, __pyx_n_s_area); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 236, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_district, __pyx_n_s_area); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 238, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = PyFloat_FromDouble(__pyx_v_circle_area); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 236, __pyx_L1_error)
+  __pyx_t_2 = PyFloat_FromDouble(__pyx_v_circle_area); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 238, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = __Pyx_PyNumber_Divide(__pyx_t_1, __pyx_t_2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 236, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyNumber_Divide(__pyx_t_1, __pyx_t_2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 238, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_8 = __pyx_PyFloat_AsFloat(__pyx_t_3); if (unlikely((__pyx_t_8 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 236, __pyx_L1_error)
+  __pyx_t_8 = __pyx_PyFloat_AsFloat(__pyx_t_3); if (unlikely((__pyx_t_8 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 238, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __pyx_r = __pyx_t_8;
   goto __pyx_L0;
 
-  /* "hacking_the_election/utils/geometry.pyx":211
+  /* "hacking_the_election/utils/geometry.pyx":213
  * 
  * 
  * cpdef float get_imprecise_compactness(district):             # <<<<<<<<<<<<<<
@@ -4775,7 +4139,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_10get_imprecis
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("get_imprecise_compactness", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_20hacking_the_election_5utils_8geometry_get_imprecise_compactness(__pyx_v_district, 0)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 211, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_20hacking_the_election_5utils_8geometry_get_imprecise_compactness(__pyx_v_district, 0)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 213, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -4792,7 +4156,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_10get_imprecis
   return __pyx_r;
 }
 
-/* "hacking_the_election/utils/geometry.pyx":239
+/* "hacking_the_election/utils/geometry.pyx":241
  * 
  * 
  * def area(ring):             # <<<<<<<<<<<<<<
@@ -4838,7 +4202,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_12area(CYTHON_
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("area", 0);
 
-  /* "hacking_the_election/utils/geometry.pyx":248
+  /* "hacking_the_election/utils/geometry.pyx":250
  *     :rtype: float
  *     """
  *     left_area = 0             # <<<<<<<<<<<<<<
@@ -4848,7 +4212,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_12area(CYTHON_
   __Pyx_INCREF(__pyx_int_0);
   __pyx_v_left_area = __pyx_int_0;
 
-  /* "hacking_the_election/utils/geometry.pyx":249
+  /* "hacking_the_election/utils/geometry.pyx":251
  *     """
  *     left_area = 0
  *     right_area = 0             # <<<<<<<<<<<<<<
@@ -4858,7 +4222,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_12area(CYTHON_
   __Pyx_INCREF(__pyx_int_0);
   __pyx_v_right_area = __pyx_int_0;
 
-  /* "hacking_the_election/utils/geometry.pyx":250
+  /* "hacking_the_election/utils/geometry.pyx":252
  *     left_area = 0
  *     right_area = 0
  *     for i, point in enumerate(ring):             # <<<<<<<<<<<<<<
@@ -4871,26 +4235,26 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_12area(CYTHON_
     __pyx_t_2 = __pyx_v_ring; __Pyx_INCREF(__pyx_t_2); __pyx_t_3 = 0;
     __pyx_t_4 = NULL;
   } else {
-    __pyx_t_3 = -1; __pyx_t_2 = PyObject_GetIter(__pyx_v_ring); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 250, __pyx_L1_error)
+    __pyx_t_3 = -1; __pyx_t_2 = PyObject_GetIter(__pyx_v_ring); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 252, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_4 = Py_TYPE(__pyx_t_2)->tp_iternext; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 250, __pyx_L1_error)
+    __pyx_t_4 = Py_TYPE(__pyx_t_2)->tp_iternext; if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 252, __pyx_L1_error)
   }
   for (;;) {
     if (likely(!__pyx_t_4)) {
       if (likely(PyList_CheckExact(__pyx_t_2))) {
         if (__pyx_t_3 >= PyList_GET_SIZE(__pyx_t_2)) break;
         #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-        __pyx_t_5 = PyList_GET_ITEM(__pyx_t_2, __pyx_t_3); __Pyx_INCREF(__pyx_t_5); __pyx_t_3++; if (unlikely(0 < 0)) __PYX_ERR(0, 250, __pyx_L1_error)
+        __pyx_t_5 = PyList_GET_ITEM(__pyx_t_2, __pyx_t_3); __Pyx_INCREF(__pyx_t_5); __pyx_t_3++; if (unlikely(0 < 0)) __PYX_ERR(0, 252, __pyx_L1_error)
         #else
-        __pyx_t_5 = PySequence_ITEM(__pyx_t_2, __pyx_t_3); __pyx_t_3++; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 250, __pyx_L1_error)
+        __pyx_t_5 = PySequence_ITEM(__pyx_t_2, __pyx_t_3); __pyx_t_3++; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 252, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_5);
         #endif
       } else {
         if (__pyx_t_3 >= PyTuple_GET_SIZE(__pyx_t_2)) break;
         #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-        __pyx_t_5 = PyTuple_GET_ITEM(__pyx_t_2, __pyx_t_3); __Pyx_INCREF(__pyx_t_5); __pyx_t_3++; if (unlikely(0 < 0)) __PYX_ERR(0, 250, __pyx_L1_error)
+        __pyx_t_5 = PyTuple_GET_ITEM(__pyx_t_2, __pyx_t_3); __Pyx_INCREF(__pyx_t_5); __pyx_t_3++; if (unlikely(0 < 0)) __PYX_ERR(0, 252, __pyx_L1_error)
         #else
-        __pyx_t_5 = PySequence_ITEM(__pyx_t_2, __pyx_t_3); __pyx_t_3++; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 250, __pyx_L1_error)
+        __pyx_t_5 = PySequence_ITEM(__pyx_t_2, __pyx_t_3); __pyx_t_3++; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 252, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_5);
         #endif
       }
@@ -4900,7 +4264,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_12area(CYTHON_
         PyObject* exc_type = PyErr_Occurred();
         if (exc_type) {
           if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
-          else __PYX_ERR(0, 250, __pyx_L1_error)
+          else __PYX_ERR(0, 252, __pyx_L1_error)
         }
         break;
       }
@@ -4910,29 +4274,29 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_12area(CYTHON_
     __pyx_t_5 = 0;
     __Pyx_INCREF(__pyx_t_1);
     __Pyx_XDECREF_SET(__pyx_v_i, __pyx_t_1);
-    __pyx_t_5 = __Pyx_PyInt_AddObjC(__pyx_t_1, __pyx_int_1, 1, 0, 0); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 250, __pyx_L1_error)
+    __pyx_t_5 = __Pyx_PyInt_AddObjC(__pyx_t_1, __pyx_int_1, 1, 0, 0); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 252, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_5);
     __Pyx_DECREF(__pyx_t_1);
     __pyx_t_1 = __pyx_t_5;
     __pyx_t_5 = 0;
 
-    /* "hacking_the_election/utils/geometry.pyx":251
+    /* "hacking_the_election/utils/geometry.pyx":253
  *     right_area = 0
  *     for i, point in enumerate(ring):
  *         if i == (len(ring) - 1):             # <<<<<<<<<<<<<<
  *             break
  *         if i == 0:
  */
-    __pyx_t_6 = PyObject_Length(__pyx_v_ring); if (unlikely(__pyx_t_6 == ((Py_ssize_t)-1))) __PYX_ERR(0, 251, __pyx_L1_error)
-    __pyx_t_5 = PyInt_FromSsize_t((__pyx_t_6 - 1)); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 251, __pyx_L1_error)
+    __pyx_t_6 = PyObject_Length(__pyx_v_ring); if (unlikely(__pyx_t_6 == ((Py_ssize_t)-1))) __PYX_ERR(0, 253, __pyx_L1_error)
+    __pyx_t_5 = PyInt_FromSsize_t((__pyx_t_6 - 1)); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 253, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_5);
-    __pyx_t_7 = PyObject_RichCompare(__pyx_v_i, __pyx_t_5, Py_EQ); __Pyx_XGOTREF(__pyx_t_7); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 251, __pyx_L1_error)
+    __pyx_t_7 = PyObject_RichCompare(__pyx_v_i, __pyx_t_5, Py_EQ); __Pyx_XGOTREF(__pyx_t_7); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 253, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-    __pyx_t_8 = __Pyx_PyObject_IsTrue(__pyx_t_7); if (unlikely(__pyx_t_8 < 0)) __PYX_ERR(0, 251, __pyx_L1_error)
+    __pyx_t_8 = __Pyx_PyObject_IsTrue(__pyx_t_7); if (unlikely(__pyx_t_8 < 0)) __PYX_ERR(0, 253, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
     if (__pyx_t_8) {
 
-      /* "hacking_the_election/utils/geometry.pyx":252
+      /* "hacking_the_election/utils/geometry.pyx":254
  *     for i, point in enumerate(ring):
  *         if i == (len(ring) - 1):
  *             break             # <<<<<<<<<<<<<<
@@ -4941,7 +4305,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_12area(CYTHON_
  */
       goto __pyx_L4_break;
 
-      /* "hacking_the_election/utils/geometry.pyx":251
+      /* "hacking_the_election/utils/geometry.pyx":253
  *     right_area = 0
  *     for i, point in enumerate(ring):
  *         if i == (len(ring) - 1):             # <<<<<<<<<<<<<<
@@ -4950,76 +4314,76 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_12area(CYTHON_
  */
     }
 
-    /* "hacking_the_election/utils/geometry.pyx":253
+    /* "hacking_the_election/utils/geometry.pyx":255
  *         if i == (len(ring) - 1):
  *             break
  *         if i == 0:             # <<<<<<<<<<<<<<
  *             left_area += float(point[0]) * float(ring[len(ring) - 1][1])
  *             right_area += float(point[1]) * float(ring[len(ring) - 1][0])
  */
-    __pyx_t_7 = __Pyx_PyInt_EqObjC(__pyx_v_i, __pyx_int_0, 0, 0); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 253, __pyx_L1_error)
+    __pyx_t_7 = __Pyx_PyInt_EqObjC(__pyx_v_i, __pyx_int_0, 0, 0); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 255, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_7);
-    __pyx_t_8 = __Pyx_PyObject_IsTrue(__pyx_t_7); if (unlikely(__pyx_t_8 < 0)) __PYX_ERR(0, 253, __pyx_L1_error)
+    __pyx_t_8 = __Pyx_PyObject_IsTrue(__pyx_t_7); if (unlikely(__pyx_t_8 < 0)) __PYX_ERR(0, 255, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
     if (__pyx_t_8) {
 
-      /* "hacking_the_election/utils/geometry.pyx":254
+      /* "hacking_the_election/utils/geometry.pyx":256
  *             break
  *         if i == 0:
  *             left_area += float(point[0]) * float(ring[len(ring) - 1][1])             # <<<<<<<<<<<<<<
  *             right_area += float(point[1]) * float(ring[len(ring) - 1][0])
  *         left_area += float(point[0]) * float(ring[i + 1][1])
  */
-      __pyx_t_7 = __Pyx_GetItemInt(__pyx_v_point, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 254, __pyx_L1_error)
+      __pyx_t_7 = __Pyx_GetItemInt(__pyx_v_point, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 256, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_7);
-      __pyx_t_9 = __Pyx_PyObject_AsDouble(__pyx_t_7); if (unlikely(__pyx_t_9 == ((double)((double)-1)) && PyErr_Occurred())) __PYX_ERR(0, 254, __pyx_L1_error)
+      __pyx_t_9 = __Pyx_PyObject_AsDouble(__pyx_t_7); if (unlikely(__pyx_t_9 == ((double)((double)-1)) && PyErr_Occurred())) __PYX_ERR(0, 256, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-      __pyx_t_6 = PyObject_Length(__pyx_v_ring); if (unlikely(__pyx_t_6 == ((Py_ssize_t)-1))) __PYX_ERR(0, 254, __pyx_L1_error)
+      __pyx_t_6 = PyObject_Length(__pyx_v_ring); if (unlikely(__pyx_t_6 == ((Py_ssize_t)-1))) __PYX_ERR(0, 256, __pyx_L1_error)
       __pyx_t_10 = (__pyx_t_6 - 1);
-      __pyx_t_7 = __Pyx_GetItemInt(__pyx_v_ring, __pyx_t_10, Py_ssize_t, 1, PyInt_FromSsize_t, 0, 1, 1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 254, __pyx_L1_error)
+      __pyx_t_7 = __Pyx_GetItemInt(__pyx_v_ring, __pyx_t_10, Py_ssize_t, 1, PyInt_FromSsize_t, 0, 1, 1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 256, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_7);
-      __pyx_t_5 = __Pyx_GetItemInt(__pyx_t_7, 1, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 254, __pyx_L1_error)
+      __pyx_t_5 = __Pyx_GetItemInt(__pyx_t_7, 1, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 256, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_5);
       __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-      __pyx_t_11 = __Pyx_PyObject_AsDouble(__pyx_t_5); if (unlikely(__pyx_t_11 == ((double)((double)-1)) && PyErr_Occurred())) __PYX_ERR(0, 254, __pyx_L1_error)
+      __pyx_t_11 = __Pyx_PyObject_AsDouble(__pyx_t_5); if (unlikely(__pyx_t_11 == ((double)((double)-1)) && PyErr_Occurred())) __PYX_ERR(0, 256, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-      __pyx_t_5 = PyFloat_FromDouble((__pyx_t_9 * __pyx_t_11)); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 254, __pyx_L1_error)
+      __pyx_t_5 = PyFloat_FromDouble((__pyx_t_9 * __pyx_t_11)); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 256, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_5);
-      __pyx_t_7 = PyNumber_InPlaceAdd(__pyx_v_left_area, __pyx_t_5); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 254, __pyx_L1_error)
+      __pyx_t_7 = PyNumber_InPlaceAdd(__pyx_v_left_area, __pyx_t_5); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 256, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_7);
       __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
       __Pyx_DECREF_SET(__pyx_v_left_area, __pyx_t_7);
       __pyx_t_7 = 0;
 
-      /* "hacking_the_election/utils/geometry.pyx":255
+      /* "hacking_the_election/utils/geometry.pyx":257
  *         if i == 0:
  *             left_area += float(point[0]) * float(ring[len(ring) - 1][1])
  *             right_area += float(point[1]) * float(ring[len(ring) - 1][0])             # <<<<<<<<<<<<<<
  *         left_area += float(point[0]) * float(ring[i + 1][1])
  *         right_area += float(point[1]) * float(ring[i + 1][0])
  */
-      __pyx_t_7 = __Pyx_GetItemInt(__pyx_v_point, 1, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 255, __pyx_L1_error)
+      __pyx_t_7 = __Pyx_GetItemInt(__pyx_v_point, 1, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 257, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_7);
-      __pyx_t_11 = __Pyx_PyObject_AsDouble(__pyx_t_7); if (unlikely(__pyx_t_11 == ((double)((double)-1)) && PyErr_Occurred())) __PYX_ERR(0, 255, __pyx_L1_error)
+      __pyx_t_11 = __Pyx_PyObject_AsDouble(__pyx_t_7); if (unlikely(__pyx_t_11 == ((double)((double)-1)) && PyErr_Occurred())) __PYX_ERR(0, 257, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-      __pyx_t_10 = PyObject_Length(__pyx_v_ring); if (unlikely(__pyx_t_10 == ((Py_ssize_t)-1))) __PYX_ERR(0, 255, __pyx_L1_error)
+      __pyx_t_10 = PyObject_Length(__pyx_v_ring); if (unlikely(__pyx_t_10 == ((Py_ssize_t)-1))) __PYX_ERR(0, 257, __pyx_L1_error)
       __pyx_t_6 = (__pyx_t_10 - 1);
-      __pyx_t_7 = __Pyx_GetItemInt(__pyx_v_ring, __pyx_t_6, Py_ssize_t, 1, PyInt_FromSsize_t, 0, 1, 1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 255, __pyx_L1_error)
+      __pyx_t_7 = __Pyx_GetItemInt(__pyx_v_ring, __pyx_t_6, Py_ssize_t, 1, PyInt_FromSsize_t, 0, 1, 1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 257, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_7);
-      __pyx_t_5 = __Pyx_GetItemInt(__pyx_t_7, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 255, __pyx_L1_error)
+      __pyx_t_5 = __Pyx_GetItemInt(__pyx_t_7, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 257, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_5);
       __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-      __pyx_t_9 = __Pyx_PyObject_AsDouble(__pyx_t_5); if (unlikely(__pyx_t_9 == ((double)((double)-1)) && PyErr_Occurred())) __PYX_ERR(0, 255, __pyx_L1_error)
+      __pyx_t_9 = __Pyx_PyObject_AsDouble(__pyx_t_5); if (unlikely(__pyx_t_9 == ((double)((double)-1)) && PyErr_Occurred())) __PYX_ERR(0, 257, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-      __pyx_t_5 = PyFloat_FromDouble((__pyx_t_11 * __pyx_t_9)); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 255, __pyx_L1_error)
+      __pyx_t_5 = PyFloat_FromDouble((__pyx_t_11 * __pyx_t_9)); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 257, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_5);
-      __pyx_t_7 = PyNumber_InPlaceAdd(__pyx_v_right_area, __pyx_t_5); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 255, __pyx_L1_error)
+      __pyx_t_7 = PyNumber_InPlaceAdd(__pyx_v_right_area, __pyx_t_5); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 257, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_7);
       __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
       __Pyx_DECREF_SET(__pyx_v_right_area, __pyx_t_7);
       __pyx_t_7 = 0;
 
-      /* "hacking_the_election/utils/geometry.pyx":253
+      /* "hacking_the_election/utils/geometry.pyx":255
  *         if i == (len(ring) - 1):
  *             break
  *         if i == 0:             # <<<<<<<<<<<<<<
@@ -5028,65 +4392,65 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_12area(CYTHON_
  */
     }
 
-    /* "hacking_the_election/utils/geometry.pyx":256
+    /* "hacking_the_election/utils/geometry.pyx":258
  *             left_area += float(point[0]) * float(ring[len(ring) - 1][1])
  *             right_area += float(point[1]) * float(ring[len(ring) - 1][0])
  *         left_area += float(point[0]) * float(ring[i + 1][1])             # <<<<<<<<<<<<<<
  *         right_area += float(point[1]) * float(ring[i + 1][0])
  * 
  */
-    __pyx_t_7 = __Pyx_GetItemInt(__pyx_v_point, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 256, __pyx_L1_error)
+    __pyx_t_7 = __Pyx_GetItemInt(__pyx_v_point, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 258, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_7);
-    __pyx_t_9 = __Pyx_PyObject_AsDouble(__pyx_t_7); if (unlikely(__pyx_t_9 == ((double)((double)-1)) && PyErr_Occurred())) __PYX_ERR(0, 256, __pyx_L1_error)
+    __pyx_t_9 = __Pyx_PyObject_AsDouble(__pyx_t_7); if (unlikely(__pyx_t_9 == ((double)((double)-1)) && PyErr_Occurred())) __PYX_ERR(0, 258, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-    __pyx_t_7 = __Pyx_PyInt_AddObjC(__pyx_v_i, __pyx_int_1, 1, 0, 0); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 256, __pyx_L1_error)
+    __pyx_t_7 = __Pyx_PyInt_AddObjC(__pyx_v_i, __pyx_int_1, 1, 0, 0); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 258, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_7);
-    __pyx_t_5 = __Pyx_PyObject_GetItem(__pyx_v_ring, __pyx_t_7); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 256, __pyx_L1_error)
+    __pyx_t_5 = __Pyx_PyObject_GetItem(__pyx_v_ring, __pyx_t_7); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 258, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_5);
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-    __pyx_t_7 = __Pyx_GetItemInt(__pyx_t_5, 1, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 256, __pyx_L1_error)
+    __pyx_t_7 = __Pyx_GetItemInt(__pyx_t_5, 1, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 258, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_7);
     __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-    __pyx_t_11 = __Pyx_PyObject_AsDouble(__pyx_t_7); if (unlikely(__pyx_t_11 == ((double)((double)-1)) && PyErr_Occurred())) __PYX_ERR(0, 256, __pyx_L1_error)
+    __pyx_t_11 = __Pyx_PyObject_AsDouble(__pyx_t_7); if (unlikely(__pyx_t_11 == ((double)((double)-1)) && PyErr_Occurred())) __PYX_ERR(0, 258, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-    __pyx_t_7 = PyFloat_FromDouble((__pyx_t_9 * __pyx_t_11)); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 256, __pyx_L1_error)
+    __pyx_t_7 = PyFloat_FromDouble((__pyx_t_9 * __pyx_t_11)); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 258, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_7);
-    __pyx_t_5 = PyNumber_InPlaceAdd(__pyx_v_left_area, __pyx_t_7); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 256, __pyx_L1_error)
+    __pyx_t_5 = PyNumber_InPlaceAdd(__pyx_v_left_area, __pyx_t_7); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 258, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_5);
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
     __Pyx_DECREF_SET(__pyx_v_left_area, __pyx_t_5);
     __pyx_t_5 = 0;
 
-    /* "hacking_the_election/utils/geometry.pyx":257
+    /* "hacking_the_election/utils/geometry.pyx":259
  *             right_area += float(point[1]) * float(ring[len(ring) - 1][0])
  *         left_area += float(point[0]) * float(ring[i + 1][1])
  *         right_area += float(point[1]) * float(ring[i + 1][0])             # <<<<<<<<<<<<<<
  * 
  *     return abs(left_area - right_area) / 2
  */
-    __pyx_t_5 = __Pyx_GetItemInt(__pyx_v_point, 1, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 257, __pyx_L1_error)
+    __pyx_t_5 = __Pyx_GetItemInt(__pyx_v_point, 1, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 259, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_5);
-    __pyx_t_11 = __Pyx_PyObject_AsDouble(__pyx_t_5); if (unlikely(__pyx_t_11 == ((double)((double)-1)) && PyErr_Occurred())) __PYX_ERR(0, 257, __pyx_L1_error)
+    __pyx_t_11 = __Pyx_PyObject_AsDouble(__pyx_t_5); if (unlikely(__pyx_t_11 == ((double)((double)-1)) && PyErr_Occurred())) __PYX_ERR(0, 259, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-    __pyx_t_5 = __Pyx_PyInt_AddObjC(__pyx_v_i, __pyx_int_1, 1, 0, 0); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 257, __pyx_L1_error)
+    __pyx_t_5 = __Pyx_PyInt_AddObjC(__pyx_v_i, __pyx_int_1, 1, 0, 0); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 259, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_5);
-    __pyx_t_7 = __Pyx_PyObject_GetItem(__pyx_v_ring, __pyx_t_5); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 257, __pyx_L1_error)
+    __pyx_t_7 = __Pyx_PyObject_GetItem(__pyx_v_ring, __pyx_t_5); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 259, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_7);
     __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-    __pyx_t_5 = __Pyx_GetItemInt(__pyx_t_7, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 257, __pyx_L1_error)
+    __pyx_t_5 = __Pyx_GetItemInt(__pyx_t_7, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 259, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_5);
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-    __pyx_t_9 = __Pyx_PyObject_AsDouble(__pyx_t_5); if (unlikely(__pyx_t_9 == ((double)((double)-1)) && PyErr_Occurred())) __PYX_ERR(0, 257, __pyx_L1_error)
+    __pyx_t_9 = __Pyx_PyObject_AsDouble(__pyx_t_5); if (unlikely(__pyx_t_9 == ((double)((double)-1)) && PyErr_Occurred())) __PYX_ERR(0, 259, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-    __pyx_t_5 = PyFloat_FromDouble((__pyx_t_11 * __pyx_t_9)); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 257, __pyx_L1_error)
+    __pyx_t_5 = PyFloat_FromDouble((__pyx_t_11 * __pyx_t_9)); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 259, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_5);
-    __pyx_t_7 = PyNumber_InPlaceAdd(__pyx_v_right_area, __pyx_t_5); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 257, __pyx_L1_error)
+    __pyx_t_7 = PyNumber_InPlaceAdd(__pyx_v_right_area, __pyx_t_5); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 259, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_7);
     __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
     __Pyx_DECREF_SET(__pyx_v_right_area, __pyx_t_7);
     __pyx_t_7 = 0;
 
-    /* "hacking_the_election/utils/geometry.pyx":250
+    /* "hacking_the_election/utils/geometry.pyx":252
  *     left_area = 0
  *     right_area = 0
  *     for i, point in enumerate(ring):             # <<<<<<<<<<<<<<
@@ -5098,7 +4462,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_12area(CYTHON_
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
-  /* "hacking_the_election/utils/geometry.pyx":259
+  /* "hacking_the_election/utils/geometry.pyx":261
  *         right_area += float(point[1]) * float(ring[i + 1][0])
  * 
  *     return abs(left_area - right_area) / 2             # <<<<<<<<<<<<<<
@@ -5106,19 +4470,19 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_12area(CYTHON_
  * 
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyNumber_Subtract(__pyx_v_left_area, __pyx_v_right_area); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 259, __pyx_L1_error)
+  __pyx_t_1 = PyNumber_Subtract(__pyx_v_left_area, __pyx_v_right_area); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 261, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyNumber_Absolute(__pyx_t_1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 259, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyNumber_Absolute(__pyx_t_1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 261, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = __Pyx_PyNumber_Divide(__pyx_t_2, __pyx_int_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 259, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyNumber_Divide(__pyx_t_2, __pyx_int_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 261, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "hacking_the_election/utils/geometry.pyx":239
+  /* "hacking_the_election/utils/geometry.pyx":241
  * 
  * 
  * def area(ring):             # <<<<<<<<<<<<<<
@@ -5144,7 +4508,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_12area(CYTHON_
   return __pyx_r;
 }
 
-/* "hacking_the_election/utils/geometry.pyx":262
+/* "hacking_the_election/utils/geometry.pyx":264
  * 
  * 
  * cpdef float get_distance(list p1, list p2):             # <<<<<<<<<<<<<<
@@ -5167,7 +4531,7 @@ static float __pyx_f_20hacking_the_election_5utils_8geometry_get_distance(PyObje
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("get_distance", 0);
 
-  /* "hacking_the_election/utils/geometry.pyx":274
+  /* "hacking_the_election/utils/geometry.pyx":276
  *     :rtype: float
  *     """
  *     cdef float x1 = p1[0]             # <<<<<<<<<<<<<<
@@ -5176,15 +4540,15 @@ static float __pyx_f_20hacking_the_election_5utils_8geometry_get_distance(PyObje
  */
   if (unlikely(__pyx_v_p1 == Py_None)) {
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-    __PYX_ERR(0, 274, __pyx_L1_error)
+    __PYX_ERR(0, 276, __pyx_L1_error)
   }
-  __pyx_t_1 = __Pyx_GetItemInt_List(__pyx_v_p1, 0, long, 1, __Pyx_PyInt_From_long, 1, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 274, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_GetItemInt_List(__pyx_v_p1, 0, long, 1, __Pyx_PyInt_From_long, 1, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 276, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __pyx_PyFloat_AsFloat(__pyx_t_1); if (unlikely((__pyx_t_2 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 274, __pyx_L1_error)
+  __pyx_t_2 = __pyx_PyFloat_AsFloat(__pyx_t_1); if (unlikely((__pyx_t_2 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 276, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_v_x1 = __pyx_t_2;
 
-  /* "hacking_the_election/utils/geometry.pyx":275
+  /* "hacking_the_election/utils/geometry.pyx":277
  *     """
  *     cdef float x1 = p1[0]
  *     cdef float x2 = p2[0]             # <<<<<<<<<<<<<<
@@ -5193,15 +4557,15 @@ static float __pyx_f_20hacking_the_election_5utils_8geometry_get_distance(PyObje
  */
   if (unlikely(__pyx_v_p2 == Py_None)) {
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-    __PYX_ERR(0, 275, __pyx_L1_error)
+    __PYX_ERR(0, 277, __pyx_L1_error)
   }
-  __pyx_t_1 = __Pyx_GetItemInt_List(__pyx_v_p2, 0, long, 1, __Pyx_PyInt_From_long, 1, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 275, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_GetItemInt_List(__pyx_v_p2, 0, long, 1, __Pyx_PyInt_From_long, 1, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 277, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __pyx_PyFloat_AsFloat(__pyx_t_1); if (unlikely((__pyx_t_2 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 275, __pyx_L1_error)
+  __pyx_t_2 = __pyx_PyFloat_AsFloat(__pyx_t_1); if (unlikely((__pyx_t_2 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 277, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_v_x2 = __pyx_t_2;
 
-  /* "hacking_the_election/utils/geometry.pyx":276
+  /* "hacking_the_election/utils/geometry.pyx":278
  *     cdef float x1 = p1[0]
  *     cdef float x2 = p2[0]
  *     cdef float y1 = p1[1]             # <<<<<<<<<<<<<<
@@ -5210,15 +4574,15 @@ static float __pyx_f_20hacking_the_election_5utils_8geometry_get_distance(PyObje
  */
   if (unlikely(__pyx_v_p1 == Py_None)) {
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-    __PYX_ERR(0, 276, __pyx_L1_error)
+    __PYX_ERR(0, 278, __pyx_L1_error)
   }
-  __pyx_t_1 = __Pyx_GetItemInt_List(__pyx_v_p1, 1, long, 1, __Pyx_PyInt_From_long, 1, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 276, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_GetItemInt_List(__pyx_v_p1, 1, long, 1, __Pyx_PyInt_From_long, 1, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 278, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __pyx_PyFloat_AsFloat(__pyx_t_1); if (unlikely((__pyx_t_2 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 276, __pyx_L1_error)
+  __pyx_t_2 = __pyx_PyFloat_AsFloat(__pyx_t_1); if (unlikely((__pyx_t_2 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 278, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_v_y1 = __pyx_t_2;
 
-  /* "hacking_the_election/utils/geometry.pyx":277
+  /* "hacking_the_election/utils/geometry.pyx":279
  *     cdef float x2 = p2[0]
  *     cdef float y1 = p1[1]
  *     cdef float y2 = p2[1]             # <<<<<<<<<<<<<<
@@ -5226,15 +4590,15 @@ static float __pyx_f_20hacking_the_election_5utils_8geometry_get_distance(PyObje
  */
   if (unlikely(__pyx_v_p2 == Py_None)) {
     PyErr_SetString(PyExc_TypeError, "'NoneType' object is not subscriptable");
-    __PYX_ERR(0, 277, __pyx_L1_error)
+    __PYX_ERR(0, 279, __pyx_L1_error)
   }
-  __pyx_t_1 = __Pyx_GetItemInt_List(__pyx_v_p2, 1, long, 1, __Pyx_PyInt_From_long, 1, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 277, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_GetItemInt_List(__pyx_v_p2, 1, long, 1, __Pyx_PyInt_From_long, 1, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 279, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __pyx_PyFloat_AsFloat(__pyx_t_1); if (unlikely((__pyx_t_2 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 277, __pyx_L1_error)
+  __pyx_t_2 = __pyx_PyFloat_AsFloat(__pyx_t_1); if (unlikely((__pyx_t_2 == (float)-1) && PyErr_Occurred())) __PYX_ERR(0, 279, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_v_y2 = __pyx_t_2;
 
-  /* "hacking_the_election/utils/geometry.pyx":278
+  /* "hacking_the_election/utils/geometry.pyx":280
  *     cdef float y1 = p1[1]
  *     cdef float y2 = p2[1]
  *     return (x1 - x2)**2 + (y1 - y2)**2             # <<<<<<<<<<<<<<
@@ -5242,7 +4606,7 @@ static float __pyx_f_20hacking_the_election_5utils_8geometry_get_distance(PyObje
   __pyx_r = (powf((__pyx_v_x1 - __pyx_v_x2), 2.0) + powf((__pyx_v_y1 - __pyx_v_y2), 2.0));
   goto __pyx_L0;
 
-  /* "hacking_the_election/utils/geometry.pyx":262
+  /* "hacking_the_election/utils/geometry.pyx":264
  * 
  * 
  * cpdef float get_distance(list p1, list p2):             # <<<<<<<<<<<<<<
@@ -5295,11 +4659,11 @@ static PyObject *__pyx_pw_20hacking_the_election_5utils_8geometry_15get_distance
         case  1:
         if (likely((values[1] = __Pyx_PyDict_GetItemStr(__pyx_kwds, __pyx_n_s_p2)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("get_distance", 1, 2, 2, 1); __PYX_ERR(0, 262, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("get_distance", 1, 2, 2, 1); __PYX_ERR(0, 264, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "get_distance") < 0)) __PYX_ERR(0, 262, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "get_distance") < 0)) __PYX_ERR(0, 264, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 2) {
       goto __pyx_L5_argtuple_error;
@@ -5312,14 +4676,14 @@ static PyObject *__pyx_pw_20hacking_the_election_5utils_8geometry_15get_distance
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("get_distance", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 262, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("get_distance", 1, 2, 2, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 264, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("hacking_the_election.utils.geometry.get_distance", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_p1), (&PyList_Type), 1, "p1", 1))) __PYX_ERR(0, 262, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_p2), (&PyList_Type), 1, "p2", 1))) __PYX_ERR(0, 262, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_p1), (&PyList_Type), 1, "p1", 1))) __PYX_ERR(0, 264, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_p2), (&PyList_Type), 1, "p2", 1))) __PYX_ERR(0, 264, __pyx_L1_error)
   __pyx_r = __pyx_pf_20hacking_the_election_5utils_8geometry_14get_distance(__pyx_self, __pyx_v_p1, __pyx_v_p2);
 
   /* function exit code */
@@ -5340,7 +4704,7 @@ static PyObject *__pyx_pf_20hacking_the_election_5utils_8geometry_14get_distance
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("get_distance", 0);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_20hacking_the_election_5utils_8geometry_get_distance(__pyx_v_p1, __pyx_v_p2, 0)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 262, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_f_20hacking_the_election_5utils_8geometry_get_distance(__pyx_v_p1, __pyx_v_p2, 0)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 264, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -5406,8 +4770,6 @@ static struct PyModuleDef __pyx_moduledef = {
 
 static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_AttributeError, __pyx_k_AttributeError, sizeof(__pyx_k_AttributeError), 0, 0, 1, 1},
-  {&__pyx_n_s_Feature, __pyx_k_Feature, sizeof(__pyx_k_Feature), 0, 0, 1, 1},
-  {&__pyx_n_s_FeatureCollection, __pyx_k_FeatureCollection, sizeof(__pyx_k_FeatureCollection), 0, 0, 1, 1},
   {&__pyx_n_s_GeometryCollection, __pyx_k_GeometryCollection, sizeof(__pyx_k_GeometryCollection), 0, 0, 1, 1},
   {&__pyx_n_s_LineString, __pyx_k_LineString, sizeof(__pyx_k_LineString), 0, 0, 1, 1},
   {&__pyx_n_s_LinearRing, __pyx_k_LinearRing, sizeof(__pyx_k_LinearRing), 0, 0, 1, 1},
@@ -5421,7 +4783,6 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_area, __pyx_k_area, sizeof(__pyx_k_area), 0, 0, 1, 1},
   {&__pyx_n_s_centroid, __pyx_k_centroid, sizeof(__pyx_k_centroid), 0, 0, 1, 1},
   {&__pyx_n_s_cline_in_traceback, __pyx_k_cline_in_traceback, sizeof(__pyx_k_cline_in_traceback), 0, 0, 1, 1},
-  {&__pyx_n_s_coord, __pyx_k_coord, sizeof(__pyx_k_coord), 0, 0, 1, 1},
   {&__pyx_n_s_coordinates, __pyx_k_coordinates, sizeof(__pyx_k_coordinates), 0, 0, 1, 1},
   {&__pyx_n_s_coords, __pyx_k_coords, sizeof(__pyx_k_coords), 0, 0, 1, 1},
   {&__pyx_n_s_difference, __pyx_k_difference, sizeof(__pyx_k_difference), 0, 0, 1, 1},
@@ -5430,14 +4791,11 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_kp_s_district_must_be_of_type_Polygo, __pyx_k_district_must_be_of_type_Polygo, sizeof(__pyx_k_district_must_be_of_type_Polygo), 0, 0, 1, 0},
   {&__pyx_n_s_enumerate, __pyx_k_enumerate, sizeof(__pyx_k_enumerate), 0, 0, 1, 1},
   {&__pyx_n_s_exterior, __pyx_k_exterior, sizeof(__pyx_k_exterior), 0, 0, 1, 1},
-  {&__pyx_n_s_exterior_coords, __pyx_k_exterior_coords, sizeof(__pyx_k_exterior_coords), 0, 0, 1, 1},
-  {&__pyx_n_s_features, __pyx_k_features, sizeof(__pyx_k_features), 0, 0, 1, 1},
   {&__pyx_n_s_final_difference, __pyx_k_final_difference, sizeof(__pyx_k_final_difference), 0, 0, 1, 1},
   {&__pyx_n_s_float_arg, __pyx_k_float_arg, sizeof(__pyx_k_float_arg), 0, 0, 1, 1},
   {&__pyx_n_s_float_to_int, __pyx_k_float_to_int, sizeof(__pyx_k_float_to_int), 0, 0, 1, 1},
   {&__pyx_n_s_geojson, __pyx_k_geojson, sizeof(__pyx_k_geojson), 0, 0, 1, 1},
   {&__pyx_n_s_geojson_to_shapely, __pyx_k_geojson_to_shapely, sizeof(__pyx_k_geojson_to_shapely), 0, 0, 1, 1},
-  {&__pyx_n_s_geometry, __pyx_k_geometry, sizeof(__pyx_k_geometry), 0, 0, 1, 1},
   {&__pyx_n_s_geoms, __pyx_k_geoms, sizeof(__pyx_k_geoms), 0, 0, 1, 1},
   {&__pyx_n_s_get_compactness, __pyx_k_get_compactness, sizeof(__pyx_k_get_compactness), 0, 0, 1, 1},
   {&__pyx_n_s_get_compactness_locals_lambda, __pyx_k_get_compactness_locals_lambda, sizeof(__pyx_k_get_compactness_locals_lambda), 0, 0, 1, 1},
@@ -5448,9 +4806,6 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_import, __pyx_k_import, sizeof(__pyx_k_import), 0, 0, 1, 1},
   {&__pyx_n_s_inside, __pyx_k_inside, sizeof(__pyx_k_inside), 0, 0, 1, 1},
   {&__pyx_n_s_int_coords, __pyx_k_int_coords, sizeof(__pyx_k_int_coords), 0, 0, 1, 1},
-  {&__pyx_n_s_interior, __pyx_k_interior, sizeof(__pyx_k_interior), 0, 0, 1, 1},
-  {&__pyx_n_s_interior_coords, __pyx_k_interior_coords, sizeof(__pyx_k_interior_coords), 0, 0, 1, 1},
-  {&__pyx_n_s_interiors, __pyx_k_interiors, sizeof(__pyx_k_interiors), 0, 0, 1, 1},
   {&__pyx_n_s_intersection, __pyx_k_intersection, sizeof(__pyx_k_intersection), 0, 0, 1, 1},
   {&__pyx_n_s_intersection_member, __pyx_k_intersection_member, sizeof(__pyx_k_intersection_member), 0, 0, 1, 1},
   {&__pyx_kp_s_invalid_geojson, __pyx_k_invalid_geojson, sizeof(__pyx_k_invalid_geojson), 0, 0, 1, 0},
@@ -5459,12 +4814,12 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_left_area, __pyx_k_left_area, sizeof(__pyx_k_left_area), 0, 0, 1, 1},
   {&__pyx_n_s_linear_ring, __pyx_k_linear_ring, sizeof(__pyx_k_linear_ring), 0, 0, 1, 1},
   {&__pyx_n_s_main, __pyx_k_main, sizeof(__pyx_k_main), 0, 0, 1, 1},
+  {&__pyx_n_s_mapping, __pyx_k_mapping, sizeof(__pyx_k_mapping), 0, 0, 1, 1},
   {&__pyx_n_s_math, __pyx_k_math, sizeof(__pyx_k_math), 0, 0, 1, 1},
   {&__pyx_n_s_min, __pyx_k_min, sizeof(__pyx_k_min), 0, 0, 1, 1},
   {&__pyx_n_s_minx, __pyx_k_minx, sizeof(__pyx_k_minx), 0, 0, 1, 1},
   {&__pyx_n_s_miny, __pyx_k_miny, sizeof(__pyx_k_miny), 0, 0, 1, 1},
   {&__pyx_n_s_name, __pyx_k_name, sizeof(__pyx_k_name), 0, 0, 1, 1},
-  {&__pyx_kp_u_not, __pyx_k_not, sizeof(__pyx_k_not), 0, 1, 0, 0},
   {&__pyx_kp_s_outdated_reock_compactness_funct, __pyx_k_outdated_reock_compactness_funct, sizeof(__pyx_k_outdated_reock_compactness_funct), 0, 0, 1, 0},
   {&__pyx_n_s_p, __pyx_k_p, sizeof(__pyx_k_p), 0, 0, 1, 1},
   {&__pyx_n_s_p1, __pyx_k_p1, sizeof(__pyx_k_p1), 0, 0, 1, 1},
@@ -5484,20 +4839,18 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_shape2, __pyx_k_shape2, sizeof(__pyx_k_shape2), 0, 0, 1, 1},
   {&__pyx_n_s_shapely_geometry, __pyx_k_shapely_geometry, sizeof(__pyx_k_shapely_geometry), 0, 0, 1, 1},
   {&__pyx_n_s_shapely_to_geojson, __pyx_k_shapely_to_geojson, sizeof(__pyx_k_shapely_to_geojson), 0, 0, 1, 1},
-  {&__pyx_kp_s_shapely_to_geojson_only_accepts, __pyx_k_shapely_to_geojson_only_accepts, sizeof(__pyx_k_shapely_to_geojson_only_accepts), 0, 0, 1, 0},
   {&__pyx_n_s_test, __pyx_k_test, sizeof(__pyx_k_test), 0, 0, 1, 1},
-  {&__pyx_n_s_type, __pyx_k_type, sizeof(__pyx_k_type), 0, 0, 1, 1},
   {&__pyx_n_s_values, __pyx_k_values, sizeof(__pyx_k_values), 0, 0, 1, 1},
   {0, 0, 0, 0, 0, 0, 0}
 };
 static CYTHON_SMALL_CODE int __Pyx_InitCachedBuiltins(void) {
-  __pyx_builtin_round = __Pyx_GetBuiltinName(__pyx_n_s_round); if (!__pyx_builtin_round) __PYX_ERR(0, 20, __pyx_L1_error)
-  __pyx_builtin_ValueError = __Pyx_GetBuiltinName(__pyx_n_s_ValueError); if (!__pyx_builtin_ValueError) __PYX_ERR(0, 58, __pyx_L1_error)
-  __pyx_builtin_TypeError = __Pyx_GetBuiltinName(__pyx_n_s_TypeError); if (!__pyx_builtin_TypeError) __PYX_ERR(0, 95, __pyx_L1_error)
-  __pyx_builtin_AttributeError = __Pyx_GetBuiltinName(__pyx_n_s_AttributeError); if (!__pyx_builtin_AttributeError) __PYX_ERR(0, 146, __pyx_L1_error)
-  __pyx_builtin_any = __Pyx_GetBuiltinName(__pyx_n_s_any); if (!__pyx_builtin_any) __PYX_ERR(0, 158, __pyx_L1_error)
-  __pyx_builtin_min = __Pyx_GetBuiltinName(__pyx_n_s_min); if (!__pyx_builtin_min) __PYX_ERR(0, 191, __pyx_L1_error)
-  __pyx_builtin_enumerate = __Pyx_GetBuiltinName(__pyx_n_s_enumerate); if (!__pyx_builtin_enumerate) __PYX_ERR(0, 250, __pyx_L1_error)
+  __pyx_builtin_round = __Pyx_GetBuiltinName(__pyx_n_s_round); if (!__pyx_builtin_round) __PYX_ERR(0, 21, __pyx_L1_error)
+  __pyx_builtin_ValueError = __Pyx_GetBuiltinName(__pyx_n_s_ValueError); if (!__pyx_builtin_ValueError) __PYX_ERR(0, 59, __pyx_L1_error)
+  __pyx_builtin_AttributeError = __Pyx_GetBuiltinName(__pyx_n_s_AttributeError); if (!__pyx_builtin_AttributeError) __PYX_ERR(0, 148, __pyx_L1_error)
+  __pyx_builtin_any = __Pyx_GetBuiltinName(__pyx_n_s_any); if (!__pyx_builtin_any) __PYX_ERR(0, 160, __pyx_L1_error)
+  __pyx_builtin_TypeError = __Pyx_GetBuiltinName(__pyx_n_s_TypeError); if (!__pyx_builtin_TypeError) __PYX_ERR(0, 190, __pyx_L1_error)
+  __pyx_builtin_min = __Pyx_GetBuiltinName(__pyx_n_s_min); if (!__pyx_builtin_min) __PYX_ERR(0, 193, __pyx_L1_error)
+  __pyx_builtin_enumerate = __Pyx_GetBuiltinName(__pyx_n_s_enumerate); if (!__pyx_builtin_enumerate) __PYX_ERR(0, 252, __pyx_L1_error)
   return 0;
   __pyx_L1_error:;
   return -1;
@@ -5507,121 +4860,121 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__Pyx_InitCachedConstants", 0);
 
-  /* "hacking_the_election/utils/geometry.pyx":49
+  /* "hacking_the_election/utils/geometry.pyx":50
  *         #     polygon_list = [geojson_to_shapely(ring) for ring in geojson]
  *         # return Polygon(polygon_list[0], polygon_list[1:])
  *         return Polygon(geojson[0], geojson[1:])             # <<<<<<<<<<<<<<
  *     elif isinstance(geojson[0][0][0], list):
  *         # Multipolygon.
  */
-  __pyx_slice_ = PySlice_New(__pyx_int_1, Py_None, Py_None); if (unlikely(!__pyx_slice_)) __PYX_ERR(0, 49, __pyx_L1_error)
+  __pyx_slice_ = PySlice_New(__pyx_int_1, Py_None, Py_None); if (unlikely(!__pyx_slice_)) __PYX_ERR(0, 50, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_slice_);
   __Pyx_GIVEREF(__pyx_slice_);
 
-  /* "hacking_the_election/utils/geometry.pyx":58
+  /* "hacking_the_election/utils/geometry.pyx":59
  *         return MultiPolygon(polygons)
  *     else:
  *         raise ValueError("invalid geojson")             # <<<<<<<<<<<<<<
  * 
  * 
  */
-  __pyx_tuple__2 = PyTuple_Pack(1, __pyx_kp_s_invalid_geojson); if (unlikely(!__pyx_tuple__2)) __PYX_ERR(0, 58, __pyx_L1_error)
+  __pyx_tuple__2 = PyTuple_Pack(1, __pyx_kp_s_invalid_geojson); if (unlikely(!__pyx_tuple__2)) __PYX_ERR(0, 59, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__2);
   __Pyx_GIVEREF(__pyx_tuple__2);
 
-  /* "hacking_the_election/utils/geometry.pyx":188
+  /* "hacking_the_election/utils/geometry.pyx":190
  *                 P.append(point)
  *     else:
  *         raise TypeError("`district` must be of type Polygon or list of Polygon")             # <<<<<<<<<<<<<<
  * 
  *     # Move points towards origin for better precision.
  */
-  __pyx_tuple__3 = PyTuple_Pack(1, __pyx_kp_s_district_must_be_of_type_Polygo); if (unlikely(!__pyx_tuple__3)) __PYX_ERR(0, 188, __pyx_L1_error)
+  __pyx_tuple__3 = PyTuple_Pack(1, __pyx_kp_s_district_must_be_of_type_Polygo); if (unlikely(!__pyx_tuple__3)) __PYX_ERR(0, 190, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__3);
   __Pyx_GIVEREF(__pyx_tuple__3);
 
-  /* "hacking_the_election/utils/geometry.pyx":197
+  /* "hacking_the_election/utils/geometry.pyx":199
  * 
  *     # Get minimum bounding circle of district.
  *     raise Exception("outdated! reock compactness function is no longer in use.")             # <<<<<<<<<<<<<<
  *     mb = miniball.Miniball(P)
  *     cdef float squared_radius = mb.squared_radius()
  */
-  __pyx_tuple__4 = PyTuple_Pack(1, __pyx_kp_s_outdated_reock_compactness_funct); if (unlikely(!__pyx_tuple__4)) __PYX_ERR(0, 197, __pyx_L1_error)
+  __pyx_tuple__4 = PyTuple_Pack(1, __pyx_kp_s_outdated_reock_compactness_funct); if (unlikely(!__pyx_tuple__4)) __PYX_ERR(0, 199, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__4);
   __Pyx_GIVEREF(__pyx_tuple__4);
 
-  /* "hacking_the_election/utils/geometry.pyx":16
+  /* "hacking_the_election/utils/geometry.pyx":17
  * )
  * 
  * def _float_to_int(float_arg):             # <<<<<<<<<<<<<<
  *     """
  *     Converts float integer for geojson_to_shapely, if int_coords is True.
  */
-  __pyx_tuple__5 = PyTuple_Pack(1, __pyx_n_s_float_arg); if (unlikely(!__pyx_tuple__5)) __PYX_ERR(0, 16, __pyx_L1_error)
+  __pyx_tuple__5 = PyTuple_Pack(1, __pyx_n_s_float_arg); if (unlikely(!__pyx_tuple__5)) __PYX_ERR(0, 17, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__5);
   __Pyx_GIVEREF(__pyx_tuple__5);
-  __pyx_codeobj__6 = (PyObject*)__Pyx_PyCode_New(1, 0, 1, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__5, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_hacking_the_election_utils_geome_2, __pyx_n_s_float_to_int, 16, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__6)) __PYX_ERR(0, 16, __pyx_L1_error)
+  __pyx_codeobj__6 = (PyObject*)__Pyx_PyCode_New(1, 0, 1, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__5, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_hacking_the_election_utils_geome_2, __pyx_n_s_float_to_int, 17, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__6)) __PYX_ERR(0, 17, __pyx_L1_error)
 
-  /* "hacking_the_election/utils/geometry.pyx":23
+  /* "hacking_the_election/utils/geometry.pyx":24
  * 
  * 
  * def geojson_to_shapely(geojson, int_coords=False):             # <<<<<<<<<<<<<<
  *     """Takes shape in geojson format and returns shapely object.
  * 
  */
-  __pyx_tuple__7 = PyTuple_Pack(6, __pyx_n_s_geojson, __pyx_n_s_int_coords, __pyx_n_s_point_list, __pyx_n_s_polygons, __pyx_n_s_point, __pyx_n_s_polygon); if (unlikely(!__pyx_tuple__7)) __PYX_ERR(0, 23, __pyx_L1_error)
+  __pyx_tuple__7 = PyTuple_Pack(6, __pyx_n_s_geojson, __pyx_n_s_int_coords, __pyx_n_s_point_list, __pyx_n_s_polygons, __pyx_n_s_point, __pyx_n_s_polygon); if (unlikely(!__pyx_tuple__7)) __PYX_ERR(0, 24, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__7);
   __Pyx_GIVEREF(__pyx_tuple__7);
-  __pyx_codeobj__8 = (PyObject*)__Pyx_PyCode_New(2, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__7, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_hacking_the_election_utils_geome_2, __pyx_n_s_geojson_to_shapely, 23, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__8)) __PYX_ERR(0, 23, __pyx_L1_error)
+  __pyx_codeobj__8 = (PyObject*)__Pyx_PyCode_New(2, 0, 6, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__7, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_hacking_the_election_utils_geome_2, __pyx_n_s_geojson_to_shapely, 24, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__8)) __PYX_ERR(0, 24, __pyx_L1_error)
 
-  /* "hacking_the_election/utils/geometry.pyx":61
+  /* "hacking_the_election/utils/geometry.pyx":62
  * 
  * 
  * def shapely_to_geojson(shape, json_format=False):             # <<<<<<<<<<<<<<
  *     """Converts a shapely object into a list of coords using geojson protocol.
  * 
  */
-  __pyx_tuple__9 = PyTuple_Pack(8, __pyx_n_s_shape, __pyx_n_s_json_format, __pyx_n_s_geojson, __pyx_n_s_polygon, __pyx_n_s_exterior_coords, __pyx_n_s_coord, __pyx_n_s_interior, __pyx_n_s_interior_coords); if (unlikely(!__pyx_tuple__9)) __PYX_ERR(0, 61, __pyx_L1_error)
+  __pyx_tuple__9 = PyTuple_Pack(2, __pyx_n_s_shape, __pyx_n_s_json_format); if (unlikely(!__pyx_tuple__9)) __PYX_ERR(0, 62, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__9);
   __Pyx_GIVEREF(__pyx_tuple__9);
-  __pyx_codeobj__10 = (PyObject*)__Pyx_PyCode_New(2, 0, 8, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__9, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_hacking_the_election_utils_geome_2, __pyx_n_s_shapely_to_geojson, 61, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__10)) __PYX_ERR(0, 61, __pyx_L1_error)
+  __pyx_codeobj__10 = (PyObject*)__Pyx_PyCode_New(2, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__9, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_hacking_the_election_utils_geome_2, __pyx_n_s_shapely_to_geojson, 62, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__10)) __PYX_ERR(0, 62, __pyx_L1_error)
 
-  /* "hacking_the_election/utils/geometry.pyx":109
+  /* "hacking_the_election/utils/geometry.pyx":111
  * 
  * 
  * def get_if_bordering(shape1, shape2, inside=False):             # <<<<<<<<<<<<<<
  *     """Determines whether or not two shapes (shapely polygons) are bordering
  * 
  */
-  __pyx_tuple__11 = PyTuple_Pack(7, __pyx_n_s_shape1, __pyx_n_s_shape2, __pyx_n_s_inside, __pyx_n_s_difference, __pyx_n_s_final_difference, __pyx_n_s_intersection, __pyx_n_s_intersection_member); if (unlikely(!__pyx_tuple__11)) __PYX_ERR(0, 109, __pyx_L1_error)
+  __pyx_tuple__11 = PyTuple_Pack(7, __pyx_n_s_shape1, __pyx_n_s_shape2, __pyx_n_s_inside, __pyx_n_s_difference, __pyx_n_s_final_difference, __pyx_n_s_intersection, __pyx_n_s_intersection_member); if (unlikely(!__pyx_tuple__11)) __PYX_ERR(0, 111, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__11);
   __Pyx_GIVEREF(__pyx_tuple__11);
-  __pyx_codeobj__12 = (PyObject*)__Pyx_PyCode_New(3, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__11, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_hacking_the_election_utils_geome_2, __pyx_n_s_get_if_bordering, 109, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__12)) __PYX_ERR(0, 109, __pyx_L1_error)
+  __pyx_codeobj__12 = (PyObject*)__Pyx_PyCode_New(3, 0, 7, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__11, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_hacking_the_election_utils_geome_2, __pyx_n_s_get_if_bordering, 111, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__12)) __PYX_ERR(0, 111, __pyx_L1_error)
 
-  /* "hacking_the_election/utils/geometry.pyx":163
+  /* "hacking_the_election/utils/geometry.pyx":165
  * 
  * 
  * def get_compactness(district):             # <<<<<<<<<<<<<<
  *     """Calculates the Reock compactness score for a district
  * 
  */
-  __pyx_tuple__13 = PyTuple_Pack(9, __pyx_n_s_district, __pyx_n_s_P, __pyx_n_s_district_coords, __pyx_n_s_polygon, __pyx_n_s_linear_ring, __pyx_n_s_point, __pyx_n_s_minx, __pyx_n_s_miny, __pyx_n_s_p); if (unlikely(!__pyx_tuple__13)) __PYX_ERR(0, 163, __pyx_L1_error)
+  __pyx_tuple__13 = PyTuple_Pack(9, __pyx_n_s_district, __pyx_n_s_P, __pyx_n_s_district_coords, __pyx_n_s_polygon, __pyx_n_s_linear_ring, __pyx_n_s_point, __pyx_n_s_minx, __pyx_n_s_miny, __pyx_n_s_p); if (unlikely(!__pyx_tuple__13)) __PYX_ERR(0, 165, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__13);
   __Pyx_GIVEREF(__pyx_tuple__13);
-  __pyx_codeobj__14 = (PyObject*)__Pyx_PyCode_New(1, 0, 9, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__13, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_hacking_the_election_utils_geome_2, __pyx_n_s_get_compactness, 163, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__14)) __PYX_ERR(0, 163, __pyx_L1_error)
+  __pyx_codeobj__14 = (PyObject*)__Pyx_PyCode_New(1, 0, 9, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__13, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_hacking_the_election_utils_geome_2, __pyx_n_s_get_compactness, 165, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__14)) __PYX_ERR(0, 165, __pyx_L1_error)
 
-  /* "hacking_the_election/utils/geometry.pyx":239
+  /* "hacking_the_election/utils/geometry.pyx":241
  * 
  * 
  * def area(ring):             # <<<<<<<<<<<<<<
  *     """Calculates the area of a json ring
  * 
  */
-  __pyx_tuple__15 = PyTuple_Pack(5, __pyx_n_s_ring, __pyx_n_s_left_area, __pyx_n_s_right_area, __pyx_n_s_i, __pyx_n_s_point); if (unlikely(!__pyx_tuple__15)) __PYX_ERR(0, 239, __pyx_L1_error)
+  __pyx_tuple__15 = PyTuple_Pack(5, __pyx_n_s_ring, __pyx_n_s_left_area, __pyx_n_s_right_area, __pyx_n_s_i, __pyx_n_s_point); if (unlikely(!__pyx_tuple__15)) __PYX_ERR(0, 241, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__15);
   __Pyx_GIVEREF(__pyx_tuple__15);
-  __pyx_codeobj__16 = (PyObject*)__Pyx_PyCode_New(1, 0, 5, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__15, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_hacking_the_election_utils_geome_2, __pyx_n_s_area, 239, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__16)) __PYX_ERR(0, 239, __pyx_L1_error)
+  __pyx_codeobj__16 = (PyObject*)__Pyx_PyCode_New(1, 0, 5, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__15, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_hacking_the_election_utils_geome_2, __pyx_n_s_area, 241, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__16)) __PYX_ERR(0, 241, __pyx_L1_error)
   __Pyx_RefNannyFinishContext();
   return 0;
   __pyx_L1_error:;
@@ -5926,7 +5279,7 @@ if (!__Pyx_RefNanny) {
  *     MultiPolygon,
  *     MultiLineString,
  */
-  __pyx_t_1 = PyList_New(6); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 8, __pyx_L1_error)
+  __pyx_t_1 = PyList_New(7); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 8, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_INCREF(__pyx_n_s_LinearRing);
   __Pyx_GIVEREF(__pyx_n_s_LinearRing);
@@ -5946,6 +5299,9 @@ if (!__Pyx_RefNanny) {
   __Pyx_INCREF(__pyx_n_s_GeometryCollection);
   __Pyx_GIVEREF(__pyx_n_s_GeometryCollection);
   PyList_SET_ITEM(__pyx_t_1, 5, __pyx_n_s_GeometryCollection);
+  __Pyx_INCREF(__pyx_n_s_mapping);
+  __Pyx_GIVEREF(__pyx_n_s_mapping);
+  PyList_SET_ITEM(__pyx_t_1, 6, __pyx_n_s_mapping);
 
   /* "hacking_the_election/utils/geometry.pyx":7
  * import math
@@ -5981,78 +5337,82 @@ if (!__Pyx_RefNanny) {
   __Pyx_GOTREF(__pyx_t_1);
   if (PyDict_SetItem(__pyx_d, __pyx_n_s_GeometryCollection, __pyx_t_1) < 0) __PYX_ERR(0, 13, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_1 = __Pyx_ImportFrom(__pyx_t_2, __pyx_n_s_mapping); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 7, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_mapping, __pyx_t_1) < 0) __PYX_ERR(0, 14, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-  /* "hacking_the_election/utils/geometry.pyx":16
+  /* "hacking_the_election/utils/geometry.pyx":17
  * )
  * 
  * def _float_to_int(float_arg):             # <<<<<<<<<<<<<<
  *     """
  *     Converts float integer for geojson_to_shapely, if int_coords is True.
  */
-  __pyx_t_2 = PyCFunction_NewEx(&__pyx_mdef_20hacking_the_election_5utils_8geometry_1_float_to_int, NULL, __pyx_n_s_hacking_the_election_utils_geome); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 16, __pyx_L1_error)
+  __pyx_t_2 = PyCFunction_NewEx(&__pyx_mdef_20hacking_the_election_5utils_8geometry_1_float_to_int, NULL, __pyx_n_s_hacking_the_election_utils_geome); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 17, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_float_to_int, __pyx_t_2) < 0) __PYX_ERR(0, 16, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_float_to_int, __pyx_t_2) < 0) __PYX_ERR(0, 17, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-  /* "hacking_the_election/utils/geometry.pyx":23
+  /* "hacking_the_election/utils/geometry.pyx":24
  * 
  * 
  * def geojson_to_shapely(geojson, int_coords=False):             # <<<<<<<<<<<<<<
  *     """Takes shape in geojson format and returns shapely object.
  * 
  */
-  __pyx_t_2 = PyCFunction_NewEx(&__pyx_mdef_20hacking_the_election_5utils_8geometry_3geojson_to_shapely, NULL, __pyx_n_s_hacking_the_election_utils_geome); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 23, __pyx_L1_error)
+  __pyx_t_2 = PyCFunction_NewEx(&__pyx_mdef_20hacking_the_election_5utils_8geometry_3geojson_to_shapely, NULL, __pyx_n_s_hacking_the_election_utils_geome); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 24, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_geojson_to_shapely, __pyx_t_2) < 0) __PYX_ERR(0, 23, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_geojson_to_shapely, __pyx_t_2) < 0) __PYX_ERR(0, 24, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-  /* "hacking_the_election/utils/geometry.pyx":61
+  /* "hacking_the_election/utils/geometry.pyx":62
  * 
  * 
  * def shapely_to_geojson(shape, json_format=False):             # <<<<<<<<<<<<<<
  *     """Converts a shapely object into a list of coords using geojson protocol.
  * 
  */
-  __pyx_t_2 = PyCFunction_NewEx(&__pyx_mdef_20hacking_the_election_5utils_8geometry_5shapely_to_geojson, NULL, __pyx_n_s_hacking_the_election_utils_geome); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 61, __pyx_L1_error)
+  __pyx_t_2 = PyCFunction_NewEx(&__pyx_mdef_20hacking_the_election_5utils_8geometry_5shapely_to_geojson, NULL, __pyx_n_s_hacking_the_election_utils_geome); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 62, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_shapely_to_geojson, __pyx_t_2) < 0) __PYX_ERR(0, 61, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_shapely_to_geojson, __pyx_t_2) < 0) __PYX_ERR(0, 62, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-  /* "hacking_the_election/utils/geometry.pyx":109
+  /* "hacking_the_election/utils/geometry.pyx":111
  * 
  * 
  * def get_if_bordering(shape1, shape2, inside=False):             # <<<<<<<<<<<<<<
  *     """Determines whether or not two shapes (shapely polygons) are bordering
  * 
  */
-  __pyx_t_2 = PyCFunction_NewEx(&__pyx_mdef_20hacking_the_election_5utils_8geometry_7get_if_bordering, NULL, __pyx_n_s_hacking_the_election_utils_geome); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 109, __pyx_L1_error)
+  __pyx_t_2 = PyCFunction_NewEx(&__pyx_mdef_20hacking_the_election_5utils_8geometry_7get_if_bordering, NULL, __pyx_n_s_hacking_the_election_utils_geome); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 111, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_get_if_bordering, __pyx_t_2) < 0) __PYX_ERR(0, 109, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_get_if_bordering, __pyx_t_2) < 0) __PYX_ERR(0, 111, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-  /* "hacking_the_election/utils/geometry.pyx":163
+  /* "hacking_the_election/utils/geometry.pyx":165
  * 
  * 
  * def get_compactness(district):             # <<<<<<<<<<<<<<
  *     """Calculates the Reock compactness score for a district
  * 
  */
-  __pyx_t_2 = PyCFunction_NewEx(&__pyx_mdef_20hacking_the_election_5utils_8geometry_9get_compactness, NULL, __pyx_n_s_hacking_the_election_utils_geome); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 163, __pyx_L1_error)
+  __pyx_t_2 = PyCFunction_NewEx(&__pyx_mdef_20hacking_the_election_5utils_8geometry_9get_compactness, NULL, __pyx_n_s_hacking_the_election_utils_geome); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 165, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_get_compactness, __pyx_t_2) < 0) __PYX_ERR(0, 163, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_get_compactness, __pyx_t_2) < 0) __PYX_ERR(0, 165, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-  /* "hacking_the_election/utils/geometry.pyx":239
+  /* "hacking_the_election/utils/geometry.pyx":241
  * 
  * 
  * def area(ring):             # <<<<<<<<<<<<<<
  *     """Calculates the area of a json ring
  * 
  */
-  __pyx_t_2 = PyCFunction_NewEx(&__pyx_mdef_20hacking_the_election_5utils_8geometry_13area, NULL, __pyx_n_s_hacking_the_election_utils_geome); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 239, __pyx_L1_error)
+  __pyx_t_2 = PyCFunction_NewEx(&__pyx_mdef_20hacking_the_election_5utils_8geometry_13area, NULL, __pyx_n_s_hacking_the_election_utils_geome); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 241, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_area, __pyx_t_2) < 0) __PYX_ERR(0, 239, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_area, __pyx_t_2) < 0) __PYX_ERR(0, 241, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
   /* "hacking_the_election/utils/geometry.pyx":1
@@ -6954,6 +6314,30 @@ static void __Pyx_Raise(PyObject *type, PyObject *value, PyObject *tb, PyObject 
 bad:
     Py_XDECREF(owned_instance);
     return;
+}
+#endif
+
+/* DictGetItem */
+#if PY_MAJOR_VERSION >= 3 && !CYTHON_COMPILING_IN_PYPY
+static PyObject *__Pyx_PyDict_GetItem(PyObject *d, PyObject* key) {
+    PyObject *value;
+    value = PyDict_GetItemWithError(d, key);
+    if (unlikely(!value)) {
+        if (!PyErr_Occurred()) {
+            if (unlikely(PyTuple_Check(key))) {
+                PyObject* args = PyTuple_Pack(1, key);
+                if (likely(args)) {
+                    PyErr_SetObject(PyExc_KeyError, args);
+                    Py_DECREF(args);
+                }
+            } else {
+                PyErr_SetObject(PyExc_KeyError, key);
+            }
+        }
+        return NULL;
+    }
+    Py_INCREF(value);
+    return value;
 }
 #endif
 
